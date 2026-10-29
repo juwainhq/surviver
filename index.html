@@ -1,0 +1,2258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Surviver — Bullet Dodger</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    height: 100dvh;
+    background: #000;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    color: #fff;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  canvas {
+    display: block;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: 100vw;
+    max-height: 100dvh;
+    background: #000;
+    touch-action: none;
+  }
+
+  /* ---------- HUD ---------- */
+  #hud {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 16px 22px;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  #hud .box {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    padding: 8px 14px;
+    backdrop-filter: blur(4px);
+  }
+
+  #hud .value {
+    font-size: clamp(17px, 3vw, 26px);
+    font-weight: 700;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Live survival timer — top-left corner, e.g. "Time: 0s" */
+  #timer { color: #22d3ee; }
+  /* Current difficulty level — e.g. "Level 2" */
+  #level { color: #fb923c; }
+  /* Combo multiplier + score — e.g. "Combo x2 · Score: 300" */
+  #combo {
+    color: #c084fc;
+    font-size: clamp(15px, 2.4vw, 22px);
+    white-space: nowrap;
+  }
+
+  #combo.bump { animation: comboBump 0.45s ease-out; }
+
+  @keyframes comboBump {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.14); }
+    100% { transform: scale(1); }
+  }
+
+  #bestTime { color: #facc15; }
+
+  /* Brief banner shown when the difficulty level increases */
+  #levelUp {
+    position: fixed;
+    top: 18%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #fb923c;
+    text-shadow: 0 0 22px rgba(251, 146, 60, 0.6);
+    pointer-events: none;
+    z-index: 6;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    white-space: nowrap;
+  }
+
+  #levelUp.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    animation: levelUpPop 0.6s cubic-bezier(0.2, 1.4, 0.3, 1) both;
+  }
+
+  @keyframes levelUpPop {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.65);
+      letter-spacing: 8px;
+      filter: blur(4px);
+    }
+    55% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.12);
+      letter-spacing: 3px;
+      filter: blur(0);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      letter-spacing: 2px;
+      filter: blur(0);
+    }
+  }
+
+  /* Giant title flashed briefly at the beginning of every run. */
+  #runTitle {
+    position: fixed;
+    top: 36%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.88);
+    font-size: clamp(52px, 11vw, 118px);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.14em;
+    color: #fff;
+    text-shadow:
+      0 0 10px rgba(255, 255, 255, 0.9),
+      0 0 30px rgba(34, 211, 238, 0.8),
+      0 0 76px rgba(34, 211, 238, 0.45);
+    pointer-events: none;
+    z-index: 7;
+    opacity: 0;
+    white-space: nowrap;
+  }
+
+  #runTitle.visible { animation: runTitleIntro 1.25s ease-out both; }
+
+  @keyframes runTitleIntro {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.88);
+      filter: blur(5px);
+    }
+    18% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      filter: blur(0);
+    }
+    65% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.02);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -54%) scale(1.05);
+      filter: blur(2px);
+    }
+  }
+
+  #hint {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    pointer-events: none;
+    z-index: 5;
+    text-align: center;
+    white-space: nowrap;
+    transition: opacity 0.6s ease;
+  }
+
+  #hint kbd {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 1px 7px;
+    font-family: inherit;
+    font-size: 12px;
+    color: #fff;
+  }
+
+  /* ---------- Touch controls (shown only on coarse-pointer/touch devices) ---------- */
+  #touchControls {
+    display: none; /* enabled by the coarse-pointer media query near the end */
+    position: fixed;
+    right: max(14px, env(safe-area-inset-right));
+    bottom: max(14px, env(safe-area-inset-bottom));
+    width: min(196px, 54vw, 44dvh);
+    aspect-ratio: 1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      ". up ."
+      "left . right"
+      ". down .";
+    gap: 8px;
+    z-index: 8;
+    touch-action: none;
+  }
+
+  .touch-btn {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.09);
+    color: #fff;
+    font-family: inherit;
+    font-size: clamp(24px, 8vw, 34px);
+    font-weight: 900;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 0 18px rgba(34, 211, 238, 0.12);
+  }
+
+  .touch-btn.active,
+  .touch-btn:active {
+    background: rgba(34, 211, 238, 0.88);
+    border-color: rgba(255, 255, 255, 0.8);
+    color: #000;
+    transform: scale(0.94);
+    box-shadow: 0 0 24px rgba(34, 211, 238, 0.55);
+  }
+
+  .touch-up { grid-area: up; }
+  .touch-left { grid-area: left; }
+  .touch-right { grid-area: right; }
+  .touch-down { grid-area: down; }
+
+  /* ---------- Start screen ---------- */
+  #startScreen {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    z-index: 20;
+    background:
+      radial-gradient(circle at center, rgba(34, 211, 238, 0.08) 0%, rgba(0, 0, 0, 0.68) 52%, rgba(0, 0, 0, 0.9) 100%);
+  }
+
+  #startScreen.visible { display: flex; }
+
+  #startScreen h1 {
+    font-size: clamp(64px, 15vw, 156px);
+    font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: 0.12em;
+    color: #fff;
+    text-shadow:
+      0 0 10px rgba(255, 255, 255, 0.9),
+      0 0 28px rgba(34, 211, 238, 0.85),
+      0 0 72px rgba(34, 211, 238, 0.55),
+      0 0 130px rgba(34, 211, 238, 0.35);
+    animation: titleGlow 2.2s ease-in-out infinite alternate;
+  }
+
+  @keyframes titleGlow {
+    from {
+      transform: scale(1);
+      text-shadow:
+        0 0 8px rgba(255, 255, 255, 0.75),
+        0 0 24px rgba(34, 211, 238, 0.65),
+        0 0 58px rgba(34, 211, 238, 0.4),
+        0 0 105px rgba(34, 211, 238, 0.25);
+    }
+    to {
+      transform: scale(1.015);
+      text-shadow:
+        0 0 14px rgba(255, 255, 255, 1),
+        0 0 36px rgba(34, 211, 238, 1),
+        0 0 88px rgba(34, 211, 238, 0.7),
+        0 0 150px rgba(34, 211, 238, 0.45);
+    }
+  }
+
+  #startBest {
+    display: none;
+    font-size: clamp(20px, 3vw, 28px);
+    font-weight: 800;
+    color: #facc15;
+    text-shadow: 0 0 18px rgba(250, 204, 21, 0.45);
+    font-variant-numeric: tabular-nums;
+  }
+
+  #startPrompt {
+    margin-top: 14px;
+    font-size: clamp(20px, 3.5vw, 32px);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #ecfeff;
+    animation: promptPulse 1.35s ease-in-out infinite;
+  }
+
+  #startPrompt kbd {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-bottom-width: 3px;
+    border-radius: 7px;
+    padding: 2px 10px;
+    font-family: inherit;
+    font-size: 0.82em;
+    color: #fff;
+  }
+
+  @keyframes promptPulse {
+    0%, 100% { opacity: 0.55; transform: scale(0.99); }
+    50% { opacity: 1; transform: scale(1.01); }
+  }
+
+  #startInstructions {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.62);
+  }
+
+  /* ---------- Game Over overlay ---------- */
+  #gameOver {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: rgba(0, 0, 0, 0.78);
+    z-index: 10;
+    text-align: center;
+    padding: 20px;
+  }
+
+  #gameOver.visible { display: flex; }
+
+  #gameOver h1 {
+    font-size: clamp(44px, 9vw, 84px);
+    font-weight: 900;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #ef4444;
+    text-shadow: 0 0 24px rgba(239, 68, 68, 0.55), 0 0 70px rgba(239, 68, 68, 0.3);
+    animation: pop 0.35s ease-out;
+  }
+
+  @keyframes pop {
+    from { transform: scale(0.8); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+
+  /* e.g. "You survived 12 seconds" */
+  #finalStats {
+    font-size: 22px;
+    font-weight: 700;
+    color: #22d3ee;
+    line-height: 1.6;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Local high score on the Game Over screen, e.g. "Best: 34s" */
+  #finalBest {
+    font-size: 20px;
+    font-weight: 700;
+    color: #facc15;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Combo-multiplied score for the finished run */
+  #finalScore {
+    font-size: 20px;
+    font-weight: 700;
+    color: #c084fc;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #newBest {
+    display: none;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #facc15;
+  }
+
+  #playAgainBtn {
+    margin-top: 10px;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #000;
+    background: #22d3ee;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 42px;
+    cursor: pointer;
+    box-shadow: 0 0 22px rgba(34, 211, 238, 0.45);
+    transition: transform 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+  }
+
+  #playAgainBtn:hover, #playAgainBtn:focus-visible {
+    background: #67e8f9;
+    transform: scale(1.05);
+    box-shadow: 0 0 32px rgba(34, 211, 238, 0.7);
+    outline: none;
+  }
+
+  #playAgainBtn:active { transform: scale(0.97); }
+
+  #gameOver .sub {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  /* ---------- Small screens: keep every fixed layer within the viewport ---------- */
+  @media (max-width: 600px) {
+    #hud {
+      width: 100%;
+      max-width: 100vw;
+      gap: 6px;
+      padding:
+        max(8px, env(safe-area-inset-top))
+        max(10px, env(safe-area-inset-right))
+        8px
+        max(10px, env(safe-area-inset-left));
+    }
+
+    #hud .box {
+      min-width: 0;
+      padding: 6px 8px;
+      border-radius: 8px;
+    }
+
+    #hud .value { font-size: clamp(14px, 4.5vw, 18px); }
+    #combo { font-size: clamp(12px, 3.8vw, 16px); }
+
+    #hint {
+      width: calc(100% - 20px);
+      max-width: 100vw;
+      bottom: max(10px, env(safe-area-inset-bottom));
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: normal;
+    }
+
+    #levelUp {
+      max-width: calc(100vw - 20px);
+      font-size: clamp(24px, 8vw, 36px);
+      text-align: center;
+      white-space: normal;
+    }
+
+    #runTitle {
+      max-width: 100vw;
+      font-size: clamp(42px, 15vw, 72px);
+      letter-spacing: 0.08em;
+    }
+
+    #startScreen {
+      gap: 14px;
+      padding:
+        max(20px, env(safe-area-inset-top))
+        max(18px, env(safe-area-inset-right))
+        max(20px, env(safe-area-inset-bottom))
+        max(18px, env(safe-area-inset-left));
+    }
+
+    #startScreen h1 {
+      font-size: clamp(44px, 16vw, 76px);
+      letter-spacing: 0.07em;
+    }
+
+    #startPrompt {
+      font-size: clamp(19px, 6vw, 26px);
+      line-height: 1.5;
+    }
+
+    #startInstructions {
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    #gameOver {
+      gap: 10px;
+      padding:
+        max(18px, env(safe-area-inset-top))
+        max(16px, env(safe-area-inset-right))
+        max(18px, env(safe-area-inset-bottom))
+        max(16px, env(safe-area-inset-left));
+    }
+
+    #gameOver h1 {
+      font-size: clamp(38px, 13vw, 64px);
+      letter-spacing: 2px;
+    }
+
+    #finalStats { font-size: 19px; }
+    #finalBest, #finalScore { font-size: 17px; }
+
+    #playAgainBtn {
+      width: min(280px, 100%);
+      padding: 13px 24px;
+      font-size: 18px;
+    }
+  }
+
+  /* Touch devices get the D-pad; fine-pointer desktops keep it hidden. */
+  @media (hover: none) and (pointer: coarse) {
+    #touchControls { display: grid; }
+    #hint { display: none; } /* keyboard hint is not useful beside the D-pad */
+  }
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <!-- Live survival timer (top-left) -->
+  <div class="box value" id="timer">Time: 0s</div>
+  <!-- Current difficulty level -->
+  <div class="box value" id="level">Level 1</div>
+  <!-- Combo multiplier increases every 30 seconds survived -->
+  <div class="box value" id="combo">Combo x1 · Score: 0</div>
+  <div class="box value" id="bestTime">Best: 0s</div>
+</div>
+
+<div id="levelUp"></div>
+<div id="runTitle" aria-hidden="true">SURVIVE</div>
+
+<div id="hint">Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> &nbsp;·&nbsp; Auto-fire shoots in 4 directions · Dodge the red circles!</div>
+
+<!-- On-screen D-pad: CSS reveals this only on coarse-pointer (touch) devices. -->
+<div id="touchControls" aria-label="Touch directional controls">
+  <button type="button" class="touch-btn touch-up" id="touchUp" aria-label="Move up" aria-pressed="false">▲</button>
+  <button type="button" class="touch-btn touch-left" id="touchLeft" aria-label="Move left" aria-pressed="false">◀</button>
+  <button type="button" class="touch-btn touch-right" id="touchRight" aria-label="Move right" aria-pressed="false">▶</button>
+  <button type="button" class="touch-btn touch-down" id="touchDown" aria-label="Move down" aria-pressed="false">▼</button>
+</div>
+
+<div id="startScreen" class="visible" role="button" aria-label="Start game">
+  <h1>SURVIVE</h1>
+  <div id="startBest">Best: 0s</div>
+  <div id="startPrompt">Click to Start <span>or Press</span> <kbd>Enter</kbd></div>
+  <div id="startInstructions">Move with WASD, arrow keys, or the on-screen arrows · Auto-fire shoots in 4 directions · Dodge the red circles</div>
+</div>
+
+<div id="gameOver">
+  <h1>Game Over</h1>
+  <div id="finalStats">You survived 0 seconds</div>
+  <div id="finalScore">Score: 0 · Combo x1</div>
+  <div id="finalBest">Best: 0s</div>
+  <div id="newBest">★ New Best! ★</div>
+  <button id="playAgainBtn" type="button">▶ Play Again</button>
+  <div class="sub">or press <kbd>Enter</kbd> / <kbd>Space</kbd> / <kbd>R</kbd> to restart</div>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   Surviver — a top-down bullet dodger
+   You are the glowing white circle. Red circles spawn from the edges
+   of the screen and chase you. One touch and it's over.
+   Survive as long as you can — it gets faster over time.
+   ============================================================ */
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const timerEl     = document.getElementById("timer");
+const levelEl     = document.getElementById("level");
+const comboEl     = document.getElementById("combo");
+const levelUpEl   = document.getElementById("levelUp");
+const runTitleEl  = document.getElementById("runTitle");
+const bestTimeEl  = document.getElementById("bestTime");
+const startScreenEl = document.getElementById("startScreen");
+const startBestEl = document.getElementById("startBest");
+const gameOverEl  = document.getElementById("gameOver");
+const finalStatsEl = document.getElementById("finalStats");
+const finalScoreEl = document.getElementById("finalScore");
+const finalBestEl = document.getElementById("finalBest");
+const newBestEl   = document.getElementById("newBest");
+const playAgainBtn = document.getElementById("playAgainBtn");
+const hintEl = document.getElementById("hint");
+const touchUpBtn = document.getElementById("touchUp");
+const touchDownBtn = document.getElementById("touchDown");
+const touchLeftBtn = document.getElementById("touchLeft");
+const touchRightBtn = document.getElementById("touchRight");
+
+/* ---------- Canvas sizing ---------- */
+let W = 0, H = 0;
+
+function resize() {
+  // visualViewport tracks the actually visible area on mobile as the
+  // browser toolbar shows/hides; fall back to the window elsewhere.
+  const viewport = window.visualViewport;
+  W = Math.max(1, Math.floor(viewport ? viewport.width : window.innerWidth));
+  H = Math.max(1, Math.floor(viewport ? viewport.height : window.innerHeight));
+  canvas.width = W;
+  canvas.height = H;
+  canvas.style.width = W + "px";
+  canvas.style.height = H + "px";
+  // Keep the player inside the (possibly shrunken) arena.
+  player.x = clamp(player.x, player.r, Math.max(player.r, W - player.r));
+  player.y = clamp(player.y, player.r, Math.max(player.r, H - player.r));
+
+  // That clamp can itself move the player into a chaser when the
+  // viewport shrinks/rotates. Push any overlapped enemy just outside
+  // the hitbox instead of handing out an unavoidable resize death.
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    const minDistance = e.r + player.r + 2;
+    let dx = e.x - player.x;
+    let dy = e.y - player.y;
+    let distanceSq = dx * dx + dy * dy;
+    if (distanceSq >= minDistance * minDistance) continue;
+    if (distanceSq < 0.0001) {
+      dx = e.x < W / 2 ? -1 : 1;
+      dy = 0;
+      distanceSq = 1;
+    }
+    const distance = Math.sqrt(distanceSq);
+    e.x = player.x + (dx / distance) * minDistance;
+    e.y = player.y + (dy / distance) * minDistance;
+    e.prevX = e.x;
+    e.prevY = e.y;
+    e.trail.length = 0;
+  }
+}
+window.addEventListener("resize", resize);
+window.addEventListener("orientationchange", resize);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", resize);
+}
+
+/* ---------- Helpers ---------- */
+function clamp(v, min, max) { return v < min ? min : (v > max ? max : v); }
+function rand(min, max) { return min + Math.random() * (max - min); }
+function wholeSeconds(s) { return Math.floor(s); }
+/* Live HUD timer, e.g. "Time: 0s", "Time: 12s" */
+function formatTime(s) { return "Time: " + wholeSeconds(s) + "s"; }
+/* Local high score, e.g. "Best: 0s", "Best: 34s" */
+function formatBest(s) { return "Best: " + wholeSeconds(s) + "s"; }
+/* Game Over message, e.g. "You survived 12 seconds" */
+function formatSurvived(s) {
+  const n = wholeSeconds(s);
+  return "You survived " + n + (n === 1 ? " second" : " seconds");
+}
+
+/* ---------- Local high score (best survived time) ----------
+   Kept in the `best` variable, so it persists across runs for the
+   whole session (Play Again never resets it). It is also saved to
+   localStorage, so where the browser allows it the high score even
+   survives closing/reopening the file. If localStorage is blocked,
+   the in-memory variable still keeps it for the current session. */
+let best = 0;
+try { best = parseFloat(localStorage.getItem("surviverBest")) || 0; } catch (e) { best = 0; }
+function saveBest() {
+  try { localStorage.setItem("surviverBest", String(best)); } catch (e) { /* file:// in some setups */ }
+}
+/* Show the high score in the HUD, on the Game Over screen, and on
+   the start screen (where it stays hidden until a score exists). */
+function refreshBest() {
+  const text = formatBest(best);   // e.g. "Best: 34s"
+  bestTimeEl.textContent = text;
+  finalBestEl.textContent = text;
+  startBestEl.textContent = text;
+  startBestEl.style.display = best > 0 ? "block" : "none";
+}
+
+/* ---------- Game constants ---------- */
+const PLAYER_RADIUS   = 12;    // px — also the player's (steady) hitbox radius
+const PLAYER_SPEED    = 330;   // px per second
+const ENEMY_MIN_R     = 10;
+const ENEMY_MAX_R     = 17;
+const ENEMY_MAX_HP    = 1;     // one bullet hit destroys an enemy
+const MAX_ACTIVE_ENEMIES = 90; // hard bound on memory/render/update work
+const ENEMY_MIN_SPAWN_DISTANCE = 180; // px from the player when geometry permits
+const ENEMY_SPAWN_POSITION_TRIES = 16;
+const ENEMY_SEPARATION_PADDING = 4; // desired extra gap between enemy bodies
+const ENEMY_SEPARATION_SPEED = 90; // max px/s of anti-stacking steering
+const ENEMY_TRAIL_LIFE = 0.28; // seconds a trail point takes to fade out
+const ENEMY_TRAIL_MAX_POINTS = 18; // cap per enemy (keeps things smooth)
+const ENEMY_SPAWN_FLASH_DURATION = 0.30; // seconds a new enemy flashes for
+const STAR_COUNT      = 180;   // background stars
+const COMBO_STEP_SECONDS = 30; // combo: x1 for 0–29s, x2 for 30–59s, x3 for 60–89s, ...
+const SCORE_POINTS_PER_SECOND = 10; // multiplied by the current combo
+const RUN_TITLE_DURATION = 1.25; // seconds the SURVIVE title flashes at run start
+
+/* ---------- Player auto-fire ---------- */
+const BULLET_RADIUS = 4;
+const BULLET_SPEED = 620;              // px per second
+const BULLET_DAMAGE = 1;               // enemies have 1 HP
+const BULLET_FIRE_INTERVAL = 1;        // one four-way volley every second
+const BULLET_OFFSCREEN_MARGIN = 32;    // remove bullets just beyond the arena
+const BULLET_DIRECTIONS = [
+  { x: 0, y: -1 }, // up
+  { x: 1, y: 0 },  // right
+  { x: 0, y: 1 },  // down
+  { x: -1, y: 0 }  // left
+];
+const ENEMY_EXPLOSION_PARTICLES = 14;  // small burst when a bullet kills
+
+/* ---------- Impact effects (visual only — never affect gameplay) ---------- */
+const SCREEN_SHAKE_DURATION = 0.35;      // seconds of shake after death
+const SCREEN_SHAKE_MAX_OFFSET = 14;      // px, at the first instant of impact
+const PLAYER_DEATH_FLASH_DURATION = 0.45; // seconds of player flicker after death
+const PLAYER_DEATH_FLICKER_INTERVAL = 0.05; // seconds between flicker on/off flips
+
+/* ---------- Generated audio (Web Audio API only; no sound files) ---------- */
+const AUDIO_MASTER_VOLUME = 0.8;
+const SPAWN_BEEP_DURATION = 0.06;        // seconds
+const SPAWN_BEEP_VOLUME = 0.04;          // deliberately quiet: it can fire often
+const HUM_BASE_FREQUENCY = 54;           // Hz at Level 1
+const HUM_BASE_PULSE_RATE = 1.4;         // pulses per second at Level 1
+const HUM_BASE_VOLUME = 0.018;           // subtle background level at Level 1
+const ENEMY_BASE_SPEED = 105;  // px per second for new enemies on Level 1
+const BASE_SPAWN_INTERVAL = 0.85; // seconds between spawns on Level 1
+const MIN_SPAWN_INTERVAL  = 0.18; // safety floor so spawning never gets absurd
+
+/* ---------- Difficulty levels ----------
+   The level goes up every 10 seconds survived:
+     Level 1 = 0–9s,  Level 2 = 10–19s,  Level 3 = 20–29s, ...
+   Each level, NEW enemies spawn 15% faster than the previous
+   level (compounding), and enemies spawn 10% more often.
+     Level 1: enemy speed 105.0 px/s · spawn every ~0.85s
+     Level 2: enemy speed 120.8 px/s · spawn every ~0.77s
+     Level 3: enemy speed 138.9 px/s · spawn every ~0.70s
+   Enemies already on screen keep the speed they spawned with. */
+const LEVEL_SECONDS = 10;            // seconds per difficulty level
+const SPEED_MULTIPLIER_PER_LEVEL = 1.15;      // +15% enemy speed per level
+const SPAWN_RATE_MULTIPLIER_PER_LEVEL = 1.10; // +10% spawn rate per level
+
+/* ---------- Game state ---------- */
+const player = {
+  x: 0, y: 0,
+  r: PLAYER_RADIUS
+};
+
+let enemies = [];     // { x, y, r, hp, speed, spawnFlash, trail: [{ x, y, age }] }
+let bullets = [];     // { x, y, prevX, prevY, vx, vy, r }
+let particles = [];   // death burst { x, y, vx, vy, life, maxLife, color }
+let keys = Object.create(null);
+const touchDirections = { up: false, down: false, left: false, right: false };
+const activeTouchPointers = new Map(); // pointerId -> direction (supports multi-touch diagonals)
+
+/* Background stars. Positions are stored as 0–1 fractions of the screen
+   so they survive window resizes; `depth` (0–1) drives twinkle
+   brightness and a slight parallax shift for a sense of depth. */
+const stars = [];
+function initStars() {
+  stars.length = 0;
+  for (let i = 0; i < STAR_COUNT; i++) {
+    stars.push({
+      x: Math.random(),
+      y: Math.random(),
+      r: rand(0.4, 1.7),
+      depth: rand(0.2, 1),
+      phase: rand(0, Math.PI * 2),
+      twinkleSpeed: rand(0.5, 1.8)
+    });
+  }
+}
+
+let state = "start";         // "start" | "playing" | "gameover"
+let survivalTime = 0;        // seconds survived in the current run
+let displayedSecond = -1;    // last whole second shown on the timer
+let displayedCombo = 0;      // last combo multiplier shown (0 = none yet)
+let displayedScore = -1;     // last whole score shown in the HUD
+let displayedLevel = 0;      // last level shown on screen (0 = none yet)
+let levelUpTimer = 0;        // seconds left to show the level-up banner
+let runTitleTimer = 0;       // seconds left to show the SURVIVE run-start title
+let spawnTimer = 0;
+let bulletTimer = BULLET_FIRE_INTERVAL; // first four-way volley after 1s
+let lastTimestamp = 0;
+let animTime = 0;            // ever-advancing clock for visual effects only
+                             // (player pulse, star twinkle — runs even on Game Over)
+let screenShakeTimer = 0;    // seconds of screen shake remaining
+let playerDeathFlashTimer = 0; // seconds of player death-flicker remaining
+let audioCtx = null;         // created lazily from a click/keypress (autoplay rules)
+let audioMasterGain = null;
+let humNodes = null;         // active background-hum nodes, or null when silent
+let humAppliedLevel = 0;     // last difficulty level applied to the hum
+let lastSpawnBeepAt = -Infinity; // audio-clock time of the most recent spawn beep
+
+/* Update the top-left "Time: 0s" display (only when the second changes). */
+function refreshTimer() {
+  const sec = wholeSeconds(survivalTime);
+  if (sec !== displayedSecond) {
+    displayedSecond = sec;
+    timerEl.textContent = formatTime(survivalTime);
+  }
+}
+
+/* ---------- Combo multiplier & score ---------- */
+/* Surviving longer raises the combo: x1 for 0–29s, x2 after 30s,
+   x3 after 60s, and so on. Score is the survival time accumulated
+   segment-by-segment at each segment's multiplier, 10 points/sec:
+   reaching 45s therefore scores 30×1×10 + 15×2×10 = 600. */
+function comboMultiplier() {
+  return Math.floor(survivalTime / COMBO_STEP_SECONDS) + 1;
+}
+
+function currentScore() {
+  const fullSteps = Math.floor(survivalTime / COMBO_STEP_SECONDS);
+  let weightedSeconds = 0;
+  for (let multiplier = 1; multiplier <= fullSteps; multiplier++) {
+    weightedSeconds += COMBO_STEP_SECONDS * multiplier;
+  }
+  weightedSeconds +=
+    (survivalTime - fullSteps * COMBO_STEP_SECONDS) * (fullSteps + 1);
+  return weightedSeconds * SCORE_POINTS_PER_SECOND;
+}
+
+function formatCombo() {
+  return "Combo x" + comboMultiplier() +
+    " · Score: " + Math.floor(currentScore());
+}
+
+/* Update the HUD combo/score only when its displayed value changes;
+   give it a little scale "bump" whenever the multiplier increases. */
+function refreshCombo() {
+  const multiplier = comboMultiplier();
+  const wholeScore = Math.floor(currentScore());
+  if (multiplier === displayedCombo && wholeScore === displayedScore) return;
+
+  const comboIncreased = displayedCombo > 0 && multiplier > displayedCombo;
+  displayedCombo = multiplier;
+  displayedScore = wholeScore;
+  comboEl.textContent = formatCombo();
+
+  if (comboIncreased) {
+    comboEl.classList.remove("bump");
+    void comboEl.offsetWidth; // restart the CSS animation
+    comboEl.classList.add("bump");
+  }
+}
+
+/* ---------- Run-start title ---------- */
+function showRunTitle() {
+  runTitleTimer = RUN_TITLE_DURATION;
+  runTitleEl.classList.remove("visible");
+  void runTitleEl.offsetWidth; // restart the CSS animation on every run
+  runTitleEl.classList.add("visible");
+}
+
+function hideRunTitle() {
+  runTitleTimer = 0;
+  runTitleEl.classList.remove("visible");
+}
+
+function updateRunTitle(dt) {
+  if (runTitleTimer <= 0) return;
+  runTitleTimer = Math.max(0, runTitleTimer - dt);
+  if (runTitleTimer === 0) runTitleEl.classList.remove("visible");
+}
+
+/* ---------- Sound effects (Web Audio API; generated, no files) ---------- */
+/* Browsers only allow audio after a user gesture, so the context is
+   created/resumed from the click or Enter that starts/restarts a run.
+   All failures are swallowed: the game must keep working silently on
+   browsers without Web Audio support. */
+function initAudio() {
+  try {
+    if (!audioCtx || audioCtx.state === "closed" || !audioMasterGain) {
+      const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextCtor) return false;
+
+      // Build into locals first: a failure part-way through must never
+      // leave a half-initialized context stored in the globals.
+      const newContext = new AudioContextCtor();
+      const newMasterGain = newContext.createGain();
+      newMasterGain.gain.value = AUDIO_MASTER_VOLUME;
+      newMasterGain.connect(newContext.destination);
+      audioCtx = newContext;
+      audioMasterGain = newMasterGain;
+      humNodes = null;
+      humAppliedLevel = 0;
+    }
+
+    // Chrome uses "suspended"; Safari may also report "interrupted"
+    // after a route/call interruption. The per-frame hum watchdog in
+    // updateBackgroundHum covers browsers whose resume() has no Promise.
+    if (audioCtx.state === "suspended" || audioCtx.state === "interrupted") {
+      const resumePromise = audioCtx.resume();
+      if (resumePromise && typeof resumePromise.then === "function") {
+        resumePromise.then(function () {
+          if (state === "playing") startBackgroundHum();
+        }).catch(function () { /* remain silent */ });
+      }
+    }
+    return true;
+  } catch (e) {
+    audioCtx = null;
+    audioMasterGain = null;
+    humNodes = null;
+    humAppliedLevel = 0;
+    return false;
+  }
+}
+
+function audioIsRunning() {
+  return !!(audioCtx && audioMasterGain && audioCtx.state === "running");
+}
+
+/* Short, soft blip for each enemy spawn. Its pitch rises slightly
+   with the difficulty level, reinforcing the level-up feedback. */
+function playSpawnBeep() {
+  if (!audioIsRunning() || state !== "playing") return;
+  const now = audioCtx.currentTime;
+  // Enemies never normally spawn faster than ~0.135s apart; this tiny
+  // guard only prevents two code paths stacking identical clicks.
+  if (now - lastSpawnBeepAt < 0.035) return;
+  lastSpawnBeepAt = now;
+
+  try {
+    const oscillator = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const startFrequency = Math.min(880, 540 + (currentLevel() - 1) * 28);
+
+    oscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(startFrequency, now);
+    oscillator.frequency.exponentialRampToValueAtTime(
+      Math.max(220, startFrequency * 0.72), now + SPAWN_BEEP_DURATION
+    );
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(SPAWN_BEEP_VOLUME, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + SPAWN_BEEP_DURATION);
+
+    oscillator.connect(gain);
+    gain.connect(audioMasterGain);
+    oscillator.start(now);
+    oscillator.stop(now + SPAWN_BEEP_DURATION + 0.02);
+    oscillator.onended = function () {
+      try { oscillator.disconnect(); gain.disconnect(); } catch (e) { /* already gone */ }
+    };
+  } catch (e) { /* keep the game silent rather than break it */ }
+}
+
+/* Low sine drop plus a filtered noise burst: a soft, weighty thud. */
+function playDeathThud() {
+  if (!audioIsRunning()) return;
+  const now = audioCtx.currentTime;
+
+  try {
+    const oscillator = audioCtx.createOscillator();
+    const filter = audioCtx.createBiquadFilter();
+    const gain = audioCtx.createGain();
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(135, now);
+    oscillator.frequency.exponentialRampToValueAtTime(34, now + 0.32);
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(240, now);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.5, now + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+
+    oscillator.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioMasterGain);
+    oscillator.start(now);
+    oscillator.stop(now + 0.42);
+    oscillator.onended = function () {
+      try { oscillator.disconnect(); filter.disconnect(); gain.disconnect(); } catch (e) { /* already gone */ }
+    };
+
+    // Generated noise gives the impact a little physical "body".
+    const sampleRate = audioCtx.sampleRate || 44100;
+    const noiseDuration = 0.18;
+    const buffer = audioCtx.createBuffer(1, Math.ceil(sampleRate * noiseDuration), sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    }
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buffer;
+    const noiseFilter = audioCtx.createBiquadFilter();
+    noiseFilter.type = "lowpass";
+    noiseFilter.frequency.setValueAtTime(420, now);
+    const noiseGain = audioCtx.createGain();
+    noiseGain.gain.setValueAtTime(0.0001, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.16, now + 0.01);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + noiseDuration);
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(audioMasterGain);
+    noise.start(now);
+    noise.stop(now + noiseDuration + 0.02);
+    noise.onended = function () {
+      try { noise.disconnect(); noiseFilter.disconnect(); noiseGain.disconnect(); } catch (e) { /* already gone */ }
+    };
+  } catch (e) { /* keep the game silent rather than break it */ }
+}
+
+/* The hum is a low oscillator pair whose volume is gently pulsed by
+   an LFO. Each difficulty level makes that pulse 18% faster (and the
+   pitch/volume creep up slightly), capped so it stays subtle. */
+function humSettingsForLevel(level) {
+  const steps = Math.max(0, level - 1);
+  return {
+    frequency: Math.min(96, HUM_BASE_FREQUENCY * Math.pow(1.045, steps)),
+    pulseRate: Math.min(8, HUM_BASE_PULSE_RATE * Math.pow(1.18, steps)),
+    gain: Math.min(0.027, HUM_BASE_VOLUME + steps * 0.001)
+  };
+}
+
+function updateBackgroundHum(force) {
+  if (state !== "playing" || !audioCtx || !audioMasterGain) return;
+
+  // Self-healing path for first-click autoplay timing: if resume()
+  // finished after startGame()'s synchronous startBackgroundHum()
+  // call (or a browser returns no resume Promise), the next frame
+  // notices the running context and starts the hum here.
+  if (!humNodes) {
+    if (audioIsRunning()) startBackgroundHum();
+    return;
+  }
+  if (!audioIsRunning()) return;
+
+  const level = currentLevel();
+  if (!force && level === humAppliedLevel) return;
+  humAppliedLevel = level;
+
+  const settings = humSettingsForLevel(level);
+  const now = audioCtx.currentTime;
+  humNodes.oscillator.frequency.setTargetAtTime(settings.frequency, now, 0.25);
+  humNodes.harmonic.frequency.setTargetAtTime(settings.frequency * 2, now, 0.25);
+  humNodes.pulse.frequency.setTargetAtTime(settings.pulseRate, now, 0.25);
+  humNodes.gain.gain.setTargetAtTime(settings.gain, now, 0.25);
+  humNodes.pulseGain.gain.setTargetAtTime(settings.gain * 0.35, now, 0.25);
+  humNodes.filter.frequency.setTargetAtTime(210 + settings.frequency, now, 0.25);
+}
+
+function startBackgroundHum() {
+  if (!audioIsRunning() || state !== "playing") return;
+  if (humNodes) { updateBackgroundHum(true); return; }
+
+  try {
+    const settings = humSettingsForLevel(currentLevel());
+    const oscillator = audioCtx.createOscillator();
+    oscillator.type = "sine";
+    oscillator.frequency.value = settings.frequency;
+
+    const harmonic = audioCtx.createOscillator();
+    harmonic.type = "triangle";
+    harmonic.frequency.value = settings.frequency * 2;
+    const harmonicGain = audioCtx.createGain();
+    harmonicGain.gain.value = 0.3;
+
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 210 + settings.frequency;
+    filter.Q.value = 0.6;
+
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.0001; // updateBackgroundHum fades this in
+    const pulse = audioCtx.createOscillator();
+    pulse.type = "sine";
+    pulse.frequency.value = settings.pulseRate;
+    const pulseGain = audioCtx.createGain();
+    pulseGain.gain.value = settings.gain * 0.35;
+
+    oscillator.connect(filter);
+    harmonic.connect(harmonicGain);
+    harmonicGain.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioMasterGain);
+    pulse.connect(pulseGain);
+    pulseGain.connect(gain.gain); // LFO gently pulses the hum volume
+
+    oscillator.start();
+    harmonic.start();
+    pulse.start();
+
+    humNodes = {
+      oscillator: oscillator,
+      harmonic: harmonic,
+      harmonicGain: harmonicGain,
+      filter: filter,
+      gain: gain,
+      pulse: pulse,
+      pulseGain: pulseGain
+    };
+    humAppliedLevel = 0;
+    updateBackgroundHum(true);
+  } catch (e) {
+    humNodes = null;
+  }
+}
+
+function disconnectHumNodes(nodes) {
+  const allNodes = [
+    nodes.oscillator, nodes.harmonic, nodes.harmonicGain, nodes.filter,
+    nodes.gain, nodes.pulse, nodes.pulseGain
+  ];
+  allNodes.forEach(function (node) {
+    try { node.disconnect(); } catch (e) { /* already gone */ }
+  });
+}
+
+function stopBackgroundHum() {
+  if (!humNodes || !audioCtx) return;
+  const nodes = humNodes;
+  humNodes = null;
+  humAppliedLevel = 0;
+
+  let stopScheduled = false;
+  try {
+    const now = audioCtx.currentTime;
+    const stopAt = now + 0.28;
+    // Let the audio clock itself tell us when cleanup is safe. This
+    // replaces a wall-clock timeout: no stray timer outlives a run,
+    // and the closure is released as soon as the source truly ends.
+    nodes.oscillator.onended = function () { disconnectHumNodes(nodes); };
+    nodes.gain.gain.cancelScheduledValues(now);
+    nodes.gain.gain.setTargetAtTime(0.0001, now, 0.05);
+    nodes.oscillator.stop(stopAt);
+    nodes.harmonic.stop(stopAt);
+    nodes.pulse.stop(stopAt);
+    stopScheduled = true;
+
+    // A suspended/interrupted clock may not advance to onended, but
+    // it is also silent, so disconnecting immediately cannot click.
+    if (audioCtx.state !== "running") disconnectHumNodes(nodes);
+  } catch (e) {
+    if (!stopScheduled) disconnectHumNodes(nodes);
+  }
+}
+
+/* ---------- Impact effects ---------- */
+/* Kick off the death "juice": a brief screen shake plus a short
+   flickering after-image where the player died. */
+function startDeathEffects() {
+  screenShakeTimer = SCREEN_SHAKE_DURATION;
+  playerDeathFlashTimer = PLAYER_DEATH_FLASH_DURATION;
+}
+
+/* Count impact effects down. Called for every frame, including after
+   Game Over, so they can finish behind the overlay. */
+function updateImpactEffects(dt) {
+  if (screenShakeTimer > 0) screenShakeTimer = Math.max(0, screenShakeTimer - dt);
+  if (playerDeathFlashTimer > 0) {
+    playerDeathFlashTimer = Math.max(0, playerDeathFlashTimer - dt);
+  }
+}
+
+/* Random offset for this frame's shake. It is strongest at impact and
+   decays quadratically, so the motion settles quickly and smoothly. */
+function getScreenShakeOffset() {
+  if (screenShakeTimer <= 0) return { x: 0, y: 0 };
+  const progress = screenShakeTimer / SCREEN_SHAKE_DURATION; // 1 → 0
+  const magnitude = SCREEN_SHAKE_MAX_OFFSET * progress * progress;
+  return { x: rand(-magnitude, magnitude), y: rand(-magnitude, magnitude) };
+}
+
+/* 1 the instant an enemy spawns, fading to 0 over its flash duration. */
+function enemySpawnFlashProgress(e) {
+  return clamp((e.spawnFlash || 0) / ENEMY_SPAWN_FLASH_DURATION, 0, 1);
+}
+
+/* ---------- Difficulty level ---------- */
+/* Level 1 for the first 10 seconds, Level 2 from 10s, Level 3 from 20s, ... */
+function currentLevel() {
+  return Math.floor(survivalTime / LEVEL_SECONDS) + 1;
+}
+
+function formatLevel(lvl) { return "Level " + lvl; }
+
+/* New enemies are 15% faster than the previous level, compounding:
+   Level 1 = ×1.00, Level 2 = ×1.15, Level 3 = ×1.32, Level 4 = ×1.52, ... */
+function enemySpeedMultiplier() {
+  return Math.pow(SPEED_MULTIPLIER_PER_LEVEL, currentLevel() - 1);
+}
+
+/* Enemies spawn 10% more often each level (interval shrinks accordingly). */
+function currentSpawnInterval() {
+  const interval = BASE_SPAWN_INTERVAL /
+    Math.pow(SPAWN_RATE_MULTIPLIER_PER_LEVEL, currentLevel() - 1);
+  return Math.max(MIN_SPAWN_INTERVAL, interval);
+}
+
+function hideLevelUp() {
+  levelUpTimer = 0;
+  levelUpEl.classList.remove("visible");
+}
+
+function showLevelUp(lvl) {
+  levelUpEl.textContent = "Level Up! Level " + lvl;
+  levelUpEl.classList.remove("visible");
+  void levelUpEl.offsetWidth; // restart the CSS pop animation
+  levelUpEl.classList.add("visible");
+  levelUpTimer = 1.6; // seconds
+}
+
+/* Update the on-screen "Level N" display; flashes a banner on level-up. */
+function refreshLevel() {
+  const lvl = currentLevel();
+  if (lvl !== displayedLevel) {
+    displayedLevel = lvl;
+    levelEl.textContent = formatLevel(lvl);
+    if (state === "playing" && lvl > 1) showLevelUp(lvl);
+  }
+}
+
+function resetGame() {
+  // Reset every run-scoped value here. The persistent best time is
+  // intentionally the one score-related value that survives replay.
+  player.x = W / 2;
+  player.y = H / 2;
+  enemies.length = 0;
+  bullets.length = 0;
+  particles.length = 0;
+  clearTouchControls(); // a held D-pad button must not carry into the new run
+  screenShakeTimer = 0;
+  playerDeathFlashTimer = 0;
+  lastSpawnBeepAt = -Infinity;
+  lastTimestamp = 0;      // next animation frame gets dt = 0, never stale time
+  survivalTime = 0;       // currentScore()/combo are derived from this
+  displayedSecond = -1;   // force the timer back to "Time: 0s"
+  refreshTimer();
+  displayedCombo = 0;     // force the HUD back to "Combo x1 · Score: 0"
+  displayedScore = -1;
+  refreshCombo();
+  comboEl.classList.remove("bump");
+  displayedLevel = 0;     // force the display back to "Level 1"
+  state = "playing";
+  refreshLevel();
+  hideLevelUp();
+  showRunTitle();         // brief SURVIVE title at the start of each run
+  spawnTimer = 0.6; // brief grace period before the first enemy
+  bulletTimer = BULLET_FIRE_INTERVAL; // restart the one-second volley cadence
+  finalStatsEl.textContent = formatSurvived(0);
+  finalScoreEl.textContent = "Score: 0 · Combo x1";
+  newBestEl.style.display = "none";
+  startScreenEl.classList.remove("visible");
+  gameOverEl.classList.remove("visible");
+  hintEl.style.opacity = "1";
+}
+
+/* Prepare a clean run, then hold it on the start screen. Gameplay
+   (timer, spawning, movement, collisions) only runs in "playing"
+   state, so nothing advances until startGame() is called. */
+function showStartScreen() {
+  resetGame();
+  state = "start";
+  hideRunTitle();       // the full start screen already shows SURVIVE
+  stopBackgroundHum();
+  refreshBest();        // shows "Best: 34s" only when a score exists
+  startScreenEl.classList.add("visible");
+}
+
+/* Begin gameplay from the start screen (click or Enter). This is a
+   user gesture, making it the right moment to unlock Web Audio.
+   Guarded so stray clicks/keys during a run can never restart it. */
+function startGame() {
+  if (state !== "start") return;
+  initAudio();
+  resetGame();
+  startBackgroundHum();
+}
+
+/* Restart from Game Over. Also always reached via a user gesture
+   (button click or keypress), so it can unlock/resume audio too. */
+function restartGame() {
+  initAudio();
+  resetGame();
+  startBackgroundHum();
+}
+
+function randomEdgePosition(margin) {
+  // Pick a random edge: 0 = top, 1 = right, 2 = bottom, 3 = left.
+  const edge = Math.floor(Math.random() * 4);
+  switch (edge) {
+    case 0:  return { x: rand(0, W), y: -margin };       // top
+    case 1:  return { x: W + margin, y: rand(0, H) };    // right
+    case 2:  return { x: rand(0, W), y: H + margin };    // bottom
+    default: return { x: -margin, y: rand(0, H) };       // left
+  }
+}
+
+function chooseSpawnPosition(r, margin, ignoredEnemy) {
+  // A player camping on an edge could otherwise have an enemy appear
+  // only a few pixels away. Try several edge points and prefer one at
+  // a fair distance that is not already inside another enemy. Four
+  // deterministic edge midpoints are included as a fallback, so the
+  // result is as far from the player as the arena geometry permits.
+  const desiredDistance = Math.min(
+    ENEMY_MIN_SPAWN_DISTANCE,
+    Math.max(48, Math.hypot(W, H) * 0.35)
+  );
+  const desiredDistanceSq = desiredDistance * desiredDistance;
+  const candidates = [
+    { x: W / 2, y: -margin },
+    { x: W + margin, y: H / 2 },
+    { x: W / 2, y: H + margin },
+    { x: -margin, y: H / 2 }
+  ];
+  for (let i = 0; i < ENEMY_SPAWN_POSITION_TRIES; i++) {
+    candidates.push(randomEdgePosition(margin));
+  }
+
+  let farthest = candidates[0];
+  let farthestDistanceSq = -1;
+  const safeCandidates = [];
+
+  candidates.forEach(function (candidate) {
+    const playerDx = candidate.x - player.x;
+    const playerDy = candidate.y - player.y;
+    const playerDistanceSq = playerDx * playerDx + playerDy * playerDy;
+    if (playerDistanceSq > farthestDistanceSq) {
+      farthestDistanceSq = playerDistanceSq;
+      farthest = candidate;
+    }
+    if (playerDistanceSq < desiredDistanceSq) return;
+
+    let overlapsEnemy = false;
+    for (let i = 0; i < enemies.length; i++) {
+      const other = enemies[i];
+      if (other === ignoredEnemy) continue; // its old position is being vacated
+      const minDistance = r + other.r + ENEMY_SEPARATION_PADDING;
+      const dx = candidate.x - other.x;
+      const dy = candidate.y - other.y;
+      if (dx * dx + dy * dy < minDistance * minDistance) {
+        overlapsEnemy = true;
+        break;
+      }
+    }
+    if (!overlapsEnemy) safeCandidates.push(candidate);
+  });
+
+  if (safeCandidates.length > 0) {
+    return safeCandidates[Math.floor(Math.random() * safeCandidates.length)];
+  }
+  return farthest;
+}
+
+function spawnEnemy() {
+  // Bound total enemy/trail/render work during arbitrarily long runs.
+  // At the cap, recycle the enemy farthest from the player (the least
+  // immediate threat) instead of allocating forever — or worse,
+  // refusing spawns and freezing speed progression. The recycled
+  // enemy re-enters from a safe edge at the current level's speed.
+  let enemyToRecycle = null;
+  if (enemies.length >= MAX_ACTIVE_ENEMIES) {
+    let farthestDistanceSq = -1;
+    for (let i = 0; i < enemies.length; i++) {
+      const candidate = enemies[i];
+      const dx = candidate.x - player.x;
+      const dy = candidate.y - player.y;
+      const distanceSq = dx * dx + dy * dy;
+      if (distanceSq > farthestDistanceSq) {
+        farthestDistanceSq = distanceSq;
+        enemyToRecycle = candidate;
+      }
+    }
+  }
+
+  const r = rand(ENEMY_MIN_R, ENEMY_MAX_R);
+  const margin = r + 8;
+  const position = chooseSpawnPosition(r, margin, enemyToRecycle);
+
+  // Only new/recycled spawns get the current level's speed (+15% per
+  // level); other enemies keep the speed they entered with.
+  const base = ENEMY_BASE_SPEED * enemySpeedMultiplier();
+  const speed = base * rand(0.85, 1.15);
+
+  if (enemyToRecycle) {
+    enemyToRecycle.x = position.x;
+    enemyToRecycle.y = position.y;
+    enemyToRecycle.prevX = position.x;
+    enemyToRecycle.prevY = position.y;
+    enemyToRecycle.vx = 0;
+    enemyToRecycle.vy = 0;
+    enemyToRecycle.r = r;
+    enemyToRecycle.hp = ENEMY_MAX_HP;
+    enemyToRecycle.speed = speed;
+    enemyToRecycle.spawnFlash = ENEMY_SPAWN_FLASH_DURATION;
+    enemyToRecycle.trail.length = 0;
+  } else {
+    enemies.push({
+      x: position.x, y: position.y,
+      prevX: position.x, prevY: position.y, // for swept collision checks
+      vx: 0, vy: 0,                         // scratch velocity for this frame
+      r: r,
+      hp: ENEMY_MAX_HP,
+      speed: speed,
+      spawnFlash: ENEMY_SPAWN_FLASH_DURATION, // brief flash as it appears
+      trail: []   // recent positions, drawn as a faint fading path
+    });
+  }
+  playSpawnBeep();
+  return true;
+}
+
+/* ---------- Input ---------- */
+const GAME_KEYS = [
+  "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
+  "w", "a", "s", "d", "W", "A", "S", "D", " "
+];
+
+/* Prime Web Audio on pointer-down, a beat before the click that
+   starts play. This does not start gameplay (click/Enter still do);
+   it gives a suspended context the whole tap to finish resuming.
+   The same handler also recovers a context suspended mid-run. */
+window.addEventListener("pointerdown", function () {
+  initAudio();
+}, { passive: true });
+
+window.addEventListener("keydown", function (e) {
+  if (GAME_KEYS.indexOf(e.key) !== -1) e.preventDefault(); // stop page scrolling
+  keys[e.key.length === 1 ? e.key.toLowerCase() : e.key] = true;
+
+  if (state === "start" && e.key === "Enter") {
+    startGame();
+    return;
+  }
+
+  if (state === "gameover" && (e.key === "Enter" || e.key === " " || e.key === "r" || e.key === "R")) {
+    restartGame();
+  }
+});
+
+window.addEventListener("keyup", function (e) {
+  keys[e.key.length === 1 ? e.key.toLowerCase() : e.key] = false;
+});
+
+// If the window loses focus, forget held keys/touches so the player doesn't drift.
+window.addEventListener("blur", function () {
+  keys = Object.create(null);
+  clearTouchControls();
+});
+
+/* On-screen D-pad. Pointer Events give us reliable multi-touch:
+   each physical contact is tracked by pointerId, so holding Up+Right
+   with two thumbs moves diagonally (updatePlayer normalizes speed),
+   and releasing one finger keeps the other direction active. */
+const touchButtons = [
+  { element: touchUpBtn, direction: "up" },
+  { element: touchDownBtn, direction: "down" },
+  { element: touchLeftBtn, direction: "left" },
+  { element: touchRightBtn, direction: "right" }
+];
+
+function refreshTouchDirection(direction, element) {
+  let isActive = false;
+  activeTouchPointers.forEach(function (activeDirection) {
+    if (activeDirection === direction) isActive = true;
+  });
+  touchDirections[direction] = isActive;
+  element.classList.toggle("active", isActive);
+  element.setAttribute("aria-pressed", isActive ? "true" : "false");
+}
+
+function releaseTouchPointer(e) {
+  const direction = activeTouchPointers.get(e.pointerId);
+  if (!direction) return;
+  activeTouchPointers.delete(e.pointerId);
+  for (let i = 0; i < touchButtons.length; i++) {
+    if (touchButtons[i].direction === direction) {
+      refreshTouchDirection(direction, touchButtons[i].element);
+      break;
+    }
+  }
+}
+
+function clearTouchControls() {
+  activeTouchPointers.clear();
+  touchButtons.forEach(function (button) {
+    touchDirections[button.direction] = false;
+    button.element.classList.remove("active");
+    button.element.setAttribute("aria-pressed", "false");
+  });
+}
+
+touchButtons.forEach(function (button) {
+  const element = button.element;
+  const direction = button.direction;
+
+  element.addEventListener("pointerdown", function (e) {
+    e.preventDefault(); // no scrolling, zooming, focus ring, or synthetic mouse drift
+    activeTouchPointers.set(e.pointerId, direction);
+    if (element.setPointerCapture) {
+      try { element.setPointerCapture(e.pointerId); } catch (err) { /* capture is optional */ }
+    }
+    refreshTouchDirection(direction, element);
+  });
+  element.addEventListener("pointerup", releaseTouchPointer);
+  element.addEventListener("pointercancel", releaseTouchPointer);
+  element.addEventListener("lostpointercapture", releaseTouchPointer);
+  element.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+});
+
+playAgainBtn.addEventListener("click", restartGame);
+
+/* Clicking the start screen (or anywhere, since it covers the whole
+   window) starts the game. startGame() is guarded, so the click
+   bubbling from the overlay to the window cannot start it twice. */
+startScreenEl.addEventListener("click", startGame);
+window.addEventListener("click", function () {
+  if (state === "start") startGame();
+});
+
+/* ---------- Update ---------- */
+function updatePlayer(dt) {
+  let dx = 0, dy = 0;
+  if (keys["ArrowLeft"]  || keys["a"] || touchDirections.left)  dx -= 1;
+  if (keys["ArrowRight"] || keys["d"] || touchDirections.right) dx += 1;
+  if (keys["ArrowUp"]    || keys["w"] || touchDirections.up)    dy -= 1;
+  if (keys["ArrowDown"]  || keys["s"] || touchDirections.down)  dy += 1;
+
+  if (dx !== 0 || dy !== 0) {
+    // Normalize so diagonal movement isn't faster than straight movement.
+    const len = Math.hypot(dx, dy);
+    dx /= len; dy /= len;
+    player.x += dx * PLAYER_SPEED * dt;
+    player.y += dy * PLAYER_SPEED * dt;
+    hintEl.style.opacity = "0.35";
+  }
+
+  // Keep the player inside the arena.
+  player.x = clamp(player.x, player.r, W - player.r);
+  player.y = clamp(player.y, player.r, H - player.r);
+}
+
+/* ---------- Player bullets ---------- */
+/* Fire one bullet in each cardinal direction. Bullets start just
+   outside the player's body so the volley reads as emitted from the
+   player without being hidden underneath the glowing circle. */
+function fireBullets() {
+  const spawnOffset = player.r + BULLET_RADIUS + 2;
+  for (let i = 0; i < BULLET_DIRECTIONS.length; i++) {
+    const dir = BULLET_DIRECTIONS[i];
+    const x = player.x + dir.x * spawnOffset;
+    const y = player.y + dir.y * spawnOffset;
+    bullets.push({
+      x: x, y: y,
+      prevX: x, prevY: y,
+      vx: dir.x * BULLET_SPEED,
+      vy: dir.y * BULLET_SPEED,
+      r: BULLET_RADIUS
+    });
+  }
+}
+
+/* Automatic fire control: exactly one four-way volley per second.
+   The while loop preserves cadence if a test or a very long frame
+   supplies a larger-than-usual dt; the real loop caps dt at 0.05s. */
+function updateShooting(dt) {
+  bulletTimer -= dt;
+  while (bulletTimer <= 0) {
+    fireBullets();
+    bulletTimer += BULLET_FIRE_INTERVAL;
+  }
+}
+
+/* Swept bullet-vs-enemy collision. Both objects move during the
+   frame, so solve their relative movement segment against the sum
+   of their radii. Returns the segment time (0–1) at which contact
+   begins, or null for a miss. Returning the time lets updateBullets
+   consume the shot on the earliest enemy along its path and also
+   prevents a 620px/s bullet from tunneling through a small enemy. */
+function bulletEnemyHitTime(b, e) {
+  const bulletStartX = typeof b.prevX === "number" ? b.prevX : b.x;
+  const bulletStartY = typeof b.prevY === "number" ? b.prevY : b.y;
+  const enemyStartX = typeof e.prevX === "number" ? e.prevX : e.x;
+  const enemyStartY = typeof e.prevY === "number" ? e.prevY : e.y;
+
+  const relativeStartX = bulletStartX - enemyStartX;
+  const relativeStartY = bulletStartY - enemyStartY;
+  const relativeMoveX = (b.x - e.x) - relativeStartX;
+  const relativeMoveY = (b.y - e.y) - relativeStartY;
+  const hitDistance = b.r + e.r;
+
+  const a = relativeMoveX * relativeMoveX + relativeMoveY * relativeMoveY;
+  const c = relativeStartX * relativeStartX + relativeStartY * relativeStartY -
+            hitDistance * hitDistance;
+  if (c < 0) return 0;                 // already overlapping at frame start
+  if (a <= 0.000001) return null;      // no relative movement and no overlap
+
+  const bTerm = 2 * (relativeStartX * relativeMoveX +
+                     relativeStartY * relativeMoveY);
+  const discriminant = bTerm * bTerm - 4 * a * c;
+  if (discriminant <= 0) return null;  // miss (or a mere tangent graze)
+  const hitTime = (-bTerm - Math.sqrt(discriminant)) / (2 * a);
+  return (hitTime >= 0 && hitTime <= 1) ? hitTime : null;
+}
+
+function bulletHitsEnemy(b, e) {
+  return bulletEnemyHitTime(b, e) !== null;
+}
+
+/* Small red/orange burst at a destroyed enemy's position. This uses
+   the same particle lifecycle/rendering as the player's death burst,
+   but with fewer, shorter-lived particles. */
+function spawnEnemyExplosion(e) {
+  const colors = ["#ffffff", "#fca5a5", "#ef4444", "#f97316"];
+  for (let i = 0; i < ENEMY_EXPLOSION_PARTICLES; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = rand(70, 280);
+    particles.push({
+      x: e.x, y: e.y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0,
+      maxLife: rand(0.28, 0.60),
+      size: rand(2, 4.5),
+      color: colors[Math.floor(Math.random() * colors.length)]
+    });
+  }
+}
+
+/* Apply bullet damage. ENEMY_MAX_HP and BULLET_DAMAGE are both 1,
+   so the first hit destroys the enemy and creates its explosion. */
+function damageEnemyAt(enemyIndex, damage) {
+  const e = enemies[enemyIndex];
+  if (!e) return false;
+  e.hp = (typeof e.hp === "number" ? e.hp : ENEMY_MAX_HP) - damage;
+  if (e.hp > 0) return false;
+  spawnEnemyExplosion(e);
+  enemies.splice(enemyIndex, 1);
+  return true;
+}
+
+function updateBullets(dt) {
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+    b.prevX = b.x;
+    b.prevY = b.y;
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+
+    // A bullet is consumed by the first enemy it hits. Resolve this
+    // before off-screen culling so a shot crossing a just-spawned
+    // enemy at the edge still registers during that final segment.
+    let hitEnemyIndex = -1;
+    let earliestHitTime = Infinity;
+    for (let j = 0; j < enemies.length; j++) {
+      const hitTime = bulletEnemyHitTime(b, enemies[j]);
+      if (hitTime !== null && hitTime < earliestHitTime) {
+        earliestHitTime = hitTime;
+        hitEnemyIndex = j;
+      }
+    }
+    if (hitEnemyIndex !== -1) {
+      damageEnemyAt(hitEnemyIndex, BULLET_DAMAGE);
+      bullets.splice(i, 1);
+      continue;
+    }
+
+    if (b.x < -BULLET_OFFSCREEN_MARGIN || b.x > W + BULLET_OFFSCREEN_MARGIN ||
+        b.y < -BULLET_OFFSCREEN_MARGIN || b.y > H + BULLET_OFFSCREEN_MARGIN) {
+      bullets.splice(i, 1);
+    }
+  }
+}
+
+function updateEnemies(dt) {
+  // First pass: compute every velocity from the same starting layout.
+  // Seek the player, plus a capped separation steer away from nearby
+  // enemies. Without separation, homing enemies spawned along similar
+  // paths converge into one perfectly stacked blob.
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+
+    // Count down the brief spawn flash (purely visual).
+    if (e.spawnFlash > 0) e.spawnFlash = Math.max(0, e.spawnFlash - dt);
+
+    // Age out old trail points (purely visual; see drawEnemyTrails).
+    for (let j = e.trail.length - 1; j >= 0; j--) {
+      e.trail[j].age += dt;
+      if (e.trail[j].age >= ENEMY_TRAIL_LIFE) e.trail.splice(j, 1);
+    }
+
+    const seekDx = player.x - e.x;
+    const seekDy = player.y - e.y;
+    const seekDistance = Math.hypot(seekDx, seekDy) || 1;
+    let vx = (seekDx / seekDistance) * e.speed;
+    let vy = (seekDy / seekDistance) * e.speed;
+
+    let separationX = 0;
+    let separationY = 0;
+    for (let j = 0; j < enemies.length; j++) {
+      if (j === i) continue;
+      const other = enemies[j];
+      let awayX = e.x - other.x;
+      let awayY = e.y - other.y;
+      const minDistance = e.r + other.r + ENEMY_SEPARATION_PADDING;
+      let distanceSq = awayX * awayX + awayY * awayY;
+      if (distanceSq >= minDistance * minDistance) continue;
+
+      let distance;
+      if (distanceSq < 0.0001) {
+        // Exactly stacked: choose opposite deterministic directions
+        // for the pair (golden-angle spread handles larger stacks).
+        const pairAngle = (Math.min(i, j) + 1) * 2.399963229728653;
+        const sign = i < j ? 1 : -1;
+        awayX = Math.cos(pairAngle) * sign;
+        awayY = Math.sin(pairAngle) * sign;
+        distance = 1;
+        distanceSq = 1;
+      } else {
+        distance = Math.sqrt(distanceSq);
+      }
+      const strength = 1 - Math.min(distance, minDistance) / minDistance;
+      separationX += (awayX / distance) * strength;
+      separationY += (awayY / distance) * strength;
+    }
+
+    const separationLength = Math.hypot(separationX, separationY);
+    if (separationLength > 0.0001) {
+      const separationSpeed = Math.min(1, separationLength) *
+        ENEMY_SEPARATION_SPEED;
+      vx += (separationX / separationLength) * separationSpeed;
+      vy += (separationY / separationLength) * separationSpeed;
+    }
+
+    // Reuse scratch fields instead of allocating a velocity object
+    // for every enemy on every frame.
+    e.vx = vx;
+    e.vy = vy;
+  }
+
+  // Second pass: apply movement and remember the swept segment's
+  // start. Later levels can move an enemy farther than the combined
+  // radii in one capped frame, so endpoint-only collision could tunnel.
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    e.prevX = e.x;
+    e.prevY = e.y;
+    e.x += e.vx * dt;
+    e.y += e.vy * dt;
+
+    // Record where the enemy has been, so it leaves a faint trail.
+    e.trail.push({ x: e.x, y: e.y, age: 0 });
+    if (e.trail.length > ENEMY_TRAIL_MAX_POINTS) {
+      e.trail.splice(0, e.trail.length - ENEMY_TRAIL_MAX_POINTS);
+    }
+  }
+}
+
+/* Swept circle collision: distance from the player to the enemy's
+   movement segment this frame, not just its endpoint. Uses the
+   player's steady base radius; the pulse remains visual only. */
+function enemyHitsPlayer(e) {
+  const startX = typeof e.prevX === "number" ? e.prevX : e.x;
+  const startY = typeof e.prevY === "number" ? e.prevY : e.y;
+  const segmentX = e.x - startX;
+  const segmentY = e.y - startY;
+  const segmentLengthSq = segmentX * segmentX + segmentY * segmentY;
+
+  let closestT = 0;
+  if (segmentLengthSq > 0.000001) {
+    closestT = clamp(
+      ((player.x - startX) * segmentX + (player.y - startY) * segmentY) /
+        segmentLengthSq,
+      0, 1
+    );
+  }
+  const closestX = startX + segmentX * closestT;
+  const closestY = startY + segmentY * closestT;
+  const dx = player.x - closestX;
+  const dy = player.y - closestY;
+  const hitDist = e.r + player.r;
+  return (dx * dx + dy * dy) < (hitDist * hitDist);
+}
+
+function spawnDeathParticles() {
+  const colors = ["#ffffff", "#e0f2fe", "#bae6fd", "#ef4444"];
+  for (let i = 0; i < 42; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = rand(60, 360);
+    particles.push({
+      x: player.x, y: player.y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0,
+      maxLife: rand(0.4, 1.0),
+      size: rand(2, 5),
+      color: colors[Math.floor(Math.random() * colors.length)]
+    });
+  }
+}
+
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.life += dt;
+    if (p.life >= p.maxLife) { particles.splice(i, 1); continue; }
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vx *= (1 - 2.2 * dt); // drag
+    p.vy *= (1 - 2.2 * dt);
+  }
+}
+
+function gameOver() {
+  if (state === "gameover") return; // one death = one thud/particle burst/score write
+  state = "gameover";
+  bullets.length = 0; // live shots do not hang frozen behind Game Over
+  clearTouchControls(); // release any D-pad direction held at impact
+  hideLevelUp();
+  stopBackgroundHum();
+  playDeathThud();
+  startDeathEffects();  // screen shake + flickering player after-image
+  spawnDeathParticles();
+
+  // After each run, compare the survived time to the previous best.
+  // Only a longer run replaces the local high score.
+  const isNewBest = survivalTime > best;
+  if (isNewBest) {
+    best = survivalTime;
+    saveBest();
+  }
+  // Show the (possibly just-updated) high score, e.g. "Best: 34s",
+  // both in the HUD and on the Game Over screen below.
+  refreshBest();
+
+  // Freeze the timer/level at their final values and report the time,
+  // e.g. "You survived 12 seconds".
+  refreshTimer();
+  refreshLevel();
+  refreshCombo();
+  finalStatsEl.textContent = formatSurvived(survivalTime);
+  finalScoreEl.textContent =
+    "Score: " + Math.floor(currentScore()) + " · Combo x" + comboMultiplier();
+  newBestEl.style.display = isNewBest ? "block" : "none";
+  gameOverEl.classList.add("visible");
+  playAgainBtn.focus();
+}
+
+function update(dt) {
+  animTime += dt;   // drives pulse/twinkle visuals, even after Game Over
+  updateImpactEffects(dt); // let death shake/flicker finish after Game Over
+  updateParticles(dt);
+
+  // Fade out the level-up banner after a moment.
+  if (levelUpTimer > 0) {
+    levelUpTimer -= dt;
+    if (levelUpTimer <= 0) hideLevelUp();
+  }
+
+  // The SURVIVE run title only counts down once a run is underway
+  // (and can finish fading behind Game Over if the player dies fast).
+  if (state !== "start") updateRunTitle(dt);
+
+  if (state !== "playing") return;
+
+  // Track how long the player has survived; the timer in the
+  // top-left corner updates live and stops when the game ends
+  // (this block only runs while state === "playing").
+  survivalTime += dt;
+  refreshTimer();
+  refreshCombo(); // combo rises to x2 at 30s, x3 at 60s, ...
+
+  // Difficulty level rises every 10 seconds. Refresh BEFORE spawning
+  // so an enemy spawned at t=10s already gets Level 2 speed/rate.
+  refreshLevel();
+  updateBackgroundHum(); // hum pulse quickens as the level rises
+
+  // Spawn logic — the interval shrinks slightly every level
+  // (+10% spawn rate per level), with a little random jitter.
+  spawnTimer -= dt;
+  if (spawnTimer <= 0) {
+    spawnEnemy();
+    spawnTimer = currentSpawnInterval() * rand(0.75, 1.25);
+  }
+
+  updatePlayer(dt);
+  updateShooting(dt); // automatic four-direction volley every second
+  updateEnemies(dt);
+  updateBullets(dt);  // resolve shots before checking player impact
+
+  // Collision: any enemy touching the player ends the game.
+  for (let i = 0; i < enemies.length; i++) {
+    if (enemyHitsPlayer(enemies[i])) {
+      gameOver();
+      break;
+    }
+  }
+}
+
+/* ---------- Drawing ---------- */
+function drawBackground() {
+  // Pure black base.
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, W, H);
+
+  // Soft grid — quiet enough to sit "behind" the action, but gives
+  // movement something to be read against.
+  const gap = 64;
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.055)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = gap; x < W; x += gap) {
+    ctx.moveTo(x + 0.5, 0);
+    ctx.lineTo(x + 0.5, H);
+  }
+  for (let y = gap; y < H; y += gap) {
+    ctx.moveTo(0, y + 0.5);
+    ctx.lineTo(W, y + 0.5);
+  }
+  ctx.stroke();
+
+  // Starfield. Stars twinkle gently and shift a few pixels against
+  // the player's position (more for "nearer" stars) — a subtle
+  // parallax that gives the flat arena a sense of depth.
+  const parX = (player.x - W / 2) * -0.03;
+  const parY = (player.y - H / 2) * -0.03;
+  for (let i = 0; i < stars.length; i++) {
+    const s = stars[i];
+    let x = (s.x * W + parX * s.depth) % W; if (x < 0) x += W;
+    let y = (s.y * H + parY * s.depth) % H; if (y < 0) y += H;
+    const twinkle = 0.6 + 0.4 * Math.sin(animTime * s.twinkleSpeed + s.phase);
+    ctx.globalAlpha = (0.15 + 0.6 * s.depth) * twinkle;
+    ctx.fillStyle = s.depth > 0.75 ? "#ffffff" : "#cbd5e1";
+    ctx.beginPath();
+    ctx.arc(x, y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Gentle vignette: corners fall off to black, focusing the eye
+  // on the middle of the arena.
+  const vg = ctx.createRadialGradient(
+    W / 2, H / 2, Math.min(W, H) * 0.35,
+    W / 2, H / 2, Math.hypot(W, H) * 0.5
+  );
+  vg.addColorStop(0, "rgba(0, 0, 0, 0)");
+  vg.addColorStop(1, "rgba(0, 0, 0, 0.5)");
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/* A short-lived after-image at the spot where the player died.
+   It flickers on and off while an expanding ring fades away;
+   the death particles are drawn over it in draw(). */
+function drawPlayerDeathFlash() {
+  if (playerDeathFlashTimer <= 0) return;
+
+  const remaining = clamp(
+    playerDeathFlashTimer / PLAYER_DEATH_FLASH_DURATION, 0, 1
+  ); // 1 at impact → 0 when finished
+  // Tiny epsilon so an elapsed time landing exactly on a 50ms boundary
+  // is not rounded down to the previous flicker phase by float error.
+  const elapsed = PLAYER_DEATH_FLASH_DURATION - playerDeathFlashTimer + 1e-9;
+  const isOn = Math.floor(elapsed / PLAYER_DEATH_FLICKER_INTERVAL) % 2 === 0;
+  const alpha = remaining * (isOn ? 1 : 0.15);
+  const expansion = 1 - remaining;
+
+  ctx.save();
+
+  // Expanding shock ring.
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = isOn ? "#ffffff" : "#f87171";
+  ctx.lineWidth = 3;
+  ctx.shadowColor = isOn ? "#ffffff" : "#ef4444";
+  ctx.shadowBlur = 18;
+  ctx.beginPath();
+  ctx.arc(
+    player.x, player.y,
+    player.r * (1.15 + expansion * 2.4),
+    0, Math.PI * 2
+  );
+  ctx.stroke();
+
+  // Flickering after-image of the player circle itself.
+  ctx.globalAlpha = alpha * 0.9;
+  ctx.fillStyle = isOn ? "#ffffff" : "#fecaca";
+  ctx.beginPath();
+  ctx.arc(
+    player.x, player.y,
+    player.r * (1 + expansion * 0.35),
+    0, Math.PI * 2
+  );
+  ctx.fill();
+
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+function drawPlayer() {
+  if (state === "gameover") {
+    drawPlayerDeathFlash(); // brief flicker, then only particles remain
+    return;
+  }
+
+  // Subtle "breathing" pulse: ±6% of the radius and a matching
+  // swell of the glow, on a slow ~2-second cycle.
+  const pulse = 1 + Math.sin(animTime * 3.2) * 0.06;
+  const r = player.r * pulse;
+
+  // Soft outer halo (radial falloff, so it melts into the black).
+  const halo = ctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, r * 3.2);
+  halo.addColorStop(0, "rgba(255, 255, 255, 0.28)");
+  halo.addColorStop(0.4, "rgba(186, 230, 253, 0.12)");
+  halo.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, r * 3.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // The glowing white circle itself.
+  ctx.save();
+  ctx.shadowColor = "rgba(255, 255, 255, 0.9)";
+  ctx.shadowBlur = 22 * pulse;
+  const body = ctx.createRadialGradient(
+    player.x - r * 0.3, player.y - r * 0.3, 0,
+    player.x, player.y, r
+  );
+  body.addColorStop(0, "#ffffff");
+  body.addColorStop(0.75, "#f8fafc");
+  body.addColorStop(1, "#cbd5e1");
+  ctx.fillStyle = body;
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Small bright core, pulsing in counter-phase so the circle
+  // feels alive rather than mechanical.
+  ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, r * 0.38 * (2 - pulse), 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/* Faint red "comet tail" behind each enemy: its recent positions,
+   shrinking and fading the older they are. */
+function drawEnemyTrails() {
+  ctx.fillStyle = "#ef4444";
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    for (let j = 0; j < e.trail.length; j++) {
+      const p = e.trail[j];
+      const fade = 1 - (p.age / ENEMY_TRAIL_LIFE);
+      if (fade <= 0) continue;
+      ctx.globalAlpha = fade * 0.16;   // faint — clearly a trail, not a threat
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, e.r * (0.3 + 0.6 * fade), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* Brief white flash over a newly spawned enemy, with a ring that
+   expands as it fades. Because enemies spawn just off-screen, the
+   larger ring also gives a split-second warning at the edge. */
+function drawEnemySpawnFlashes() {
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    const progress = enemySpawnFlashProgress(e); // 1 at spawn → 0
+    if (progress <= 0) continue;
+
+    const expansion = 1 - progress;
+    ctx.save();
+
+    // Bright wash over the newborn enemy's body.
+    ctx.globalAlpha = progress * 0.65;
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "#ffffff";
+    ctx.shadowBlur = 18 * progress;
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.r * (1 + expansion * 0.1), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Expanding, fading spawn ring.
+    ctx.globalAlpha = progress * 0.85;
+    ctx.strokeStyle = "#fecaca";
+    ctx.lineWidth = 1 + 2 * progress;
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.r * (1.35 + expansion * 1.15), 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawEnemies() {
+  // Soft red halo around each enemy.
+  ctx.fillStyle = "rgba(239, 68, 68, 0.10)";
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.r * 1.9, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Glowing bodies: bright near the top-left, deep red at the rim.
+  ctx.save();
+  ctx.shadowColor = "#ef4444";
+  ctx.shadowBlur = 16;
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    const body = ctx.createRadialGradient(
+      e.x - e.r * 0.35, e.y - e.r * 0.35, 0,
+      e.x, e.y, e.r
+    );
+    body.addColorStop(0, "#fecaca");
+    body.addColorStop(0.35, "#f87171");
+    body.addColorStop(0.8, "#dc2626");
+    body.addColorStop(1, "#991b1b");
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Tiny hot core so each enemy reads as glowing, not flat.
+  ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    ctx.beginPath();
+    ctx.arc(e.x - e.r * 0.25, e.y - e.r * 0.25, e.r * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawEnemySpawnFlashes();
+}
+
+function drawBullets() {
+  if (bullets.length === 0) return;
+
+  // Short motion streaks, using each bullet's previous position.
+  ctx.save();
+  ctx.strokeStyle = "rgba(34, 211, 238, 0.45)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < bullets.length; i++) {
+    const b = bullets[i];
+    ctx.moveTo(b.prevX, b.prevY);
+    ctx.lineTo(b.x, b.y);
+  }
+  ctx.stroke();
+
+  // Glowing cyan bullet bodies with a white-hot center.
+  ctx.shadowColor = "#22d3ee";
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = "#a5f3fc";
+  for (let i = 0; i < bullets.length; i++) {
+    const b = bullets[i];
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  ctx.fillStyle = "#ffffff";
+  for (let i = 0; i < bullets.length; i++) {
+    const b = bullets[i];
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawParticles() {
+  for (let i = 0; i < particles.length; i++) {
+    const p = particles[i];
+    const alpha = 1 - (p.life / p.maxLife);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function draw() {
+  // Fill the unshaken frame black first, so a shake offset can never
+  // reveal a stale strip along one edge of the canvas.
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, W, H);
+
+  const shake = getScreenShakeOffset();
+  ctx.save();
+  if (shake.x !== 0 || shake.y !== 0) ctx.translate(shake.x, shake.y);
+
+  drawBackground();    // black + soft grid + starfield + vignette
+  drawEnemyTrails();   // trails sit under everything else
+  drawEnemies();
+  drawBullets();
+  drawPlayer();
+  drawParticles();
+
+  ctx.restore();
+}
+
+/* ---------- Main loop ---------- */
+function loop(timestamp) {
+  if (!lastTimestamp) lastTimestamp = timestamp;
+  // Delta time in seconds, capped so tab-switches don't cause huge jumps.
+  let dt = (timestamp - lastTimestamp) / 1000;
+  lastTimestamp = timestamp;
+  if (dt > 0.05) dt = 0.05;
+  if (dt < 0) dt = 0;
+
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- Boot ---------- */
+resize();
+initStars();
+showStartScreen();   // prepare a fresh run, then wait for click/Enter
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
