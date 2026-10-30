@@ -6110,6 +6110,9 @@ upgradeCardSlots.forEach(function (slot, index) {
 if (beginFightBtn) {
   beginFightBtn.addEventListener("click", function (e) {
     if (e && typeof e.stopPropagation === "function") e.stopPropagation();
+    if (state !== "start") {
+      state = "start";
+    }
     startGame();
   });
 }
