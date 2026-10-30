@@ -545,7 +545,18 @@ const Sound = (function () {
     gem()        { tone({ freq: 1046, dur: 0.08, type: 'triangle', vol: 0.035 }); },
     arenaStart() { tone({ freq: 330, dur: 0.25, type: 'square', vol: 0.05 }); tone({ freq: 494, dur: 0.25, type: 'square', vol: 0.045, delay: 0.12 }); },
     bossHit()    { tone({ freq: 260, to: 180, dur: 0.07, type: 'square', vol: 0.03 }); },
-    portal()     { [392, 523, 659, 784, 1046].forEach((f, i) => tone({ freq: f, dur: 0.5, type: 'sine', vol: 0.04, delay: i * 0.09 })); }
+    portal()     { [392, 523, 659, 784, 1046].forEach((f, i) => tone({ freq: f, dur: 0.5, type: 'sine', vol: 0.04, delay: i * 0.09 })); },
+    wallHit()    { tone({ freq: 240, to: 150, dur: 0.07, type: 'square', vol: 0.03 }); noise({ freq: 1500, dur: 0.07, vol: 0.022 }); },
+    wallBreak()  {
+      noise({ freq: 620, dur: 0.42, vol: 0.075 });
+      tone({ freq: 170, to: 52, dur: 0.3, type: 'square', vol: 0.055 });
+      tone({ freq: 96, to: 38, dur: 0.45, type: 'sawtooth', vol: 0.045, delay: 0.03 });
+      tone({ freq: 320, to: 90, dur: 0.18, type: 'triangle', vol: 0.03, delay: 0.06 });
+    },
+    chest()      {
+      [784, 988, 1319].forEach((f, i) => tone({ freq: f, dur: 0.2, type: 'triangle', vol: 0.05, delay: i * 0.06 }));
+      noise({ freq: 2400, dur: 0.18, vol: 0.028 });
+    }
   };
 })();
 
@@ -681,6 +692,27 @@ const ZONES = [
   }
 ];
 
+/* ------------------------- destructible environment ------------------------ */
+/* Fixed world coordinates per zone, hand-spread around the map: every slot is
+   >260px from an arena centre, >290px from the boss spot and >400px from the
+   player's spawn. 'h' / 'v' is the brick wall's orientation. */
+const WALL_LONG = 124;
+const WALL_THICK = 28;
+const WALL_HITS = 3;
+
+const DESTRUCTIBLES = [
+  { walls: [[880, 1180, 'h'], [2400, 1450, 'v'], [1500, 1050, 'h'], [1150, 1850, 'v'], [1850, 1850, 'h'], [2300, 2650, 'h']],
+    chests: [[600, 1450], [2120, 1180], [700, 2650], [1500, 2050]] },
+  { walls: [[600, 1450, 'v'], [2400, 1450, 'h'], [2120, 1180, 'h'], [1150, 1850, 'h'], [1850, 1850, 'v'], [700, 2650, 'v']],
+    chests: [[880, 1180], [1500, 1050], [2300, 2650], [1500, 2050]] },
+  { walls: [[600, 1450, 'h'], [880, 1180, 'v'], [2120, 1180, 'v'], [1500, 1050, 'v'], [2300, 2650, 'v'], [1500, 2050, 'h']],
+    chests: [[2400, 1450], [1150, 1850], [1850, 1850], [700, 2650]] },
+  { walls: [[880, 1180, 'h'], [2400, 1450, 'h'], [1500, 1050, 'h'], [1150, 1850, 'v'], [700, 2650, 'h'], [1500, 2050, 'v']],
+    chests: [[600, 1450], [2120, 1180], [1850, 1850], [2300, 2650]] },
+  { walls: [[600, 1450, 'v'], [2120, 1180, 'h'], [1500, 1050, 'v'], [1850, 1850, 'h'], [700, 2650, 'h'], [1500, 2050, 'v']],
+    chests: [[880, 1180], [2400, 1450], [1150, 1850], [2300, 2650]] }
+];
+
 /* ------------------------------ enemy table -------------------------------- */
 const ENEMY_DEFS = {
   knight: { hp: 2, speed: 100, r: 16, color: '#ef4444', score: 12, contact: 1 },
@@ -732,6 +764,10 @@ const game = {
   gemsList: [],
   particles: [],
   footsteps: [],
+  breakables: [],
+  chests: [],
+  pickups: [],
+  hiddenSpots: [],
   texts: [],
   obstacles: [],
   arenas: [],
@@ -840,6 +876,7 @@ function loadZone(zoneIndex, opts) {
   p.overchargeTimer = 0;
 
   game.obstacles = buildObstacles(game.zoneIndex);
+  buildDestructibles(game.zoneIndex);
   game.arenas = z.arenas.map((a) => ({
     x: a[0], y: a[1], r: ARENA_R,
     cleared: false, active: false, wave: 0, remaining: 0, nextWaveTimer: 0
@@ -889,6 +926,45 @@ function buildObstacles(zoneIndex) {
   return list;
 }
 
+/* ---------------------- destructible placement ----------------------------- */
+function buildDestructibles(zoneIndex) {
+  const cfg = DESTRUCTIBLES[zoneIndex] || DESTRUCTIBLES[0];
+
+  game.breakables = cfg.walls.map(function (w, i) {
+    const vertical = w[2] === 'v';
+    return {
+      x: w[0], y: w[1], vertical: vertical,
+      w: vertical ? WALL_THICK : WALL_LONG,
+      h: vertical ? WALL_LONG : WALL_THICK,
+      hp: WALL_HITS, maxHp: WALL_HITS,
+      hitFlash: 0, broken: false, t: i * 1.7,
+      /* half the walls hide a small alcove behind them */
+      reward: (i % 2 === 0) ? 'cache' : 'gems',
+      hiddenX: w[0] + (vertical ? 60 : 0),
+      hiddenY: w[1] + (vertical ? 0 : 60),
+      revealed: false
+    };
+  });
+
+  game.chests = cfg.chests.map(function (c, i) {
+    return { x: c[0], y: c[1], opened: false, hitFlash: 0, t: i * 1.3 };
+  });
+
+  game.pickups = [];
+  game.hiddenSpots = [];
+
+  /* drop any ordinary prop that would sit on top of a destructible */
+  const all = game.breakables.concat(game.chests);
+  game.obstacles = game.obstacles.filter(function (o) {
+    for (let i = 0; i < all.length; i++) {
+      const d = all[i];
+      const reach = (d.w ? Math.max(d.w, d.h) / 2 : 26) + o.r + 30;
+      if (dist(o.x, o.y, d.x, d.y) < reach) return false;
+    }
+    return true;
+  });
+}
+
 /* push a circular actor out of obstacles and clamp it to the map */
 function collideObstacles(actor) {
   for (let i = 0; i < game.obstacles.length; i++) {
@@ -905,8 +981,39 @@ function collideObstacles(actor) {
       actor.x = o.x + min;
     }
   }
+  /* breakable brick walls are solid until they are smashed */
+  for (let i = 0; i < game.breakables.length; i++) {
+    const w = game.breakables[i];
+    if (w.broken) continue;
+    resolveCircleRect(actor, w.x, w.y, w.w / 2, w.h / 2);
+  }
+
   actor.x = clamp(actor.x, actor.r + 4, WORLD - actor.r - 4);
   actor.y = clamp(actor.y, actor.r + 4, WORLD - actor.r - 4);
+}
+
+/* circle vs axis-aligned rectangle: smallest push-out */
+function resolveCircleRect(actor, cx, cy, hw, hh) {
+  const nx = clamp(actor.x, cx - hw, cx + hw);
+  const ny = clamp(actor.y, cy - hh, cy + hh);
+  const dx = actor.x - nx;
+  const dy = actor.y - ny;
+  const d2 = dx * dx + dy * dy;
+  if (d2 > actor.r * actor.r) return false;
+
+  if (d2 > 0.0001) {
+    const d = Math.sqrt(d2);
+    const push = actor.r - d;
+    actor.x += (dx / d) * push;
+    actor.y += (dy / d) * push;
+    return true;
+  }
+  /* centre is inside the box — eject along the shallowest axis */
+  const ox = hw + actor.r - Math.abs(actor.x - cx);
+  const oy = hh + actor.r - Math.abs(actor.y - cy);
+  if (ox < oy) actor.x = (actor.x < cx ? cx - hw - actor.r : cx + hw + actor.r);
+  else actor.y = (actor.y < cy ? cy - hh - actor.r : cy + hh + actor.r);
+  return true;
 }
 
 /* ------------------------------ camera ------------------------------------- */
@@ -1317,6 +1424,38 @@ function segHitsCircle(x1, y1, x2, y2, cx, cy, rad) {
   return dist2(px, py, cx, cy) <= rad * rad;
 }
 
+/* nearest hit along a segment, used so a bolt can never pass through a wall */
+function segCircleT(x1, y1, x2, y2, cx, cy, rad) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 > 0.000001 ? ((cx - x1) * dx + (cy - y1) * dy) / len2 : 0;
+  t = clamp(t, 0, 1);
+  const px = x1 + dx * t, py = y1 + dy * t;
+  return dist2(px, py, cx, cy) <= rad * rad ? t : null;
+}
+
+function segAabbT(x1, y1, x2, y2, minx, miny, maxx, maxy) {
+  let t0 = 0, t1 = 1;
+  const dx = x2 - x1, dy = y2 - y1;
+  if (Math.abs(dx) < 0.000001) {
+    if (x1 < minx || x1 > maxx) return null;
+  } else {
+    let ta = (minx - x1) / dx, tb = (maxx - x1) / dx;
+    if (ta > tb) { const tmp = ta; ta = tb; tb = tmp; }
+    t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
+    if (t0 > t1) return null;
+  }
+  if (Math.abs(dy) < 0.000001) {
+    if (y1 < miny || y1 > maxy) return null;
+  } else {
+    let ta = (miny - y1) / dy, tb = (maxy - y1) / dy;
+    if (ta > tb) { const tmp = ta; ta = tb; tb = tmp; }
+    t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
+    if (t0 > t1) return null;
+  }
+  return t0;
+}
+
 function updateBullets(dt) {
   for (let i = game.bullets.length - 1; i >= 0; i--) {
     const b = game.bullets[i];
@@ -1328,19 +1467,43 @@ function updateBullets(dt) {
       game.bullets.splice(i, 1);
       continue;
     }
+    /* nearest thing the bolt touches this frame wins */
     let hit = false;
-    for (let j = game.enemies.length - 1; j >= 0; j--) {
+    let bestT = 2;
+    let hitKind = null;
+    let hitObj = null;
+
+    for (let j = 0; j < game.enemies.length; j++) {
       const e = game.enemies[j];
-      if (segHitsCircle(px, py, b.x, b.y, e.x, e.y, b.r + e.r)) {
-        damageEnemy(e, b.dmg, false);
-        hit = true;
-        break;
-      }
+      const t = segCircleT(px, py, b.x, b.y, e.x, e.y, b.r + e.r);
+      if (t !== null && t < bestT) { bestT = t; hitKind = 'enemy'; hitObj = e; }
     }
-    if (!hit && game.boss && segHitsCircle(px, py, b.x, b.y, game.boss.x, game.boss.y, b.r + game.boss.r)) {
-      damageBoss(b.dmg);
-      hit = true;
+    if (game.boss) {
+      const t = segCircleT(px, py, b.x, b.y, game.boss.x, game.boss.y, b.r + game.boss.r);
+      if (t !== null && t < bestT) { bestT = t; hitKind = 'boss'; hitObj = game.boss; }
     }
+    /* brick walls stop laser fire — three hits bring them down */
+    for (let j = 0; j < game.breakables.length; j++) {
+      const w = game.breakables[j];
+      if (w.broken) continue;
+      const t = segAabbT(px, py, b.x, b.y,
+        w.x - w.w / 2 - b.r, w.y - w.h / 2 - b.r,
+        w.x + w.w / 2 + b.r, w.y + w.h / 2 + b.r);
+      if (t !== null && t < bestT) { bestT = t; hitKind = 'wall'; hitObj = w; }
+    }
+    for (let j = 0; j < game.chests.length; j++) {
+      const c = game.chests[j];
+      if (c.opened) continue;
+      const t = segAabbT(px, py, b.x, b.y,
+        c.x - 24 - b.r, c.y - 20 - b.r, c.x + 24 + b.r, c.y + 20 + b.r);
+      if (t !== null && t < bestT) { bestT = t; hitKind = 'chest'; hitObj = c; }
+    }
+
+    if (hitKind === 'enemy') { damageEnemy(hitObj, b.dmg, false); hit = true; }
+    else if (hitKind === 'boss') { damageBoss(b.dmg); hit = true; }
+    else if (hitKind === 'wall') { damageBreakable(hitObj); hit = true; }
+    else if (hitKind === 'chest') { openChest(hitObj); hit = true; }
+
     if (hit) {
       for (let k = 0; k < 5; k++) {
         const a = rand(0, TAU);
@@ -1349,6 +1512,16 @@ function updateBullets(dt) {
       game.bullets.splice(i, 1);
     }
   }
+}
+
+function solidWallAt(x, y, r) {
+  for (let i = 0; i < game.breakables.length; i++) {
+    const w = game.breakables[i];
+    if (w.broken) continue;
+    if (x > w.x - w.w / 2 - r && x < w.x + w.w / 2 + r &&
+        y > w.y - w.h / 2 - r && y < w.y + w.h / 2 + r) return w;
+  }
+  return null;
 }
 
 function fireEnemyBullet(x, y, angle, speed, kind, r, dmg) {
@@ -1395,6 +1568,14 @@ function updateEnemyBullets(dt) {
     b.spin += dt * 3;
 
     if (b.x < -60 || b.y < -60 || b.x > WORLD + 60 || b.y > WORLD + 60) {
+      game.enemyBullets.splice(i, 1);
+      continue;
+    }
+    if (solidWallAt(b.x, b.y, b.r)) {
+      for (let k = 0; k < 3; k++) {
+        const a = rand(0, TAU);
+        spawnParticle(b.x, b.y, Math.cos(a) * rand(30, 90), Math.sin(a) * rand(30, 90), 0.2, 4, '#9aa1a9', 3);
+      }
       game.enemyBullets.splice(i, 1);
       continue;
     }
@@ -3769,6 +3950,528 @@ function drawMinimap() {
 }
 
 /* =============================================================================
+   DESTRUCTIBLE ENVIRONMENT  (breakable walls + golden chests)
+   ============================================================================= */
+
+/* ------------------------------ breakable walls ---------------------------- */
+function damageBreakable(w) {
+  if (!w || w.broken) return;
+  w.hp -= 1;
+  w.hitFlash = 0.16;
+  game.shake = Math.max(game.shake, 0.16);
+  Sound.wallHit();
+
+  /* chip a little mortar off on every hit */
+  for (let i = 0; i < 7; i++) {
+    const a = rand(0, TAU);
+    spawnParticle(w.x + rand(-w.w / 2, w.w / 2), w.y + rand(-w.h / 2, w.h / 2),
+      Math.cos(a) * rand(50, 170), Math.sin(a) * rand(50, 170),
+      rand(0.22, 0.45), rand(3, 6), '#9aa1a9', 3);
+  }
+
+  if (w.hp > 0) return;   /* remaining hits are shown as pips above the wall */
+  breakWall(w);
+}
+
+function breakWall(w) {
+  w.broken = true;
+  Sound.wallBreak();
+  game.shake = Math.max(game.shake, 0.42);
+  game.score += 60;
+
+  /* heavy brick debris + dust */
+  const bw = w.w, bh = w.h;
+  const bricks = ['#9aa1a9', '#7d848c', '#666d75', '#4d5359', '#aab1b8'];
+  for (let i = 0; i < 30; i++) {
+    const a = rand(0, TAU);
+    const sp = rand(70, 340);
+    spawnParticle(
+      w.x + rand(-bw / 2, bw / 2),
+      w.y + rand(-bh / 2, bh / 2),
+      Math.cos(a) * sp, Math.sin(a) * sp,
+      rand(0.45, 1.0), rand(4, 10), bricks[i % bricks.length], 2.6);
+  }
+  for (let i = 0; i < 14; i++) {
+    const a = rand(0, TAU);
+    spawnParticle(w.x, w.y, Math.cos(a) * rand(20, 120), Math.sin(a) * rand(20, 120),
+      rand(0.5, 0.9), rand(8, 16), '#c7ced6', 3.4);
+  }
+  game.particles.push({ ring: true, x: w.x, y: w.y, r: 8, maxR: Math.max(bw, bh) * 1.1, life: 0, maxLife: 0.42, color: '#cbd5e1' });
+
+  /* reveal what was behind it */
+  if (w.reward === 'cache') {
+    w.revealed = true;
+    game.hiddenSpots.push({ x: w.hiddenX, y: w.hiddenY, t: 0 });
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * TAU + rand(-0.3, 0.3);
+      const g = spawnGem(w.hiddenX + Math.cos(a) * rand(10, 34), w.hiddenY + Math.sin(a) * rand(10, 34));
+      g.vx = Math.cos(a) * 60;
+      g.vy = Math.sin(a) * 60;
+    }
+    addText(w.hiddenX, w.hiddenY - 30, 'CACHE REVEALED', '#fde68a');
+  } else {
+    for (let i = 0; i < 3; i++) {
+      const a = rand(0, TAU);
+      const g = spawnGem(w.x + Math.cos(a) * rand(12, 40), w.y + Math.sin(a) * rand(12, 40));
+      g.vx = Math.cos(a) * 90;
+      g.vy = Math.sin(a) * 90;
+    }
+    addText(w.x, w.y - 26, 'WALL BROKEN', '#e2e8f0');
+  }
+}
+
+/* ------------------------------ golden chests ------------------------------ */
+function openChest(c) {
+  if (!c || c.opened) return;
+  c.opened = true;
+  c.hitFlash = 0.2;
+  Sound.chest();
+  game.shake = Math.max(game.shake, 0.22);
+  game.score += 120;
+
+  /* satisfying gold burst */
+  const gold = ['#ffe6a1', '#ffd772', '#f0c264', '#c08a2a', '#fff6d8'];
+  for (let i = 0; i < 26; i++) {
+    const a = rand(0, TAU);
+    const sp = rand(80, 330);
+    spawnParticle(c.x, c.y - 6, Math.cos(a) * sp, Math.sin(a) * sp,
+      rand(0.4, 0.9), rand(3, 8), gold[i % gold.length], 2.6);
+  }
+  game.particles.push({ ring: true, x: c.x, y: c.y, r: 6, maxR: 88, life: 0, maxLife: 0.5, color: '#ffd772' });
+
+  /* equal chance: gems / upgrade chip card / health orb */
+  const roll = Math.random();
+  if (roll < 1 / 3) {
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * TAU + rand(-0.2, 0.2);
+      const g = spawnGem(c.x + Math.cos(a) * 14, c.y + Math.sin(a) * 14);
+      g.vx = Math.cos(a) * rand(70, 150);
+      g.vy = Math.sin(a) * rand(70, 150);
+    }
+    addText(c.x, c.y - 34, 'GEMS', '#6ee7b7');
+  } else if (roll < 2 / 3) {
+    game.pickups.push({
+      kind: 'chip', x: c.x, y: c.y - 10,
+      vx: rand(-30, 30), vy: -70, life: 0, t: 0
+    });
+    addText(c.x, c.y - 34, 'UPGRADE CHIP', '#fde68a');
+  } else {
+    game.pickups.push({
+      kind: 'health', x: c.x, y: c.y - 10,
+      vx: rand(-26, 26), vy: -60, life: 0, t: 0
+    });
+    addText(c.x, c.y - 34, 'HEALTH ORB', '#7dd3fc');
+  }
+}
+
+/* ------------------------------ pickups ------------------------------------ */
+function grantRandomUpgrade() {
+  const p = game.player;
+  const pool = availableUpgrades();
+  if (!pool.length) {
+    game.gems += 6;
+    game.score += 150;
+    addText(p.x, p.y - 46, 'CHIP SALVAGED · +6 GEMS', '#fde68a');
+    Sound.gem();
+    return;
+  }
+  const up = pick(pool);
+  game.upgradeLevels[up.id] = (game.upgradeLevels[up.id] || 0) + 1;
+  up.apply();
+  addText(p.x, p.y - 46, up.name.toUpperCase(), '#fde68a');
+  Sound.ability();
+  for (let i = 0; i < 18; i++) {
+    const a = rand(0, TAU);
+    spawnParticle(p.x, p.y, Math.cos(a) * rand(40, 170), Math.sin(a) * rand(40, 170), 0.45, 6, '#fde68a', 3);
+  }
+}
+
+function collectPickup(k) {
+  const p = game.player;
+  if (k.kind === 'health') {
+    if (p.hp >= p.maxHp) return false;
+    p.hp = Math.min(p.maxHp, p.hp + 1);
+    updateHealthOrbs();
+    Sound.ability();
+    addText(p.x, p.y - 40, '+1 HP', '#7dd3fc');
+    for (let i = 0; i < 14; i++) {
+      const a = rand(0, TAU);
+      spawnParticle(p.x, p.y, Math.cos(a) * rand(40, 150), Math.sin(a) * rand(40, 150), 0.4, 6, '#7dd3fc', 3);
+    }
+    return true;
+  }
+  grantRandomUpgrade();
+  return true;
+}
+
+function updatePickups(dt) {
+  const p = game.player;
+  for (let i = game.pickups.length - 1; i >= 0; i--) {
+    const k = game.pickups[i];
+    k.t += dt;
+    k.life += dt;
+
+    /* let the item pop up out of the chest first */
+    if (k.life > 0.35) {
+      k.x += k.vx * dt;
+      k.y += k.vy * dt;
+      k.vx *= Math.exp(-4 * dt);
+      k.vy *= Math.exp(-4 * dt);
+      const d = dist(k.x, k.y, p.x, p.y);
+      if (d < p.magnet + 34) {
+        const a = angleTo(k.x, k.y, p.x, p.y);
+        k.x += Math.cos(a) * 300 * dt;
+        k.y += Math.sin(a) * 300 * dt;
+      }
+      if (d < p.r + 20 && collectPickup(k)) game.pickups.splice(i, 1);
+    }
+  }
+}
+
+function updateBreakables(dt) {
+  for (let i = 0; i < game.breakables.length; i++) {
+    const w = game.breakables[i];
+    if (w.hitFlash > 0) w.hitFlash = Math.max(0, w.hitFlash - dt);
+  }
+  for (let i = 0; i < game.chests.length; i++) {
+    const c = game.chests[i];
+    if (c.hitFlash > 0) c.hitFlash = Math.max(0, c.hitFlash - dt);
+  }
+  for (let i = 0; i < game.hiddenSpots.length; i++) game.hiddenSpots[i].t += dt;
+}
+
+/* ------------------------------ art ---------------------------------------- */
+function drawWallRubble(w) {
+  ctx.save();
+  ctx.translate(w.x, w.y);
+  if (w.vertical) ctx.rotate(Math.PI / 2);
+  const hw = WALL_LONG / 2, hh = WALL_THICK / 2;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.30)';
+  ctx.beginPath();
+  ctx.ellipse(0, 2, hw * 0.92, hh * 0.9, 0, 0, TAU);
+  ctx.fill();
+
+  const bits = 7;
+  for (let i = 0; i < bits; i++) {
+    const t = (i / (bits - 1)) - 0.5;
+    const bx = t * hw * 1.7 + Math.sin(i * 2.7) * 8;
+    const by = Math.cos(i * 1.9) * 5 + 2;
+    const rw = 7 + ((i * 37) % 9);
+    ctx.fillStyle = i % 3 === 0 ? '#7d848c' : (i % 3 === 1 ? '#666d75' : '#565c63');
+    ctx.beginPath();
+    ctx.ellipse(bx, by, rw, rw * 0.55, i * 0.7, 0, TAU);
+    ctx.fill();
+  }
+  ctx.fillStyle = 'rgba(154,161,169,0.30)';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, hw * 0.86, hh * 0.7, 0, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawBreakables() {
+  const t = game.time;
+  for (let i = 0; i < game.breakables.length; i++) {
+    const w = game.breakables[i];
+    if (w.broken) { drawWallRubble(w); continue; }
+
+    ctx.save();
+    ctx.translate(w.x, w.y);
+    if (w.vertical) ctx.rotate(Math.PI / 2);
+    const hw = WALL_LONG / 2, hh = WALL_THICK / 2;
+
+    /* ground shadow */
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(6, hh + 1, hw * 1.0, hh * 0.9, 0, 0, TAU);
+    ctx.fill();
+
+    /* mortar bed */
+    ctx.fillStyle = '#3b3a37';
+    roundRect(ctx, -hw, -hh, WALL_LONG, WALL_THICK, 3);
+    ctx.fill();
+
+    /* individual bricks on a 3-row running bond, each one its own tone */
+    const rows = 3;
+    const rowH = WALL_THICK / rows;
+    const tones = ['#9fa3a6', '#8e9295', '#a8acae', '#81868a', '#969b9e', '#787d81'];
+    for (let r = 0; r < rows; r++) {
+      const off = (r % 2) * 15;
+      let col = 0;
+      for (let x = -hw + 2 + off; x < hw - 2; x += 31) {
+        const bw = Math.min(28, hw - 2 - x);
+        const bx = x;
+        const by = -hh + r * rowH;
+        const seed = Math.abs(((r * 7 + col * 13 + Math.round(w.x + w.y)) % tones.length));
+        ctx.fillStyle = tones[seed];
+        roundRect(ctx, bx, by + 1.5, bw, rowH - 3, 1.6);
+        ctx.fill();
+        /* worn upper lip */
+        ctx.fillStyle = 'rgba(255,255,255,0.10)';
+        ctx.fillRect(bx + 1, by + 2, bw - 2, 1.2);
+        col++;
+      }
+    }
+
+    /* sunken outline */
+    ctx.strokeStyle = 'rgba(24,26,29,0.85)';
+    ctx.lineWidth = 1.8;
+    roundRect(ctx, -hw, -hh, WALL_LONG, WALL_THICK, 3);
+    ctx.stroke();
+
+    /* damage cracks */
+    const dmg = 1 - w.hp / w.maxHp;
+    if (dmg > 0.2) {
+      ctx.strokeStyle = 'rgba(18,20,24,0.75)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-hw * 0.45, -hh + 2);
+      ctx.lineTo(-hw * 0.30, 0);
+      ctx.lineTo(-hw * 0.40, hh - 2);
+      ctx.stroke();
+    }
+    if (dmg > 0.5) {
+      ctx.beginPath();
+      ctx.moveTo(hw * 0.22, -hh + 1);
+      ctx.lineTo(hw * 0.10, hh * 0.1);
+      ctx.lineTo(hw * 0.30, hh - 1);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(hw * 0.62, -hh + 2);
+      ctx.lineTo(hw * 0.50, hh - 3);
+      ctx.stroke();
+    }
+
+    /* hit flash */
+    if (w.hitFlash > 0) {
+      ctx.globalAlpha = w.hitFlash / 0.16 * 0.85;
+      ctx.fillStyle = '#ffffff';
+      roundRect(ctx, -hw, -hh, WALL_LONG, WALL_THICK, 3);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    /* damage pips: one per hit the wall has left */
+    if (w.hp < w.maxHp) {
+      const pipW = 7, gap = 4;
+      const total = w.maxHp;
+      const startX = -((total * pipW + (total - 1) * gap) / 2);
+      for (let k = 0; k < total; k++) {
+        ctx.fillStyle = k < w.hp ? 'rgba(232,200,116,0.92)' : 'rgba(120,128,136,0.35)';
+        ctx.fillRect(startX + k * (pipW + gap), -hh - 9, pipW, 3);
+      }
+    }
+
+    /* a faint gold glimmer hints that something is behind a cache wall */
+    if (w.reward === 'cache') {
+      ctx.globalAlpha = 0.16 + 0.10 * Math.sin(t * 2 + w.t);
+      ctx.fillStyle = '#fde68a';
+      ctx.fillRect(-hw * 0.18, -hh, hw * 0.36, 2.5);
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.restore();
+  }
+}
+
+function drawChests() {
+  const t = game.time;
+  for (let i = 0; i < game.chests.length; i++) {
+    const c = game.chests[i];
+    const bob = Math.sin(t * 2 + c.t) * 1.2;
+    ctx.save();
+    ctx.translate(c.x, c.y + bob);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.40)';
+    ctx.beginPath();
+    ctx.ellipse(0, 17 - bob, 23, 8, 0, 0, TAU);
+    ctx.fill();
+
+    if (!c.opened) {
+      const glow = ctx.createRadialGradient(0, 0, 4, 0, 0, 56);
+      glow.addColorStop(0, 'rgba(255,205,110,' + (0.16 + 0.07 * Math.sin(t * 2.6 + c.t)).toFixed(3) + ')');
+      glow.addColorStop(1, 'rgba(255,190,90,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(0, 0, 56, 0, TAU); ctx.fill();
+
+      /* body */
+      const bg = ctx.createLinearGradient(0, -4, 0, 18);
+      bg.addColorStop(0, '#f0c264');
+      bg.addColorStop(0.6, '#b8871f');
+      bg.addColorStop(1, '#6d4410');
+      ctx.fillStyle = bg;
+      roundRect(ctx, -19, -4, 38, 20, 3);
+      ctx.fill();
+      ctx.strokeStyle = '#3a2405';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      /* lid */
+      const lg = ctx.createLinearGradient(0, -19, 0, -2);
+      lg.addColorStop(0, '#ffe6a1');
+      lg.addColorStop(1, '#c08a2a');
+      ctx.fillStyle = lg;
+      roundRect(ctx, -21, -18, 42, 16, 5);
+      ctx.fill();
+      ctx.strokeStyle = '#3a2405';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      /* iron bands */
+      ctx.fillStyle = 'rgba(58,36,5,0.85)';
+      ctx.fillRect(-13, -18, 4.5, 34);
+      ctx.fillRect(8.5, -18, 4.5, 34);
+
+      /* lock */
+      ctx.fillStyle = '#4b2f08';
+      roundRect(ctx, -6, -8, 12, 13, 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffd772';
+      ctx.beginPath(); ctx.arc(0, -3, 2.6, 0, TAU); ctx.fill();
+      ctx.fillRect(-1.2, -3, 2.4, 5);
+
+      /* sparkle */
+      const sp = 0.5 + 0.5 * Math.sin(t * 3.4 + c.t * 2);
+      ctx.globalAlpha = 0.30 + 0.45 * sp;
+      ctx.fillStyle = '#fff6d8';
+      ctx.beginPath();
+      ctx.moveTo(17, -26); ctx.lineTo(20, -20); ctx.lineTo(17, -14); ctx.lineTo(14, -20);
+      ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+    } else {
+      /* opened chest: dark interior, lid thrown back */
+      ctx.fillStyle = 'rgba(40,24,4,0.95)';
+      roundRect(ctx, -19, -2, 38, 18, 3);
+      ctx.fill();
+      ctx.strokeStyle = '#3a2405';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,214,122,0.25)';
+      roundRect(ctx, -16.5, 0, 33, 13, 2);
+      ctx.fill();
+
+      ctx.save();
+      ctx.translate(0, -3);
+      ctx.rotate(-1.15);
+      const lg2 = ctx.createLinearGradient(0, -18, 0, 0);
+      lg2.addColorStop(0, '#b08a3a');
+      lg2.addColorStop(1, '#6d4d12');
+      ctx.fillStyle = lg2;
+      roundRect(ctx, -19, -15, 38, 14, 5);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(48,30,4,0.9)';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (c.hitFlash > 0) {
+      ctx.globalAlpha = c.hitFlash / 0.2 * 0.6;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(0, 0, 34, 0, TAU); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
+}
+
+function drawPickups() {
+  const t = game.time;
+  for (let i = 0; i < game.pickups.length; i++) {
+    const k = game.pickups[i];
+    const bob = Math.sin(t * 4 + k.t) * 3;
+    ctx.save();
+    ctx.translate(k.x, k.y + bob);
+
+    if (k.kind === 'chip') {
+      /* little gold upgrade chip card */
+      const glow = ctx.createRadialGradient(0, 0, 3, 0, 0, 34);
+      glow.addColorStop(0, 'rgba(255,214,122,0.45)');
+      glow.addColorStop(1, 'rgba(255,214,122,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(0, 0, 34, 0, TAU); ctx.fill();
+
+      ctx.fillStyle = 'rgba(14,17,26,0.96)';
+      roundRect(ctx, -13, -17, 26, 34, 3);
+      ctx.fill();
+      ctx.strokeStyle = '#e8c874';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffe6ae';
+      ctx.font = '700 15px Cinzel, serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('⟡', 0, 6);
+
+      ctx.fillStyle = 'rgba(232,200,116,0.65)';
+      ctx.fillRect(-8, -11, 16, 2);
+      ctx.fillRect(-8, 11, 10, 2);
+    } else {
+      /* health orb */
+      const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, 32);
+      glow.addColorStop(0, 'rgba(125,211,252,0.55)');
+      glow.addColorStop(1, 'rgba(125,211,252,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(0, 0, 32, 0, TAU); ctx.fill();
+
+      const og = ctx.createRadialGradient(-3, -4, 1, 0, 0, 13);
+      og.addColorStop(0, '#f2fdff');
+      og.addColorStop(0.55, '#4cc9ff');
+      og.addColorStop(1, '#1258a0');
+      ctx.fillStyle = og;
+      ctx.beginPath(); ctx.arc(0, 0, 12, 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(224,242,254,0.85)';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.fillStyle = '#eaf7ff';
+      ctx.fillRect(-3.4, -1.2, 6.8, 2.4);
+      ctx.fillRect(-1.2, -3.4, 2.4, 6.8);
+    }
+    ctx.restore();
+  }
+}
+
+function drawHiddenSpots() {
+  const t = game.time;
+  for (let i = 0; i < game.hiddenSpots.length; i++) {
+    const h = game.hiddenSpots[i];
+    const grow = clamp(h.t / 0.5, 0, 1);
+    ctx.save();
+    ctx.translate(h.x, h.y);
+
+    const g = ctx.createRadialGradient(0, 0, 4, 0, 0, 62);
+    g.addColorStop(0, 'rgba(253,230,138,' + (0.16 + 0.05 * Math.sin(t * 2 + i)).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(253,230,138,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, 62 * grow, 0, TAU); ctx.fill();
+
+    ctx.strokeStyle = 'rgba(253,230,138,0.35)';
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([7, 8]);
+    ctx.beginPath(); ctx.arc(0, 0, 34 * grow, 0, TAU); ctx.stroke();
+    ctx.setLineDash([]);
+
+    /* a small pile of gems left exposed by the broken wall */
+    for (let k = 0; k < 4; k++) {
+      const a = (k / 4) * TAU + 0.6;
+      const px = Math.cos(a) * 15;
+      const py = Math.sin(a) * 9 + 3;
+      ctx.fillStyle = '#34d399';
+      ctx.beginPath();
+      ctx.moveTo(px, py - 6); ctx.lineTo(px + 4, py); ctx.lineTo(px, py + 6); ctx.lineTo(px - 4, py);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(209,250,229,0.8)';
+      ctx.beginPath();
+      ctx.moveTo(px, py - 3); ctx.lineTo(px + 2, py); ctx.lineTo(px, py + 3); ctx.lineTo(px - 2, py);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+/* =============================================================================
    NAVIGATION HELPERS  (briefing card, edge arrows, footstep trail, minimap path)
    Pure presentation: nothing here touches health, damage, spawning or scoring.
    ============================================================================= */
@@ -4066,8 +4769,12 @@ function render() {
   drawArenaGround();
   drawPortal();
   drawObstacles();
+  drawHiddenSpots();
   drawFootsteps();
   drawGems();
+  drawChests();
+  drawPickups();
+  drawBreakables();
   for (let i = 0; i < game.enemies.length; i++) drawEnemy(game.enemies[i]);
   drawBoss();
   drawEnemyBullets();
@@ -4115,6 +4822,8 @@ function update(dt) {
   updateBullets(sdt);
   updateEnemyBullets(sdt);
   updateGems(sdt);
+  updateBreakables(sdt);
+  updatePickups(sdt);
   updateArenas(sdt);
   updateBoss(sdt);
   updatePortal(sdt);
