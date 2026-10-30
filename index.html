@@ -107,26 +107,85 @@
   }
 
   /* boss bar + border pulse */
+  /* wide boss health bar: name left, phase right, thick track below */
   #bossBar{
-    position:absolute; top:56px; left:50%; transform:translateX(-50%);
-    width:min(620px, 54%); display:none; flex-direction:column; gap:6px; text-align:center;
+    position:absolute; top:50px; left:50%; transform:translateX(-50%);
+    width:min(940px, 86%); display:flex; flex-direction:column; gap:7px;
+    opacity:0; visibility:hidden; pointer-events:none;
+    transition:opacity .4s ease, visibility .4s ease;
   }
-  #bossBar.show{ display:flex; }
+  #bossBar.show{ opacity:1; visibility:visible; }
+  #bossTop{
+    display:flex; align-items:baseline; justify-content:space-between; gap:18px;
+  }
   #bossName{
-    font-family:var(--font-head); font-size:16px; letter-spacing:2.4px;
-    color:#ffbcbc; text-transform:uppercase; text-shadow:0 0 18px rgba(255,60,60,.55);
+    font-family:var(--font-head); font-size:21px; font-weight:700;
+    letter-spacing:3.6px; color:#ffc9c9; text-transform:uppercase;
+    text-shadow:0 0 22px rgba(255,60,60,.6), 0 2px 10px rgba(0,0,0,.9);
+  }
+  #bossPhase{
+    font-family:var(--font-head); font-size:13px; font-weight:700;
+    letter-spacing:4px; color:#ffd0d0; text-transform:uppercase;
+    text-shadow:0 0 16px rgba(255,70,70,.7), 0 2px 8px rgba(0,0,0,.9);
+    white-space:nowrap; transition:color .25s ease;
+  }
+  #bossPhase.p2{ color:#ffb37a; }
+  #bossPhase.p3{ color:#ff8a8a; text-shadow:0 0 20px rgba(255,40,40,.95), 0 2px 8px rgba(0,0,0,.9); }
+  #bossPhase.p4{ color:#ff5f5f; animation:phaseThrob .9s ease-in-out infinite; }
+  @keyframes phaseThrob{
+    0%,100%{ opacity:.75; } 50%{ opacity:1; }
   }
   #bossTrack{
-    height:9px; background:rgba(70,8,8,.5);
-    border:1px solid rgba(255,96,96,.45); box-shadow:0 0 16px rgba(255,50,50,.22);
+    position:relative; height:16px; overflow:hidden;
+    background:linear-gradient(180deg, rgba(60,6,6,.85), rgba(28,3,3,.95));
+    border:1px solid rgba(255,110,110,.55);
+    box-shadow:0 0 26px rgba(255,40,40,.32), inset 0 0 14px rgba(0,0,0,.75);
+  }
+  #bossTrack::after{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background:repeating-linear-gradient(90deg,
+      rgba(0,0,0,0) 0, rgba(0,0,0,0) calc(25% - 1px),
+      rgba(10,0,0,.55) calc(25% - 1px), rgba(10,0,0,.55) 25%);
   }
   #bossFill{
     height:100%; width:100%;
-    background:linear-gradient(90deg,#7f1d1d,#ef4444 60%,#fecaca);
-    transition:width .12s linear;
+    background:linear-gradient(180deg,#ff9a9a 0%,#ef4444 34%,#8f1414 100%);
+    box-shadow:0 0 20px rgba(255,60,60,.7);
+    transition:width .14s linear;
   }
-  #bossPhase{
-    font-size:10.5px; letter-spacing:3px; color:rgba(255,190,190,.75);
+  #bossTrack .shine{
+    position:absolute; left:0; top:0; height:3px; width:100%;
+    background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.5), rgba(255,255,255,0));
+    pointer-events:none;
+  }
+
+  /* boss entrance name card (2 seconds) */
+  #bossIntro{
+    position:absolute; left:50%; top:40%; transform:translate(-50%,-50%);
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    pointer-events:none; opacity:0; z-index:27; text-align:center; white-space:nowrap;
+  }
+  #bossIntro.show{ animation:bossIntroIn 2s ease-out forwards; }
+  @keyframes bossIntroIn{
+    0%  { opacity:0; transform:translate(-50%,-50%) scale(1.14); filter:blur(6px); }
+    14% { opacity:1; transform:translate(-50%,-50%) scale(1); filter:blur(0); }
+    74% { opacity:1; transform:translate(-50%,-50%) scale(1); filter:blur(0); }
+    100%{ opacity:0; transform:translate(-50%,-50%) scale(1.05); filter:blur(3px); }
+  }
+  #bossIntro .i-eyebrow{
+    font-family:var(--font-head); font-size:12px; letter-spacing:8px;
+    color:#ff8f8f; text-transform:uppercase;
+    text-shadow:0 0 20px rgba(255,50,50,.8);
+  }
+  #bossIntro .i-name{
+    font-family:var(--font-head); font-weight:900;
+    font-size:clamp(30px,5.4vw,62px); letter-spacing:5px; text-transform:uppercase;
+    color:#ffe1e1; line-height:1.1;
+    text-shadow:0 0 34px rgba(255,40,40,.85), 0 0 90px rgba(200,0,0,.55), 0 4px 20px rgba(0,0,0,.95);
+  }
+  #bossIntro .i-rule{
+    width:210px; height:1px; margin-top:4px;
+    background:linear-gradient(90deg, rgba(255,80,80,0), rgba(255,120,120,.95), rgba(255,80,80,0));
   }
   #dangerBorder{
     position:absolute; inset:0; pointer-events:none; opacity:0;
@@ -135,6 +194,11 @@
     transition:opacity .4s ease;
   }
   #dangerBorder.on{ opacity:1; animation:bossPulse 1.6s ease-in-out infinite; }
+  #dangerBorder.flash{ animation:bossFlash .32s steps(1,end) 5; }
+  @keyframes bossFlash{
+    0%,49%{ opacity:1; box-shadow:inset 0 0 0 14px rgba(255,26,26,.95), inset 0 0 120px rgba(255,20,20,.55); }
+    50%,100%{ opacity:.18; }
+  }
   @keyframes bossPulse{
     0%,100%{ opacity:.35; }
     50%    { opacity:.95; }
@@ -359,13 +423,22 @@
     <canvas id="minimap" width="300" height="300"></canvas>
 
     <div id="bossBar">
-      <div id="bossName">The Black Knight</div>
-      <div id="bossTrack"><div id="bossFill"></div></div>
-      <div id="bossPhase">PHASE I</div>
+      <div id="bossTop">
+        <div id="bossName">The Black Knight</div>
+        <div id="bossPhase">PHASE 1</div>
+      </div>
+      <div id="bossTrack"><div id="bossFill"></div><div class="shine"></div></div>
     </div>
 
     <div id="dangerBorder"></div>
     <div id="banner"></div>
+  </div>
+
+  <!-- ==================== BOSS ENTRANCE ==================== -->
+  <div id="bossIntro">
+    <div class="i-eyebrow">A champion blocks the way</div>
+    <div class="i-name" id="bossIntroName">The Black Knight</div>
+    <div class="i-rule"></div>
   </div>
 
   <!-- ==================== MISSION BRIEFING ==================== -->
@@ -448,6 +521,7 @@ const VIEW_H = H - SKY_H;    // playfield height
 const WORLD = 3000;          // every zone map is 3000 x 3000
 const TAU = Math.PI * 2;
 const ARENA_R = 170;
+const BOSS_ARENA_R = 430;   /* the ring the boss fight is locked inside */
 const FOG_CELL = 100;
 const FOG_COLS = WORLD / FOG_CELL;
 
@@ -560,6 +634,132 @@ const Sound = (function () {
   };
 })();
 
+/* --------------------------- boss battle music ------------------------------
+   Procedural Web Audio score: a sustained low drone, a driving bass pulse and
+   dissonant stabs. The key and tempo step up with every boss phase, and the
+   whole thing stops the moment the boss dies. No audio files.
+   ------------------------------------------------------------------------- */
+const BossMusic = (function () {
+  let ctx = null, master = null, drone = null, droneGain = null, lfo = null, lfoGain = null;
+  let timer = null, step = 0, phase = 1, zone = 0;
+
+  /* minor-key patterns, one per boss phase */
+  const SCALES = [
+    [0, 3, 5, 7, 10],   /* aeolian  */
+    [0, 2, 3, 7, 8],    /* phrygian */
+    [0, 1, 5, 6, 8],    /* locrian  */
+    [0, 2, 6, 7, 11]    /* octatonic */
+  ];
+  const ROOTS = [55, 58.27, 61.74, 65.41];
+
+  function ac() {
+    const c = Sound.ensure();
+    if (!c) return null;
+    ctx = c;
+    if (!master) {
+      master = ctx.createGain();
+      master.gain.value = 0.0;
+      master.connect(ctx.destination);
+    }
+    return ctx;
+  }
+
+  function note(freq, when, dur, type, vol) {
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type || 'sawtooth';
+    osc.frequency.setValueAtTime(freq, when);
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.exponentialRampToValueAtTime(vol, when + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+    osc.connect(g);
+    g.connect(master);
+    osc.start(when);
+    osc.stop(when + dur + 0.02);
+  }
+
+  function tick() {
+    if (!ctx || !master) return;
+    const t0 = ctx.currentTime + 0.02;
+    const scale = SCALES[Math.min(phase - 1, SCALES.length - 1)];
+    const root = ROOTS[Math.min(zone, ROOTS.length - 1)] * (phase >= 3 ? 2 : 1);
+    const beat = 60 / (86 + (phase - 1) * 16);
+
+    /* driving bass on every step, fifth accent on the off-beat */
+    const degree = scale[step % scale.length];
+    const f = root * Math.pow(2, degree / 12);
+    note(f, t0, beat * 0.85, 'square', 0.055);
+    if (step % 4 === 2) note(f * 1.5, t0, beat * 0.5, 'triangle', 0.035);
+
+    /* dissonant stab every other bar */
+    if (step % 8 === 0) {
+      note(root * 4 * Math.pow(2, scale[(step / 8) % scale.length] / 12), t0, beat * 1.4, 'sawtooth', 0.022);
+    }
+    step++;
+  }
+
+  function tempo() { return 60 / (86 + (phase - 1) * 16) * 1000; }
+
+  function schedule() {
+    if (timer) clearInterval(timer);
+    timer = setInterval(tick, Math.max(120, tempo()));
+  }
+
+  return {
+    start(zoneIndex, startPhase) {
+      zone = zoneIndex || 0;
+      phase = startPhase || 1;
+      if (!ac()) return;
+      /* fade the bed in */
+      master.gain.cancelScheduledValues(ctx.currentTime);
+      master.gain.setValueAtTime(0.0001, ctx.currentTime);
+      master.gain.exponentialRampToValueAtTime(0.55, ctx.currentTime + 0.6);
+
+      if (!drone) {
+        drone = ctx.createOscillator();
+        droneGain = ctx.createGain();
+        lfo = ctx.createOscillator();
+        lfoGain = ctx.createGain();
+        drone.type = 'sawtooth';
+        drone.frequency.value = ROOTS[Math.min(zone, ROOTS.length - 1)] / 2;
+        droneGain.gain.value = 0.035;
+        lfo.frequency.value = 0.28;
+        lfoGain.gain.value = 10;
+        lfo.connect(lfoGain);
+        lfoGain.connect(drone.frequency);
+        drone.connect(droneGain);
+        droneGain.connect(master);
+        drone.start();
+        lfo.start();
+      }
+      step = 0;
+      schedule();
+    },
+    setPhase(next) {
+      phase = clamp(next, 1, 4);
+      if (!timer) return;
+      schedule();
+    },
+    stop() {
+      if (timer) { clearInterval(timer); timer = null; }
+      if (ctx && master) {
+        try {
+          master.gain.cancelScheduledValues(ctx.currentTime);
+          master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
+          master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
+        } catch (e) { /* ignore */ }
+      }
+      if (drone) {
+        try { drone.stop(ctx.currentTime + 0.5); } catch (e) { /* already stopped */ }
+        try { lfo.stop(ctx.currentTime + 0.5); } catch (e) { /* already stopped */ }
+        drone = null; lfo = null; droneGain = null; lfoGain = null;
+      }
+    },
+    isPlaying() { return !!timer; }
+  };
+})();
+
 /* ------------------------------ DOM --------------------------------------- */
 const UI = {
   stage: document.getElementById('stage'),
@@ -576,6 +776,8 @@ const UI = {
   bossName: document.getElementById('bossName'),
   bossFill: document.getElementById('bossFill'),
   bossPhase: document.getElementById('bossPhase'),
+  bossIntro: document.getElementById('bossIntro'),
+  bossIntroName: document.getElementById('bossIntroName'),
   dangerBorder: document.getElementById('dangerBorder'),
   banner: document.getElementById('banner'),
   briefing: document.getElementById('briefing'),
@@ -773,6 +975,9 @@ const game = {
   arenas: [],
   boss: null,
   bossUnlocked: false,
+  bossZone: null,     /* { x, y, r } — the marked ring the player must walk into */
+  bossFight: null,    /* { x, y, r, t, fade } — live during and just after the fight */
+  bossIntroTimer: null,
   portal: null,
   fog: null,
   cam: { x: 0, y: 0 },
@@ -852,7 +1057,14 @@ function loadZone(zoneIndex, opts) {
   game.texts.length = 0;
   game.boss = null;
   game.bossUnlocked = false;
+  game.bossZone = null;
+  game.bossFight = null;
   game.portal = null;
+  BossMusic.stop();
+  UI.bossIntro.classList.remove('show');
+  UI.bossBar.classList.remove('show');
+  UI.dangerBorder.classList.remove('on');
+  UI.dangerBorder.classList.remove('flash');
   game.waveDelay = 0;
   game.pendingWave = null;
   game.freezeTimer = 0;
@@ -1136,6 +1348,7 @@ function updatePlayer(dt) {
   }
 
   collideObstacles(p);
+  clampToBossArena(p);
 
   /* --- footstep trail: one print every ~26px travelled --- */
   if (p.dashTimer <= 0 && p.moving) {
@@ -1621,12 +1834,13 @@ function damageEnemy(e, dmg, silent) {
 }
 
 /* ------------------------------ boss --------------------------------------- */
-function spawnBoss() {
+function spawnBoss(opts) {
+  const o = opts || {};
   const z = ZONES[game.zoneIndex];
   const def = z.boss;
   game.boss = {
-    x: z.bossPos[0],
-    y: z.bossPos[1],
+    x: o.fromX !== undefined ? o.fromX : z.bossPos[0],
+    y: o.fromY !== undefined ? o.fromY : z.bossPos[1],
     r: def.r,
     hp: def.hp,
     maxHp: def.hp,
@@ -1644,20 +1858,140 @@ function spawnBoss() {
     hitFlash: 0,
     charging: 0,
     chargeDir: { x: 1, y: 0 },
-    spiral: 0
+    spiral: 0,
+    entering: o.entrance ? {
+      t: 0, dur: 1.7,
+      fromX: o.fromX, fromY: o.fromY,
+      toX: o.toX !== undefined ? o.toX : z.bossPos[0],
+      toY: o.toY !== undefined ? o.toY : z.bossPos[1]
+    } : null
   };
   game.bossUnlocked = true;
   UI.bossName.textContent = def.name;
   UI.bossFill.style.width = '100%';
-  UI.bossPhase.textContent = 'PHASE I';
+  UI.bossPhase.textContent = 'PHASE 1';
+  UI.bossPhase.className = 'p1';
   UI.bossBar.classList.add('show');
-  UI.dangerBorder.style.setProperty('--boss-tint', hexToRgba(def.color, 0.6));
-  UI.dangerBorder.style.setProperty('--boss-glow', hexToRgba(def.color, 0.28));
+  UI.dangerBorder.style.setProperty('--boss-tint', 'rgba(255,42,42,0.75)');
+  UI.dangerBorder.style.setProperty('--boss-glow', 'rgba(255,30,30,0.35)');
   UI.dangerBorder.classList.add('on');
   Sound.bossAppear();
-  showBanner(def.name.toUpperCase());
   updateObjective();
   game.shake = Math.max(game.shake, 0.8);
+}
+
+/* ------------------------------ boss arena ------------------------------ */
+/* Arm the ring at the marked spot once every arena is cleared. The fight only
+   starts when the player actually walks in. */
+function bossRingCentre() {
+  const bp = ZONES[game.zoneIndex].bossPos;
+  const pad = BOSS_ARENA_R + 20;
+  return {
+    x: clamp(bp[0], pad, WORLD - pad),
+    y: clamp(bp[1], pad, WORLD - pad)
+  };
+}
+
+function armBossZone() {
+  if (game.bossUnlocked || game.boss) return;
+  const c = bossRingCentre();
+  game.bossZone = { x: c.x, y: c.y, r: BOSS_ARENA_R };
+  UI.banner.textContent = 'THE CHAMPION AWAITS';
+  UI.banner.classList.remove('show');
+  void UI.banner.offsetWidth;
+  UI.banner.classList.add('show');
+  bannerTimer = 2.6;
+  updateObjective();
+}
+
+function playerInsideBossZone() {
+  const bz = game.bossZone;
+  if (!bz) return false;
+  return dist(game.player.x, game.player.y, bz.x, bz.y) <= bz.r;
+}
+
+/* The player has stepped into the ring: lock the arena, run the entrance,
+   light the red border and start the boss score. */
+function startBossFight() {
+  const z = ZONES[game.zoneIndex];
+  const bz = game.bossZone;
+  const fallback = bossRingCentre();
+  const cx = bz ? bz.x : fallback.x;
+  const cy = bz ? bz.y : fallback.y;
+  const p = game.player;
+
+  game.bossFight = { x: cx, y: cy, r: BOSS_ARENA_R, t: 0, fade: 1, active: true };
+  game.bossZone = null;
+
+  /* slide in from outside the ring, on whichever side has the most room */
+  let fromX = cx, fromY = cy, bestGap = -1;
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * TAU;
+    const tx = clamp(cx + Math.cos(a) * (BOSS_ARENA_R + 360), 60, WORLD - 60);
+    const ty = clamp(cy + Math.sin(a) * (BOSS_ARENA_R + 360), 60, WORLD - 60);
+    if (dist(tx, ty, cx, cy) < BOSS_ARENA_R + 120) continue;   /* never start inside */
+    const gap = dist(tx, ty, p.x, p.y);
+    if (gap > bestGap) { bestGap = gap; fromX = tx; fromY = ty; }
+  }
+  if (bestGap < 0) {   /* cornered ring: come in along the ring edge */
+    const a = angleTo(p.x, p.y, cx, cy);
+    fromX = cx + Math.cos(a) * (BOSS_ARENA_R + 40);
+    fromY = cy + Math.sin(a) * (BOSS_ARENA_R + 40);
+  }
+
+  spawnBoss({ entrance: true, fromX: fromX, fromY: fromY, toX: z.bossPos[0], toY: z.bossPos[1] });
+
+  /* red border flash */
+  UI.dangerBorder.classList.remove('flash');
+  void UI.dangerBorder.offsetWidth;
+  UI.dangerBorder.classList.add('flash');
+  setTimeout(function () { UI.dangerBorder.classList.remove('flash'); }, 1700);
+
+  /* dramatic name card for exactly 2 seconds */
+  UI.bossIntroName.textContent = z.boss.name;
+  UI.bossIntro.classList.remove('show');
+  void UI.bossIntro.offsetWidth;
+  UI.bossIntro.classList.add('show');
+  if (game.bossIntroTimer) clearTimeout(game.bossIntroTimer);
+  game.bossIntroTimer = setTimeout(function () {
+    UI.bossIntro.classList.remove('show');
+    game.bossIntroTimer = null;
+  }, 2000);
+
+  BossMusic.start(game.zoneIndex, 1);
+  game.slowmo = 0;          /* never inherit a stale slow-motion */
+  game.timeScale = 1;
+  game.shake = Math.max(game.shake, 1.0);
+  updateObjective();
+}
+
+/* keep an actor inside the locked ring */
+function clampToBossArena(actor) {
+  const f = game.bossFight;
+  if (!f || !f.active) return;
+  const lim = f.r - actor.r - 6;
+  const dx = actor.x - f.x;
+  const dy = actor.y - f.y;
+  const d = Math.hypot(dx, dy);
+  if (d > lim && d > 0.0001) {
+    actor.x = f.x + (dx / d) * lim;
+    actor.y = f.y + (dy / d) * lim;
+  }
+}
+
+function updateBossFight(dt) {
+  /* entry check while the ring is only armed */
+  if (game.bossZone && !game.boss && game.screen === 'playing') {
+    if (playerInsideBossZone()) startBossFight();
+    return;
+  }
+  const f = game.bossFight;
+  if (!f) return;
+  f.t += dt;
+  if (f.active === undefined) f.active = true;
+
+  /* boundary fades away once the boss is down */
+  if (!f.active && f.fade > 0) f.fade = Math.max(0, f.fade - dt / 0.7);
 }
 
 function hexToRgba(hex, a) {
@@ -1673,6 +2007,31 @@ function updateBoss(dt) {
   b.t += dt;
   if (b.hitFlash > 0) b.hitFlash = Math.max(0, b.hitFlash - dt);
 
+  /* ---- dramatic entrance: slide in from off screen, hold fire ---- */
+  if (b.entering) {
+    const e = b.entering;
+    e.t += dt;
+    const k = clamp(e.t / e.dur, 0, 1);
+    const eased = 1 - Math.pow(1 - k, 3);
+    b.x = lerp(e.fromX, e.toX, eased);
+    b.y = lerp(e.fromY, e.toY, eased);
+    b.angle = angleTo(b.x, b.y, p.x, p.y);
+    if (Math.random() < 0.9) {
+      spawnParticle(b.x + rand(-b.r, b.r), b.y + rand(-b.r, b.r),
+        rand(-40, 40), rand(-40, 40), 0.5, 9, b.color, 3);
+    }
+    if (k >= 1) {
+      b.entering = null;
+      game.shake = Math.max(game.shake, 0.5);
+      for (let i = 0; i < 24; i++) {
+        const a = rand(0, TAU);
+        spawnParticle(b.x, b.y, Math.cos(a) * rand(90, 300), Math.sin(a) * rand(90, 300), 0.5, 9, b.color, 3);
+      }
+      game.particles.push({ ring: true, x: b.x, y: b.y, r: 20, maxR: b.r * 4, life: 0, maxLife: 0.5, color: b.color });
+    }
+    return;   /* no attacking, and damageBoss() ignores hits, until it lands */
+  }
+
   const ratio = clamp(b.hp / b.maxHp, 0, 1);
   /* zones 1-4 fight in three phases (75% / 50%), the Time Tyrant in four */
   const maxPhase = game.zoneIndex >= 4 ? 4 : 3;
@@ -1683,8 +2042,10 @@ function updateBoss(dt) {
   }
   if (newPhase !== b.phase) {
     b.phase = newPhase;
-    UI.bossPhase.textContent = ['PHASE I', 'PHASE II', 'PHASE III', 'PHASE IV'][b.phase - 1];
-    showBanner('PHASE ' + ['I', 'II', 'III', 'IV'][b.phase - 1]);
+    UI.bossPhase.textContent = 'PHASE ' + b.phase;
+    UI.bossPhase.className = 'p' + b.phase;
+    BossMusic.setPhase(b.phase);
+    showBanner('PHASE ' + ['1', '2', '3', '4'][b.phase - 1]);
     Sound.bossAppear();
     game.shake = 0.6;
     for (let i = 0; i < 26; i++) {
@@ -1719,6 +2080,7 @@ function updateBoss(dt) {
   }
   b.x = clamp(b.x, b.r + 30, WORLD - b.r - 30);
   b.y = clamp(b.y, b.r + 30, WORLD - b.r - 30);
+  clampToBossArena(b);
   if (d < b.r + p.r + 4) hurtPlayer(1);
 
   const speedUp = 1 + (b.phase - 1) * 0.18;
@@ -1922,6 +2284,7 @@ function updateBoss(dt) {
 function damageBoss(dmg) {
   const b = game.boss;
   if (!b) return;
+  if (b.entering) return;   /* the entrance cannot be interrupted */
   b.hp -= dmg;
   b.hitFlash = 0.1;
   Sound.bossHit();
@@ -1936,12 +2299,23 @@ function killBoss() {
   const bx = b.x, by = b.y;
   game.boss = null;
   game.score += 2000;
-  game.slowmo = 1.8;
-  game.timeScale = 0.22;
+
+  /* 1 second of slow motion for the kill */
+  game.slowmo = 1.0;
+  game.timeScale = 0.25;
   game.shake = 1.0;
+
+  BossMusic.stop();
   Sound.levelClear();
   hideBossBar();
   showBanner('BOSS DEFEATED');
+  UI.bossIntro.classList.remove('show');
+
+  /* the arena boundary dissolves */
+  if (game.bossFight) {
+    game.bossFight.active = false;
+    game.bossFight.closing = 0;
+  }
 
   for (let i = 0; i < 60; i++) {
     const a = rand(0, TAU);
@@ -1949,15 +2323,17 @@ function killBoss() {
   }
   game.particles.push({ ring: true, x: bx, y: by, r: 10, maxR: 460, life: 0, maxLife: 0.9, color: b.color });
 
-  /* 15 gems */
+  /* 15 gems blasted outward from the corpse */
   for (let i = 0; i < 15; i++) {
-    const a = (i / 15) * TAU;
-    const g = spawnGem(bx + Math.cos(a) * 40, by + Math.sin(a) * 40);
-    g.vx = Math.cos(a) * 90;
-    g.vy = Math.sin(a) * 90;
+    const a = (i / 15) * TAU + rand(-0.12, 0.12);
+    const g = spawnGem(bx + Math.cos(a) * 30, by + Math.sin(a) * 30);
+    const sp = rand(260, 380);
+    g.vx = Math.cos(a) * sp;
+    g.vy = Math.sin(a) * sp;
   }
 
-  game.portal = { x: bx, y: by, r: 76, t: 0 };
+  /* the portal opens with a growing glow instead of popping into existence */
+  game.portal = { x: bx, y: by, r: 76, t: 0, open: 0 };
   setTimeout(() => { if (game.screen === 'playing') Sound.portal(); }, 700);
   updateObjective();
 }
@@ -1965,6 +2341,7 @@ function killBoss() {
 function hideBossBar() {
   UI.bossBar.classList.remove('show');
   UI.dangerBorder.classList.remove('on');
+  UI.dangerBorder.classList.remove('flash');
 }
 
 /* ------------------------------ gems --------------------------------------- */
@@ -2109,7 +2486,7 @@ function clearArena(arena, index) {
   const allCleared = game.arenas.every((x) => x.cleared);
   if (allCleared && !game.bossUnlocked && !game.boss) {
     setTimeout(() => {
-      if (game.screen === 'playing' || game.screen === 'upgrade') spawnBoss();
+      if ((game.screen === 'playing' || game.screen === 'upgrade') && !game.bossUnlocked) armBossZone();
     }, 1400);
   }
   showUpgrades();
@@ -2118,8 +2495,10 @@ function clearArena(arena, index) {
 function updatePortal(dt) {
   if (!game.portal) return;
   game.portal.t += dt;
+  if (game.portal.open < 1) game.portal.open = Math.min(1, game.portal.open + dt / 0.9);
   const p = game.player;
-  if (dist(p.x, p.y, game.portal.x, game.portal.y) < game.portal.r * 0.8) {
+  if (game.portal.open >= 1 &&
+      dist(p.x, p.y, game.portal.x, game.portal.y) < game.portal.r * 0.8) {
     completeZone();
   }
   if (Math.random() < 0.7) {
@@ -2132,6 +2511,7 @@ function updatePortal(dt) {
 
 function completeZone() {
   if (game.screen !== 'playing') return;
+  BossMusic.stop();
   game.score += 1500;
   Sound.levelClear();
   if (game.zoneIndex >= ZONES.length - 1) {
@@ -2154,8 +2534,10 @@ function updateObjective() {
     UI.objective.textContent = 'Enter the time portal';
   } else if (game.boss) {
     UI.objective.textContent = 'Defeat ' + game.boss.name;
+  } else if (game.bossZone) {
+    UI.objective.textContent = 'Enter the red ring — your champion is waiting';
   } else if (game.bossUnlocked) {
-    UI.objective.textContent = 'A champion awaits — hunt them down';
+    UI.objective.textContent = 'Enter the marked ring to challenge your champion';
   } else {
     UI.objective.textContent = 'Find and clear all ' + game.arenas.length + ' arenas · ' + cleared + '/' + game.arenas.length;
   }
@@ -2223,6 +2605,7 @@ function beginMission() {
 
 function endRun() {
   if (game.screen === 'gameover') return;
+  BossMusic.stop();
   game.screen = 'gameover';
   game.mouse.down = false;
   hideBossBar();
@@ -2238,6 +2621,7 @@ function endRun() {
 }
 
 function showVictory() {
+  BossMusic.stop();
   game.screen = 'victory';
   game.mouse.down = false;
   hideBossBar();
@@ -3436,17 +3820,133 @@ function drawArenaGround() {
   }
 }
 
+/* ------------------------------ boss arena ring ---------------------------- */
+function drawBossArena() {
+  const t = game.time;
+
+  /* ---- armed ring: a red summoning circle marks where the fight happens --- */
+  const bz = game.bossZone;
+  if (bz) {
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2.4);
+    ctx.save();
+    /* dark red pool so it reads as "the boss zone" from a distance */
+    const pool = ctx.createRadialGradient(bz.x, bz.y, bz.r * 0.12, bz.x, bz.y, bz.r);
+    pool.addColorStop(0, 'rgba(220,38,38,' + (0.05 + 0.05 * pulse).toFixed(3) + ')');
+    pool.addColorStop(0.72, 'rgba(160,20,20,0.05)');
+    pool.addColorStop(1, 'rgba(200,30,30,0)');
+    ctx.fillStyle = pool;
+    ctx.beginPath(); ctx.arc(bz.x, bz.y, bz.r, 0, TAU); ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255,70,70,' + (0.55 + 0.3 * pulse).toFixed(3) + ')';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = 'rgba(255,40,40,0.9)';
+    ctx.shadowBlur = 22;
+    ctx.beginPath(); ctx.arc(bz.x, bz.y, bz.r, 0, TAU); ctx.stroke();
+
+    ctx.lineWidth = 2;
+    ctx.setLineDash([18, 16]);
+    ctx.lineDashOffset = -t * 26;
+    ctx.strokeStyle = 'rgba(255,120,120,0.7)';
+    ctx.beginPath(); ctx.arc(bz.x, bz.y, bz.r * 0.82, 0, TAU); ctx.stroke();
+    ctx.setLineDash([]);
+
+    /* rotating inner sigil */
+    ctx.save();
+    ctx.translate(bz.x, bz.y);
+    ctx.rotate(t * 0.5);
+    ctx.strokeStyle = 'rgba(255,90,90,0.55)';
+    ctx.lineWidth = 2;
+    for (let k = 0; k < 3; k++) {
+      ctx.beginPath();
+      ctx.arc(0, 0, bz.r * 0.46, (k / 3) * TAU, (k / 3) * TAU + 1.25);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,190,190,' + (0.6 + 0.35 * pulse).toFixed(3) + ')';
+    ctx.font = '700 15px Cinzel, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('BOSS ARENA', bz.x, bz.y - bz.r - 20);
+    ctx.restore();
+  }
+
+  /* ---- locked arena: a burning red boundary the player cannot cross ------- */
+  const f = game.bossFight;
+  if (!f) return;
+  const fade = f.active ? 1 : clamp(f.fade, 0, 1);
+  if (fade <= 0.001) return;
+
+  const pulse = 0.5 + 0.5 * Math.sin(t * 3.1);
+  ctx.save();
+
+  const pool = ctx.createRadialGradient(f.x, f.y, f.r * 0.2, f.x, f.y, f.r);
+  pool.addColorStop(0, 'rgba(120,10,10,0.10)');
+  pool.addColorStop(0.75, 'rgba(180,20,20,0.10)');
+  pool.addColorStop(1, 'rgba(255,60,60,0.16)');
+  ctx.globalAlpha = fade;
+  ctx.fillStyle = pool;
+  ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, TAU); ctx.fill();
+
+  /* the wall of light itself */
+  ctx.shadowColor = 'rgba(255,40,40,1)';
+  ctx.shadowBlur = 30;
+  ctx.strokeStyle = 'rgba(255,64,64,' + (0.75 + 0.25 * pulse).toFixed(3) + ')';
+  ctx.lineWidth = 6 + pulse * 3;
+  ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, TAU); ctx.stroke();
+
+  ctx.shadowBlur = 14;
+  ctx.strokeStyle = 'rgba(255,180,180,' + (0.5 + 0.3 * pulse).toFixed(3) + ')';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(f.x, f.y, f.r - 7, 0, TAU); ctx.stroke();
+
+  /* inward-facing warning ticks */
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255,90,90,0.55)';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 48; i++) {
+    const a = (i / 48) * TAU + t * 0.12;
+    const r0 = f.r - 16 - pulse * 5;
+    const r1 = f.r - 4;
+    ctx.beginPath();
+    ctx.moveTo(f.x + Math.cos(a) * r0, f.y + Math.sin(a) * r0);
+    ctx.lineTo(f.x + Math.cos(a) * r1, f.y + Math.sin(a) * r1);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawPortal() {
   const p = game.portal;
   if (!p) return;
   const t = p.t;
-  const g = ctx.createRadialGradient(p.x, p.y, 6, p.x, p.y, p.r * 1.9);
+  const openK = p.open === undefined ? 1 : clamp(p.open, 0, 1);
+  const eased = 1 - Math.pow(1 - openK, 3);
+  const R = p.r * eased;
+  if (R < 1) return;
+
+  /* the flare while it is still opening */
+  if (openK < 1) {
+    ctx.save();
+    ctx.globalAlpha = 1 - openK;
+    const flare = ctx.createRadialGradient(p.x, p.y, 2, p.x, p.y, 240);
+    flare.addColorStop(0, 'rgba(224,242,254,0.9)');
+    flare.addColorStop(0.4, 'rgba(56,189,248,0.45)');
+    flare.addColorStop(1, 'rgba(56,189,248,0)');
+    ctx.fillStyle = flare;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 240, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(224,242,254,0.9)';
+    ctx.lineWidth = 3 + 6 * (1 - openK);
+    ctx.beginPath(); ctx.arc(p.x, p.y, 40 + 200 * eased, 0, TAU); ctx.stroke();
+    ctx.restore();
+  }
+
+  const g = ctx.createRadialGradient(p.x, p.y, 6, p.x, p.y, R * 1.9);
   g.addColorStop(0, 'rgba(224,242,254,0.85)');
   g.addColorStop(0.3, 'rgba(56,189,248,0.45)');
   g.addColorStop(0.65, 'rgba(139,92,246,0.22)');
   g.addColorStop(1, 'rgba(56,189,248,0)');
   ctx.fillStyle = g;
-  ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 1.9, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(p.x, p.y, R * 1.9, 0, TAU); ctx.fill();
 
   ctx.save();
   ctx.translate(p.x, p.y);
@@ -3457,16 +3957,18 @@ function drawPortal() {
     ctx.beginPath();
     for (let k = 0; k < 3; k++) {
       const a0 = (k / 3) * TAU;
-      ctx.arc(0, 0, p.r * (0.55 + i * 0.16), a0, a0 + 1.2);
+      ctx.arc(0, 0, R * (0.55 + i * 0.16), a0, a0 + 1.2);
     }
     ctx.stroke();
   }
   ctx.restore();
 
-  ctx.fillStyle = 'rgba(224,242,254,0.9)';
-  ctx.font = '600 14px Rajdhani, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('ENTER', p.x, p.y - p.r - 16);
+  if (openK >= 0.999) {
+    ctx.fillStyle = 'rgba(224,242,254,0.9)';
+    ctx.font = '600 14px Rajdhani, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('ENTER', p.x, p.y - R - 16);
+  }
 }
 
 function drawObstacles() {
@@ -4767,6 +5269,7 @@ function render() {
 
   drawGround();
   drawArenaGround();
+  drawBossArena();
   drawPortal();
   drawObstacles();
   drawHiddenSpots();
@@ -4825,6 +5328,7 @@ function update(dt) {
   updateBreakables(sdt);
   updatePickups(sdt);
   updateArenas(sdt);
+  updateBossFight(sdt);
   updateBoss(sdt);
   updatePortal(sdt);
   updateFootsteps(sdt);
