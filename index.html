@@ -156,6 +156,42 @@
     100%{ opacity:0; transform:translate(-50%,-50%) scale(1.03); }
   }
 
+  /* mission briefing card (shown for 3s on every zone load) */
+  #briefing{
+    position:absolute; left:50%; top:47%; transform:translate(-50%,-50%);
+    width:min(560px, 80%); padding:26px 38px 24px;
+    display:flex; flex-direction:column; align-items:center; gap:9px;
+    text-align:center; pointer-events:none; opacity:0; z-index:26;
+    background:linear-gradient(180deg, rgba(10,13,20,.94), rgba(4,6,11,.97));
+    border:1px solid rgba(232,200,116,.55); border-radius:2px;
+    box-shadow:0 0 44px rgba(0,0,0,.8), inset 0 0 34px rgba(232,200,116,.07);
+  }
+  #briefing.show{ animation:briefingIn 3s ease-out forwards; }
+  @keyframes briefingIn{
+    0%  { opacity:0; transform:translate(-50%,-50%) translateY(-10px) scale(.965); }
+    9%  { opacity:1; transform:translate(-50%,-50%) translateY(0) scale(1); }
+    70% { opacity:1; transform:translate(-50%,-50%) translateY(0) scale(1); }
+    100%{ opacity:0; transform:translate(-50%,-50%) translateY(-6px) scale(1.02); }
+  }
+  #briefing .b-eyebrow{
+    font-family:var(--font-head); font-size:11px; letter-spacing:6px;
+    color:var(--gold); text-transform:uppercase; opacity:.92;
+  }
+  #briefing .b-title{
+    font-family:var(--font-head); font-weight:700; font-size:clamp(24px,3.4vw,34px);
+    letter-spacing:3px; color:#ffe7b8; text-transform:uppercase; line-height:1.2;
+    text-shadow:0 0 26px rgba(255,205,110,.45);
+  }
+  #briefing .b-rule{
+    width:118px; height:1px; margin:2px 0 3px;
+    background:linear-gradient(90deg, rgba(232,200,116,0), rgba(232,200,116,.85), rgba(232,200,116,0));
+  }
+  #briefing .b-objective{
+    font-family:var(--font-stat); font-size:16px; letter-spacing:.6px;
+    color:#dce7f6; line-height:1.45; font-weight:500;
+  }
+  #briefing .b-objective b{ color:var(--gold-bright); font-weight:700; }
+
   /* ---------------- shared overlay chrome ---------------- */
   .overlay{
     position:absolute; inset:0; display:none; flex-direction:column;
@@ -330,6 +366,14 @@
 
     <div id="dangerBorder"></div>
     <div id="banner"></div>
+  </div>
+
+  <!-- ==================== MISSION BRIEFING ==================== -->
+  <div id="briefing">
+    <div class="b-eyebrow" id="briefZone">Zone 1</div>
+    <div class="b-title" id="briefTitle">The Village</div>
+    <div class="b-rule"></div>
+    <div class="b-objective" id="briefObjective">Clear <b>3 arenas</b> to unlock the boss</div>
   </div>
 
   <!-- ==================== MAIN MENU ==================== -->
@@ -523,6 +567,10 @@ const UI = {
   bossPhase: document.getElementById('bossPhase'),
   dangerBorder: document.getElementById('dangerBorder'),
   banner: document.getElementById('banner'),
+  briefing: document.getElementById('briefing'),
+  briefZone: document.getElementById('briefZone'),
+  briefTitle: document.getElementById('briefTitle'),
+  briefObjective: document.getElementById('briefObjective'),
   abilities: {
     laser: document.getElementById('abLaser'),
     nova: document.getElementById('abNova'),
@@ -683,6 +731,7 @@ const game = {
   enemyBullets: [],
   gemsList: [],
   particles: [],
+  footsteps: [],
   texts: [],
   obstacles: [],
   arenas: [],
@@ -732,7 +781,9 @@ function makePlayer() {
     overcharge: false,
     overchargeTimer: 0,
     walk: 0,
-    moving: false
+    moving: false,
+    footAcc: 0,
+    footSide: 1
   };
 }
 
@@ -761,6 +812,7 @@ function loadZone(zoneIndex, opts) {
   game.enemyBullets.length = 0;
   game.gemsList.length = 0;
   game.particles.length = 0;
+  game.footsteps.length = 0;
   game.texts.length = 0;
   game.boss = null;
   game.bossUnlocked = false;
@@ -803,7 +855,8 @@ function loadZone(zoneIndex, opts) {
   updateObjective();
   updateHealthOrbs();
   hideBossBar();
-  showBanner('ZONE ' + z.id + ' — ' + z.name.toUpperCase());
+  /* the zone callout is the animated briefing card, not the centre banner */
+  showBriefing();
 }
 
 /* ------------------------------ obstacles ---------------------------------- */
@@ -971,10 +1024,22 @@ function updatePlayer(dt) {
       p.x += mv.x * p.speed * dt;
       p.y += mv.y * p.speed * dt;
       p.walk += dt * 12;
+      p.moveAng = Math.atan2(mv.y, mv.x);
     }
   }
 
   collideObstacles(p);
+
+  /* --- footstep trail: one print every ~26px travelled --- */
+  if (p.dashTimer <= 0 && p.moving) {
+    p.footAcc += p.speed * dt;
+    if (p.footAcc >= 26) {
+      p.footAcc = 0;
+      dropFootprint(p);
+    }
+  } else if (!p.moving) {
+    p.footAcc = 20;   /* first step lands immediately when you set off */
+  }
 
   if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
 
@@ -3684,6 +3749,9 @@ function drawMinimap() {
     mmCtx.shadowBlur = 0;
   }
 
+  /* dotted guide line from the player to the next objective */
+  drawMinimapPath(k);
+
   /* player */
   const p = game.player;
   if (p) {
@@ -3698,6 +3766,276 @@ function drawMinimap() {
     mmCtx.lineWidth = 1.4;
     mmCtx.stroke();
   }
+}
+
+/* =============================================================================
+   NAVIGATION HELPERS  (briefing card, edge arrows, footstep trail, minimap path)
+   Pure presentation: nothing here touches health, damage, spawning or scoring.
+   ============================================================================= */
+
+/* ------------------------------ mission briefing --------------------------- */
+let briefingTimer = null;
+
+function briefingObjectiveFor(zoneIndex) {
+  const z = ZONES[zoneIndex];
+  if (zoneIndex >= ZONES.length - 1) {
+    return 'Clear <b>3 arenas</b> to summon <b>' + z.boss.name + '</b>';
+  }
+  return 'Clear <b>3 arenas</b> to unlock the boss';
+}
+
+function showBriefing() {
+  const z = ZONES[game.zoneIndex];
+  UI.briefZone.textContent = 'Zone ' + z.id;
+  UI.briefTitle.textContent = z.name;
+  UI.briefObjective.innerHTML = briefingObjectiveFor(game.zoneIndex);
+
+  /* restart the CSS animation even if the card is already up */
+  UI.briefing.classList.remove('show');
+  void UI.briefing.offsetWidth;
+  UI.briefing.classList.add('show');
+
+  if (briefingTimer) clearTimeout(briefingTimer);
+  briefingTimer = setTimeout(function () {
+    UI.briefing.classList.remove('show');
+    briefingTimer = null;
+  }, 3000);
+}
+
+/* ------------------------------ where to go next --------------------------- */
+/* nearest uncleared arena -> boss location -> the live boss -> the portal */
+function navigationTarget() {
+  const p = game.player;
+  if (!p) return null;
+  if (game.portal) return { x: game.portal.x, y: game.portal.y, kind: 'portal', radius: game.portal.r };
+  if (game.boss) return { x: game.boss.x, y: game.boss.y, kind: 'boss', radius: game.boss.r };
+  if (!game.arenas || !game.arenas.length) return null;
+
+  const allCleared = game.arenas.every(function (a) { return a.cleared; });
+  if (allCleared || game.bossUnlocked) {
+    const bp = ZONES[game.zoneIndex].bossPos;
+    return { x: bp[0], y: bp[1], kind: 'boss', radius: 54 };
+  }
+
+  let best = null;
+  let bestD = Infinity;
+  for (let i = 0; i < game.arenas.length; i++) {
+    const a = game.arenas[i];
+    if (a.cleared) continue;
+    const d = dist(p.x, p.y, a.x, a.y);
+    if (d < bestD) { bestD = d; best = a; }
+  }
+  if (!best) return null;
+  return { x: best.x, y: best.y, kind: 'arena', radius: best.r };
+}
+
+/* the edge arrow always tracks a single goal: the nearest uncleared arena,
+   then the boss location, then the live boss, then the portal */
+function navigationTargets() {
+  const t = navigationTarget();
+  return t ? [t] : [];
+}
+
+/* ------------------------------ edge arrows -------------------------------- */
+function edgePointFor(tx, ty, padX, padY) {
+  const cx = W / 2;
+  const cy = SKY_H + VIEW_H / 2;
+  const c = tx - cx;
+  const sn = ty - cy;
+  const ang = Math.atan2(sn, c) || 0;
+  const dx = Math.cos(ang);
+  const dy = Math.sin(ang);
+  let t = Infinity;
+  if (dx > 0.0001) t = Math.min(t, (W - padX - cx) / dx);
+  else if (dx < -0.0001) t = Math.min(t, (padX - cx) / dx);
+  if (dy > 0.0001) t = Math.min(t, (H - padY - cy) / dy);
+  else if (dy < -0.0001) t = Math.min(t, (SKY_H + 58 - cy) / dy);
+  if (!isFinite(t) || t < 0) t = 0;
+  return { x: cx + dx * t, y: cy + dy * t, ang: ang };
+}
+
+function drawArrowHead(x, y, ang, scale, alpha) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(ang);
+  ctx.scale(scale, scale);
+
+  /* soft halo so it reads over any floor */
+  const halo = ctx.createRadialGradient(0, 0, 2, 0, 0, 40);
+  halo.addColorStop(0, 'rgba(255,214,138,' + (0.30 * alpha) + ')');
+  halo.addColorStop(1, 'rgba(255,190,90,0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.arc(0, 0, 40, 0, TAU); ctx.fill();
+
+  ctx.globalAlpha = alpha;
+  ctx.shadowColor = 'rgba(255,205,110,0.95)';
+  ctx.shadowBlur = 18;
+
+  /* chevron arrow pointing along +x */
+  const g = ctx.createLinearGradient(-16, 0, 18, 0);
+  g.addColorStop(0, 'rgba(232,200,116,0.55)');
+  g.addColorStop(0.55, '#ffd98a');
+  g.addColorStop(1, '#fff3d2');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(18, 0);
+  ctx.lineTo(-4, -12);
+  ctx.lineTo(-4, -4.5);
+  ctx.lineTo(-16, -4.5);
+  ctx.lineTo(-16, 4.5);
+  ctx.lineTo(-4, 4.5);
+  ctx.lineTo(-4, 12);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255,246,220,0.85)';
+  ctx.lineWidth = 1.1;
+  ctx.stroke();
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+function drawObjectiveArrows() {
+  if (game.screen !== 'playing') return;
+  const targets = navigationTargets();
+  if (!targets.length) return;
+
+  const p = game.player;
+  const pulse = 0.5 + 0.5 * Math.sin(game.time * 4.2);
+  const pulseSlow = 0.5 + 0.5 * Math.sin(game.time * 2.1);
+
+  const t = targets[0];
+  const sx = toScreenX(t.x);
+  const sy = toScreenY(t.y);
+  const pt = edgePointFor(sx, sy, 46, 74);
+
+  /* if the goal is already on screen the arrow recedes and stops pulsing */
+  const visible = sx > 44 && sx < W - 44 && sy > SKY_H + 34 && sy < H - 44;
+  const alpha = visible ? 0.34 : (0.78 + 0.22 * pulse);
+  const scale = visible ? 0.76 : (0.92 + 0.16 * pulse);
+
+  drawArrowHead(pt.x, pt.y, pt.ang, scale, alpha);
+
+  /* pulsing gold ring behind the arrow */
+  if (!visible) {
+    ctx.save();
+    ctx.globalAlpha = 0.5 * (0.5 + 0.5 * pulseSlow);
+    ctx.strokeStyle = '#ffe0a3';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, 27 + pulse * 4, 0, TAU);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* distance readout under the arrow */
+  if (!visible && p) {
+    const d = Math.round(dist(p.x, p.y, t.x, t.y));
+    const label = d >= 1000 ? (d / 1000).toFixed(1) + ' km' : (Math.round(d / 10) * 10) + ' m';
+    const offY = pt.y > (SKY_H + VIEW_H / 2) ? 40 : -34;
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = '#ffe6ae';
+    ctx.font = '600 13px Rajdhani, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 6;
+    ctx.fillText(label, pt.x, pt.y + offY);
+    ctx.restore();
+  }
+}
+
+/* ------------------------------ footstep trail ----------------------------- */
+function dropFootprint(p) {
+  p.footSide = -(p.footSide || 1);
+  const ang = (typeof p.moveAng === 'number') ? p.moveAng : p.angle;
+  const perp = ang + Math.PI / 2;
+  const off = p.footSide * 5.2;
+  const fx = p.x + Math.cos(perp) * off - Math.cos(ang) * 5;
+  const fy = p.y + Math.sin(perp) * off - Math.sin(ang) * 5;
+
+  game.footsteps.push({ x: fx, y: fy, ang: ang, side: p.footSide, life: 0, maxLife: 3.4 });
+  if (game.footsteps.length > 150) game.footsteps.shift();
+
+  if (Math.random() < 0.45) {
+    spawnParticle(fx, fy + 3, rand(-16, 16), rand(-12, 4), 0.5, 3.2, 'rgba(178,205,232,0.5)', 3);
+  }
+}
+
+function updateFootsteps(dt) {
+  for (let i = game.footsteps.length - 1; i >= 0; i--) {
+    const f = game.footsteps[i];
+    f.life += dt;
+    if (f.life >= f.maxLife) game.footsteps.splice(i, 1);
+  }
+}
+
+function drawFootsteps() {
+  if (!game.footsteps.length) return;
+  for (let i = 0; i < game.footsteps.length; i++) {
+    const f = game.footsteps[i];
+    const a = clamp(1 - f.life / f.maxLife, 0, 1);
+    const fade = a * a;
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate(f.ang);
+    ctx.globalAlpha = 0.46 * fade;
+    ctx.fillStyle = '#05090f';
+    ctx.beginPath();
+    ctx.ellipse(0, f.side * 5, 6.4, 3.4, 0, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 0.2 * fade;
+    ctx.fillStyle = '#8fd8ff';
+    ctx.beginPath();
+    ctx.ellipse(0, f.side * 5, 8.6, 4.8, 0, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ------------------------------ minimap path ------------------------------- */
+function drawMinimapPath(k) {
+  const p = game.player;
+  const t = navigationTarget();
+  if (!p || !t) return;
+
+  const fromX = p.x * k;
+  const fromY = p.y * k;
+  const toX = t.x * k;
+  const toY = t.y * k;
+
+  const colour = t.kind === 'portal' ? '#38bdf8' : (t.kind === 'boss' ? '#f87171' : '#fbbf24');
+
+  mmCtx.save();
+  mmCtx.strokeStyle = hexToRgba(colour, 0.85);
+  mmCtx.lineWidth = 2.4;
+  mmCtx.lineCap = 'round';
+  mmCtx.setLineDash([2.5, 7]);
+  mmCtx.lineDashOffset = -(game.time * 26) % 9.5;
+  mmCtx.shadowColor = colour;
+  mmCtx.shadowBlur = 8;
+  mmCtx.beginPath();
+  mmCtx.moveTo(fromX, fromY);
+  mmCtx.lineTo(toX, toY);
+  mmCtx.stroke();
+  mmCtx.restore();
+
+  /* small chevron at the destination end */
+  mmCtx.save();
+  const ang = Math.atan2(toY - fromY, toX - fromX);
+  mmCtx.translate(toX, toY);
+  mmCtx.rotate(ang);
+  mmCtx.fillStyle = colour;
+  mmCtx.globalAlpha = 0.95;
+  mmCtx.beginPath();
+  mmCtx.moveTo(10, 0);
+  mmCtx.lineTo(2, -5);
+  mmCtx.lineTo(2, 5);
+  mmCtx.closePath();
+  mmCtx.fill();
+  mmCtx.restore();
 }
 
 /* ------------------------------ main render -------------------------------- */
@@ -3728,6 +4066,7 @@ function render() {
   drawArenaGround();
   drawPortal();
   drawObstacles();
+  drawFootsteps();
   drawGems();
   for (let i = 0; i < game.enemies.length; i++) drawEnemy(game.enemies[i]);
   drawBoss();
@@ -3740,6 +4079,7 @@ function render() {
 
   drawAmbient();
   drawPostFx();
+  drawObjectiveArrows();
   drawMinimap();
 }
 
@@ -3778,6 +4118,7 @@ function update(dt) {
   updateArenas(sdt);
   updateBoss(sdt);
   updatePortal(sdt);
+  updateFootsteps(sdt);
   updateParticles(sdt);
   updateFog();
   updateHud();
