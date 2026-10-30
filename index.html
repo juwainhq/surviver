@@ -5462,9 +5462,45 @@ function placeStageObject(object, areaX, areaY) {
   return false;
 }
 
+/* Level 1's props: ten static obstacles at fixed world coordinates. They are
+   identical every run, never drift, and are never recycled to a new spot. */
+const VILLAGE_RAID_PROPS = [
+  { type: "pillar", x: 1080, y: 640 },
+  { type: "barrel", x: 760, y: 820 },
+  { type: "barrel", x: 480, y: 720 },
+  { type: "pillar", x: 640, y: 1240 },
+  { type: "barrel", x: 900, y: 1620 },
+  { type: "pillar", x: 1560, y: 1180 },
+  { type: "barrel", x: 1650, y: 900 },
+  { type: "pillar", x: 1240, y: 1760 },
+  { type: "barrel", x: 1780, y: 1560 },
+  { type: "barrel", x: 2020, y: 1180 }
+];
+
+function buildVillageRaidProps() {
+  for (let i = 0; i < VILLAGE_RAID_PROPS.length; i++) {
+    const def = VILLAGE_RAID_PROPS[i];
+    const radius = def.type === "pillar" ? 20 : 15;
+    const point = clampToWorldPoint(def.x, def.y, radius + 6);
+    stageObjects.push({
+      type: def.type,
+      r: radius,
+      x: point.x, y: point.y,
+      hits: 0,
+      alive: true
+    });
+  }
+  objectAreaKey = "village-raid";
+}
+
 function initializeStageObjects() {
   stageObjects.length = 0;
   healthPickups.length = 0;
+  if (campaignLevel === 1) {
+    // Level 1 uses its own fixed, static prop layout.
+    buildVillageRaidProps();
+    return;
+  }
   const area = objectArea(player.x, player.y);
   objectAreaKey = area.x + "," + area.y;
   // Three objects in each of the nine map cells, with each type represented.
@@ -5483,6 +5519,8 @@ function initializeStageObjects() {
 }
 
 function updateObjectArea() {
+  // Level 1's props are part of the static stage: they never move or respawn.
+  if (campaignLevel === 1) return;
   const area = objectArea(player.x, player.y);
   const key = area.x + "," + area.y;
   if (key === objectAreaKey) return;
@@ -5617,6 +5655,72 @@ function drawHealthPickups() {
   ctx.restore();
 }
 
+/* Level 1 props, drawn simply and statically: a wooden barrel is a brown
+   circle with plank lines, a stone pillar is a grey rectangle. */
+function drawVillageRaidProp(o) {
+  const x = o.x, y = o.y;
+
+  // Fixed contact shadow on the ground (never animated).
+  ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+  ctx.beginPath();
+  ctx.ellipse(x, y + o.r * 0.7, o.r + 3, o.r * 0.42, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (o.type === "pillar") {
+    const w = o.r * 1.7;
+    const h = o.r * 2.2;
+    ctx.fillStyle = "#8b9199";
+    ctx.fillRect(x - w / 2, y - h / 2, w, h);
+    ctx.strokeStyle = "#575e66";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x - w / 2 + 1, y - h / 2 + 1, w - 2, h - 2);
+    ctx.fillStyle = "#a4aab2";
+    ctx.fillRect(x - w / 2 + 2, y - h / 2 + 2, w - 4, 4);
+    ctx.fillStyle = "#6d747c";
+    ctx.fillRect(x - w / 2 + 3, y + 1, w - 6, 3);
+    if (o.hits > 0) {
+      // Static crack marks as the pillar takes damage.
+      ctx.strokeStyle = "#3d434a";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x - 4, y - h / 2 + 6);
+      ctx.lineTo(x + 2, y - 2);
+      ctx.lineTo(x - 3, y + h / 2 - 8);
+      if (o.hits >= 2) {
+        ctx.moveTo(x + 2, y - 2);
+        ctx.lineTo(x + 8, y - 8);
+      }
+      ctx.stroke();
+    }
+    return;
+  }
+
+  // Barrel: brown circle with plank lines.
+  const r = o.r;
+  ctx.fillStyle = "#7a4a22";
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#3f2713";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(63, 39, 19, 0.85)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.55, y - r * 0.82); ctx.lineTo(x - r * 0.55, y + r * 0.82);
+  ctx.moveTo(x, y - r);                    ctx.lineTo(x, y + r);
+  ctx.moveTo(x + r * 0.55, y - r * 0.82); ctx.lineTo(x + r * 0.55, y + r * 0.82);
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(44, 27, 13, 0.9)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.86, y - r * 0.32); ctx.lineTo(x + r * 0.86, y - r * 0.32);
+  ctx.moveTo(x - r * 0.86, y + r * 0.32); ctx.lineTo(x + r * 0.86, y + r * 0.32);
+  ctx.stroke();
+}
+
 function drawStageObjects() {
   ctx.save();
   for (let i = 0; i < stageObjects.length; i++) {
@@ -5624,6 +5728,10 @@ function drawStageObjects() {
     if (!o.alive || o.x < viewX() - 50 || o.x > viewX() + W + 50 ||
         o.y < viewY() - 60 || o.y > viewY() + H + 60) continue;
     const x = o.x, y = o.y;
+    if (campaignLevel === 1) {
+      drawVillageRaidProp(o);
+      continue;
+    }
     ctx.fillStyle = "rgba(0,0,0,0.4)";
     ctx.beginPath(); ctx.ellipse(x, y + 12, o.r + 4, 8, 0, 0, Math.PI * 2); ctx.fill();
     if (o.type === "barrel") {
@@ -7555,43 +7663,6 @@ function drawCastleSilhouette(horizonY, parX) {
 }
 
 /* Render the upper backdrop for each of the 5 distinct campaign stages. */
-function drawVillageBackdrop(horizonY, parX) {
-  drawCastleSilhouette(horizonY, parX);
-
-  // Burning medieval village cottages & raid embers on the right ridge.
-  const vx = W * 0.68 + parX * 0.35;
-  const baseY = horizonY + 2;
-  ctx.save();
-  ctx.fillStyle = "#080b14";
-  const cottages = [
-    { dx: -52, w: 32, h: 20, roofH: 15 },
-    { dx: -10, w: 38, h: 24, roofH: 18 },
-    { dx: 36,  w: 28, h: 18, roofH: 13 }
-  ];
-  for (let i = 0; i < cottages.length; i++) {
-    const c = cottages[i];
-    const x = vx + c.dx;
-    ctx.fillRect(x, baseY - c.h, c.w, c.h + 2);
-    ctx.beginPath();
-    ctx.moveTo(x - 4, baseY - c.h);
-    ctx.lineTo(x + c.w / 2, baseY - c.h - c.roofH);
-    ctx.lineTo(x + c.w + 4, baseY - c.h);
-    ctx.lineTo(x - 4, baseY - c.h);
-    ctx.fill();
-  }
-
-  // Warm raid firelight glow behind the hamlet roofs.
-  const firePulse = 0.75 + 0.25 * Math.sin(animTime * 7.2);
-  const raidGlow = ctx.createRadialGradient(vx + 6, baseY - 18, 4, vx + 6, baseY - 18, 78);
-  raidGlow.addColorStop(0, "rgba(251, 146, 60, " + (0.28 * firePulse).toFixed(3) + ")");
-  raidGlow.addColorStop(1, "rgba(251, 146, 60, 0)");
-  ctx.fillStyle = raidGlow;
-  ctx.beginPath();
-  ctx.arc(vx + 6, baseY - 18, 78, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
-
 function drawDarkForestBackdrop(horizonY, parX) {
   ctx.save();
   // Far misty pine/oak treeline silhouette.
@@ -7820,47 +7891,8 @@ function drawParallaxDetails(theme, horizon) {
   ctx.save();
   const t = animTime;
   const span = Math.max(1, W + 180);
-  if (theme === "village") {
-    // Rows of wheat sweep past with the ground, swaying in the wind.
-    ctx.save();
-    ctx.beginPath(); ctx.rect(0, horizon, W, Math.max(0, H - horizon)); ctx.clip();
-    const stepX = 34, stepY = 44;
-    const ox = layerOffset(camera.x * bgParallax(0.83), stepX);
-    const oy = layerOffset(camera.y * bgParallax(0.83), stepY);
-    ctx.lineWidth = 1.3;
-    for (let y = horizon - oy; y < H + stepY; y += stepY) {
-      for (let x = -ox; x < W + stepX; x += stepX) {
-        const sway = Math.sin(t * 1.8 + x * 0.025 + y * 0.02) * 3;
-        ctx.strokeStyle = "rgba(194,155,70,0.48)";
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + sway, y - 12); ctx.stroke();
-        ctx.fillStyle = "rgba(241,194,92,0.65)";
-        ctx.fillRect(x + sway - 1, y - 15, 3, 5);
-      }
-    }
-    ctx.restore();
-    // More distant flaming cottages scroll independently of the wheat.
-    for (let i = 0; i < 6; i++) {
-      const x = layerOffset(i * 270 - camera.x * bgParallax(0.22), span) - 90;
-      const y = horizon - 4 + Math.sin(i * 2) * 3;
-      ctx.fillStyle = "#15111a"; ctx.fillRect(x - 16, y - 22, 32, 22);
-      ctx.beginPath(); ctx.moveTo(x - 20, y - 22); ctx.lineTo(x, y - 38); ctx.lineTo(x + 20, y - 22); ctx.fill();
-      const flicker = 6 + 4 * Math.abs(Math.sin(t * 8 + i));
-      ctx.shadowColor = "#fb923c"; ctx.shadowBlur = 12;
-      ctx.fillStyle = "#f97316"; ctx.beginPath(); ctx.moveTo(x - 8, y - 28); ctx.lineTo(x - 3, y - 34 - flicker); ctx.lineTo(x + 1, y - 28); ctx.lineTo(x + 7, y - 40 - flicker * 0.7); ctx.lineTo(x + 12, y - 27); ctx.fill();
-      ctx.shadowBlur = 0;
-    }
-    // Tiny fleeing peasants, with independent stride animation.
-    for (let i = 0; i < 5; i++) {
-      const x = layerOffset(i * 240 + t * (28 + i * 3) - camera.x * bgParallax(0.48), span) - 90;
-      const y = horizon + 20 + i % 3 * 12 - layerOffset(camera.y * bgParallax(0.12), 18);
-      const stride = Math.sin(t * 12 + i) * 5;
-      ctx.strokeStyle = "rgba(184,171,150,0.8)"; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(x, y - 9); ctx.lineTo(x + 2, y - 3);
-      ctx.lineTo(x - stride, y + 3); ctx.moveTo(x + 2, y - 3); ctx.lineTo(x + stride, y + 3);
-      ctx.moveTo(x + 1, y - 7); ctx.lineTo(x - 5 - stride * 0.4, y - 4); ctx.stroke();
-      ctx.fillStyle = "#c3a88d"; ctx.beginPath(); ctx.arc(x, y - 12, 2.5, 0, Math.PI * 2); ctx.fill();
-    }
-  } else if (theme === "forest") {
+  if (theme === "forest") {
+    // Near trees move faster than the existing distant treeline.  } else if (theme === "forest") {
     // Near trees move faster than the existing distant treeline.
     for (let i = 0; i < Math.ceil(W / 150) + 3; i++) {
       const x = i * 150 - layerOffset(camera.x * bgParallax(0.65), 150) - 90;
@@ -7963,7 +7995,7 @@ function drawParallaxDetails(theme, horizon) {
    These use their own deterministic seeds and normalized coordinates, never
    the gameplay particle arrays or Math.random(). Viewport resizing therefore
    keeps the effects in bounds without affecting combat or random spawns. */
-const WEATHER_COUNTS = { village: 36, forest: 65, castle_gates: 105, tower: 58, portal: 55 }; // 50% density
+const WEATHER_COUNTS = { village: 18, forest: 65, castle_gates: 105, tower: 58, portal: 55 }; // Level 1 keeps 15-20 embers
 let weatherTheme = "";
 let weatherElapsed = 0;
 let weatherParticles = [];
@@ -8024,17 +8056,10 @@ function drawWeatherBackground() {
   ctx.save();
 
   if (weatherTheme === "village") {
-    // Gold sparks rise from the burning village, drifting in the warm air.
-    for (let i = 0; i < weatherParticles.length; i++) {
-      const p = weatherParticles[i];
-      const x = weatherWrap(p.u * W + Math.sin(t * 1.5 + p.phase) * 18 - camera.x * bgParallax(0.18), W);
-      const y = weatherWrap(p.v * H - t * 45 * p.speed - camera.y * bgParallax(0.12), H);
-      const flicker = 0.4 + 0.6 * Math.abs(Math.sin(t * 5 + p.phase));
-      ctx.globalAlpha = 0.35 + flicker * 0.55;
-      ctx.fillStyle = i % 4 === 0 ? "#fff0a3" : (i % 3 === 0 ? "#fb923c" : "#fbbf24");
-      ctx.beginPath(); ctx.arc(x, y, p.size, 0, Math.PI * 2); ctx.fill();
-    }
+    // Level 1 atmosphere: a few slow embers, screen space only.
+    drawVillageRaidEmbers();
   } else if (weatherTheme === "forest") {
+    // Green rain falls over rolling, ground-hugging mist.  } else if (weatherTheme === "forest") {
     // Green rain falls over rolling, ground-hugging mist.
     drawWeatherWisps(particleDensity(18), "142,200,166", 0.055, 65);
     ctx.strokeStyle = "rgba(119,227,167,0.43)";
@@ -8113,7 +8138,210 @@ function drawWeatherLightning() {
   ctx.restore();
 }
 
+/* ===========================================================================
+   LEVEL 1 · "THE VILLAGE RAID" — static stage, rebuilt from scratch
+   ---------------------------------------------------------------------------
+   Deliberately simple and completely still. Nothing here reads animTime and
+   nothing scrolls on its own:
+
+     · SKY    one flat dark navy fill that never moves, a large pale moon in the
+              top right corner and a scatter of static white stars.
+     · GROUND one stone/dirt tile pattern, built once and repeated in WORLD
+              space across the whole 2400x2400 map. It never animates: the only
+              thing that moves is the camera gliding over it (exactly 1:1, so no
+              layer ever travels faster than the camera).
+     · EMBERS a handful of slow orange motes drifting up in screen space, fully
+              independent of the player.
+
+   All previous village parallax (wheat rows, cottages, fleeing peasants),
+   the castle silhouette and the animated sky were deleted.
+   =========================================================================== */
+const VILLAGE_SKY_COLOR = "#0a1330";      // fixed dark navy sky
+const VILLAGE_TILE_SIZE = 240;            // ground pattern tile, in world pixels
+const VILLAGE_TILE_CELL = 20;             // one cobble/dirt brick
+const VILLAGE_STAR_COUNT = 46;            // static stars, never animated
+const VILLAGE_GROUND_FALLBACK = "#33291f";
+const VILLAGE_STONE_COLORS = [
+  "#3a2d21", "#453523", "#312a22", "#2c2620",
+  "#3c3c40", "#47474c", "#34343a", "#41372a"
+];
+
+let villageStars = null;
+let villageStarsKey = "";
+let villageGroundTile = null;
+let villageGroundPattern = null;
+
+/* Static star field: deterministic positions, no twinkle, no drift. */
+function villageStarsForViewport(horizonY) {
+  const key = W + "x" + H + "x" + horizonY;
+  if (villageStars && villageStarsKey === key) return villageStars;
+  const stars = [];
+  const skyH = Math.max(24, horizonY - 16);
+  for (let i = 0; i < VILLAGE_STAR_COUNT; i++) {
+    stars.push({
+      x: Math.round(stoneHash(i + 1, 911) * W),
+      y: Math.round(8 + stoneHash(i + 37, 313) * skyH),
+      r: stoneHash(i + 71, 577) > 0.82 ? 2 : 1,
+      a: 0.35 + stoneHash(i + 13, 149) * 0.55
+    });
+  }
+  villageStars = stars;
+  villageStarsKey = key;
+  return villageStars;
+}
+
+/* The ground pattern is drawn exactly once into an offscreen tile. */
+function buildVillageGroundTile() {
+  if (typeof document === "undefined" || typeof document.createElement !== "function") return null;
+  const tile = document.createElement("canvas");
+  tile.width = VILLAGE_TILE_SIZE;
+  tile.height = VILLAGE_TILE_SIZE;
+  const tileCtx = tile.getContext ? tile.getContext("2d") : null;
+  if (!tileCtx) return null;
+
+  // Packed earth showing through the joints.
+  tileCtx.fillStyle = "#201a14";
+  tileCtx.fillRect(0, 0, VILLAGE_TILE_SIZE, VILLAGE_TILE_SIZE);
+
+  const cells = Math.floor(VILLAGE_TILE_SIZE / VILLAGE_TILE_CELL);
+  for (let row = 0; row < cells; row++) {
+    for (let col = 0; col < cells; col++) {
+      const pick = stoneHash(col * 3 + 1, row * 5 + 2);
+      const sizeJitter = stoneHash(col + 41, row + 17);
+      const tone = stoneHash(col + 91, row + 53);
+      const colorIndex = Math.floor(pick * VILLAGE_STONE_COLORS.length) % VILLAGE_STONE_COLORS.length;
+      const inset = 1 + (sizeJitter > 0.72 ? 1 : 0);
+      const w = VILLAGE_TILE_CELL - inset * 2;
+      const h = VILLAGE_TILE_CELL - inset * 2 - (sizeJitter > 0.9 ? 1 : 0);
+      const px = col * VILLAGE_TILE_CELL + inset;
+      const py = row * VILLAGE_TILE_CELL + inset;
+      tileCtx.fillStyle = VILLAGE_STONE_COLORS[colorIndex];
+      tileCtx.fillRect(px, py, w, h);
+      if (tone > 0.5) {
+        tileCtx.fillStyle = "rgba(255, 240, 214, 0.05)";
+        tileCtx.fillRect(px, py, w, 1);
+      }
+    }
+  }
+
+  // Fixed grit specks, part of the same static pattern.
+  for (let i = 0; i < 90; i++) {
+    const gx = Math.round(stoneHash(i + 3, 77) * VILLAGE_TILE_SIZE);
+    const gy = Math.round(stoneHash(i + 9, 131) * VILLAGE_TILE_SIZE);
+    tileCtx.fillStyle = i % 5 === 0 ? "rgba(120, 104, 84, 0.16)" : "rgba(12, 10, 8, 0.18)";
+    tileCtx.fillRect(gx, gy, 2, 2);
+  }
+  return tile;
+}
+
+function ensureVillageGroundPattern() {
+  if (!villageGroundTile) villageGroundTile = buildVillageGroundTile();
+  if (!villageGroundTile) return null;
+  if (!villageGroundPattern && typeof ctx.createPattern === "function") {
+    villageGroundPattern = ctx.createPattern(villageGroundTile, "repeat");
+  }
+  return villageGroundPattern;
+}
+
+function drawVillageRaidStage() {
+  const horizonY = battlefieldHorizonY();
+
+  // 1. Fixed navy sky, behind everything, on every pixel above the ground.
+  ctx.fillStyle = VILLAGE_SKY_COLOR;
+  ctx.fillRect(0, 0, W, H);
+
+  // 2. Static stars.
+  const stars = villageStarsForViewport(horizonY);
+  ctx.fillStyle = "#ffffff";
+  for (let i = 0; i < stars.length; i++) {
+    const star = stars[i];
+    ctx.globalAlpha = star.a;
+    ctx.fillRect(star.x, star.y, star.r, star.r);
+  }
+  ctx.globalAlpha = 1;
+
+  // 3. Large pale moon, fixed in the top right corner.
+  const moonR = clamp(Math.round(horizonY * 0.34), 34, 60);
+  const moonX = W - moonR - 48;
+  const moonY = moonR + 22;
+  if (typeof ctx.createRadialGradient === "function") {
+    const halo = ctx.createRadialGradient(moonX, moonY, moonR * 0.7, moonX, moonY, moonR * 2.6);
+    halo.addColorStop(0, "rgba(214, 226, 245, 0.20)");
+    halo.addColorStop(0.55, "rgba(170, 194, 228, 0.08)");
+    halo.addColorStop(1, "rgba(120, 160, 210, 0)");
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, moonR * 2.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#e6ecf6";
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+  ctx.fill();
+  // A couple of fixed craters so the moon reads as a moon, not a flat disc.
+  ctx.fillStyle = "rgba(186, 199, 219, 0.55)";
+  ctx.beginPath();
+  ctx.arc(moonX - moonR * 0.30, moonY - moonR * 0.18, moonR * 0.20, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(moonX + moonR * 0.26, moonY + moonR * 0.22, moonR * 0.14, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 4. Ground: the one static pattern, repeated in world space. The integer
+  //    camera snap keeps the tiles perfectly still (no sub-pixel shimmer).
+  const groundTop = horizonY;
+  const groundH = Math.max(1, H - horizonY);
+  const pattern = ensureVillageGroundPattern();
+  const originX = Math.round(viewX());
+  const originY = Math.round(viewY());
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, groundTop, W, groundH);
+  ctx.clip();
+  if (pattern) {
+    ctx.translate(-originX, -originY);
+    ctx.fillStyle = pattern;
+    ctx.fillRect(originX, originY + groundTop, W + 1, groundH + 1);
+  } else {
+    ctx.fillStyle = VILLAGE_GROUND_FALLBACK;
+    ctx.fillRect(0, groundTop, W, groundH);
+  }
+  ctx.restore();
+
+  // 5. Static edge where the ground meets the sky.
+  ctx.fillStyle = "rgba(0, 0, 0, 0.38)";
+  ctx.fillRect(0, groundTop - 1, W, 2);
+}
+
+/* Screen-space embers for Level 1: 18 slow orange motes rising from the bottom
+   of the screen. They ignore the camera and the player completely. */
+function drawVillageRaidEmbers() {
+  const t = weatherElapsed;
+  const span = H + 48;
+  const count = Math.min(weatherParticles.length, 20);
+  for (let i = 0; i < count; i++) {
+    const p = weatherParticles[i];
+    const speed = 12 + p.speed * 10;                       // 12-25 px/s: always slow
+    const travel = (p.v * span + t * speed) % span;
+    const y = H + 24 - travel;
+    const x = p.u * W + Math.sin(t * 0.45 + p.phase) * 6;
+    const fade = clamp(Math.min(travel / 60, (span - travel) / 90), 0, 1);
+    const radius = 1.1 + p.size * 0.9;
+    ctx.globalAlpha = 0.30 + 0.40 * fade;
+    ctx.fillStyle = i % 5 === 0 ? "#fff0a3" : "#fb923c";
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
 function drawBackground() {
+  // Level 1 has its own static stage; every other level keeps its old look.
+  if ((currentLevelConfig().theme || "village") === "village") {
+    drawVillageRaidStage();
+    return;
+  }
   const horizonY = battlefieldHorizonY();
   // Distant layers move more slowly than the world-space ground.
   const parX = -(camera.x - W) * bgParallax(0.42);
@@ -8200,21 +8428,8 @@ function drawBackground() {
     ctx.fillStyle = theme === "tower" ? "#0c0a18" : "#111622";
     ctx.fillRect(0, Math.max(0, horizonY - 88), W, 92);
   }
-  if (theme === "village") {
-    ctx.fillStyle = "#0b1323";
-    ctx.beginPath();
-    ctx.moveTo(0, horizonY + 4);
-    ctx.lineTo(0, horizonY - 22);
-    ctx.lineTo(W * 0.18, horizonY - 36);
-    ctx.lineTo(W * 0.42, horizonY - 18);
-    ctx.lineTo(W * 0.63, horizonY - 34);
-    ctx.lineTo(W * 0.86, horizonY - 20);
-    ctx.lineTo(W, horizonY - 28);
-    ctx.lineTo(W, horizonY + 4);
-    ctx.lineTo(0, horizonY + 4);
-    ctx.fill();
-    drawVillageBackdrop(horizonY, parX);
-  } else if (theme === "forest") {
+  if (theme === "forest") {
+    drawDarkForestBackdrop(horizonY, parX);  } else if (theme === "forest") {
     drawDarkForestBackdrop(horizonY, parX);
   } else if (theme === "castle_gates") {
     ctx.save();
