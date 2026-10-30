@@ -74,10 +74,10 @@
 
   /* ability ring bar */
   #abilities{
-    position:absolute; bottom:22px; left:50%; transform:translateX(-50%);
-    display:flex; gap:26px; align-items:flex-end;
+    position:absolute; bottom:24px; left:50%; transform:translateX(-50%);
+    display:flex; gap:20px; align-items:flex-end;
   }
-  .ability{ position:relative; width:62px; height:62px; display:flex; align-items:center; justify-content:center; }
+  .ability{ position:relative; width:56px; height:56px; display:flex; align-items:center; justify-content:center; }
   .ability svg{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
   .ability .ring-bg{ fill:rgba(8,12,20,.62); stroke:rgba(232,200,116,.16); stroke-width:3; }
   .ability .ring{
@@ -86,9 +86,15 @@
   }
   .ability.ready .ring{ stroke:#8fe8ff; filter:drop-shadow(0 0 6px rgba(143,232,255,.55)); }
   .ability .icon{
-    font-family:var(--font-head); font-size:15px; font-weight:700; color:#f7e9c3;
+    font-family:var(--font-head); font-size:17px; font-weight:700; color:#f7e9c3;
     text-shadow:0 0 12px rgba(232,200,116,.45);
   }
+  .ability.ready .icon{ color:#dff6ff; text-shadow:0 0 14px rgba(143,232,255,.7); }
+  .ability .cd{
+    position:absolute; font-family:var(--font-head); font-size:13px; font-weight:700;
+    color:#e8f4ff; text-shadow:0 0 10px rgba(0,0,0,.9);
+  }
+  .ability.ready .cd{ display:none; }
   .ability .label{
     position:absolute; bottom:-15px; left:50%; transform:translateX(-50%);
     font-size:9.5px; letter-spacing:1.6px; color:rgba(232,200,116,.82); white-space:nowrap;
@@ -156,6 +162,24 @@
     .wslot svg{ width:21px; height:21px; }
     #weaponName{ font-size:12px; letter-spacing:2px; }
   }
+
+  /* ability screen effects */
+  #freezeTint{
+    position:absolute; inset:0; pointer-events:none; opacity:0; z-index:22;
+    transition:opacity .22s ease;
+    background:radial-gradient(circle at 50% 55%, rgba(96,165,250,.06), rgba(37,99,235,.26));
+    box-shadow:inset 0 0 140px rgba(56,189,248,.5), inset 0 0 0 3px rgba(125,211,252,.42);
+  }
+  #freezeTint.on{ opacity:1; animation:freezeBreath 1.6s ease-in-out infinite; }
+  @keyframes freezeBreath{ 0%,100%{ opacity:.8 } 50%{ opacity:1 } }
+  #overchargeGlow{
+    position:absolute; inset:0; pointer-events:none; opacity:0; z-index:22;
+    transition:opacity .2s ease;
+    box-shadow:inset 0 0 100px rgba(255,60,60,.6), inset 0 0 240px rgba(220,20,20,.35),
+               inset 0 0 0 3px rgba(255,90,90,.5);
+  }
+  #overchargeGlow.on{ opacity:1; animation:ocPulse 1.05s ease-in-out infinite; }
+  @keyframes ocPulse{ 0%,100%{ opacity:.55 } 50%{ opacity:1 } }
 
   /* minimap */
   #minimap{
@@ -442,6 +466,9 @@
   <canvas id="game" width="1280" height="720"></canvas>
 
   <!-- ==================== HUD ==================== -->
+  <div id="freezeTint"></div>
+  <div id="overchargeGlow"></div>
+
   <div id="hud">
     <div id="topLeft">
       <div id="orbs">
@@ -461,21 +488,29 @@
     </div>
 
     <div id="abilities">
-      <div class="ability ready" id="abLaser">
+      <div class="ability" id="abFreeze">
         <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">⟡</span><span class="key">LMB</span><span class="label">LASER</span>
+        <span class="icon">❄</span><span class="cd"></span><span class="key">Q</span><span class="label">FREEZE</span>
       </div>
       <div class="ability" id="abNova">
         <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">✦</span><span class="key">SPACE</span><span class="label">NOVA</span>
-      </div>
-      <div class="ability" id="abFreeze">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">❄</span><span class="key">Q</span><span class="label">FREEZE</span>
+        <span class="icon">✦</span><span class="cd"></span><span class="key">E</span><span class="label">NOVA</span>
       </div>
       <div class="ability" id="abDash">
         <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">➤</span><span class="key">SHIFT</span><span class="label">DASH</span>
+        <span class="icon">➤</span><span class="cd"></span><span class="key">SHIFT</span><span class="label">DASH</span>
+      </div>
+      <div class="ability" id="abTurret">
+        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+        <span class="icon">⌖</span><span class="cd"></span><span class="key">F</span><span class="label">TURRET</span>
+      </div>
+      <div class="ability" id="abOvercharge">
+        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+        <span class="icon">⚡</span><span class="cd"></span><span class="key">R</span><span class="label">OVERCHARGE</span>
+      </div>
+      <div class="ability" id="abBomb">
+        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+        <span class="icon">◉</span><span class="cd"></span><span class="key">X</span><span class="label">TIME BOMB</span>
       </div>
     </div>
 
@@ -547,10 +582,13 @@
       <button class="btn ghost" id="btnHowTo">How To Play</button>
     </div>
     <div id="howto">
-      <div class="row"><b>WASD</b> move · <b>MOUSE</b> aim · <b>LEFT CLICK</b> fire laser</div>
-      <div class="row"><b>SPACE</b> Nova Blast (5 kills to charge)</div>
+      <div class="row"><b>WASD</b> move · <b>MOUSE</b> aim · <b>LEFT CLICK</b> fire · <b>1 2 3</b> weapons</div>
       <div class="row"><b>Q</b> Time Freeze · 3s freeze, 15s cooldown</div>
+      <div class="row"><b>E</b> Nova Blast · 16 bolts, 20s cooldown</div>
       <div class="row"><b>SHIFT</b> Dash · invincible, 5s cooldown</div>
+      <div class="row"><b>F</b> Turret Drop · 12s turret, max 2, 25s cooldown</div>
+      <div class="row"><b>R</b> Overcharge · 8s double fire rate, 30s cooldown</div>
+      <div class="row"><b>X</b> Time Bomb · sticks and detonates, 18s cooldown</div>
       <div class="row">Clear the 3 glowing arenas in each zone to summon its boss.</div>
     </div>
     <div id="menuBest">BEST SCORE 0</div>
@@ -702,8 +740,38 @@ const Sound = (function () {
     },
     levelClear() { [523, 659, 784, 1047].forEach((f, i) => tone({ freq: f, dur: 0.22, type: 'triangle', vol: 0.05, delay: i * 0.1 })); },
     ability()    { tone({ freq: 660, to: 1320, dur: 0.22, type: 'sine', vol: 0.055 }); },
-    nova()       { tone({ freq: 120, to: 900, dur: 0.45, type: 'sawtooth', vol: 0.075 }); noise({ freq: 1800, dur: 0.45, vol: 0.06 }); },
-    freeze()     { tone({ freq: 1400, to: 300, dur: 0.5, type: 'sine', vol: 0.06 }); },
+    nova()       {
+      tone({ freq: 120, to: 900, dur: 0.45, type: 'sawtooth', vol: 0.075 });
+      noise({ freq: 1800, dur: 0.45, vol: 0.06 });
+      [880, 1175, 1568].forEach((f, i) => tone({ freq: f, to: f * 0.5, dur: 0.2, type: 'square', vol: 0.02, delay: i * 0.03 }));
+    },
+    freeze()     {
+      tone({ freq: 1400, to: 300, dur: 0.5, type: 'sine', vol: 0.06 });
+      tone({ freq: 2100, to: 900, dur: 0.4, type: 'triangle', vol: 0.022, delay: 0.04 });
+      noise({ freq: 3200, dur: 0.35, vol: 0.02 });
+    },
+    turretDrop() {
+      tone({ freq: 260, to: 130, dur: 0.18, type: 'square', vol: 0.05 });
+      tone({ freq: 520, dur: 0.1, type: 'triangle', vol: 0.035, delay: 0.12 });
+      tone({ freq: 780, dur: 0.1, type: 'triangle', vol: 0.03, delay: 0.2 });
+      noise({ freq: 700, dur: 0.14, vol: 0.03 });
+    },
+    turretShot() { tone({ freq: 1180, to: 640, dur: 0.06, type: 'square', vol: 0.018 }); },
+    turretOff()  { tone({ freq: 420, to: 90, dur: 0.3, type: 'triangle', vol: 0.035 }); noise({ freq: 900, dur: 0.2, vol: 0.02 }); },
+    overcharge() {
+      tone({ freq: 90, to: 520, dur: 0.5, type: 'sawtooth', vol: 0.07 });
+      tone({ freq: 300, to: 1200, dur: 0.35, type: 'square', vol: 0.03, delay: 0.06 });
+      noise({ freq: 2200, dur: 0.3, vol: 0.035 });
+    },
+    bombThrow() { noise({ freq: 1400, dur: 0.22, vol: 0.03 }); tone({ freq: 300, to: 620, dur: 0.22, type: 'sine', vol: 0.032 }); },
+    bombStick() { tone({ freq: 900, to: 1500, dur: 0.06, type: 'square', vol: 0.03 }); },
+    bombBeep(t) { tone({ freq: t < 0.6 ? 1500 : 1080, dur: 0.05, type: 'square', vol: 0.024 }); },
+    bombBoom() {
+      noise({ freq: 520, dur: 0.55, vol: 0.09 });
+      tone({ freq: 120, to: 32, dur: 0.6, type: 'sawtooth', vol: 0.085 });
+      tone({ freq: 62, to: 26, dur: 0.8, type: 'sine', vol: 0.06, delay: 0.04 });
+      tone({ freq: 340, to: 80, dur: 0.25, type: 'triangle', vol: 0.035 });
+    },
     dash()       { noise({ freq: 1600, dur: 0.18, vol: 0.05 }); tone({ freq: 300, to: 700, dur: 0.16, type: 'sine', vol: 0.04 }); },
     gem()        { tone({ freq: 1046, dur: 0.08, type: 'triangle', vol: 0.035 }); },
     arenaStart() { tone({ freq: 330, dur: 0.25, type: 'square', vol: 0.05 }); tone({ freq: 494, dur: 0.25, type: 'square', vol: 0.045, delay: 0.12 }); },
@@ -903,11 +971,15 @@ const UI = {
   briefTitle: document.getElementById('briefTitle'),
   briefObjective: document.getElementById('briefObjective'),
   abilities: {
-    laser: document.getElementById('abLaser'),
-    nova: document.getElementById('abNova'),
     freeze: document.getElementById('abFreeze'),
-    dash: document.getElementById('abDash')
+    nova: document.getElementById('abNova'),
+    dash: document.getElementById('abDash'),
+    turret: document.getElementById('abTurret'),
+    overcharge: document.getElementById('abOvercharge'),
+    bomb: document.getElementById('abBomb')
   },
+  freezeTint: document.getElementById('freezeTint'),
+  overchargeGlow: document.getElementById('overchargeGlow'),
   menu: document.getElementById('menu'),
   menuBest: document.getElementById('menuBest'),
   howto: document.getElementById('howto'),
@@ -1058,9 +1130,9 @@ const UPGRADE_POOL = [
   { id: 'magnet', name: 'Future Magnet', glyph: '◎', max: 3,
     desc: 'Chrono tether. Pull gems in from 70px further away.',
     apply() { game.player.magnet += 70; } },
-  { id: 'overcharge', name: 'Overcharge', glyph: '⚡', max: 1,
-    desc: 'Reactor overdrive: 8 seconds of double fire rate every 30 seconds.',
-    apply() { game.player.overcharge = true; game.player.overchargeTimer = 0; } }
+  { id: 'reactor', name: 'Reactor Coils', glyph: '⚡', max: 2,
+    desc: 'Ability capacitors recharge 15% faster.',
+    apply() { game.abilityCdScale = Math.max(0.7, 1 - 0.15 * (game.upgradeLevels.reactor || 0)); } }
 ];
 
 /* ------------------------------ game state --------------------------------- */
@@ -1101,11 +1173,19 @@ const game = {
   cam: { x: 0, y: 0 },
   mouse: { x: W / 2, y: H / 2, down: false },
   keys: Object.create(null),
+  abilityCdScale: 1,   /* set by the Reactor Coils upgrade */
   waveDelay: 0,
   pendingWave: null,
   upgradeLevels: {},
   freezeTimer: 0,
   freezeCd: 0,
+  novaCd: 0,
+  turretCd: 0,
+  overchargeTimer: 0,
+  overchargeCd: 0,
+  bombCd: 0,
+  turrets: [],
+  bombs: [],
   pendingZone: 0,
   ambientClock: 0,
   flashTimer: 0,
@@ -1138,12 +1218,9 @@ function makePlayer() {
     dashTimer: 0,
     dashCd: 0,
     dashDir: { x: 1, y: 0 },
-    novaCharge: 0,
     shield: 0,          /* only granted by the Temporal Shield upgrade */
     arc: false,
     magnet: 26,
-    overcharge: false,
-    overchargeTimer: 0,
     walk: 0,
     moving: false,
     footAcc: 0,
@@ -1158,6 +1235,7 @@ function resetRun() {
   game.kills = 0;
   game.killsThisZone = 0;
   game.upgradeLevels = {};
+  game.abilityCdScale = 1;
   game.player = makePlayer();
   syncWeaponHud();
   game.timeScale = 1;
@@ -1165,6 +1243,13 @@ function resetRun() {
   game.shake = 0;
   game.freezeTimer = 0;
   game.freezeCd = 0;
+  game.novaCd = 0;
+  game.turretCd = 0;
+  game.overchargeTimer = 0;
+  game.overchargeCd = 0;
+  game.bombCd = 0;
+  game.turrets.length = 0;
+  game.bombs.length = 0;
 }
 
 /* ------------------------------ zone loading ------------------------------- */
@@ -1186,6 +1271,8 @@ function loadZone(zoneIndex, opts) {
   game.bossFight = null;
   game.portal = null;
   BossMusic.stop();
+  UI.freezeTint.classList.remove('on');
+  UI.overchargeGlow.classList.remove('on');
   syncWeaponHud();
   UI.bossIntro.classList.remove('show');
   UI.bossBar.classList.remove('show');
@@ -1195,6 +1282,13 @@ function loadZone(zoneIndex, opts) {
   game.pendingWave = null;
   game.freezeTimer = 0;
   game.freezeCd = 0;
+  game.novaCd = 0;
+  game.turretCd = 0;
+  game.overchargeTimer = 0;
+  game.overchargeCd = 0;
+  game.bombCd = 0;
+  game.turrets.length = 0;
+  game.bombs.length = 0;
   game.timeScale = 1;
   game.slowmo = 0;
   game.killsThisZone = 0;
@@ -1209,9 +1303,8 @@ function loadZone(zoneIndex, opts) {
   p.dashTimer = 0;
   p.dashCd = 0;
   p.fireTimer = 0;
-  p.novaCharge = 0;
   /* the ward persists across zones, but it is never handed out for free */
-  p.overchargeTimer = 0;
+  p.bladeCd = 0;
 
   game.obstacles = buildObstacles(game.zoneIndex);
   buildDestructibles(game.zoneIndex);
@@ -1424,8 +1517,12 @@ window.addEventListener('keydown', (e) => {
   if (k === '1') selectWeapon(0);
   if (k === '2') selectWeapon(1);
   if (k === '3') selectWeapon(2);
-  if (k === ' ') { e.preventDefault(); novaBlast(); }
+  if (k === ' ') { e.preventDefault(); }
   if (k === 'q') timeFreeze();
+  if (k === 'e') novaBlast();
+  if (k === 'f') dropTurret();
+  if (k === 'r') startOvercharge();
+  if (k === 'x') throwBomb();
   if (k === 'Shift') dash();
 });
 window.addEventListener('keyup', (e) => {
@@ -1463,7 +1560,7 @@ function updatePlayer(dt) {
     p.x += p.dashDir.x * p.speed * 3.4 * dt;
     p.y += p.dashDir.y * p.speed * 3.4 * dt;
     if (Math.random() < 0.6) {
-      spawnParticle(p.x - p.dashDir.x * 10, p.y - p.dashDir.y * 10, rand(-30, 30), rand(-30, 30), 0.3, 6, '#7dd3fc', 3);
+      spawnParticle(p.x - p.dashDir.x * 14, p.y - p.dashDir.y * 14, rand(-30, 30), rand(-30, 30), 0.28, 4.2, '#7dd3fc', 3);
     }
     /* blue motion trail: one afterimage every ~10px travelled */
     const lastGhost = p.trail[p.trail.length - 1];
@@ -1507,20 +1604,16 @@ function updatePlayer(dt) {
 
   /* shooting */
   if (p.fireTimer > 0) p.fireTimer -= dt;
-  if (p.overcharge) {
-    p.overchargeTimer += dt;
-    if (p.overchargeTimer >= 30) p.overchargeTimer = 0;
-  }
-  const overcharged = p.overcharge && p.overchargeTimer < 8;
+  const overcharged = game.overchargeTimer > 0;
   if (p.weapon === 2) {
     /* the blade swings on its own — no clicking needed */
     updateArcBlade(dt);
   } else if (game.mouse.down && p.fireTimer <= 0) {
     if (p.weapon === 1) {
-      firePlasma();
+      firePlasma(overcharged);
       p.fireTimer = p.fireRate * 4.2 * (overcharged ? 0.5 : 1);
     } else {
-      fireLaser();
+      fireLaser(overcharged);
       p.fireTimer = p.fireRate * (overcharged ? 0.5 : 1);
     }
   }
@@ -1528,6 +1621,18 @@ function updatePlayer(dt) {
   /* cooldowns */
   if (game.freezeTimer > 0) game.freezeTimer = Math.max(0, game.freezeTimer - dt);
   if (game.freezeCd > 0) game.freezeCd = Math.max(0, game.freezeCd - dt);
+  if (game.novaCd > 0) game.novaCd = Math.max(0, game.novaCd - dt);
+  if (game.turretCd > 0) game.turretCd = Math.max(0, game.turretCd - dt);
+  if (game.bombCd > 0) game.bombCd = Math.max(0, game.bombCd - dt);
+  if (game.overchargeCd > 0) game.overchargeCd = Math.max(0, game.overchargeCd - dt);
+  if (game.overchargeTimer > 0) {
+    game.overchargeTimer = Math.max(0, game.overchargeTimer - dt);
+    /* embers while the reactor is burning */
+    if (Math.random() < 0.35) {
+      spawnParticle(p.x + rand(-14, 14), p.y + rand(-4, 14),
+        rand(-30, 30), rand(-90, -30), 0.4, rand(2, 5), Math.random() < 0.5 ? '#f87171' : '#fbbf24', 3);
+    }
+  }
 }
 
 /* ------------------------------ weapons ------------------------------------ */
@@ -1612,7 +1717,7 @@ function updateArcBlade(dt) {
   }
 }
 
-function fireLaser() {
+function fireLaser(charged) {
   const p = game.player;
   const angles = p.arc ? [p.angle - 0.14, p.angle, p.angle + 0.14] : [p.angle];
   for (let i = 0; i < angles.length; i++) {
@@ -1623,7 +1728,7 @@ function fireLaser() {
       y: p.y + Math.sin(a) * (p.r * 0.45),
       vx: Math.cos(a) * p.bulletSpeed,
       vy: Math.sin(a) * p.bulletSpeed,
-      r: 5,
+      r: charged ? 8.5 : 5,
       life: 1.1,
       dmg: p.damage,
       knock: 9          /* bolts shove enemies back a little */
@@ -1634,7 +1739,7 @@ function fireLaser() {
     rand(-40, 40), rand(-40, 40), 0.16, 7, '#8fe8ff', 2.4);
 }
 
-function firePlasma() {
+function firePlasma(charged) {
   const p = game.player;
   const a = p.angle;
   game.bullets.push({
@@ -1643,7 +1748,7 @@ function firePlasma() {
     y: p.y + Math.sin(a) * (p.r + 26),
     vx: Math.cos(a) * 330,
     vy: Math.sin(a) * 330,
-    r: 16,
+    r: charged ? 23 : 16,
     life: 2.2,
     dmg: p.damage * 2.2,
     splash: 118,
@@ -1688,42 +1793,78 @@ function explodePlasma(b) {
   game.particles.push({ ring: true, x: b.x, y: b.y, r: 10, maxR: R, life: 0, maxLife: 0.38, color: '#93c5fd' });
 }
 
-function novaBlast() {
+/* =============================================================================
+   ABILITIES — six of them, one key each, all on cooldown timers
+   Q freeze · E nova · SHIFT dash · F turret · R overcharge · X time bomb
+   ============================================================================= */
+const ABILITIES = [
+  { id: 'freeze', key: 'q', name: 'Time Freeze', cd: 15 },
+  { id: 'nova', key: 'e', name: 'Nova Blast', cd: 20 },
+  { id: 'dash', key: 'Shift', name: 'Dash', cd: 5 },
+  { id: 'turret', key: 'f', name: 'Turret Drop', cd: 25 },
+  { id: 'overcharge', key: 'r', name: 'Overcharge', cd: 30 },
+  { id: 'bomb', key: 'x', name: 'Time Bomb', cd: 18 }
+];
+function cdScale() { return game.abilityCdScale || 1; }
+
+/* ---- Q: freeze every enemy solid for 3s ---- */
+function timeFreeze() {
+  if (game.freezeCd > 0) return;
   const p = game.player;
-  if (p.novaCharge < 5) return;
-  p.novaCharge = 0;
+  game.freezeCd = 15 * cdScale();
+  game.freezeTimer = 3;
+  Sound.freeze();
+  addText(p.x, p.y - 40, 'TIME FREEZE', '#bae6fd');
+  /* frost shards burst + a freezing ring */
+  for (let i = 0; i < 26; i++) {
+    const a = rand(0, TAU);
+    const d = rand(20, 190);
+    const shard = i % 3 !== 0;
+    game.particles.push({
+      x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d,
+      vx: Math.cos(a) * rand(30, 150), vy: Math.sin(a) * rand(30, 150) - rand(0, 40),
+      life: 0, maxLife: rand(0.5, 0.95),
+      size: rand(4, 8), color: shard ? '#bae6fd' : '#e0f2fe',
+      drag: 2.4, shard: shard
+    });
+  }
+  game.particles.push({ ring: true, x: p.x, y: p.y, r: 16, maxR: 260, life: 0, maxLife: 0.55, color: '#7dd3fc' });
+  for (let i = 0; i < game.enemies.length; i++) {
+    spawnParticle(game.enemies[i].x, game.enemies[i].y, 0, -20, 0.5, 7, '#bfdbfe', 2);
+  }
+}
+
+/* ---- E: a ring of 16 bolts that shreds anything close ---- */
+function novaBlast() {
+  if (game.novaCd > 0) return;
+  const p = game.player;
+  game.novaCd = 20 * cdScale();
   Sound.nova();
-  game.shake = 0.6;
-  game.flashTimer = 0.25;
+  game.shake = 0.55;
+  game.flashTimer = 0.22;
   game.flashColor = '#bfe9ff';
-  for (let i = game.enemies.length - 1; i >= 0; i--) {
-    const e = game.enemies[i];
-    if (dist(e.x, e.y, p.x, p.y) <= 320) {
-      damageEnemy(e, 6, true);
-    }
+  const N = 16;
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * TAU;
+    game.bullets.push({
+      kind: 'nova',
+      x: p.x + Math.cos(a) * (p.r + 8),
+      y: p.y + Math.sin(a) * (p.r + 8),
+      vx: Math.cos(a) * 960,
+      vy: Math.sin(a) * 960,
+      r: 8,
+      life: 0.62,
+      dmg: 6,
+      knock: 16
+    });
+    spawnParticle(p.x + Math.cos(a) * (p.r + 10), p.y + Math.sin(a) * (p.r + 10),
+      Math.cos(a) * rand(80, 200), Math.sin(a) * rand(80, 200), 0.3, 7, '#a5f3fc', 4);
   }
-  for (let i = game.enemyBullets.length - 1; i >= 0; i--) {
-    if (dist(game.enemyBullets[i].x, game.enemyBullets[i].y, p.x, p.y) <= 340) game.enemyBullets.splice(i, 1);
-  }
-  for (let i = 0; i < 40; i++) {
-    const a = (i / 40) * TAU;
-    spawnParticle(p.x, p.y, Math.cos(a) * rand(120, 420), Math.sin(a) * rand(120, 420), 0.5, 12, i % 2 ? '#a5f3fc' : '#bae6fd', 4);
-  }
-  game.particles.push({ ring: true, x: p.x, y: p.y, r: 20, maxR: 320, life: 0, maxLife: 0.45, color: '#7dd3fc' });
+  game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 190, life: 0, maxLife: 0.42, color: '#a5f3fc' });
   addText(p.x, p.y - 40, 'NOVA BLAST', '#a5f3fc');
 }
 
-function timeFreeze() {
-  if (game.freezeCd > 0) return;
-  Sound.freeze();
-  game.freezeTimer = 3;
-  game.freezeCd = 15;
-  addText(game.player.x, game.player.y - 34, 'TIME FREEZE', '#bae6fd');
-  for (let i = 0; i < 18; i++) {
-    spawnParticle(game.player.x + rand(-120, 120), game.player.y + rand(-120, 120), 0, 0, 0.6, 8, '#bae6fd', 2);
-  }
-}
-
+/* ---- SHIFT: dash in the movement direction, invincible ---- */
 function dash() {
   const p = game.player;
   if (p.dashCd > 0) return;
@@ -1731,10 +1872,204 @@ function dash() {
   const dir = (mv.x || mv.y) ? mv : { x: Math.cos(p.angle), y: Math.sin(p.angle) };
   p.dashDir = dir;
   p.dashTimer = 0.2;
-  p.dashCd = 5;
-  p.invuln = Math.max(p.invuln, 0.32);
+  p.dashCd = 5 * cdScale();
+  p.invuln = Math.max(p.invuln, 0.34);
+  p.trail.length = 0;
   Sound.dash();
-  addText(p.x, p.y - 30, 'DASH', '#7dd3fc');
+  addText(p.x, p.y - 34, 'DASH', '#7dd3fc');
+  /* blue energy burst behind him */
+  for (let i = 0; i < 12; i++) {
+    const a = Math.atan2(-dir.y, -dir.x) + rand(-0.5, 0.5);
+    spawnParticle(p.x, p.y, Math.cos(a) * rand(90, 260), Math.sin(a) * rand(90, 260),
+      0.3, rand(4, 8), '#7dd3fc', 3.4);
+  }
+}
+
+/* ---- F: drop a stationary auto-turret (max 2) ---- */
+function dropTurret() {
+  const p = game.player;
+  if (game.turretCd > 0) return;
+  if (game.turrets.length >= 2) {
+    addText(p.x, p.y - 44, 'MAX 2 TURRETS', '#fbbf24');
+    return;
+  }
+  game.turretCd = 25 * cdScale();
+  Sound.turretDrop();
+  game.shake = Math.max(game.shake, 0.22);
+  game.turrets.push({
+    x: p.x, y: p.y, life: 12, maxLife: 12,
+    angle: p.angle, spin: 0, fireTimer: 0.25, range: 380
+  });
+  addText(p.x, p.y - 40, 'TURRET ONLINE', '#fbbf24');
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * TAU;
+    spawnParticle(p.x + Math.cos(a) * 10, p.y + Math.sin(a) * 10,
+      Math.cos(a) * rand(60, 190), Math.sin(a) * rand(60, 190), 0.4, 6, i % 2 ? '#fbbf24' : '#fde68a', 3);
+  }
+  game.particles.push({ ring: true, x: p.x, y: p.y, r: 8, maxR: 84, life: 0, maxLife: 0.4, color: '#fbbf24' });
+}
+
+function updateTurrets(dt) {
+  for (let i = game.turrets.length - 1; i >= 0; i--) {
+    const t = game.turrets[i];
+    t.life -= dt;
+    if (t.life <= 0) {
+      Sound.turretOff();
+      for (let k = 0; k < 14; k++) {
+        const a = rand(0, TAU);
+        spawnParticle(t.x, t.y, Math.cos(a) * rand(40, 200), Math.sin(a) * rand(40, 200), 0.45, 6, k % 2 ? '#fbbf24' : '#94a3b8', 3);
+      }
+      game.particles.push({ ring: true, x: t.x, y: t.y, r: 6, maxR: 70, life: 0, maxLife: 0.35, color: '#fbbf24' });
+      game.turrets.splice(i, 1);
+      continue;
+    }
+
+    /* acquire the nearest thing in range */
+    let target = null;
+    let bestD = t.range;
+    for (let j = 0; j < game.enemies.length; j++) {
+      const d = dist(t.x, t.y, game.enemies[j].x, game.enemies[j].y);
+      if (d < bestD) { bestD = d; target = game.enemies[j]; }
+    }
+    if (game.boss) {
+      const d = dist(t.x, t.y, game.boss.x, game.boss.y);
+      if (d < bestD) { bestD = d; target = game.boss; }
+    }
+
+    if (target) {
+      t.angle = Math.atan2(target.y - t.y, target.x - t.x);
+      t.spin += dt * 3;
+      t.fireTimer -= dt;
+      if (t.fireTimer <= 0) {
+        t.fireTimer = 0.42;
+        game.bullets.push({
+          kind: 'turret',
+          x: t.x + Math.cos(t.angle) * 20,
+          y: t.y + Math.sin(t.angle) * 20,
+          vx: Math.cos(t.angle) * 780,
+          vy: Math.sin(t.angle) * 780,
+          r: 6, life: 0.7, dmg: 1.2, knock: 5
+        });
+        Sound.turretShot();
+        spawnParticle(t.x + Math.cos(t.angle) * 22, t.y + Math.sin(t.angle) * 22,
+          rand(-40, 40), rand(-40, 40), 0.16, 6, '#fde68a', 3);
+      }
+    } else {
+      t.spin += dt * 1.2;
+      t.angle += dt * 0.8;
+    }
+  }
+}
+
+/* ---- R: 8s of double fire rate and fat bullets ---- */
+function startOvercharge() {
+  if (game.overchargeCd > 0) return;
+  const p = game.player;
+  game.overchargeCd = 30 * cdScale();
+  game.overchargeTimer = 8;
+  Sound.overcharge();
+  game.shake = Math.max(game.shake, 0.3);
+  addText(p.x, p.y - 40, 'OVERCHARGE', '#fca5a5');
+  for (let i = 0; i < 22; i++) {
+    const a = rand(0, TAU);
+    spawnParticle(p.x + Math.cos(a) * 16, p.y + Math.sin(a) * 16,
+      Math.cos(a) * rand(60, 240), Math.sin(a) * rand(60, 240), 0.42, rand(4, 9), i % 2 ? '#f87171' : '#fbbf24', 3.4);
+  }
+  game.particles.push({ ring: true, x: p.x, y: p.y, r: 10, maxR: 150, life: 0, maxLife: 0.42, color: '#f87171' });
+}
+
+/* ---- X: sticky bomb that detonates after 2s ---- */
+function throwBomb() {
+  if (game.bombCd > 0) return;
+  const p = game.player;
+  game.bombCd = 18 * cdScale();
+  let target = null;
+  let bestD = 460;
+  for (let i = 0; i < game.enemies.length; i++) {
+    const d = dist(p.x, p.y, game.enemies[i].x, game.enemies[i].y);
+    if (d < bestD) { bestD = d; target = game.enemies[i]; }
+  }
+  const tx = target ? target.x : p.x + Math.cos(p.angle) * 220;
+  const ty = target ? target.y : p.y + Math.sin(p.angle) * 220;
+  game.bombs.push({
+    x: p.x, y: p.y, sx: p.x, sy: p.y, tx, ty, target,
+    flight: 0.34, t: 2, landed: false, spin: 0, beep: 0.5
+  });
+  Sound.bombThrow();
+  addText(p.x, p.y - 40, 'TIME BOMB', '#fdba74');
+}
+
+function explodeBomb(b) {
+  const R = 150;
+  Sound.bombBoom();
+  game.shake = Math.max(game.shake, 0.85);
+  game.flashTimer = Math.max(game.flashTimer, 0.2);
+  game.flashColor = '#fdba74';
+  for (let i = game.enemies.length - 1; i >= 0; i--) {
+    const e = game.enemies[i];
+    if (dist(b.x, b.y, e.x, e.y) > R + e.r) continue;
+    const a = Math.atan2(e.y - b.y, e.x - b.x);
+    damageEnemy(e, 14, true);
+    e.x = clamp(e.x + Math.cos(a) * 44, 40, WORLD - 40);
+    e.y = clamp(e.y + Math.sin(a) * 44, 40, WORLD - 40);
+  }
+  if (game.boss && dist(b.x, b.y, game.boss.x, game.boss.y) <= R + game.boss.r) {
+    damageBoss(10);
+  }
+  for (let i = 0; i < game.breakables.length; i++) {
+    const w = game.breakables[i];
+    if (!w.broken && dist(b.x, b.y, w.x, w.y) <= R + 52) damageBreakable(w);
+  }
+  for (let i = 0; i < 34; i++) {
+    const a = rand(0, TAU);
+    spawnParticle(b.x, b.y, Math.cos(a) * rand(120, 500), Math.sin(a) * rand(120, 500),
+      rand(0.3, 0.7), rand(6, 14), i % 3 === 0 ? '#fde68a' : (i % 3 === 1 ? '#fb923c' : '#f87171'), 3);
+  }
+  game.particles.push({ ring: true, x: b.x, y: b.y, r: 14, maxR: R, life: 0, maxLife: 0.46, color: '#fb923c' });
+  game.particles.push({ ring: true, x: b.x, y: b.y, r: 8, maxR: R * 0.6, life: 0, maxLife: 0.3, color: '#fde68a' });
+}
+
+function updateBombs(dt) {
+  for (let i = game.bombs.length - 1; i >= 0; i--) {
+    const b = game.bombs[i];
+    b.spin += dt * 9;
+
+    if (!b.landed) {
+      if (b.target && game.enemies.indexOf(b.target) >= 0) {
+        b.tx = b.target.x;
+        b.ty = b.target.y;
+      }
+      b.flight -= dt;
+      const k = clamp(1 - b.flight / 0.34, 0, 1);
+      b.x = lerp(b.sx, b.tx, k);
+      b.y = lerp(b.sy, b.ty, k) - Math.sin(k * Math.PI) * 26;   /* little arc */
+      if (b.flight <= 0) {
+        b.landed = true;
+        b.y = b.ty;
+        Sound.bombStick();
+        for (let k2 = 0; k2 < 8; k2++) {
+          spawnParticle(b.x, b.y, rand(-70, 70), rand(-70, 70), 0.3, 5, '#fdba74', 3);
+        }
+      }
+      continue;
+    }
+
+    /* stuck: ride the target, or sit where it landed */
+    if (b.target && game.enemies.indexOf(b.target) >= 0) {
+      b.x = b.target.x;
+      b.y = b.target.y;
+    }
+    b.t -= dt;
+    b.beep -= dt;
+    if (b.beep <= 0) {
+      b.beep = Math.max(0.12, 0.5 * (b.t / 2));
+      Sound.bombBeep(b.t);
+    }
+    if (b.t <= 0) {
+      explodeBomb(b);
+      game.bombs.splice(i, 1);
+    }
+  }
 }
 
 /* ------------------------------ damage to player --------------------------- */
@@ -2121,7 +2456,6 @@ function damageEnemy(e, dmg, silent) {
   game.score += def.score;
   game.kills += 1;
   game.killsThisZone += 1;
-  game.player.novaCharge = Math.min(5, game.player.novaCharge + 1);
 
   if (!silent) Sound.enemyDeath();
   for (let i = 0; i < 12; i++) {
@@ -2989,11 +3323,22 @@ function updateHud() {
   UI.scoreVal.textContent = String(Math.floor(game.score));
   UI.gemVal.textContent = String(game.gems);
 
-  const cycle = p.fireRate * (p.weapon === 1 ? 6.7 : 1.6);
-  setRing(UI.abilities.laser, p.fireTimer <= 0 ? 1 : 1 - p.fireTimer / cycle);
-  setRing(UI.abilities.nova, p.novaCharge / 5);
-  setRing(UI.abilities.freeze, game.freezeCd <= 0 ? 1 : 1 - game.freezeCd / 15);
-  setRing(UI.abilities.dash, p.dashCd <= 0 ? 1 : 1 - p.dashCd / 5);
+  setRing(UI.abilities.freeze, 1 - game.freezeCd / (15 * cdScale()));
+  setRing(UI.abilities.nova, 1 - game.novaCd / (20 * cdScale()));
+  setRing(UI.abilities.dash, 1 - p.dashCd / (5 * cdScale()));
+  setRing(UI.abilities.turret, 1 - game.turretCd / (25 * cdScale()));
+  setRing(UI.abilities.overcharge, 1 - game.overchargeCd / (30 * cdScale()));
+  setRing(UI.abilities.bomb, 1 - game.bombCd / (18 * cdScale()));
+
+  /* seconds left on the two long cooldowns, ticking on the icon */
+  UI.abilities.overcharge.querySelector('.cd').textContent =
+    game.overchargeCd > 0.05 ? String(Math.ceil(game.overchargeCd)) : '';
+  UI.abilities.bomb.querySelector('.cd').textContent =
+    game.bombCd > 0.05 ? String(Math.ceil(game.bombCd)) : '';
+
+  /* screen effects */
+  UI.freezeTint.classList.toggle('on', game.freezeTimer > 0);
+  UI.overchargeGlow.classList.toggle('on', game.overchargeTimer > 0);
 }
 
 /* ------------------------------ buttons ------------------------------------ */
@@ -3502,9 +3847,27 @@ function drawEnemy(e) {
   }
 
   if (frozen) {
-    ctx.strokeStyle = 'rgba(186,230,253,0.8)';
+    /* solid ice shell: a cold glaze, a bright rim and crystal spikes */
+    ctx.save();
+    const ice = ctx.createRadialGradient(0, -r * 0.3, r * 0.15, 0, 0, r + 8);
+    ice.addColorStop(0, 'rgba(240,249,255,0.16)');
+    ice.addColorStop(0.7, 'rgba(147,197,253,0.24)');
+    ice.addColorStop(1, 'rgba(96,165,250,0.44)');
+    ctx.fillStyle = ice;
+    ctx.beginPath(); ctx.arc(0, 0, r + 6, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(186,230,253,0.9)';
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(0, 0, r + 4, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(224,242,254,0.7)';
+    ctx.lineWidth = 1.6;
+    for (let k = 0; k < 5; k++) {
+      const a = k * (TAU / 5) + 0.42;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * (r + 3), Math.sin(a) * (r + 3));
+      ctx.lineTo(Math.cos(a) * (r + 11), Math.sin(a) * (r + 11));
+      ctx.stroke();
+    }
+    ctx.restore();
   }
   ctx.restore();
 
@@ -4234,12 +4597,17 @@ function drawPlayer() {
     ctx.restore();
   }
 
-  if (p.overcharge && p.overchargeTimer < 8) {
+  if (game.overchargeTimer > 0) {
+    /* roaring red reactor halo */
+    const k = 0.55 + 0.45 * Math.sin(game.time * 12);
     ctx.save();
-    ctx.strokeStyle = 'rgba(250,204,21,0.7)';
-    ctx.lineWidth = 1.6;
-    ctx.setLineDash([6, 5]);
-    ctx.beginPath(); ctx.arc(p.x, p.y + 4, p.r + 28, game.time * 3, game.time * 3 + TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(248,113,113,' + (0.45 + 0.3 * k).toFixed(3) + ')';
+    ctx.lineWidth = 2.4;
+    ctx.shadowColor = 'rgba(248,113,113,0.9)';
+    ctx.shadowBlur = 16;
+    ctx.setLineDash([10, 7]);
+    ctx.lineDashOffset = -game.time * 40;
+    ctx.beginPath(); ctx.arc(p.x, p.y + 4, p.r + 28, 0, TAU); ctx.stroke();
     ctx.restore();
   }
 
@@ -4720,16 +5088,20 @@ function drawBullets() {
     const b = game.bullets[i];
     if (b.kind === 'plasma') { drawPlasmaOrb(b); continue; }
     const a = Math.atan2(b.vy, b.vx);
+    const nova = b.kind === 'nova';
+    const turret = b.kind === 'turret';
+    const len = b.r * 2.2;
+    const hh = b.r * 0.52;
     ctx.save();
     ctx.translate(b.x, b.y);
     ctx.rotate(a);
-    ctx.fillStyle = '#e0f7ff';
-    ctx.shadowColor = '#38bdf8';
-    ctx.shadowBlur = 16;
-    roundRect(ctx, -11, -2.6, 22, 5.2, 3);
+    ctx.fillStyle = nova ? '#ffffff' : (turret ? '#fde68a' : '#e0f7ff');
+    ctx.shadowColor = nova ? '#a5f3fc' : (turret ? '#f59e0b' : '#38bdf8');
+    ctx.shadowBlur = nova ? 26 : 16;
+    roundRect(ctx, -len / 2, -hh, len, hh * 2, 3);
     ctx.fill();
-    ctx.fillStyle = '#8fe8ff';
-    roundRect(ctx, -6, -1.2, 12, 2.4, 2);
+    ctx.fillStyle = nova ? '#a5f3fc' : (turret ? '#fbbf24' : '#8fe8ff');
+    roundRect(ctx, -len * 0.28, -hh * 0.46, len * 0.56, hh * 0.92, 2);
     ctx.fill();
     ctx.restore();
   }
@@ -4775,6 +5147,125 @@ function drawPlasmaOrb(b) {
   }
   ctx.stroke();
   ctx.restore();
+}
+
+/* ------------------------------ turrets ------------------------------------ */
+function drawTurrets() {
+  for (let i = 0; i < game.turrets.length; i++) {
+    const t = game.turrets[i];
+    const ttl = t.life / t.maxLife;
+    const pulse = 0.6 + 0.4 * Math.sin(game.time * 8);
+
+    /* footprint glow + range hint */
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = 'rgba(251,191,36,0.16)';
+    ctx.beginPath(); ctx.ellipse(t.x, t.y + 12, 24, 9, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+
+    /* legs */
+    ctx.save();
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    for (let k = 0; k < 3; k++) {
+      const a = -Math.PI / 2 + k * (TAU / 3) + 0.4;
+      ctx.beginPath();
+      ctx.moveTo(t.x, t.y + 2);
+      ctx.lineTo(t.x + Math.cos(a) * 15, t.y + 8 + Math.sin(a) * 9);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    /* base */
+    ctx.fillStyle = '#1f2937';
+    roundRect(ctx, t.x - 11, t.y - 8, 22, 18, 5);
+    ctx.fill();
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+
+    /* head */
+    ctx.save();
+    ctx.translate(t.x, t.y - 2);
+    ctx.rotate(t.angle);
+    ctx.fillStyle = '#334155';
+    roundRect(ctx, -7, -7, 15, 14, 4);
+    ctx.fill();
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    /* barrel */
+    ctx.fillStyle = '#94a3b8';
+    roundRect(ctx, 7, -2.4, 16, 4.8, 2);
+    ctx.fill();
+    ctx.fillStyle = '#fbbf24';
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 12;
+    ctx.fillRect(20, -1.8, 3.4, 3.6);
+    ctx.restore();
+
+    /* core light */
+    ctx.save();
+    ctx.shadowColor = '#fbbf24';
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = 'rgba(253,230,138,' + (0.55 + 0.35 * pulse).toFixed(3) + ')';
+    ctx.beginPath(); ctx.arc(t.x, t.y - 2, 3.6, 0, TAU); ctx.fill();
+    ctx.restore();
+
+    /* remaining life arc */
+    ctx.save();
+    ctx.strokeStyle = 'rgba(251,191,36,0.85)';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(t.x, t.y + 2, 22, -Math.PI / 2, -Math.PI / 2 + TAU * ttl);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+/* ------------------------------ time bombs --------------------------------- */
+function drawBombs() {
+  for (let i = 0; i < game.bombs.length; i++) {
+    const b = game.bombs[i];
+    const urgent = b.landed ? clamp(1 - b.t / 2, 0, 1) : 0;
+    const blink = 0.5 + 0.5 * Math.sin(game.time * (10 + urgent * 40));
+
+    /* danger ring on the ground once it is stuck */
+    if (b.landed) {
+      ctx.save();
+      ctx.globalAlpha = 0.22 + 0.2 * blink;
+      ctx.fillStyle = 'rgba(251,146,60,0.5)';
+      ctx.beginPath(); ctx.ellipse(b.x, b.y + 8, 150, 55, 0, 0, TAU); ctx.fill();
+      ctx.globalAlpha = 0.5 + 0.4 * blink;
+      ctx.strokeStyle = '#fb923c';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([12, 10]);
+      ctx.lineDashOffset = -game.time * 30;
+      ctx.beginPath(); ctx.ellipse(b.x, b.y + 8, 150, 55, 0, 0, TAU); ctx.stroke();
+      ctx.restore();
+    }
+
+    /* body */
+    ctx.save();
+    ctx.shadowColor = '#fb923c';
+    ctx.shadowBlur = 12 + 10 * blink;
+    ctx.fillStyle = '#1c1917';
+    ctx.beginPath(); ctx.arc(b.x, b.y - 4, 9, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#57534e';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    /* core light */
+    ctx.fillStyle = 'rgba(253,186,116,' + (0.55 + 0.45 * blink).toFixed(3) + ')';
+    ctx.beginPath(); ctx.arc(b.x, b.y - 4, 3.4, 0, TAU); ctx.fill();
+    /* spinning fuse band */
+    ctx.strokeStyle = 'rgba(251,146,60,0.9)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y - 4, 11.5, b.spin, b.spin + 2.2);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function drawEnemyBullets() {
@@ -4865,6 +5356,24 @@ function drawParticles() {
       ctx.strokeStyle = p.color;
       ctx.lineWidth = 3 + 4 * a;
       ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.stroke();
+      ctx.restore();
+      continue;
+    }
+    if (p.shard) {
+      const ang = Math.atan2(p.vy, p.vx);
+      const len = p.size * (0.35 + a * 0.75);
+      ctx.save();
+      ctx.globalAlpha = a * 0.92;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(ang);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.moveTo(len * 1.8, 0);
+      ctx.lineTo(0, len * 0.5);
+      ctx.lineTo(-len * 1.2, 0);
+      ctx.lineTo(0, -len * 0.5);
+      ctx.closePath();
+      ctx.fill();
       ctx.restore();
       continue;
     }
@@ -5970,6 +6479,8 @@ function render() {
   for (let i = 0; i < game.enemies.length; i++) drawEnemy(game.enemies[i]);
   drawBoss();
   drawEnemyBullets();
+  drawTurrets();
+  drawBombs();
   drawBullets();
   drawParticles();
   drawPlayer();
@@ -6011,6 +6522,8 @@ function update(dt) {
   updatePlayer(sdt);
   updateCamera();
   updateEnemies(sdt);
+  updateTurrets(sdt);
+  updateBombs(sdt);
   updateBullets(sdt);
   updateEnemyBullets(sdt);
   updateGems(sdt);
