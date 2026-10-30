@@ -1563,6 +1563,30 @@ const WORLD_SCALE = 3; // open world is 3x the canvas size in both width & heigh
 let W = 0, H = 0;
 let worldW = 0, worldH = 0;
 
+/* ---------- Camera: calm, anchored, never disorienting ----------
+   Two rules keep the frame steady:
+
+   1. The player sprite never moves on screen. The actor layer is drawn with an
+      exact world->screen offset (viewX/viewY), so Commander Rael always sits on
+      the exact centre of the canvas and only the world scrolls beneath him.
+   2. The follow camera eases toward the player by CAMERA_LERP (8%) of the
+      remaining distance every frame instead of snapping 100%, so the scenery
+      glides instead of jittering. Background layers read that eased value and
+      are capped at BG_MAX_PARALLAX of it, so they barely drift.
+
+   Neither value is clamped to the world bounds: clamping the camera at a world
+   edge is what used to slide the player off centre and cause the dizziness. */
+const CAMERA_LERP = 0.08;                        // 8% of the remaining distance per frame
+const BG_MAX_PARALLAX = 0.15;                    // background layers move at most 15% of camera speed
+const BG_PARALLAX_GAIN = BG_MAX_PARALLAX / 0.83; // the deepest existing layer now lands exactly on 15%
+
+/* Caps one background layer's depth factor so it can never travel faster than
+   15% of the camera, while keeping the layers' relative depth ordering. */
+function bgParallax(factor) {
+  const capped = Math.min(Math.abs(factor) * BG_PARALLAX_GAIN, BG_MAX_PARALLAX);
+  return factor < 0 ? -capped : capped;
+}
+
 const camera = {
   x: 0,
   y: 0,
@@ -1570,27 +1594,32 @@ const camera = {
   targetY: 0
 };
 
+function cameraTargetX() { return player.x - W / 2; }
+function cameraTargetY() { return player.y - H / 2; }
+
+/* Exact render offset for the actor layer. Because it is derived straight from
+   the player, the player sprite is pixel-locked to the canvas centre and the
+   aim ray, culling and collision visuals all stay perfectly aligned. */
+function viewX() { return player.x - W / 2; }
+function viewY() { return player.y - H / 2; }
+
 function snapCameraToPlayer() {
-  const maxCamX = Math.max(0, worldW - W);
-  const maxCamY = Math.max(0, worldH - H);
-  camera.targetX = clamp(player.x - W / 2, 0, maxCamX);
-  camera.targetY = clamp(player.y - H / 2, 0, maxCamY);
+  camera.targetX = cameraTargetX();
+  camera.targetY = cameraTargetY();
   camera.x = camera.targetX;
   camera.y = camera.targetY;
 }
 
 function updateCamera(dt) {
-  const maxCamX = Math.max(0, worldW - W);
-  const maxCamY = Math.max(0, worldH - H);
-  camera.targetX = clamp(player.x - W / 2, 0, maxCamX);
-  camera.targetY = clamp(player.y - H / 2, 0, maxCamY);
-  const follow = dt > 0 ? (1 - Math.exp(-12 * dt)) : 1;
-  camera.x = clamp(camera.x + (camera.targetX - camera.x) * follow, 0, maxCamX);
-  camera.y = clamp(camera.y + (camera.targetY - camera.y) * follow, 0, maxCamY);
+  camera.targetX = cameraTargetX();
+  camera.targetY = cameraTargetY();
+  // Smooth lerp interpolation: move 8% of the way to the player, not 100%.
+  camera.x += (camera.targetX - camera.x) * CAMERA_LERP;
+  camera.y += (camera.targetY - camera.y) * CAMERA_LERP;
 }
 
-function mouseWorldX() { return mouseX + camera.x; }
-function mouseWorldY() { return mouseY + camera.y; }
+function mouseWorldX() { return mouseX + viewX(); }
+function mouseWorldY() { return mouseY + viewY(); }
 
 function resize() {
   // visualViewport tracks the actually visible area on mobile as the
@@ -2055,6 +2084,13 @@ const BARREL_BLAST_RADIUS = 105;
 const BARREL_BLAST_DAMAGE = 2;
 const HEALTH_PICKUP_LIFETIME = 15;
 let particles = [];      // explosion, gem & death sparks
+/* Every particle burst is emitted at PARTICLE_DENSITY of its original count.
+   Halving the moving specks keeps the screen calm (and cheap) without touching
+   damage, timing, hitboxes, scoring or any other gameplay value. */
+const PARTICLE_DENSITY = 0.5;
+function particleDensity(count) {
+  return Math.max(1, Math.round(count * PARTICLE_DENSITY));
+}
 let explosionRings = []; // brief contact shockwaves
 let futureBombWaves = []; // full-arena shockwaves from Future Bomb { x, y, maxR, life, maxLife }
 let floatingTexts = [];  // brief pickup/multiplier/ability callouts
@@ -3646,8 +3682,8 @@ function triggerFutureBomb() {
   // The Future Bomb affects only the current viewport, not the entire world.
   function onScreen(entity) {
     const r = entity.r || 0;
-    return entity.x + r >= camera.x && entity.x - r <= camera.x + W &&
-      entity.y + r >= camera.y && entity.y - r <= camera.y + H;
+    return entity.x + r >= viewX() && entity.x - r <= viewX() + W &&
+      entity.y + r >= viewY() && entity.y - r <= viewY() + H;
   }
   for (let i = enemyBullets.length - 1; i >= 0; i--) {
     if (onScreen(enemyBullets[i])) enemyBullets.splice(i, 1);
@@ -3689,8 +3725,9 @@ function triggerFutureBomb() {
   screenShakeTimer = Math.max(screenShakeTimer, 0.42);
 
   const waveColors = ["#ffffff", "#e0f2fe", "#38bdf8", "#c084fc", "#facc15"];
-  for (let i = 0; i < 56; i++) {
-    const angle = ((i + rand(0.1, 0.9)) / 56) * Math.PI * 2;
+  const waveShards = particleDensity(56);
+  for (let i = 0; i < waveShards; i++) {
+    const angle = ((i + rand(0.1, 0.9)) / waveShards) * Math.PI * 2;
     const speed = rand(140, 560);
     particles.push({
       x: player.x,
@@ -3903,8 +3940,9 @@ function consumeShieldOnHit(hitEnemyIndex) {
   });
 
   const shardColors = ["#ffffff", "#fef08a", "#facc15", "#67e8f9", "#38bdf8"];
-  for (let i = 0; i < 18; i++) {
-    const angle = ((i + rand(0.1, 0.9)) / 18) * Math.PI * 2;
+  const shieldShards = particleDensity(18);
+  for (let i = 0; i < shieldShards; i++) {
+    const angle = ((i + rand(0.1, 0.9)) / shieldShards) * Math.PI * 2;
     const speed = rand(80, 260);
     particles.push({
       x: player.x,
@@ -3961,8 +3999,9 @@ function damagePlayer(amount, hitEnemyIndex) {
   });
 
   const orbShardColors = ["#ffffff", "#bae6fd", "#38bdf8", "#fca5a5", "#f87171"];
-  for (let i = 0; i < 14; i++) {
-    const angle = ((i + rand(0.1, 0.9)) / 14) * Math.PI * 2;
+  const hitShards = particleDensity(14);
+  for (let i = 0; i < hitShards; i++) {
+    const angle = ((i + rand(0.1, 0.9)) / hitShards) * Math.PI * 2;
     const speed = rand(75, 235);
     particles.push({
       x: player.x,
@@ -4202,12 +4241,13 @@ function triggerVictory() {
 
   // Celebratory future-portal fireworks behind the Victory card.
   const colors = ["#ffffff", "#67e8f9", "#38bdf8", "#c084fc", "#fde047", "#34d399"];
-  for (let i = 0; i < 64; i++) {
-    const a = (i / 64) * Math.PI * 2 + rand(-0.08, 0.08);
+  const fireworkSparks = particleDensity(64);
+  for (let i = 0; i < fireworkSparks; i++) {
+    const a = (i / fireworkSparks) * Math.PI * 2 + rand(-0.08, 0.08);
     const sp = rand(90, 420);
     particles.push({
-      x: camera.x + W / 2,
-      y: camera.y + H * 0.42,
+      x: viewX() + W / 2,
+      y: viewY() + H * 0.42,
       vx: Math.cos(a) * sp,
       vy: Math.sin(a) * sp,
       life: 0,
@@ -4510,10 +4550,10 @@ function randomEdgePosition(margin) {
   const edge = Math.floor(Math.random() * 4);
   let raw;
   switch (edge) {
-    case 0:  raw = { x: rand(camera.x - margin, camera.x + W + margin), y: camera.y - margin }; break;
-    case 1:  raw = { x: camera.x + W + margin, y: rand(camera.y - margin, camera.y + H + margin) }; break;
-    case 2:  raw = { x: rand(camera.x - margin, camera.x + W + margin), y: camera.y + H + margin }; break;
-    default: raw = { x: camera.x - margin, y: rand(camera.y - margin, camera.y + H + margin) }; break;
+    case 0:  raw = { x: rand(viewX() - margin, viewX() + W + margin), y: viewY() - margin }; break;
+    case 1:  raw = { x: viewX() + W + margin, y: rand(viewY() - margin, viewY() + H + margin) }; break;
+    case 2:  raw = { x: rand(viewX() - margin, viewX() + W + margin), y: viewY() + H + margin }; break;
+    default: raw = { x: viewX() - margin, y: rand(viewY() - margin, viewY() + H + margin) }; break;
   }
   return clampToWorld(raw.x, raw.y, Math.max(8, margin * 0.4));
 }
@@ -4528,10 +4568,10 @@ function chooseSpawnPosition(r, margin, ignoredEnemy) {
   const desiredDistanceSq = desiredDistance * desiredDistance;
   const pad = Math.max(8, r + 4);
   const candidates = [
-    clampToWorld(camera.x + W / 2, camera.y - margin, pad),
-    clampToWorld(camera.x + W + margin, camera.y + H / 2, pad),
-    clampToWorld(camera.x + W / 2, camera.y + H + margin, pad),
-    clampToWorld(camera.x - margin, camera.y + H / 2, pad)
+    clampToWorld(viewX() + W / 2, viewY() - margin, pad),
+    clampToWorld(viewX() + W + margin, viewY() + H / 2, pad),
+    clampToWorld(viewX() + W / 2, viewY() + H + margin, pad),
+    clampToWorld(viewX() - margin, viewY() + H / 2, pad)
   ];
   for (let i = 0; i < ENEMY_SPAWN_POSITION_TRIES; i++) {
     candidates.push(randomEdgePosition(margin));
@@ -5252,7 +5292,8 @@ function damageStageObject(object) {
   object.hits++;
   if (object.type === "pillar" && object.hits <= 3) {
     // Three shots progressively crack the column; the next shot shatters it.
-    for (let i = 0; i < 6; i++) {
+    const crackSparks = particleDensity(6);
+    for (let i = 0; i < crackSparks; i++) {
       const a = rand(0, Math.PI * 2), speed = rand(25, 90);
       particles.push({ x: object.x, y: object.y, vx: Math.cos(a) * speed,
         vy: Math.sin(a) * speed, life: 0, maxLife: rand(0.2, 0.4),
@@ -5265,7 +5306,7 @@ function damageStageObject(object) {
   const isBarrel = object.type === "barrel";
   const colors = object.type === "pillar" ? ["#d1d5db", "#64748b", "#475569"] :
     ["#e7b66b", "#b87532", "#704123"];
-  const count = isBarrel ? 24 : 16;
+  const count = particleDensity(isBarrel ? 24 : 16);
   for (let i = 0; i < count; i++) {
     const a = (i / count) * Math.PI * 2 + rand(-0.2, 0.2);
     const speed = rand(65, isBarrel ? 260 : 170);
@@ -5331,8 +5372,8 @@ function drawStageObjects() {
   ctx.save();
   for (let i = 0; i < stageObjects.length; i++) {
     const o = stageObjects[i];
-    if (!o.alive || o.x < camera.x - 50 || o.x > camera.x + W + 50 ||
-        o.y < camera.y - 60 || o.y > camera.y + H + 60) continue;
+    if (!o.alive || o.x < viewX() - 50 || o.x > viewX() + W + 50 ||
+        o.y < viewY() - 60 || o.y > viewY() + H + 60) continue;
     const x = o.x, y = o.y;
     ctx.fillStyle = "rgba(0,0,0,0.4)";
     ctx.beginPath(); ctx.ellipse(x, y + 12, o.r + 4, 8, 0, 0, Math.PI * 2); ctx.fill();
@@ -5454,8 +5495,9 @@ function playerHitsGem(g) {
 
 function spawnGemPickupEffects(x, y, bonus, multIncreased, newMult) {
   const colors = ["#ffffff", "#d1fae5", "#6ee7b7", "#34d399", "#facc15"];
-  for (let i = 0; i < GEM_PICKUP_PARTICLES; i++) {
-    const angle = ((i + rand(0.15, 0.85)) / GEM_PICKUP_PARTICLES) * Math.PI * 2;
+  const gemSparks = particleDensity(GEM_PICKUP_PARTICLES);
+  for (let i = 0; i < gemSparks; i++) {
+    const angle = ((i + rand(0.15, 0.85)) / gemSparks) * Math.PI * 2;
     const speed = rand(45, 165);
     particles.push({
       x: x,
@@ -5482,8 +5524,9 @@ function spawnGemPickupEffects(x, y, bonus, multIncreased, newMult) {
 }
 
 function spawnGemExpireWisp(x, y) {
-  for (let i = 0; i < 5; i++) {
-    const angle = (i / 5) * Math.PI * 2 + rand(0, 0.5);
+  const expireWisps = particleDensity(5);
+  for (let i = 0; i < expireWisps; i++) {
+    const angle = (i / expireWisps) * Math.PI * 2 + rand(0, 0.5);
     const speed = rand(18, 52);
     particles.push({
       x: x,
@@ -5583,8 +5626,8 @@ function bulletIsOffscreen(b) {
   const camPadX = Math.max(BULLET_OFFSCREEN_MARGIN, W * 0.85);
   const camPadY = Math.max(BULLET_OFFSCREEN_MARGIN, H * 0.85);
   return (
-    b.x < camera.x - camPadX || b.x > camera.x + W + camPadX ||
-    b.y < camera.y - camPadY || b.y > camera.y + H + camPadY
+    b.x < viewX() - camPadX || b.x > viewX() + W + camPadX ||
+    b.y < viewY() - camPadY || b.y > viewY() + H + camPadY
   );
 }
 
@@ -5648,9 +5691,10 @@ function spawnEnemyExplosion(e, impactX, impactY, bullet) {
     maxLife: ENEMY_EXPLOSION_RING_DURATION
   });
 
-  for (let i = 0; i < ENEMY_EXPLOSION_PARTICLES; i++) {
+  const explosionSparks = particleDensity(ENEMY_EXPLOSION_PARTICLES);
+  for (let i = 0; i < explosionSparks; i++) {
     // Stratified angles prevent lopsided gaps while keeping organic jitter.
-    const angle = ((i + rand(0.15, 0.85)) / ENEMY_EXPLOSION_PARTICLES) * Math.PI * 2;
+    const angle = ((i + rand(0.15, 0.85)) / explosionSparks) * Math.PI * 2;
     const speed = rand(65, 240);
     particles.push({
       x: cx,
@@ -5763,8 +5807,9 @@ function spawnBossExplosion(boss, cx, cy) {
   });
 
   const colors = palette.explosionSparks;
-  for (let i = 0; i < BOSS_EXPLOSION_PARTICLES; i++) {
-    const angle = ((i + rand(0.1, 0.9)) / BOSS_EXPLOSION_PARTICLES) * Math.PI * 2;
+  const bossSparks = particleDensity(BOSS_EXPLOSION_PARTICLES);
+  for (let i = 0; i < bossSparks; i++) {
+    const angle = ((i + rand(0.1, 0.9)) / bossSparks) * Math.PI * 2;
     const speed = rand(85, 340);
     particles.push({
       x: cx,
@@ -5812,7 +5857,8 @@ function damageEnemyAt(enemyIndex, damage, impactX, impactY, bullet) {
     if (e.isCampaignBoss) refreshCampaignBossHud();
     e.hitFlash = BOSS_HIT_FLASH_DURATION;
     const hitColors = ["#ffffff", "#fda4af", "#67e8f9"];
-    for (let i = 0; i < 6; i++) {
+    const bossHitSparks = particleDensity(6);
+    for (let i = 0; i < bossHitSparks; i++) {
       const a = Math.random() * Math.PI * 2;
       const sp = rand(45, 140);
       particles.push({
@@ -5978,7 +6024,8 @@ function fireLaserTowards(targetX, targetY) {
   const sparkOriginX = player.x + Math.cos(aimAngle) * (player.r + 4);
   const sparkOriginY = player.y + Math.sin(aimAngle) * (player.r + 4);
   const muzzleColors = ["#ffffff", "#e0f2fe", "#7dd3fc", "#38bdf8", "#2563eb"];
-  for (let s = 0; s < 8; s++) {
+  const muzzleSparks = particleDensity(8);
+  for (let s = 0; s < muzzleSparks; s++) {
     const sa = aimAngle + rand(-0.55, 0.55);
     const sp = rand(70, 220);
     particles.push({
@@ -6326,8 +6373,8 @@ function updateBossShooting(dt) {
     if (normalizeEnemyType(e.type) === "orange") {
       // Only draw & loose arrows once visible inside or near the camera viewport.
       const insideArena = (
-        e.x >= camera.x - 16 && e.x <= camera.x + W + 16 &&
-        e.y >= camera.y - 16 && e.y <= camera.y + H + 16
+        e.x >= viewX() - 16 && e.x <= viewX() + W + 16 &&
+        e.y >= viewY() - 16 && e.y <= viewY() + H + 16
       );
       if (!insideArena) continue;
 
@@ -6361,7 +6408,8 @@ function updateEnemyBullets(dt) {
       const sdy = b.y - player.y;
       const domeDist = ACTIVE_SHIELD_RADIUS + b.r;
       if (sdx * sdx + sdy * sdy <= domeDist * domeDist) {
-        for (let p = 0; p < 5; p++) {
+        const domeSparks = particleDensity(5);
+        for (let p = 0; p < domeSparks; p++) {
           const pa = Math.random() * Math.PI * 2;
           const ps = rand(40, 130);
           particles.push({
@@ -6634,7 +6682,8 @@ function enemyHitsPlayer(e) {
 
 function spawnDeathParticles() {
   const colors = ["#ffffff", "#e0f2fe", "#bae6fd", "#ef4444"];
-  for (let i = 0; i < 42; i++) {
+  const deathSparks = particleDensity(42);
+  for (let i = 0; i < deathSparks; i++) {
     const angle = Math.random() * Math.PI * 2;
     const speed = rand(60, 360);
     particles.push({
@@ -7528,8 +7577,8 @@ function drawParallaxDetails(theme, horizon) {
     ctx.save();
     ctx.beginPath(); ctx.rect(0, horizon, W, Math.max(0, H - horizon)); ctx.clip();
     const stepX = 34, stepY = 44;
-    const ox = layerOffset(camera.x * 0.83, stepX);
-    const oy = layerOffset(camera.y * 0.83, stepY);
+    const ox = layerOffset(camera.x * bgParallax(0.83), stepX);
+    const oy = layerOffset(camera.y * bgParallax(0.83), stepY);
     ctx.lineWidth = 1.3;
     for (let y = horizon - oy; y < H + stepY; y += stepY) {
       for (let x = -ox; x < W + stepX; x += stepX) {
@@ -7543,7 +7592,7 @@ function drawParallaxDetails(theme, horizon) {
     ctx.restore();
     // More distant flaming cottages scroll independently of the wheat.
     for (let i = 0; i < 6; i++) {
-      const x = layerOffset(i * 270 - camera.x * 0.22, span) - 90;
+      const x = layerOffset(i * 270 - camera.x * bgParallax(0.22), span) - 90;
       const y = horizon - 4 + Math.sin(i * 2) * 3;
       ctx.fillStyle = "#15111a"; ctx.fillRect(x - 16, y - 22, 32, 22);
       ctx.beginPath(); ctx.moveTo(x - 20, y - 22); ctx.lineTo(x, y - 38); ctx.lineTo(x + 20, y - 22); ctx.fill();
@@ -7554,8 +7603,8 @@ function drawParallaxDetails(theme, horizon) {
     }
     // Tiny fleeing peasants, with independent stride animation.
     for (let i = 0; i < 5; i++) {
-      const x = layerOffset(i * 240 + t * (28 + i * 3) - camera.x * 0.48, span) - 90;
-      const y = horizon + 20 + i % 3 * 12 - layerOffset(camera.y * 0.12, 18);
+      const x = layerOffset(i * 240 + t * (28 + i * 3) - camera.x * bgParallax(0.48), span) - 90;
+      const y = horizon + 20 + i % 3 * 12 - layerOffset(camera.y * bgParallax(0.12), 18);
       const stride = Math.sin(t * 12 + i) * 5;
       ctx.strokeStyle = "rgba(184,171,150,0.8)"; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(x, y - 9); ctx.lineTo(x + 2, y - 3);
@@ -7566,7 +7615,7 @@ function drawParallaxDetails(theme, horizon) {
   } else if (theme === "forest") {
     // Near trees move faster than the existing distant treeline.
     for (let i = 0; i < Math.ceil(W / 150) + 3; i++) {
-      const x = i * 150 - layerOffset(camera.x * 0.65, 150) - 90;
+      const x = i * 150 - layerOffset(camera.x * bgParallax(0.65), 150) - 90;
       const sway = Math.sin(t * 0.8 + i) * 4;
       ctx.strokeStyle = "rgba(6,14,11,0.88)"; ctx.lineWidth = 9;
       ctx.beginPath(); ctx.moveTo(x, horizon + 8); ctx.lineTo(x + sway, horizon - 42); ctx.lineTo(x - 12 + sway, horizon - 68); ctx.stroke();
@@ -7574,7 +7623,7 @@ function drawParallaxDetails(theme, horizon) {
     }
     // Bats cross the sky with flapping wings.
     for (let i = 0; i < 8; i++) {
-      const x = layerOffset(i * 170 + t * (35 + i * 2) - camera.x * 0.25, span) - 90;
+      const x = layerOffset(i * 170 + t * (35 + i * 2) - camera.x * bgParallax(0.25), span) - 90;
       const y = 30 + (i * 31) % Math.max(35, horizon - 35) + Math.sin(t * 2 + i) * 8;
       const flap = Math.sin(t * 13 + i * 2) * 6;
       ctx.strokeStyle = "#080a12"; ctx.lineWidth = 2.5;
@@ -7583,8 +7632,8 @@ function drawParallaxDetails(theme, horizon) {
     // Translucent fog drifts across the ground at a slower depth.
     ctx.save(); ctx.beginPath(); ctx.rect(0, horizon, W, Math.max(0, H - horizon)); ctx.clip();
     for (let i = 0; i < 7; i++) {
-      const x = layerOffset(i * 240 + t * 13 - camera.x * 0.28, W + 360) - 180;
-      const y = horizon + layerOffset(i * 91 - camera.y * 0.20 + Math.sin(t * 0.4 + i) * 12, Math.max(1, H - horizon));
+      const x = layerOffset(i * 240 + t * 13 - camera.x * bgParallax(0.28), W + 360) - 180;
+      const y = horizon + layerOffset(i * 91 - camera.y * bgParallax(0.20) + Math.sin(t * 0.4 + i) * 12, Math.max(1, H - horizon));
       const fog = ctx.createRadialGradient(x, y, 2, x, y, 120);
       fog.addColorStop(0, "rgba(161,201,185,0.14)"); fog.addColorStop(1, "rgba(161,201,185,0)");
       ctx.fillStyle = fog; ctx.beginPath(); ctx.ellipse(x, y, 120, 32, 0, 0, Math.PI * 2); ctx.fill();
@@ -7593,7 +7642,7 @@ function drawParallaxDetails(theme, horizon) {
   } else if (theme === "castle_gates") {
     // Rank of soldiers marches along the battlements.
     for (let i = 0; i < Math.ceil(W / 48) + 4; i++) {
-      const x = i * 48 - layerOffset(camera.x * 0.35 - t * 16, 48) - 40;
+      const x = i * 48 - layerOffset(camera.x * bgParallax(0.35) - t * 16, 48) - 40;
       const y = horizon - 10;
       const stride = Math.sin(t * 9 + i) * 4;
       ctx.strokeStyle = "#748095"; ctx.lineWidth = 2;
@@ -7605,7 +7654,7 @@ function drawParallaxDetails(theme, horizon) {
     // Catapult projectiles trace glowing parabolic arcs across the sky.
     for (let i = 0; i < 3; i++) {
       const phase = layerOffset(t * 0.10 + i / 3, 1);
-      const x = phase * (W + 120) - 60 - (camera.x - W) * 0.12;
+      const x = phase * (W + 120) - 60 - (camera.x - W) * bgParallax(0.12);
       const y = horizon - 5 - Math.sin(phase * Math.PI) * (horizon * 0.75);
       ctx.strokeStyle = "rgba(251,146,60,0.45)"; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.moveTo(x - 24, y + 8); ctx.lineTo(x, y); ctx.stroke();
@@ -7614,7 +7663,7 @@ function drawParallaxDetails(theme, horizon) {
     }
   } else if (theme === "tower") {
     // Pillars and intermittent jagged electrical arcs between them.
-    const spacing = 180, offset = layerOffset(camera.x * 0.43, spacing);
+    const spacing = 180, offset = layerOffset(camera.x * bgParallax(0.43), spacing);
     for (let x = -offset - spacing; x < W + spacing; x += spacing) {
       ctx.fillStyle = "rgba(40,29,61,0.82)"; ctx.fillRect(x - 9, horizon - 110, 18, 110);
       ctx.fillStyle = "rgba(154,113,192,0.32)"; ctx.fillRect(x - 11, horizon - 110, 22, 5);
@@ -7626,16 +7675,16 @@ function drawParallaxDetails(theme, horizon) {
       }
     }
     for (let i = 0; i < 9; i++) {
-      const x = layerOffset(i * 173 - camera.x * 0.3, span) - 90;
-      const y = horizon + 20 + layerOffset(i * 79 - camera.y * 0.3, Math.max(1, H - horizon)) + Math.sin(t * 2 + i) * 12;
+      const x = layerOffset(i * 173 - camera.x * bgParallax(0.3), span) - 90;
+      const y = horizon + 20 + layerOffset(i * 79 - camera.y * bgParallax(0.3), Math.max(1, H - horizon)) + Math.sin(t * 2 + i) * 12;
       const r = 3 + i % 3;
       ctx.shadowColor = "#a855f7"; ctx.shadowBlur = 16; ctx.fillStyle = i % 2 ? "#e9d5ff" : "#a78bfa";
       ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
     }
   } else if (theme === "portal") {
     // A rotating galaxy spiral around the existing portal.
-    const px = W * 0.5 - (camera.x - W) * 0.15;
-    const py = horizon * 0.62 - (camera.y - H) * 0.025;
+    const px = W * 0.5 - (camera.x - W) * bgParallax(0.15);
+    const py = horizon * 0.62 - (camera.y - H) * bgParallax(0.025);
     ctx.save(); ctx.translate(px, py); ctx.rotate(t * 0.27);
     for (let arm = 0; arm < 3; arm++) {
       ctx.strokeStyle = arm === 0 ? "rgba(103,232,249,0.6)" : "rgba(192,132,252,0.48)";
@@ -7650,8 +7699,8 @@ function drawParallaxDetails(theme, horizon) {
     ctx.restore();
     // Temporal rifts open and close at different phases and depths.
     for (let i = 0; i < 7; i++) {
-      const x = layerOffset(i * 260 - camera.x * 0.38, W + 180) - 90;
-      const y = horizon + 15 + layerOffset(i * 107 - camera.y * 0.32, Math.max(1, H - horizon));
+      const x = layerOffset(i * 260 - camera.x * bgParallax(0.38), W + 180) - 90;
+      const y = horizon + 15 + layerOffset(i * 107 - camera.y * bgParallax(0.32), Math.max(1, H - horizon));
       const open = Math.max(0, Math.sin(t * 0.8 + i * 1.9));
       if (open < 0.06) continue;
       ctx.shadowColor = "#22d3ee"; ctx.shadowBlur = 18; ctx.strokeStyle = "rgba(103,232,249," + (0.25 + open * 0.65) + ")"; ctx.lineWidth = 2;
@@ -7666,7 +7715,7 @@ function drawParallaxDetails(theme, horizon) {
    These use their own deterministic seeds and normalized coordinates, never
    the gameplay particle arrays or Math.random(). Viewport resizing therefore
    keeps the effects in bounds without affecting combat or random spawns. */
-const WEATHER_COUNTS = { village: 72, forest: 130, castle_gates: 210, tower: 115, portal: 110 };
+const WEATHER_COUNTS = { village: 36, forest: 65, castle_gates: 105, tower: 58, portal: 55 }; // 50% density
 let weatherTheme = "";
 let weatherElapsed = 0;
 let weatherParticles = [];
@@ -7706,7 +7755,7 @@ function drawWeatherWisps(count, color, upwardSpeed, baseRadius) {
   for (let i = 0; i < count && i < weatherParticles.length; i++) {
     const p = weatherParticles[i];
     const progress = weatherWrap(p.v + weatherElapsed * upwardSpeed * p.speed, 1);
-    const x = weatherWrap(p.u * W + Math.sin(weatherElapsed * 0.55 + p.phase) * 30 - camera.x * 0.13, Math.max(1, W));
+    const x = weatherWrap(p.u * W + Math.sin(weatherElapsed * 0.55 + p.phase) * 30 - camera.x * bgParallax(0.13), Math.max(1, W));
     const y = h - progress * h * 0.72;
     const radius = baseRadius * p.size * (0.6 + progress * 0.8);
     const alpha = Math.sin(progress * Math.PI) * (weatherTheme === "forest" ? 0.12 : 0.10);
@@ -7730,8 +7779,8 @@ function drawWeatherBackground() {
     // Gold sparks rise from the burning village, drifting in the warm air.
     for (let i = 0; i < weatherParticles.length; i++) {
       const p = weatherParticles[i];
-      const x = weatherWrap(p.u * W + Math.sin(t * 1.5 + p.phase) * 18 - camera.x * 0.18, W);
-      const y = weatherWrap(p.v * H - t * 45 * p.speed - camera.y * 0.12, H);
+      const x = weatherWrap(p.u * W + Math.sin(t * 1.5 + p.phase) * 18 - camera.x * bgParallax(0.18), W);
+      const y = weatherWrap(p.v * H - t * 45 * p.speed - camera.y * bgParallax(0.12), H);
       const flicker = 0.4 + 0.6 * Math.abs(Math.sin(t * 5 + p.phase));
       ctx.globalAlpha = 0.35 + flicker * 0.55;
       ctx.fillStyle = i % 4 === 0 ? "#fff0a3" : (i % 3 === 0 ? "#fb923c" : "#fbbf24");
@@ -7739,14 +7788,14 @@ function drawWeatherBackground() {
     }
   } else if (weatherTheme === "forest") {
     // Green rain falls over rolling, ground-hugging mist.
-    drawWeatherWisps(18, "142,200,166", 0.055, 65);
+    drawWeatherWisps(particleDensity(18), "142,200,166", 0.055, 65);
     ctx.strokeStyle = "rgba(119,227,167,0.43)";
     ctx.lineWidth = 1.15;
     ctx.beginPath();
     for (let i = 0; i < weatherParticles.length; i++) {
       const p = weatherParticles[i];
-      const x = weatherWrap(p.u * W - t * 14 - camera.x * 0.16, W);
-      const y = weatherWrap(p.v * H + t * 185 * p.speed - camera.y * 0.12, H);
+      const x = weatherWrap(p.u * W - t * 14 - camera.x * bgParallax(0.16), W);
+      const y = weatherWrap(p.v * H + t * 185 * p.speed - camera.y * bgParallax(0.12), H);
       ctx.moveTo(x, y); ctx.lineTo(x - 2.5, y + 7 + p.size * 2);
     }
     ctx.stroke();
@@ -7757,18 +7806,18 @@ function drawWeatherBackground() {
     ctx.beginPath();
     for (let i = 0; i < weatherParticles.length; i++) {
       const p = weatherParticles[i];
-      const x = weatherWrap(p.u * W - t * 55 - camera.x * 0.2, W);
-      const y = weatherWrap(p.v * H + t * 360 * p.speed - camera.y * 0.17, H);
+      const x = weatherWrap(p.u * W - t * 55 - camera.x * bgParallax(0.2), W);
+      const y = weatherWrap(p.v * H + t * 360 * p.speed - camera.y * bgParallax(0.17), H);
       ctx.moveTo(x, y); ctx.lineTo(x - 5, y + 13 + p.size * 4);
     }
     ctx.stroke();
   } else if (weatherTheme === "tower") {
-    drawWeatherWisps(20, "138,115,166", 0.07, 55);
+    drawWeatherWisps(particleDensity(20), "138,115,166", 0.07, 55);
     // Glowing purple magic sparks rain down through the tower.
     for (let i = 0; i < weatherParticles.length; i++) {
       const p = weatherParticles[i];
-      const x = weatherWrap(p.u * W + Math.sin(t * 2 + p.phase) * 9 - camera.x * 0.16, W);
-      const y = weatherWrap(p.v * H + t * 100 * p.speed - camera.y * 0.12, H);
+      const x = weatherWrap(p.u * W + Math.sin(t * 2 + p.phase) * 9 - camera.x * bgParallax(0.16), W);
+      const y = weatherWrap(p.v * H + t * 100 * p.speed - camera.y * bgParallax(0.12), H);
       ctx.globalAlpha = 0.45 + 0.45 * Math.abs(Math.sin(t * 4 + p.phase));
       ctx.fillStyle = i % 3 === 0 ? "#f5d0fe" : "#c084fc";
       ctx.fillRect(x, y, Math.max(1, p.size), 3 + p.size * 2);
@@ -7777,8 +7826,8 @@ function drawWeatherBackground() {
     // Every particle starts at one of the four edges and spirals inward
     // toward the same parallax-adjusted center as the visible time portal.
     const horizon = battlefieldHorizonY();
-    const cx = W * 0.5 - (camera.x - W) * 0.42 * 0.35;
-    const cy = horizon * 0.62 - (camera.y - H) * 0.12 * 0.18;
+    const cx = W * 0.5 - (camera.x - W) * bgParallax(0.42 * 0.35);
+    const cy = horizon * 0.62 - (camera.y - H) * bgParallax(0.12 * 0.18);
     for (let i = 0; i < weatherParticles.length; i++) {
       const p = weatherParticles[i];
       const progress = weatherWrap(p.v + t * 0.12 * p.speed, 1);
@@ -7819,8 +7868,8 @@ function drawWeatherLightning() {
 function drawBackground() {
   const horizonY = battlefieldHorizonY();
   // Distant layers move more slowly than the world-space ground.
-  const parX = -(camera.x - W) * 0.42;
-  const parY = -(camera.y - H) * 0.12;
+  const parX = -(camera.x - W) * bgParallax(0.42);
+  const parY = -(camera.y - H) * bgParallax(0.12);
   const theme = currentLevelConfig().theme || "village";
 
   // 1. Stage sky palette.
@@ -7941,8 +7990,12 @@ function drawBackground() {
   if (cachedFloor && typeof ctx.drawImage === "function" && H > horizonY + 1) {
     // Tile the cached terrain in world coordinates, rather than tying it to the screen.
     const tileH = H - horizonY;
-    const startX = -((camera.x % W + W) % W);
-    const startY = horizonY - ((camera.y % tileH + tileH) % tileH);
+    // The floor texture drifts with the same hard 15% cap as every other
+    // background layer, so it barely slides under the actors.
+    const floorX = camera.x * BG_MAX_PARALLAX;
+    const floorY = camera.y * BG_MAX_PARALLAX;
+    const startX = -((floorX % W + W) % W);
+    const startY = horizonY - ((floorY % tileH + tileH) % tileH);
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, horizonY, W, H - horizonY);
@@ -8622,11 +8675,11 @@ function drawBossHealthBars() {
     const hpRatio = clamp(b.hp / maxHp, 0, 1);
     const barW = b.isMiniBoss ? 58 : Math.max(82, b.r * 2.2);
     const barH = b.isMiniBoss ? 6 : 8;
-    if (b.x + b.r < camera.x || b.x - b.r > camera.x + W ||
-        b.y + b.r < camera.y || b.y - b.r > camera.y + H) continue;
-    const centerX = clamp(b.x, camera.x + barW / 2 + 10, Math.max(camera.x + barW / 2 + 10, camera.x + W - barW / 2 - 10));
+    if (b.x + b.r < viewX() || b.x - b.r > viewX() + W ||
+        b.y + b.r < viewY() || b.y - b.r > viewY() + H) continue;
+    const centerX = clamp(b.x, viewX() + barW / 2 + 10, Math.max(viewX() + barW / 2 + 10, viewX() + W - barW / 2 - 10));
     const aboveY = b.y - b.r - (b.isMiniBoss ? 22 : 18);
-    const barY = aboveY >= camera.y + 20 ? aboveY : Math.min(camera.y + H - 18, b.y + b.r + 12);
+    const barY = aboveY >= viewY() + 20 ? aboveY : Math.min(viewY() + H - 18, b.y + b.r + 12);
     const leftX = centerX - barW / 2;
 
     ctx.save();
@@ -9407,6 +9460,76 @@ function drawFloatingTexts() {
   ctx.globalAlpha = 1;
 }
 
+/* ---------- Static hexagonal anchor grid ----------
+   A permanent, faint hexagonal grid in pure screen space. It is built once per
+   viewport into an offscreen canvas and blitted at a fixed 0.06 opacity, so it
+   never moves with the camera, the player or screen shake: a fixed anchor the
+   eye can lock onto while the battlefield scrolls. */
+const HEX_GRID_ALPHA = 0.06;
+const HEX_GRID_COLOR = "#cfe0ff";
+const HEX_GRID_RADIUS = 34;
+let hexGridCache = null;
+let hexGridCacheW = 0;
+let hexGridCacheH = 0;
+
+function traceHexGrid(targetCtx, width, height) {
+  const R = HEX_GRID_RADIUS;
+  const colStep = 1.5 * R;            // flat-top hex columns
+  const rowStep = Math.sqrt(3) * R;   // vertical spacing inside one column
+  targetCtx.beginPath();
+  for (let col = -1; col * colStep <= width + colStep; col++) {
+    const cx = col * colStep;
+    const yShift = (col & 1) ? rowStep / 2 : 0;
+    for (let row = -1; row * rowStep + yShift <= height + rowStep; row++) {
+      const cy = row * rowStep + yShift;
+      for (let k = 0; k <= 6; k++) {
+        const a = (Math.PI / 3) * (k % 6);
+        const x = cx + Math.cos(a) * R;
+        const y = cy + Math.sin(a) * R;
+        if (k === 0) targetCtx.moveTo(x, y);
+        else targetCtx.lineTo(x, y);
+      }
+    }
+  }
+}
+
+function buildHexGridCache() {
+  if (typeof document === "undefined" || typeof document.createElement !== "function") return null;
+  const grid = document.createElement("canvas");
+  grid.width = Math.max(1, Math.floor(W));
+  grid.height = Math.max(1, Math.floor(H));
+  const gridCtx = grid.getContext ? grid.getContext("2d") : null;
+  if (!gridCtx) return null;
+  gridCtx.strokeStyle = HEX_GRID_COLOR;
+  gridCtx.lineWidth = 1;
+  traceHexGrid(gridCtx, grid.width, grid.height);
+  gridCtx.stroke();
+  return grid;
+}
+
+function drawStaticHexGrid() {
+  if (!W || !H) return;
+  if (!hexGridCache || hexGridCacheW !== W || hexGridCacheH !== H) {
+    hexGridCache = buildHexGridCache();
+    hexGridCacheW = W;
+    hexGridCacheH = H;
+  }
+  ctx.save();
+  ctx.globalAlpha = HEX_GRID_ALPHA;                    // fixed 0.06, never animated
+  if (typeof ctx.setTransform === "function") {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);                // screen space: no camera, no shake
+  }
+  if (hexGridCache && typeof ctx.drawImage === "function") {
+    ctx.drawImage(hexGridCache, 0, 0);
+  } else if (typeof ctx.stroke === "function") {
+    traceHexGrid(ctx, W, H);
+    ctx.strokeStyle = HEX_GRID_COLOR;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawParticles() {
   for (let i = 0; i < particles.length; i++) {
     const p = particles[i];
@@ -9447,7 +9570,9 @@ function draw() {
 
   drawBackground();      // layered screen-space scenery
   drawWeatherBackground(); // atmospheric particles stay behind every actor
-  ctx.translate(-camera.x, -camera.y); // all actors and effects use world coordinates
+  // Actor layer offset is exact (viewX/viewY), so the player sprite lands on
+  // the exact centre of the canvas and only the world scrolls past it.
+  ctx.translate(-viewX(), -viewY()); // all actors and effects use world coordinates
   drawEnemyTrails();     // trails sit under everything else
   drawStageObjects();
   drawHealthPickups();
@@ -9462,6 +9587,7 @@ function draw() {
   drawParticles();       // explosion, laser, gem & death sparks
 
   ctx.restore();
+  drawStaticHexGrid();    // fixed 0.06-opacity hex anchor, drawn over the world
   drawWeatherLightning(); // castle lightning briefly illuminates the entire scene
   if (state === "boss_death") {
     ctx.save();
