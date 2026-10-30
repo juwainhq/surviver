@@ -2104,6 +2104,15 @@ const ENEMY_BASE_SPEED = TYPE1_BASE_SPEED; // base speed reference on Level 1
 const BASE_SPAWN_INTERVAL = 0.85; // seconds between spawns on Level 1
 const MIN_SPAWN_INTERVAL  = 0.18; // safety floor so spawning never gets absurd
 
+/* ---------- Per-level difficulty behavior ---------- */
+/* Level 4: chance per frame that an enemy dodges an incoming bullet. */
+const LEVEL4_DODGE_CHANCE = 0.02;      // ~2% per frame per nearby bullet
+const LEVEL4_DODGE_DISTANCE = 180;     // px — bullets within this range trigger a dodge
+/* Level 4: formation spawn timer (seconds between formation waves). */
+const LEVEL4_FORMATION_INTERVAL = 8;   // seconds between formation spawns
+/* Level 5: flanking angle spread (radians) — enemies approach from around. */
+const LEVEL5_FLANK_SPREAD = Math.PI * 0.6; // ~34° either side of direct pursuit
+
 /* ---------- Difficulty levels ----------
    The level goes up every 10 seconds survived:
      Level 1 = 0–9s,  Level 2 = 10–19s,  Level 3 = 20–29s, ...
@@ -2155,6 +2164,7 @@ let currentUpgradeChoices = []; // the 3 upgrade definitions currently shown
 let nextBossTime = BOSS_INTERVAL_SECONDS; // 60s, 120s, 180s, ...
 let difficultyReliefLevels = 0; // slight difficulty setback earned by boss kills
 let bossAlertTimer = 0;      // seconds left to show the boss-arrival banner
+let nextFormationTime = LEVEL4_FORMATION_INTERVAL; // seconds until next Level 4 formation wave
 
 let enemies = [];        // { x, y, r, hp, maxHp, isBoss, speed, spawnFlash, trail }
 let bullets = [];        // player blue laser blasts
@@ -3244,8 +3254,8 @@ const CAMPAIGN_LEVELS = [
     theme: "village",
     goalType: "survive",
     goalTarget: 30,
-    spawnInterval: 0.85,
-    speedMult: 1.00,
+    spawnInterval: 1.10,      // very forgiving, slow spawns to teach movement
+    speedMult: 1.00,          // base speed — slow knights
     storyLines: [
       "Torn from Year 3047, Rael crashes onto smoking cobblestones.",
       "Iron-clad knights charge through the burning village mist."
@@ -3259,8 +3269,8 @@ const CAMPAIGN_LEVELS = [
     theme: "forest",
     goalType: "kill_archers",
     goalTarget: 20,
-    spawnInterval: 0.76,
-    speedMult: 1.08,
+    spawnInterval: 0.75,
+    speedMult: 1.30,          // enemies 30% faster than Level 1
     storyLines: [
       "Beyond the burning hamlet, twisted boughs swallow the moonlight.",
       "Twenty hooded archers wait in ambush beneath the dark canopy."
@@ -3274,8 +3284,8 @@ const CAMPAIGN_LEVELS = [
     theme: "castle_gates",
     goalType: "survive",
     goalTarget: 45,
-    spawnInterval: 0.72,
-    speedMult: 1.15,
+    spawnInterval: 0.60,
+    speedMult: 1.50,          // enemies 50% faster than Level 1
     storyLines: [
       "Dreadkeep’s iron portcullis groans open before the fortress walls.",
       "Hold the courtyard for forty-five seconds against the dark siege."
@@ -3289,8 +3299,8 @@ const CAMPAIGN_LEVELS = [
     theme: "tower",
     goalType: "kill_wizards",
     goalTarget: 20,
-    spawnInterval: 1.25,
-    speedMult: 1.18,
+    spawnInterval: 0.45,
+    speedMult: 1.75,
     storyLines: [
       "Arcane lightning crackles through the spire’s forbidden sanctum.",
       "Dark wizards channel stolen chrono-energy above."
@@ -3304,8 +3314,8 @@ const CAMPAIGN_LEVELS = [
     theme: "portal",
     goalType: "survive_final",
     goalTarget: 60,
-    spawnInterval: 0.60,
-    speedMult: 1.26,
+    spawnInterval: 0.30,      // relentless spawn rate
+    speedMult: 2.00,          // all enemies at double speed
     storyLines: [
       "At the summit, the unstable Time Portal roars open toward 3047 AD.",
       "Survive sixty seconds against all dark legions and their Warlord!"
@@ -4486,6 +4496,7 @@ function resetGame() {
   player.walkPhase = 0;
   resetUpgrades();
   nextBossTime = BOSS_INTERVAL_SECONDS;
+  nextFormationTime = LEVEL4_FORMATION_INTERVAL;
   difficultyReliefLevels = 0;
   enemies.length = 0;
   bullets.length = 0;
@@ -4753,11 +4764,27 @@ function chooseSpawnPosition(r, margin, ignoredEnemy) {
 }
 
 function chooseRandomEnemyType() {
-  if (campaignLevel === 1) return "red";     // Level 1: basic knights
-  if (campaignLevel === 2) return "orange";  // Level 2: dark archers
-  if (campaignLevel === 4) {
-    return Math.random() < 0.75 ? "purple" : "red";
+  // Level 1: slow knights only — teaches basic movement, very forgiving.
+  if (campaignLevel === 1) return "red";
+  // Level 2: archers introduced — mostly dark archers with a few knights.
+  if (campaignLevel === 2) {
+    return Math.random() < 0.75 ? "orange" : "red";
   }
+  // Level 3: mixed enemies — knights, archers, and wizards all appear.
+  if (campaignLevel === 3) {
+    const roll = Math.random();
+    if (roll < 0.40) return "red";
+    if (roll < 0.75) return "orange";
+    return "purple";
+  }
+  // Level 4: all enemy types, plus dodging and formation spawns.
+  if (campaignLevel === 4) {
+    const roll = Math.random();
+    if (roll < 0.40) return "purple";
+    if (roll < 0.70) return "orange";
+    return "red";
+  }
+  // Level 5: all enemy types at double speed.
   return ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
 }
 
@@ -4888,6 +4915,129 @@ function spawnEnemy(requestedType) {
   }
   playSpawnBeep();
   return true;
+}
+
+/* ---------- Level 4: formation spawns ---------- */
+/* Instead of random edge spawns, Level 4 enemies arrive in deliberate
+   formations: a circle surrounding the player, a line across the arena,
+   or an ambush from behind. Each formation spawns 3–5 enemies at once. */
+function spawnFormation() {
+  if (campaignLevel !== 4) return;
+  const count = 3 + Math.floor(Math.random() * 3); // 3–5 enemies
+  const pattern = Math.floor(Math.random() * 3); // 0: circle, 1: line, 2: ambush
+
+  if (pattern === 0) {
+    // Circle: enemies spawn in a ring around the player.
+    for (let k = 0; k < count; k++) {
+      const a = (k / count) * Math.PI * 2;
+      const dist = 260 + rand(-20, 20);
+      const x = player.x + Math.cos(a) * dist;
+      const y = player.y + Math.sin(a) * dist;
+      spawnEnemyAt(x, y);
+    }
+  } else if (pattern === 1) {
+    // Line: enemies spawn in a horizontal line across the arena.
+    const startX = camera.x + W * 0.15;
+    const endX = camera.x + W * 0.85;
+    const y = camera.y + H * 0.25 + rand(-40, 40);
+    for (let k = 0; k < count; k++) {
+      const t = k / Math.max(1, count - 1);
+      const x = startX + (endX - startX) * t;
+      spawnEnemyAt(x, y);
+    }
+  } else {
+    // Ambush: enemies spawn behind the player (opposite facing direction).
+    const backX = player.x - player.facingX * 220;
+    const backY = player.y - player.facingY * 220;
+    for (let k = 0; k < count; k++) {
+      const x = backX + rand(-60, 60);
+      const y = backY + rand(-60, 60);
+      spawnEnemyAt(x, y);
+    }
+  }
+}
+
+/* Spawn a single enemy at a specific world position (used by formations). */
+function spawnEnemyAt(x, y) {
+  const r = 12;
+  const margin = r + 8;
+  const clampedX = clamp(x, margin, Math.max(margin, worldW - margin));
+  const clampedY = clamp(y, margin, Math.max(margin, worldH - margin));
+  const chosenType = chooseRandomEnemyType();
+  const spec = createEnemySpec(chosenType);
+  const initialFacingX = clampedX <= player.x ? 1 : -1;
+
+  let enemyToRecycle = null;
+  if (enemies.length >= MAX_ACTIVE_ENEMIES) {
+    let farthestDistanceSq = -1;
+    for (let i = 0; i < enemies.length; i++) {
+      const candidate = enemies[i];
+      if (candidate.isBoss || candidate.isMiniBoss) continue;
+      const dx = candidate.x - player.x;
+      const dy = candidate.y - player.y;
+      const distanceSq = dx * dx + dy * dy;
+      if (distanceSq > farthestDistanceSq) {
+        farthestDistanceSq = distanceSq;
+        enemyToRecycle = candidate;
+      }
+    }
+  }
+
+  if (enemyToRecycle) {
+    enemyToRecycle.x = clampedX;
+    enemyToRecycle.y = clampedY;
+    enemyToRecycle.prevX = clampedX;
+    enemyToRecycle.prevY = clampedY;
+    enemyToRecycle.vx = 0;
+    enemyToRecycle.vy = 0;
+    enemyToRecycle.r = spec.r;
+    enemyToRecycle.hp = ENEMY_MAX_HP;
+    enemyToRecycle.maxHp = ENEMY_MAX_HP;
+    enemyToRecycle.type = spec.type;
+    enemyToRecycle.typeId = spec.typeId;
+    enemyToRecycle.isBoss = false;
+    enemyToRecycle.isMiniBoss = false;
+    enemyToRecycle.isFinalBoss = false;
+    enemyToRecycle.canSplit = spec.canSplit;
+    enemyToRecycle.isSplitChild = spec.isSplitChild;
+    enemyToRecycle.facingX = initialFacingX;
+    enemyToRecycle.speed = spec.speed;
+    enemyToRecycle.fireTimer = 0;
+    enemyToRecycle.archerFireTimer = spec.archerFireTimer;
+    enemyToRecycle.hitFlash = 0;
+    enemyToRecycle.zigPhase = spec.zigPhase;
+    enemyToRecycle.zigRate = spec.zigRate;
+    enemyToRecycle.splitBurstVx = 0;
+    enemyToRecycle.splitBurstVy = 0;
+    enemyToRecycle.spawnFlash = ENEMY_SPAWN_FLASH_DURATION;
+    enemyToRecycle.trail.length = 0;
+  } else {
+    enemies.push({
+      x: clampedX, y: clampedY,
+      prevX: clampedX, prevY: clampedY,
+      vx: 0, vy: 0,
+      r: spec.r,
+      hp: ENEMY_MAX_HP,
+      maxHp: ENEMY_MAX_HP,
+      type: spec.type,
+      typeId: spec.typeId,
+      isBoss: false,
+      canSplit: spec.canSplit,
+      isSplitChild: spec.isSplitChild,
+      facingX: initialFacingX,
+      speed: spec.speed,
+      fireTimer: 0,
+      archerFireTimer: spec.archerFireTimer,
+      hitFlash: 0,
+      zigPhase: spec.zigPhase,
+      zigRate: spec.zigRate,
+      splitBurstVx: 0,
+      splitBurstVy: 0,
+      spawnFlash: ENEMY_SPAWN_FLASH_DURATION,
+      trail: []
+    });
+  }
+  playSpawnBeep();
 }
 
 /* Spawn one of Level 4's 3 Dark Wizard Mini-Bosses (8 HP, arcane
@@ -5364,6 +5514,49 @@ function initializeStageObjects() {
           x: 0, y: 0, hits: 0, alive: false };
         stageObjects.push(o);
         placeStageObject(o, ax, ay);
+      }
+    }
+  }
+
+  /* ---------- Level 3: pillar chokepoints ---------- */
+  /* Castle Gates: place extra pillars in wall formations across the arena,
+     forcing Commander Rael to navigate through gaps and aim carefully. */
+  if (campaignLevel === 3) {
+    const pillarR = 20;
+    const wallCount = 3;
+    for (let w = 0; w < wallCount; w++) {
+      const vertical = Math.random() < 0.5;
+      const pillarCount = 5 + Math.floor(Math.random() * 3); // 5–7 pillars per wall
+      for (let p = 0; p < pillarCount; p++) {
+        const o = { type: "pillar", r: pillarR, x: 0, y: 0, hits: 0, alive: false };
+        stageObjects.push(o);
+        let placed = false;
+        for (let attempt = 0; attempt < 40 && !placed; attempt++) {
+          let x, y;
+          if (vertical) {
+            // Vertical pillar wall: fixed x, pillars spread along y.
+            x = clamp(rand(0, worldW), pillarR + 8, Math.max(pillarR + 8, worldW - pillarR - 8));
+            const t = p / Math.max(1, pillarCount - 1);
+            const span = Math.min(worldH, H * 1.5);
+            const startY = clamp(player.y - span / 2, pillarR + 8, Math.max(pillarR + 8, worldH - pillarR - span));
+            y = clamp(startY + t * span, pillarR + 8, Math.max(pillarR + 8, worldH - pillarR - 8));
+          } else {
+            // Horizontal pillar wall: fixed y, pillars spread along x.
+            const t = p / Math.max(1, pillarCount - 1);
+            const span = Math.min(worldW, W * 1.5);
+            const startX = clamp(player.x - span / 2, pillarR + 8, Math.max(pillarR + 8, worldW - pillarR - span));
+            x = clamp(startX + t * span, pillarR + 8, Math.max(pillarR + 8, worldW - pillarR - 8));
+            y = clamp(rand(0, worldH), pillarR + 8, Math.max(pillarR + 8, worldH - pillarR - 8));
+          }
+          // Never on player, enemies, or existing objects.
+          if (Math.hypot(x - player.x, y - player.y) < pillarR + player.r + 140) continue;
+          if (enemies.some(function (e) { return Math.hypot(x - e.x, y - e.y) < pillarR + e.r + 40; })) continue;
+          if (stageObjects.some(function (o2) {
+            return o2 !== o && o2.alive && Math.hypot(x - o2.x, y - o2.y) < pillarR + o2.r + 35;
+          })) continue;
+          o.x = x; o.y = y; o.hits = 0; o.alive = true;
+          placed = true;
+        }
       }
     }
   }
@@ -6669,6 +6862,44 @@ function updateEnemies(dt) {
       vy = dirY * e.speed;
     }
 
+    // ---------- Level 4: enemies dodge incoming bullets ----------
+    if (campaignLevel === 4 && !e.isBoss && !e.isMiniBoss) {
+      for (let b = 0; b < bullets.length; b++) {
+        const bullet = bullets[b];
+        const dx = bullet.x - e.x;
+        const dy = bullet.y - e.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > LEVEL4_DODGE_DISTANCE) continue;
+        // Is the bullet moving toward this enemy?
+        const bSpeed = Math.hypot(bullet.vx, bullet.vy) || 1;
+        const toward = (dx * bullet.vx + dy * bullet.vy) / (dist * bSpeed);
+        if (toward < 0.3) continue; // not heading at us
+        if (Math.random() > LEVEL4_DODGE_CHANCE) continue;
+        // Sidestep perpendicular to the bullet's travel.
+        const perpX = -bullet.vy / bSpeed;
+        const perpY = bullet.vx / bSpeed;
+        const dodgeSpeed = e.speed * 1.6;
+        vx += perpX * dodgeSpeed;
+        vy += perpY * dodgeSpeed;
+      }
+    }
+
+    // ---------- Level 5: enemies actively flank the player ----------
+    if (campaignLevel === 5 && !e.isBoss && !e.isMiniBoss) {
+      // Offset each enemy's aim so they surround rather than converge.
+      const flankIndex = i % 8;
+      const flankAngle = (flankIndex / 8) * Math.PI * 2;
+      const flankDirX = Math.cos(flankAngle);
+      const flankDirY = Math.sin(flankAngle);
+      // Blend direct pursuit with a flanking arc: enemies circle while closing.
+      const flankStrength = 0.45;
+      const aimX = dirX * (1 - flankStrength) + flankDirX * flankStrength;
+      const aimY = dirY * (1 - flankStrength) + flankDirY * flankStrength;
+      const aimLen = Math.hypot(aimX, aimY) || 1;
+      vx = (aimX / aimLen) * e.speed;
+      vy = (aimY / aimLen) * e.speed;
+    }
+
     if (e.splitBurstVx || e.splitBurstVy) {
       vx += e.splitBurstVx || 0;
       vy += e.splitBurstVy || 0;
@@ -6994,8 +7225,21 @@ function update(dt) {
   // Spawn logic per level.
   spawnTimer -= playDt;
   if (spawnTimer <= 0) {
-    spawnEnemy();
+    if (campaignLevel === 4 && Math.random() < 0.5) {
+      // Level 4: half the time, spawn a formation wave instead of a lone enemy.
+      spawnFormation();
+    } else {
+      spawnEnemy();
+    }
     spawnTimer = currentSpawnInterval() * rand(0.78, 1.22);
+  }
+  // Level 4 formation timer: periodic formation waves on top of normal spawns.
+  if (campaignLevel === 4) {
+    nextFormationTime -= playDt;
+    if (nextFormationTime <= 0) {
+      spawnFormation();
+      nextFormationTime = LEVEL4_FORMATION_INTERVAL * rand(0.7, 1.4);
+    }
   }
 
   updatePlayer(playDt);
