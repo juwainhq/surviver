@@ -138,15 +138,74 @@
     display: block; width: 100%; height: 100%; background: #8fe8ff;
     box-shadow: 0 0 8px rgba(56,189,248,.9); transition: width .06s linear;
   }
-  #bombSlot {
-    position: static; pointer-events: auto; cursor: pointer; color: #aebacb;
-    display: flex; align-items: center; justify-content: center; padding: 3px;
-    transition: color .2s, transform .15s;
+
+  /* ---------- Five Ability Buttons (Q / E / Shift / F / R) ---------- */
+  .ability-row {
+    display: flex; gap: 12px; align-items: center;
   }
-  #bombSlot svg { width: 25px; height: 25px; filter: drop-shadow(0 1px 3px rgba(0,0,0,.85)); }
-  #bombSlot.bomb-ready { color: #d9baff; filter: drop-shadow(0 0 6px rgba(192,132,252,.8)); }
-  #bombSlot:focus-visible { outline: 1px solid #c4b5fd; outline-offset: 4px; }
-  #bombSlot:active { transform: scale(.92); }
+  .ability-btn {
+    position: relative; pointer-events: auto; cursor: pointer;
+    width: 46px; height: 46px; border-radius: 12px;
+    background: rgba(15, 23, 42, 0.75); border: 1.5px solid rgba(255,255,255,0.18);
+    color: #e2e8f0; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-stats); font-weight: 800; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    transition: color .15s, border-color .15s, transform .1s, box-shadow .15s;
+    backdrop-filter: blur(4px);
+  }
+  .ability-btn svg { width: 20px; height: 20px; filter: drop-shadow(0 1px 3px rgba(0,0,0,.85)); }
+  .ability-btn.ready { color: #facc15; border-color: rgba(250,204,21,0.5);
+    box-shadow: 0 0 12px rgba(250,204,21,0.25); }
+  .ability-btn:not(.ready) { color: #94a3b8; }
+  .ability-btn:focus-visible { outline: 1px solid #c4b5fd; outline-offset: 3px; }
+  .ability-btn:active { transform: scale(.88); }
+  .ability-btn.active-state { border-color: rgba(56,189,248,0.6);
+    box-shadow: 0 0 14px rgba(56,189,248,0.35); }
+
+  .ability-cd-ring {
+    position: absolute; inset: 0; border-radius: 12px;
+    border: 2px solid transparent; pointer-events: none;
+  }
+  .ability-btn.ready .ability-cd-ring { border-color: rgba(255,255,255,0.12); }
+  .ability-btn:not(.ready) .ability-cd-ring { border-color: rgba(0,0,0,0.35); }
+
+  .ability-cd-fill {
+    position: absolute; inset: 2px; border-radius: 10px;
+    clip: rect(0px, 46px, 46px, 23px); pointer-events: none;
+  }
+  .ability-cd-fill::after {
+    content: ""; position: absolute; inset: 2px; border-radius: 10px;
+    border: 2px solid transparent; clip: rect(0px, 46px, 46px, 23px);
+  }
+
+  .ability-key {
+    position: absolute; top: 6px; left: 6px; right: 6px; bottom: 6px;
+    border-radius: 8px; border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none; z-index: 1;
+  }
+  .ability-key.k-q { border-color: rgba(255,255,255,0.2); color: #facc15; }
+  .ability-key.k-e { border-color: rgba(255,255,255,0.2); color: #67e8f9; }
+  .ability-key.k-shift { border-color: rgba(255,255,255,0.2); color: #a78bfa; }
+  .ability-key.k-f { border-color: rgba(255,255,255,0.2); color: #34d399; }
+  .ability-key.k-r { border-color: rgba(255,255,255,0.2); color: #f87171; }
+
+  .ability-icon { position: relative; z-index: 2; }
+  .ability-btn:not(.ready) .ability-icon { opacity: 0.45; }
+
+  .ability-btn.k-q.ready .ability-icon { color: #facc15; }
+  .ability-btn.k-e.ready .ability-icon { color: #67e8f9; }
+  .ability-btn.k-shift.ready .ability-icon { color: #a78bfa; }
+  .ability-btn.k-f.ready .ability-icon { color: #34d399; }
+  .ability-btn.k-r.ready .ability-icon { color: #f87171; }
+
+  .ability-label {
+    position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+    color: #94a3b8; white-space: nowrap;
+    pointer-events: none;
+  }
+  .ability-btn.ready .ability-label { color: #e2e8f0; }
   .sr-only {
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
     overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
@@ -1500,16 +1559,43 @@
       <span id="laserStatus" class="sr-only">Ready</span>
       <div class="weapon-track"><span id="laserCooldownFill"></span></div>
     </div>
-    <button type="button" id="bombSlot" aria-label="Future Bomb: 0 of 5 kills" title="Future Bomb · Space">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><defs><linearGradient id="bombChargeGradient" x1="0" y1="1" x2="0" y2="0"><stop id="bombChargeStop" offset="0%" stop-color="#c4a5fa" stop-opacity=".65"/><stop id="bombEmptyStop" offset="0%" stop-color="#c4a5fa" stop-opacity="0"/></linearGradient></defs><circle cx="11" cy="14" r="7" fill="url(#bombChargeGradient)"/><path d="M14.5 8.2l1.8-2.5 1.7 1.2M17.5 4l.5-1.7m2.1 2.6l1.6-.7M10 10l-2 2"/></svg>
-      <span id="bombStatus" class="sr-only">0/5</span>
-    </button>
+    <div class="ability-row">
+      <button type="button" id="abilityTimeFreeze" class="ability-btn k-q ready" aria-label="Time Freeze (Q) — Freeze all enemies for 3s" title="Time Freeze · Q">
+        <div class="ability-key k-q">Q</div>
+        <svg class="ability-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="4"/></svg>
+        <div class="ability-cd-ring"></div><div class="ability-cd-fill"></div>
+        <span class="ability-label">Time Freeze</span>
+      </button>
+      <button type="button" id="abilityNovaBlast" class="ability-btn k-e ready" aria-label="Nova Blast (E) — Ring of 12 bullets" title="Nova Blast · E">
+        <div class="ability-key k-e">E</div>
+        <svg class="ability-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h20M12 2v20M5.64 5.64l12.72 12.72M18.36 5.64l-12.72 12.72"/><circle cx="12" cy="12" r="1"/></svg>
+        <div class="ability-cd-ring"></div><div class="ability-cd-fill"></div>
+        <span class="ability-label">Nova Blast</span>
+      </button>
+      <button type="button" id="abilityDash" class="ability-btn k-shift ready" aria-label="Dash (Shift) — Invincible dash with energy trail" title="Dash · Shift">
+        <div class="ability-key k-shift">Shift</div>
+        <svg class="ability-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/><path d="M17 17l3 3M7 7l-3-3"/></svg>
+        <div class="ability-cd-ring"></div><div class="ability-cd-fill"></div>
+        <span class="ability-label">Dash</span>
+      </button>
+      <button type="button" id="abilityTurretDrop" class="ability-btn k-f ready" aria-label="Turret Drop (F) — Auto-firing turret for 10s" title="Turret Drop · F">
+        <div class="ability-key k-f">F</div>
+        <svg class="ability-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="6" width="8" height="12" rx="1"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="12" y1="6" x2="12" y2="4"/></svg>
+        <div class="ability-cd-ring"></div><div class="ability-cd-fill"></div>
+        <span class="ability-label">Turret</span>
+      </button>
+      <button type="button" id="abilityOvercharge" class="ability-btn k-r ready" aria-label="Overcharge (R) — Double fire rate for 8s" title="Overcharge · R">
+        <div class="ability-key k-r">R</div>
+        <svg class="ability-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12h20"/></svg>
+        <div class="ability-cd-ring"></div><div class="ability-cd-fill"></div>
+        <span class="ability-label">Overcharge</span>
+      </button>
+    </div>
   </div>
 </div>
 <!-- Retained off-screen state hooks; gameplay controls are keyboard, mouse and touch gestures. -->
 <div hidden>
   <span id="timer"></span><span id="bestTime"></span><span id="hint"></span>
-  <button id="shieldSlot" type="button"><span id="shieldStatus"></span><span id="shieldCooldownFill"></span></button>
   <span id="levelUp"></span><span id="bossAlert"></span><span id="storyEvent"></span>
   <div id="bossHud"><span id="bossName"></span><span id="bossHpText"></span><span id="bossHpFill"></span></div>
   <span id="runTitle"></span>
@@ -1688,15 +1774,12 @@ const bossHpFillEl = document.getElementById("bossHpFill");
 const laserSlotEl = document.getElementById("laserSlot");
 const laserStatusEl = document.getElementById("laserStatus");
 const laserCooldownFillEl = document.getElementById("laserCooldownFill");
-const shieldSlotEl = document.getElementById("shieldSlot");
-const shieldStatusEl = document.getElementById("shieldStatus");
-const shieldCooldownFillEl = document.getElementById("shieldCooldownFill");
-const bombSlotEl = document.getElementById("bombSlot");
-const bombStatusEl = document.getElementById("bombStatus");
-const bombChargeStopEl = document.getElementById("bombChargeStop");
-const bombEmptyStopEl = document.getElementById("bombEmptyStop");
-const bombChargeFillEl = document.getElementById("bombChargeFill");
-const bombRingProgressEl = document.getElementById("bombRingProgress");
+/* ---------- Five Ability Button Element Refs ---------- */
+const abilityTimeFreezeEl = document.getElementById("abilityTimeFreeze");
+const abilityNovaBlastEl = document.getElementById("abilityNovaBlast");
+const abilityDashEl = document.getElementById("abilityDash");
+const abilityTurretDropEl = document.getElementById("abilityTurretDrop");
+const abilityOverchargeEl = document.getElementById("abilityOvercharge");
 const levelCardScreenEl = document.getElementById("levelCardScreen");
 const levelTransitionCardEl = document.getElementById("levelTransitionCard");
 const levelCardTitleEl = document.getElementById("levelCardTitle");
@@ -2071,13 +2154,41 @@ const LASER_RECOIL_SHAKE = 0.04;       // subtle tactile weapon kick
 const ENEMY_EXPLOSION_PARTICLES = 16;  // burst when a laser kills an enemy
 const ENEMY_EXPLOSION_RING_DURATION = 0.24;
 
-const ACTIVE_SHIELD_DURATION = 2;      // Right-click energy shield lasts 2s
-const ACTIVE_SHIELD_COOLDOWN = 30;     // 30-second cooldown
-const ACTIVE_SHIELD_RADIUS = 44;       // short-range energy dome radius (px)
+const ACTIVE_SHIELD_DURATION = 2;      // Right-click energy shield lasts 2s (retained)
+const ACTIVE_SHIELD_COOLDOWN = 30;     // 30-second cooldown (retained)
+const ACTIVE_SHIELD_RADIUS = 44;       // short-range energy dome radius (px) (retained)
 
-const FUTURE_BOMB_KILLS_REQUIRED = 5;  // every 5 kills charge Future Bomb
-const FUTURE_BOMB_WAVE_DURATION = 0.68; // full-screen shockwave duration (s)
-const FUTURE_BOMB_FLASH_DURATION = 0.30; // brief chrono-flash duration (s)
+const FUTURE_BOMB_KILLS_REQUIRED = 5;  // every 5 kills charge Future Bomb (retained)
+const FUTURE_BOMB_WAVE_DURATION = 0.68; // full-screen shockwave duration (s) (retained)
+const FUTURE_BOMB_FLASH_DURATION = 0.30; // brief chrono-flash duration (s) (retained)
+
+/* ---------- New Ability Constants ---------- */
+/* Ability 1: Time Freeze (Q) — freezes all enemies for 3s, player glows white */
+const TIME_FREEZE_COOLDOWN = 15;
+const TIME_FREEZE_DURATION = 3;
+
+/* Ability 2: Nova Blast (E) — ring of 12 bullets in all directions */
+const NOVA_BLAST_COOLDOWN = 20;
+const NOVA_BLAST_BULLET_COUNT = 12;
+const NOVA_BLAST_SPEED = 420;
+
+/* Ability 3: Dash (Shift) — invincible dash with energy trail */
+const DASH_COOLDOWN = 5;
+const DASH_DURATION = 0.35;
+const DASH_SPEED = 720;
+const DASH_INVULN_DURATION = 0.35;
+
+/* Ability 4: Turret Drop (F) — auto-firing turret for 10s then explodes */
+const TURRET_COOLDOWN = 25;
+const TURRET_DURATION = 10;
+const TURRET_FIRE_INTERVAL = 0.7;
+const TURRET_RANGE = 300;
+const TURRET_BULLET_SPEED = 320;
+const TURRET_RADIUS = 12;
+
+/* Ability 5: Overcharge (R) — double fire rate + bullet size for 8s, red tint */
+const OVERCHARGE_COOLDOWN = 30;
+const OVERCHARGE_DURATION = 8;
 
 /* ---------- 20-Second Upgrades ----------
    Every 20s survived, gameplay pauses and offers 3 random upgrades:
@@ -2272,7 +2383,7 @@ let futureBombWaves = []; // full-arena shockwaves from Future Bomb { x, y, maxR
 let floatingTexts = [];  // brief pickup/multiplier/ability callouts
 let keys = Object.create(null);
 
-/* Aiming, laser cooldown, Right-Click 2s shield (30s CD), & Future Bomb (5 kills) */
+/* Aiming, laser cooldown, Right-Click 2s shield (30s CD), & Future Bomb (5 kills) — retained */
 let mouseX = 0;
 let mouseY = 0;
 let mouseTracked = false;
@@ -2285,6 +2396,31 @@ let totalKills = 0;          // total enemies defeated this run
 let bombChargeKills = 0;     // 0..5 kills charging the next Future Bomb
 let futureBombReady = false; // true once 5 kills have charged Future Bomb
 let bombFlashTimer = 0;      // brief full-screen flash when Future Bomb detonates
+
+/* ---------- New Ability State ---------- */
+/* Ability 1: Time Freeze (Q) */
+let timeFreezeCooldown = 0;   // seconds until next use
+let timeFreezeActive = false; // whether freeze is currently active
+let timeFreezeTimer = 0;      // seconds remaining on active freeze
+
+/* Ability 2: Nova Blast (E) */
+let novaBlastCooldown = 0;    // seconds until next use
+
+/* Ability 3: Dash (Shift) */
+let dashCooldown = 0;         // seconds until next use
+let dashActive = false;       // whether currently dashing
+let dashTimer = 0;            // seconds remaining on dash
+let dashDirX = 0;             // dash direction X
+let dashDirY = 0;             // dash direction Y
+
+/* Ability 4: Turret Drop (F) */
+let turretCooldown = 0;       // seconds until next use
+let turrets = [];             // active turrets { x, y, life, maxLife, fireTimer }
+
+/* Ability 5: Overcharge (R) */
+let overchargeCooldown = 0;   // seconds until next use
+let overchargeActive = false; // whether overcharge is currently active
+let overchargeTimer = 0;      // seconds remaining on overcharge
 const touchDirections = { up: false, down: false, left: false, right: false };
 const activeTouchPointers = new Map(); // retained for legacy D-pad state
 let movementTouchId = null;
@@ -2637,6 +2773,181 @@ function playActiveShieldSound() {
       try { osc.disconnect(); gain.disconnect(); } catch (e) { /* already gone */ }
     };
   } catch (e) { /* keep the game silent rather than break it */ }
+}
+
+/* ---------- New Ability Sounds ---------- */
+
+/* Time Freeze (Q): deep cinematic whoosh + low chime */
+function playTimeFreezeSound() {
+  if (!audioIsRunning() || state !== "playing") return;
+  const now = audioCtx.currentTime;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(110, now);
+    osc.frequency.exponentialRampToValueAtTime(440, now + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(80, now + 0.4);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.1, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+    osc.connect(gain);
+    gain.connect(audioMasterGain);
+    osc.start(now);
+    osc.stop(now + 0.5);
+    osc.onended = function () {
+      try { osc.disconnect(); gain.disconnect(); } catch (e) { }
+    };
+    // High chime on top
+    const chime = audioCtx.createOscillator();
+    const chimeGain = audioCtx.createGain();
+    chime.type = "sine";
+    chime.frequency.setValueAtTime(1320, now + 0.15);
+    chimeGain.gain.setValueAtTime(0.0001, now + 0.15);
+    chimeGain.gain.exponentialRampToValueAtTime(0.06, now + 0.16);
+    chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+    chime.connect(chimeGain);
+    chimeGain.connect(audioMasterGain);
+    chime.start(now + 0.15);
+    chime.stop(now + 0.55);
+    chime.onended = function () {
+      try { chime.disconnect(); chimeGain.disconnect(); } catch (e) { }
+    };
+  } catch (e) { }
+}
+
+/* Nova Blast (E): rapid arpeggio + impact */
+function playNovaBlastSound() {
+  if (!audioIsRunning() || state !== "playing") return;
+  const now = audioCtx.currentTime;
+  try {
+    const notes = [330, 415, 523, 659, 784, 1047];
+    for (let i = 0; i < notes.length; i++) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "square";
+      osc.frequency.setValueAtTime(notes[i], now + i * 0.03);
+      gain.gain.setValueAtTime(0.0001, now + i * 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.04, now + i * 0.03 + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.03 + 0.12);
+      osc.connect(gain);
+      gain.connect(audioMasterGain);
+      osc.start(now + i * 0.03);
+      osc.stop(now + i * 0.03 + 0.14);
+      osc.onended = function () {
+        try { osc.disconnect(); gain.disconnect(); } catch (e) { }
+      };
+    }
+    // Impact thud
+    const thud = audioCtx.createOscillator();
+    const thudGain = audioCtx.createGain();
+    thud.type = "sawtooth";
+    thud.frequency.setValueAtTime(200, now + 0.18);
+    thud.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+    thudGain.gain.setValueAtTime(0.0001, now + 0.18);
+    thudGain.gain.exponentialRampToValueAtTime(0.08, now + 0.19);
+    thudGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+    thud.connect(thudGain);
+    thudGain.connect(audioMasterGain);
+    thud.start(now + 0.18);
+    thud.stop(now + 0.38);
+    thud.onended = function () {
+      try { thud.disconnect(); thudGain.disconnect(); } catch (e) { }
+    };
+  } catch (e) { }
+}
+
+/* Dash (Shift): quick whoosh + snap */
+function playDashSound() {
+  if (!audioIsRunning() || state !== "playing") return;
+  const now = audioCtx.currentTime;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(120, now + 0.12);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.07, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+    osc.connect(gain);
+    gain.connect(audioMasterGain);
+    osc.start(now);
+    osc.stop(now + 0.18);
+    osc.onended = function () {
+      try { osc.disconnect(); gain.disconnect(); } catch (e) { }
+    };
+  } catch (e) { }
+}
+
+/* Turret Drop (F): mechanical clank + deploy beep */
+function playTurretDropSound() {
+  if (!audioIsRunning() || state !== "playing") return;
+  const now = audioCtx.currentTime;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+    osc.frequency.exponentialRampToValueAtTime(120, now + 0.2);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.06, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+    osc.connect(gain);
+    gain.connect(audioMasterGain);
+    osc.start(now);
+    osc.stop(now + 0.28);
+    osc.onended = function () {
+      try { osc.disconnect(); gain.disconnect(); } catch (e) { }
+    };
+  } catch (e) { }
+}
+
+/* Overcharge (R): rising electric hum + crackle */
+function playOverchargeSound() {
+  if (!audioIsRunning() || state !== "playing") return;
+  const now = audioCtx.currentTime;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.exponentialRampToValueAtTime(1760, now + 0.4);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.05, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+    osc.connect(gain);
+    gain.connect(audioMasterGain);
+    osc.start(now);
+    osc.stop(now + 0.5);
+    osc.onended = function () {
+      try { osc.disconnect(); gain.disconnect(); } catch (e) { }
+    };
+  } catch (e) { }
+}
+
+/* Turret fire: tiny pew */
+function playTurretFireSound() {
+  if (!audioIsRunning() || state !== "playing") return;
+  const now = audioCtx.currentTime;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(900, now);
+    osc.frequency.exponentialRampToValueAtTime(1500, now + 0.06);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.03, now + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+    osc.connect(gain);
+    gain.connect(audioMasterGain);
+    osc.start(now);
+    osc.stop(now + 0.1);
+    osc.onended = function () {
+      try { osc.disconnect(); gain.disconnect(); } catch (e) { }
+    };
+  } catch (e) { }
 }
 
 /* Crisp power-charge chime when 5 kills finish charging Future Bomb. */
@@ -3874,8 +4185,36 @@ function getShotDirections(aimAngle) {
   return dirs;
 }
 
-/* Update the Top-Right Future Bomb circular charge ring & Bottom-Right
-   Shield cooldown button with live timer readouts. */
+/* ---------- Five Ability HUD Refresh ---------- */
+/* Helper: render one ability button's cooldown ring and label. */
+function refreshAbilityButton(el, cooldown, duration, active, activeTimer, keyClass, labelKey) {
+  const ready = cooldown <= BULLET_FIRE_EPSILON;
+  const maxCd = keyClass === "k-q" ? TIME_FREEZE_COOLDOWN :
+                keyClass === "k-e" ? NOVA_BLAST_COOLDOWN :
+                keyClass === "k-shift" ? DASH_COOLDOWN :
+                keyClass === "k-f" ? TURRET_COOLDOWN :
+                OVERCHARGE_COOLDOWN;
+  if (active && activeTimer > 0) {
+    const activeRatio = clamp(activeTimer / Math.max(0.01, duration), 0, 1);
+    el.classList.remove("ready");
+    el.classList.add("active-state");
+    el.querySelector(".ability-cd-fill").style.width = Math.round((1 - activeRatio) * 100) + "%";
+    el.setAttribute("aria-valuenow", String(Math.round((1 - activeRatio) * 100)));
+  } else if (!ready) {
+    const ratio = clamp(1 - cooldown / Math.max(0.01, maxCd), 0, 1);
+    el.classList.remove("active-state");
+    el.classList.remove("ready");
+    el.querySelector(".ability-cd-fill").style.width = Math.round((1 - ratio) * 100) + "%";
+    el.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
+  } else {
+    el.classList.remove("active-state");
+    el.classList.add("ready");
+    el.querySelector(".ability-cd-fill").style.width = "100%";
+    el.setAttribute("aria-valuenow", "100");
+  }
+}
+
+/* Refresh the laser slot & 5 ability buttons with cooldown rings. */
 function refreshAbilityHud() {
   if (laserSlotEl && laserStatusEl && laserCooldownFillEl) {
     const maxCd = currentLaserCooldownMax();
@@ -3887,58 +4226,60 @@ function refreshAbilityHud() {
     laserSlotEl.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
   }
 
-  if (shieldSlotEl && shieldStatusEl) {
-    if (activeShieldTimer > 0) {
-      const activeRatio = clamp(activeShieldTimer / ACTIVE_SHIELD_DURATION, 0, 1);
-      shieldSlotEl.classList.remove("ready");
-      shieldSlotEl.classList.add("active-state");
-      shieldStatusEl.textContent = "Active " + activeShieldTimer.toFixed(1) + "s";
-      if (shieldCooldownFillEl) {
-        shieldCooldownFillEl.style.width = Math.round(activeRatio * 100) + "%";
-      }
-    } else if (activeShieldCooldown > 0) {
-      const cdRatio = clamp(1 - activeShieldCooldown / ACTIVE_SHIELD_COOLDOWN, 0, 1);
-      shieldSlotEl.classList.remove("ready");
-      shieldSlotEl.classList.remove("active-state");
-      shieldStatusEl.textContent = Math.ceil(activeShieldCooldown) + "s";
-      if (shieldCooldownFillEl) {
-        shieldCooldownFillEl.style.width = Math.round(cdRatio * 100) + "%";
-      }
-    } else {
-      shieldSlotEl.classList.remove("active-state");
-      shieldSlotEl.classList.add("ready");
-      shieldStatusEl.textContent = "Ready";
-      if (shieldCooldownFillEl) {
-        shieldCooldownFillEl.style.width = "100%";
-      }
-    }
+  // Ability 1: Time Freeze (Q)
+  if (abilityTimeFreezeEl) {
+    refreshAbilityButton(
+      abilityTimeFreezeEl, timeFreezeCooldown, TIME_FREEZE_DURATION,
+      timeFreezeActive, timeFreezeTimer, "k-q", "Time Freeze"
+    );
+    const cdText = timeFreezeActive
+      ? Math.ceil(timeFreezeTimer) + "s"
+      : (timeFreezeCooldown > 0 ? Math.ceil(timeFreezeCooldown) + "s" : "Ready");
+    abilityTimeFreezeEl.querySelector(".ability-label").textContent = cdText;
   }
 
-  if (bombSlotEl && bombStatusEl) {
-    const ratio = futureBombReady
-      ? 1
-      : clamp(bombChargeKills / FUTURE_BOMB_KILLS_REQUIRED, 0, 1);
-    bombSlotEl.classList.toggle("bomb-ready", futureBombReady);
-    if (bombChargeStopEl && bombEmptyStopEl) {
-      const offset = Math.round(ratio * 100) + "%";
-      bombChargeStopEl.setAttribute("offset", offset);
-      bombEmptyStopEl.setAttribute("offset", offset);
-    }
-    bombStatusEl.textContent = futureBombReady
-      ? "READY"
-      : (bombChargeKills + "/" + FUTURE_BOMB_KILLS_REQUIRED);
-    bombSlotEl.setAttribute("aria-label", futureBombReady ? "Future Bomb ready — activate" :
-      "Future Bomb: " + bombChargeKills + " of " + FUTURE_BOMB_KILLS_REQUIRED + " kills");
-    if (bombChargeFillEl) {
-      bombChargeFillEl.style.width = Math.round(ratio * 100) + "%";
-    }
-    if (bombRingProgressEl) {
-      const dashOffset = (BOMB_RING_CIRCUMFERENCE * (1 - ratio)).toFixed(2);
-      bombRingProgressEl.style.strokeDashoffset = dashOffset;
-      if (typeof bombRingProgressEl.setAttribute === "function") {
-        bombRingProgressEl.setAttribute("stroke-dashoffset", dashOffset);
-      }
-    }
+  // Ability 2: Nova Blast (E)
+  if (abilityNovaBlastEl) {
+    refreshAbilityButton(
+      abilityNovaBlastEl, novaBlastCooldown, NOVA_BLAST_COOLDOWN,
+      false, 0, "k-e", "Nova Blast"
+    );
+    const cdText = novaBlastCooldown > 0 ? Math.ceil(novaBlastCooldown) + "s" : "Ready";
+    abilityNovaBlastEl.querySelector(".ability-label").textContent = cdText;
+  }
+
+  // Ability 3: Dash (Shift)
+  if (abilityDashEl) {
+    refreshAbilityButton(
+      abilityDashEl, dashCooldown, DASH_DURATION,
+      dashActive, dashTimer, "k-shift", "Dash"
+    );
+    const cdText = dashActive
+      ? Math.ceil(dashTimer) + "s"
+      : (dashCooldown > 0 ? Math.ceil(dashCooldown) + "s" : "Ready");
+    abilityDashEl.querySelector(".ability-label").textContent = cdText;
+  }
+
+  // Ability 4: Turret Drop (F)
+  if (abilityTurretDropEl) {
+    refreshAbilityButton(
+      abilityTurretDropEl, turretCooldown, TURRET_DURATION,
+      false, 0, "k-f", "Turret"
+    );
+    const cdText = turretCooldown > 0 ? Math.ceil(turretCooldown) + "s" : "Ready";
+    abilityTurretDropEl.querySelector(".ability-label").textContent = cdText;
+  }
+
+  // Ability 5: Overcharge (R)
+  if (abilityOverchargeEl) {
+    refreshAbilityButton(
+      abilityOverchargeEl, overchargeCooldown, OVERCHARGE_DURATION,
+      overchargeActive, overchargeTimer, "k-r", "Overcharge"
+    );
+    const cdText = overchargeActive
+      ? Math.ceil(overchargeTimer) + "s"
+      : (overchargeCooldown > 0 ? Math.ceil(overchargeCooldown) + "s" : "Ready");
+    abilityOverchargeEl.querySelector(".ability-label").textContent = cdText;
   }
 }
 
@@ -3972,6 +4313,195 @@ function activateShortRangeShield() {
     maxLife: 0.85
   });
   playActiveShieldSound();
+  refreshAbilityHud();
+  return true;
+}
+
+/* ---------- New Ability: Time Freeze (Q) ---------- */
+/* Freezes all enemies for 3 seconds; player glows white during the freeze. */
+function activateTimeFreeze() {
+  if (state !== "playing") return false;
+  if (timeFreezeCooldown > BULLET_FIRE_EPSILON) return false;
+
+  initAudio();
+  timeFreezeActive = true;
+  timeFreezeTimer = TIME_FREEZE_DURATION;
+  timeFreezeCooldown = TIME_FREEZE_COOLDOWN;
+
+  // Freeze all enemies by storing their velocities and zeroing them.
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    e._frozenVx = e.vx;
+    e._frozenVy = e.vy;
+    e.vx = 0;
+    e.vy = 0;
+  }
+
+  floatingTexts.push({
+    x: player.x, y: player.y - player.r - 16, vy: -40,
+    text: "TIME FREEZE (3s)!", color: "#facc15", big: true,
+    life: 0, maxLife: 0.85
+  });
+  playTimeFreezeSound();
+  refreshAbilityHud();
+  return true;
+}
+
+/* ---------- New Ability: Nova Blast (E) ---------- */
+/* Releases a ring of 12 bullets in all directions instantly. */
+function activateNovaBlast() {
+  if (state !== "playing") return false;
+  if (novaBlastCooldown > BULLET_FIRE_EPSILON) return false;
+
+  initAudio();
+  novaBlastCooldown = NOVA_BLAST_COOLDOWN;
+
+  const bulletCount = NOVA_BLAST_BULLET_COUNT;
+  const speed = NOVA_BLAST_SPEED;
+  for (let i = 0; i < bulletCount; i++) {
+    const angle = (i / bulletCount) * Math.PI * 2;
+    const dx = Math.cos(angle);
+    const dy = Math.sin(angle);
+    const startX = player.x + dx * (player.r + 4);
+    const startY = player.y + dy * (player.r + 4);
+    const shot = {
+      x: startX, y: startY, prevX: startX, prevY: startY,
+      vx: dx * speed, vy: dy * speed,
+      dirX: dx, dirY: dy, r: 4,
+      damage: BULLET_DAMAGE, distanceTraveled: 0,
+      isNovaBlast: true
+    };
+    bullets.push(shot);
+  }
+
+  // Visual burst
+  for (let i = 0; i < 24; i++) {
+    const angle = (i / 24) * Math.PI * 2;
+    const speed = rand(120, 400);
+    particles.push({
+      x: player.x, y: player.y,
+      vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+      life: 0, maxLife: rand(0.3, 0.7), size: rand(2, 5),
+      color: "#67e8f9"
+    });
+  }
+
+  floatingTexts.push({
+    x: player.x, y: player.y - player.r - 16, vy: -40,
+    text: "NOVA BLAST!", color: "#67e8f9", big: true,
+    life: 0, maxLife: 0.85
+  });
+  playNovaBlastSound();
+  refreshAbilityHud();
+  return true;
+}
+
+/* ---------- New Ability: Dash (Shift) ---------- */
+/* Dash in movement direction, invincible during dash, leaves energy trail. */
+function activateDash() {
+  if (state !== "playing") return false;
+  if (dashCooldown > BULLET_FIRE_EPSILON) return false;
+
+  initAudio();
+  dashCooldown = DASH_COOLDOWN;
+  dashActive = true;
+  dashTimer = DASH_DURATION;
+
+  // Determine dash direction from movement keys or facing angle
+  let dx = 0, dy = 0;
+  if (keys["ArrowLeft"] || keys["a"] || touchDirections.left) dx -= 1;
+  if (keys["ArrowRight"] || keys["d"] || touchDirections.right) dx += 1;
+  if (keys["ArrowUp"] || keys["w"] || touchDirections.up) dy -= 1;
+  if (keys["ArrowDown"] || keys["s"] || touchDirections.down) dy += 1;
+
+  if (dx === 0 && dy === 0) {
+    // Use facing direction if no movement keys held
+    dx = Math.cos(player.facingAngle || 0);
+    dy = Math.sin(player.facingAngle || 0);
+  }
+  const len = Math.hypot(dx, dy) || 1;
+  dx /= len; dy /= len;
+
+  dashDirX = dx;
+  dashDirY = dy;
+
+  // Instant position shift
+  const dashDist = DASH_SPEED * DASH_DURATION;
+  player.x += dx * dashDist * 0.5;
+  player.y += dy * dashDist * 0.5;
+  player.prevX = player.x;
+  player.prevY = player.y;
+
+  // Clamp to world bounds
+  const pad = player.r + 6;
+  player.x = clamp(player.x, pad, Math.max(pad, worldW - pad));
+  player.y = clamp(player.y, pad, Math.max(pad, worldH - pad));
+
+  floatingTexts.push({
+    x: player.x, y: player.y - player.r - 16, vy: -40,
+    text: "DASH!", color: "#a78bfa", big: true,
+    life: 0, maxLife: 0.6
+  });
+  playDashSound();
+  refreshAbilityHud();
+  return true;
+}
+
+/* ---------- New Ability: Turret Drop (F) ---------- */
+/* Places a turret that auto-fires at nearest enemy for 10s then explodes. */
+function activateTurretDrop() {
+  if (state !== "playing") return false;
+  if (turretCooldown > BULLET_FIRE_EPSILON) return false;
+
+  initAudio();
+  turretCooldown = TURRET_COOLDOWN;
+
+  const turret = {
+    x: player.x, y: player.y,
+    life: 0, maxLife: TURRET_DURATION,
+    fireTimer: 0,
+    r: TURRET_RADIUS
+  };
+  turrets.push(turret);
+
+  // Visual drop effect
+  for (let i = 0; i < 12; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    particles.push({
+      x: player.x, y: player.y,
+      vx: Math.cos(angle) * rand(40, 120), vy: Math.sin(angle) * rand(40, 120),
+      life: 0, maxLife: rand(0.4, 0.8), size: rand(3, 6),
+      color: "#34d399"
+    });
+  }
+
+  floatingTexts.push({
+    x: player.x, y: player.y - player.r - 16, vy: -40,
+    text: "TURRET DEPLOYED!", color: "#34d399", big: true,
+    life: 0, maxLife: 0.85
+  });
+  playTurretDropSound();
+  refreshAbilityHud();
+  return true;
+}
+
+/* ---------- New Ability: Overcharge (R) ---------- */
+/* Doubles fire rate and bullet size for 8 seconds; screen tints red. */
+function activateOvercharge() {
+  if (state !== "playing") return false;
+  if (overchargeCooldown > BULLET_FIRE_EPSILON) return false;
+
+  initAudio();
+  overchargeActive = true;
+  overchargeTimer = OVERCHARGE_DURATION;
+  overchargeCooldown = OVERCHARGE_COOLDOWN;
+
+  floatingTexts.push({
+    x: player.x, y: player.y - player.r - 16, vy: -40,
+    text: "OVERCHARGE!", color: "#f87171", big: true,
+    life: 0, maxLife: 0.85
+  });
+  playOverchargeSound();
   refreshAbilityHud();
   return true;
 }
@@ -4726,6 +5256,26 @@ function resetGame() {
   muzzleAngle = 0;
   activeShieldTimer = 0;
   activeShieldCooldown = 0;
+  // New ability state resets
+  timeFreezeCooldown = 0;
+  timeFreezeActive = false;
+  timeFreezeTimer = 0;
+  novaBlastCooldown = 0;
+  dashCooldown = 0;
+  dashActive = false;
+  dashTimer = 0;
+  dashDirX = 0;
+  dashDirY = 0;
+  turretCooldown = 0;
+  turrets.length = 0;
+  overchargeCooldown = 0;
+  overchargeActive = false;
+  overchargeTimer = 0;
+  // Unfreeze any remaining frozen enemies
+  for (let i = 0; i < enemies.length; i++) {
+    delete enemies[i]._frozenVx;
+    delete enemies[i]._frozenVy;
+  }
   totalKills = 0;
   bombChargeKills = 0;
   futureBombReady = false;
@@ -5359,7 +5909,8 @@ function spawnBoss(isFinalBoss) {
 /* ---------- Input ---------- */
 const GAME_KEYS = [
   "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
-  "w", "a", "s", "d", "W", "A", "S", "D", " "
+  "w", "a", "s", "d", "W", "A", "S", "D", " ",
+  "q", "Q", "e", "E", "f", "F", "r", "R", "Shift"
 ];
 
 /* Prime Web Audio on pointer-down, a beat before the click that
@@ -5386,6 +5937,15 @@ window.addEventListener("keydown", function (e) {
     e.preventDefault();
     triggerFutureBomb();
     return;
+  }
+
+  // Ability key handlers (Q / E / Shift / F / R) — only when playing.
+  if (state === "playing" && !e.repeat) {
+    if (e.key === "q" || e.key === "Q") { e.preventDefault(); activateTimeFreeze(); return; }
+    if (e.key === "e" || e.key === "E") { e.preventDefault(); activateNovaBlast(); return; }
+    if (e.key === "Shift") { e.preventDefault(); activateDash(); return; }
+    if (e.key === "f" || e.key === "F") { e.preventDefault(); activateTurretDrop(); return; }
+    if (e.key === "r" || e.key === "R") { e.preventDefault(); activateOvercharge(); return; }
   }
 
   if (state === "start" && e.key === "Enter") {
@@ -5675,16 +6235,35 @@ if (laserSlotEl) {
     }
   });
 }
-if (shieldSlotEl) {
-  shieldSlotEl.addEventListener("click", function (e) {
+/* ---------- New Ability Button Click Handlers ---------- */
+if (abilityTimeFreezeEl) {
+  abilityTimeFreezeEl.addEventListener("click", function (e) {
     if (e && e.stopPropagation) e.stopPropagation();
-    activateShortRangeShield();
+    activateTimeFreeze();
   });
 }
-if (bombSlotEl) {
-  bombSlotEl.addEventListener("click", function (e) {
+if (abilityNovaBlastEl) {
+  abilityNovaBlastEl.addEventListener("click", function (e) {
     if (e && e.stopPropagation) e.stopPropagation();
-    triggerFutureBomb();
+    activateNovaBlast();
+  });
+}
+if (abilityDashEl) {
+  abilityDashEl.addEventListener("click", function (e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    activateDash();
+  });
+}
+if (abilityTurretDropEl) {
+  abilityTurretDropEl.addEventListener("click", function (e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    activateTurretDrop();
+  });
+}
+if (abilityOverchargeEl) {
+  abilityOverchargeEl.addEventListener("click", function (e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    activateOvercharge();
   });
 }
 
@@ -6704,7 +7283,7 @@ function fireLaserTowards(targetX, targetY) {
       dirY: dir.y,
       vx: dir.x * shotSpeed,
       vy: dir.y * shotSpeed,
-      r: BULLET_RADIUS,
+      r: overchargeActive ? BULLET_RADIUS * 2 : BULLET_RADIUS,
       damage: BULLET_DAMAGE,
       distanceTraveled: 0
     };
@@ -6731,8 +7310,10 @@ function fireBullets() {
 /* Weapon cycle: tick down laser cooldown and continue firing toward the
    cursor if the player holds down the Left Mouse Button. */
 function updateShooting(dt) {
+  // Overcharge doubles fire rate: tick laser cooldown down twice as fast.
+  const effectiveDt = overchargeActive ? dt * 2 : dt;
   if (laserCooldown > 0) {
-    laserCooldown = Math.max(0, laserCooldown - dt);
+    laserCooldown = Math.max(0, laserCooldown - effectiveDt);
   }
   if (mouseLeftHeld && laserCooldown <= BULLET_FIRE_EPSILON) {
     fireLaserTowards(mouseWorldX(), mouseWorldY());
@@ -7186,6 +7767,127 @@ function updateActiveShield(dt) {
   }
 }
 
+/* ---------- Ability Update Functions ---------- */
+
+/* Time Freeze (Q): tick down cooldown & active timer; unfreeze enemies when done. */
+function updateTimeFreeze(dt) {
+  if (timeFreezeCooldown > 0) {
+    timeFreezeCooldown = Math.max(0, timeFreezeCooldown - dt);
+  }
+  if (timeFreezeActive) {
+    timeFreezeTimer = Math.max(0, timeFreezeTimer - dt);
+    if (timeFreezeTimer <= 0) {
+      timeFreezeActive = false;
+      // Restore enemy velocities
+      for (let i = 0; i < enemies.length; i++) {
+        const e = enemies[i];
+        if (typeof e._frozenVx === "number") {
+          e.vx = e._frozenVx;
+          e.vy = e._frozenVy;
+          delete e._frozenVx;
+          delete e._frozenVy;
+        }
+      }
+    }
+  }
+}
+
+/* Nova Blast (E): tick down cooldown. */
+function updateNovaBlast(dt) {
+  if (novaBlastCooldown > 0) {
+    novaBlastCooldown = Math.max(0, novaBlastCooldown - dt);
+  }
+}
+
+/* Dash (Shift): tick down cooldown & active timer. */
+function updateDash(dt) {
+  if (dashCooldown > 0) {
+    dashCooldown = Math.max(0, dashCooldown - dt);
+  }
+  if (dashActive) {
+    dashTimer = Math.max(0, dashTimer - dt);
+    if (dashTimer <= 0) {
+      dashActive = false;
+    }
+  }
+}
+
+/* Turret Drop (F): tick down cooldown; update turret life & firing. */
+function updateTurrets(dt) {
+  if (turretCooldown > 0) {
+    turretCooldown = Math.max(0, turretCooldown - dt);
+  }
+
+  for (let i = turrets.length - 1; i >= 0; i--) {
+    const t = turrets[i];
+    t.life += dt;
+    t.fireTimer = Math.max(0, t.fireTimer - dt);
+
+    if (t.life >= t.maxLife) {
+      // Turret expires: explode it
+      for (let k = 0; k < 10; k++) {
+        const angle = Math.random() * Math.PI * 2;
+        particles.push({
+          x: t.x, y: t.y,
+          vx: Math.cos(angle) * rand(60, 160), vy: Math.sin(angle) * rand(60, 160),
+          life: 0, maxLife: rand(0.4, 0.9), size: rand(3, 6),
+          color: "#f87171"
+        });
+      }
+      floatingTexts.push({
+        x: t.x, y: t.y, vy: -35,
+        text: "TURRET EXPIRED", color: "#f87171", big: false,
+        life: 0, maxLife: 0.8
+      });
+      turrets.splice(i, 1);
+      continue;
+    }
+
+    // Auto-fire at nearest enemy in range
+    if (t.fireTimer <= 0 && state === "playing") {
+      let nearest = -1;
+      let nearestDist = TURRET_RANGE;
+      for (let j = 0; j < enemies.length; j++) {
+        const e = enemies[j];
+        const dist = Math.hypot(e.x - t.x, e.y - t.y);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearest = j;
+        }
+      }
+      if (nearest !== -1) {
+        const e = enemies[nearest];
+        const aim = Math.atan2(e.y - t.y, e.x - t.x);
+        const dx = Math.cos(aim);
+        const dy = Math.sin(aim);
+        const shot = {
+          x: t.x, y: t.y, prevX: t.x, prevY: t.y,
+          vx: dx * TURRET_BULLET_SPEED, vy: dy * TURRET_BULLET_SPEED,
+          dirX: dx, dirY: dy, r: 3,
+          damage: BULLET_DAMAGE, distanceTraveled: 0,
+          isTurretShot: true
+        };
+        bullets.push(shot);
+        t.fireTimer = TURRET_FIRE_INTERVAL;
+        playTurretFireSound();
+      }
+    }
+  }
+}
+
+/* Overcharge (R): tick down cooldown & active timer. */
+function updateOvercharge(dt) {
+  if (overchargeCooldown > 0) {
+    overchargeCooldown = Math.max(0, overchargeCooldown - dt);
+  }
+  if (overchargeActive) {
+    overchargeTimer = Math.max(0, overchargeTimer - dt);
+    if (overchargeTimer <= 0) {
+      overchargeActive = false;
+    }
+  }
+}
+
 function updateFutureBombWaves(dt) {
   if (bombFlashTimer > 0) {
     bombFlashTimer = Math.max(0, bombFlashTimer - dt);
@@ -7352,8 +8054,14 @@ function updateEnemies(dt) {
 
     // Reuse scratch fields instead of allocating a velocity object
     // for every enemy on every frame.
-    e.vx = vx;
-    e.vy = vy;
+    // Time Freeze (Q): enemies keep their stored velocity but don't move.
+    if (timeFreezeActive) {
+      e.vx = 0;
+      e.vy = 0;
+    } else {
+      e.vx = vx;
+      e.vy = vy;
+    }
   }
 
   // Second pass: apply movement and remember the swept segment's
@@ -8139,6 +8847,11 @@ function update(dt) {
   updateShooting(playDt);
   if (state !== "playing") return;
   updateActiveShield(playDt);
+  updateTimeFreeze(playDt);
+  updateNovaBlast(playDt);
+  updateDash(playDt);
+  updateTurrets(playDt);
+  updateOvercharge(playDt);
   updateEnemyBullets(playDt);
   updateHomingOrbs(playDt);
   updateMazeWalls(playDt);
@@ -8169,7 +8882,8 @@ function update(dt) {
   }
 
   // Collision: 2s Active Shield or 1-hit Temporal Shield blocks; else drain HP.
-  if (activeShieldTimer <= 0 && playerHitInvulnTimer <= 0) {
+  // Dash (Shift): invincible during dash — skip enemy collision.
+  if (activeShieldTimer <= 0 && playerHitInvulnTimer <= 0 && !dashActive) {
     for (let i = enemies.length - 1; i >= 0; i--) {
       if (enemyHitsPlayer(enemies[i])) {
         if (shieldCharges > 0) {
@@ -9759,6 +10473,40 @@ function drawPlayer() {
     ctx.restore();
     ctx.globalAlpha = 1;
   }
+
+  // Dash (Shift): energy trail behind the player while dashing.
+  if (dashActive) {
+    ctx.save();
+    ctx.shadowColor = "#a78bfa";
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = "#a78bfa";
+    for (let k = 0; k < 5; k++) {
+      const backX = player.x - dashDirX * (player.r + 4 + k * 6);
+      const backY = player.y - dashDirY * (player.r + 4 + k * 6);
+      const alpha = 1 - k / 6;
+      ctx.globalAlpha = alpha * 0.6;
+      ctx.beginPath();
+      ctx.arc(backX, backY, player.r * (0.6 + 0.4 * (1 - k / 5)), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  // Time Freeze (Q): bright white glow around player while freeze is active.
+  if (timeFreezeActive) {
+    const tfRatio = clamp(timeFreezeTimer / TIME_FREEZE_DURATION, 0, 1);
+    const glowR = player.r * (2 + Math.sin(animTime * 12) * 0.3);
+    ctx.save();
+    ctx.shadowColor = "#fef08a";
+    ctx.shadowBlur = 20 * tfRatio;
+    ctx.fillStyle = "rgba(255, 255, 255, " + (0.35 * tfRatio) + ")";
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, glowR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
 }
 
 /* Faint color-matched "comet tail" behind each enemy: its recent
@@ -10829,6 +11577,65 @@ function drawFutureBombWaves() {
   ctx.globalAlpha = 1;
 }
 
+/* ---------- Turret Drawing ---------- */
+/* Auto-firing turrets deployed by Turret Drop (F). */
+function drawTurrets() {
+  if (turrets.length === 0) return;
+  ctx.save();
+  for (let i = 0; i < turrets.length; i++) {
+    const t = turrets[i];
+    const lifeRatio = clamp(1 - t.life / t.maxLife, 0, 1);
+    const pulse = 1 + Math.sin(animTime * 6) * 0.15;
+    const r = t.r * pulse;
+
+    // Turret base glow
+    ctx.fillStyle = "rgba(52, 211, 153, " + (0.3 * lifeRatio) + ")";
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, r * 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Turret body
+    ctx.fillStyle = "#34d399";
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Turret core
+    ctx.fillStyle = "#fef08a";
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, r * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Aiming line toward nearest enemy (visual only)
+    if (state === "playing") {
+      let nearest = -1;
+      let nearestDist = TURRET_RANGE;
+      for (let j = 0; j < enemies.length; j++) {
+        const e = enemies[j];
+        const dist = Math.hypot(e.x - t.x, e.y - t.y);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearest = j;
+        }
+      }
+      if (nearest !== -1) {
+        const e = enemies[nearest];
+        const aim = Math.atan2(e.y - t.y, e.x - t.x);
+        const lx = t.x + Math.cos(aim) * (r + 6);
+        const ly = t.y + Math.sin(aim) * (r + 6);
+        ctx.strokeStyle = "rgba(52, 211, 153, 0.6)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(t.x, t.y);
+        ctx.lineTo(lx, ly);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
 /* Directional Blue Laser muzzle flare aimed toward the mouse cursor. */
 function drawMuzzleFlash() {
   if (state !== "playing" || muzzleFlashTimer <= 0) return;
@@ -11163,6 +11970,7 @@ function draw() {
   drawHealthPickups();
   drawGems();            // glowing emerald gems
   drawEnemies();
+  drawTurrets();         // auto-firing turrets from Turret Drop (F)
   drawExplosionRings();  // contact shockwaves on destroyed enemies
   drawFutureBombWaves(); // full-screen Future Bomb shockwave rings
   drawEnemyBullets();    // boss spread orbs & dark archer arrows
@@ -11210,6 +12018,29 @@ function draw() {
     ctx.save();
     ctx.globalAlpha = flashAlpha;
     ctx.fillStyle = "#e0f2fe";
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  // Overcharge (R): red screen tint while active.
+  if (overchargeActive) {
+    const ocRatio = clamp(overchargeTimer / OVERCHARGE_DURATION, 0, 1);
+    const pulse = 0.12 + Math.sin(animTime * 8) * 0.04;
+    ctx.save();
+    ctx.globalAlpha = pulse * ocRatio;
+    ctx.fillStyle = "#f87171";
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  // Time Freeze (Q): blue-white tint over the whole screen while active.
+  if (timeFreezeActive) {
+    const tfRatio = clamp(timeFreezeTimer / TIME_FREEZE_DURATION, 0, 1);
+    ctx.save();
+    ctx.globalAlpha = 0.10 * tfRatio;
+    ctx.fillStyle = "#fef08a";
     ctx.fillRect(0, 0, W, H);
     ctx.restore();
     ctx.globalAlpha = 1;
