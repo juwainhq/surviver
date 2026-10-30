@@ -1024,7 +1024,8 @@ function makePlayer() {
     walk: 0,
     moving: false,
     footAcc: 0,
-    footSide: 1
+    footSide: 1,
+    trail: []           /* dash afterimages: { x, y, dir, life } */
   };
 }
 
@@ -1336,6 +1337,12 @@ function updatePlayer(dt) {
     if (Math.random() < 0.6) {
       spawnParticle(p.x - p.dashDir.x * 10, p.y - p.dashDir.y * 10, rand(-30, 30), rand(-30, 30), 0.3, 6, '#7dd3fc', 3);
     }
+    /* blue motion trail: one afterimage every ~10px travelled */
+    const lastGhost = p.trail[p.trail.length - 1];
+    if (!lastGhost || Math.hypot(lastGhost.x - p.x, lastGhost.y - p.y) > 10) {
+      p.trail.push({ x: p.x, y: p.y, dir: Math.cos(p.angle) >= 0 ? 1 : -1, life: 0.3 });
+      if (p.trail.length > 8) p.trail.shift();
+    }
   } else {
     const mv = moveVector();
     p.moving = mv.x !== 0 || mv.y !== 0;
@@ -1362,6 +1369,12 @@ function updatePlayer(dt) {
   }
 
   if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
+
+  /* age the dash afterimages */
+  for (let i = p.trail.length - 1; i >= 0; i--) {
+    p.trail[i].life -= dt;
+    if (p.trail[i].life <= 0) p.trail.splice(i, 1);
+  }
 
   /* shooting */
   if (p.fireTimer > 0) p.fireTimer -= dt;
@@ -3534,16 +3547,172 @@ function drawBoss() {
 
   ctx.restore();
 }
+/* ------------------------------ the player --------------------------------- */
+/* A 32 x 40 futuristic trooper, drawn as a little standing soldier: dark navy
+   torso, silver shoulder pads, a dark grey rounded helmet with a glowing cyan
+   visor stripe, two small dark legs and glowing boots. The sprite mirrors to
+   face the cursor, and the arm + rifle pivot on the shoulder so the gun always
+   points at it. */
+const SOLDIER = { w: 32, h: 40, feet: 19 };
+
+function drawSoldierBody(p, dir, stride) {
+  /* ---- boots: generic blue glow spilling onto the ground ---- */
+  ctx.save();
+  ctx.shadowColor = 'rgba(56,189,248,0.8)';
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = 'rgba(56,189,248,0.24)';
+  ctx.beginPath();
+  ctx.ellipse(-4, 19, 6.2, 2.1, 0, 0, TAU);
+  ctx.ellipse(4, 19, 6.2, 2.1, 0, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+
+  /* ---- legs: two small dark rectangles ---- */
+  ctx.fillStyle = '#101a2c';
+  roundRect(ctx, -6.4, 6 + stride, 5.2, 8.6, 1.6);
+  ctx.fill();
+  roundRect(ctx, 1.2, 6 - stride, 5.2, 8.6, 1.6);
+  ctx.fill();
+
+  /* ---- boots: slightly wider rectangles ---- */
+  ctx.fillStyle = '#1e3552';
+  roundRect(ctx, -7.8, 14 + stride, 7.4, 5, 1.8);
+  ctx.fill();
+  roundRect(ctx, 0.4, 14 - stride, 7.4, 5, 1.8);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(125,211,252,0.6)';
+  ctx.fillRect(-7.4, 14 + stride, 6.6, 1.1);
+  ctx.fillRect(0.8, 14 - stride, 6.6, 1.1);
+
+  /* ---- torso: dark navy blue rectangle ---- */
+  const torso = ctx.createLinearGradient(0, -9, 0, 7);
+  torso.addColorStop(0, '#283a5c');
+  torso.addColorStop(0.55, '#1a2740');
+  torso.addColorStop(1, '#121d33');
+  ctx.fillStyle = torso;
+  roundRect(ctx, -9, -9, 18, 15, 3.4);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(125,170,215,0.45)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  /* chest seam */
+  ctx.fillStyle = 'rgba(125,170,215,0.3)';
+  ctx.fillRect(-6.5, 1.6, 13, 1.4);
+  ctx.fillStyle = 'rgba(8,14,26,0.55)';
+  ctx.fillRect(-4.5, -8, 9, 1.2);
+
+  /* ---- shoulder pads: silver rectangles on each side ---- */
+  const pad = ctx.createLinearGradient(0, -8.6, 0, 0.4);
+  pad.addColorStop(0, '#cdd7e2');
+  pad.addColorStop(0.4, '#a9b7c6');
+  pad.addColorStop(1, '#77899c');
+  const pads = [[-14.4, -8.6], [8.8, -8.6]];
+  for (let i = 0; i < 2; i++) {
+    const px = pads[i][0];
+    ctx.fillStyle = pad;
+    roundRect(ctx, px, -8.6, 5.6, 9, 1.7);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(24,32,44,0.55)';
+    ctx.lineWidth = 0.8;
+    roundRect(ctx, px, -8.6, 5.6, 9, 1.7);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillRect(px + 1.2, -7.6, 3.2, 1);
+  }
+
+  /* ---- head: rounded rectangle helmet, dark grey ---- */
+  const headX = dir * 0.9;   /* leans a touch toward whatever it is facing */
+  const helm = ctx.createLinearGradient(0, -22.5, 0, -8.5);
+  helm.addColorStop(0, '#565b63');
+  helm.addColorStop(0.5, '#3a3f47');
+  helm.addColorStop(1, '#282c33');
+  ctx.fillStyle = helm;
+  roundRect(ctx, -7.2 + headX, -22.5, 14.4, 13.6, 5);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(16,20,26,0.75)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  /* chin guard */
+  ctx.fillStyle = 'rgba(10,16,26,0.6)';
+  roundRect(ctx, -5 + headX, -11.6, 10, 2.4, 1.2);
+  ctx.fill();
+
+  /* ---- visor: bright glowing cyan stripe across the middle ---- */
+  ctx.save();
+  ctx.shadowColor = 'rgba(34,211,238,0.95)';
+  ctx.shadowBlur = 16;
+  ctx.fillStyle = '#5ff0ff';
+  roundRect(ctx, -5.8 + headX, -17.6, 11.6, 4.4, 2.1);
+  ctx.fill();
+  ctx.shadowBlur = 7;
+  ctx.fillStyle = 'rgba(226,255,255,0.95)';
+  roundRect(ctx, -4.4 + headX, -16.6, 8.8, 1.8, 0.9);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawSoldierRifle(p) {
+  /* arm sleeve, then the sleek rifle, both in aim space */
+  ctx.fillStyle = '#22304a';
+  roundRect(ctx, -1.4, -2.9, 8.2, 5.8, 2.8);
+  ctx.fill();
+  ctx.fillStyle = '#a9b7c6';
+  roundRect(ctx, -2.2, -3.4, 4.6, 6.8, 2.2);
+  ctx.fill();
+
+  /* receiver */
+  ctx.fillStyle = '#26303d';
+  roundRect(ctx, 6.4, -3.2, 13, 5.4, 1.6);
+  ctx.fill();
+  /* top rail */
+  ctx.fillStyle = '#5f7688';
+  ctx.fillRect(8.4, -3.8, 8.6, 1.5);
+  /* barrel */
+  ctx.fillStyle = '#3c4d61';
+  roundRect(ctx, 18.6, -2, 6.6, 3.4, 1.2);
+  ctx.fill();
+  /* muzzle flash housing */
+  ctx.save();
+  ctx.shadowColor = '#38bdf8';
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = '#8fe8ff';
+  ctx.fillRect(24.4, -1.5, 3.2, 3);
+  ctx.restore();
+  /* magazine + grip */
+  ctx.fillStyle = '#1d2733';
+  roundRect(ctx, 9.6, 1.7, 3.4, 4.6, 1);
+  ctx.fill();
+  roundRect(ctx, 5.4, 1.5, 3.2, 4, 1);
+  ctx.fill();
+  /* sight */
+  ctx.fillStyle = '#111a24';
+  ctx.fillRect(12, -5.2, 2.6, 1.8);
+}
+
 function drawPlayer() {
   const p = game.player;
   if (!p) return;
   const blink = p.invuln > 0 && Math.floor(p.invuln * 20) % 2 === 0 && p.dashTimer <= 0;
 
+  /* facing: the whole sprite mirrors toward the cursor */
+  const dir = Math.cos(p.angle) >= 0 ? 1 : -1;
+
+  /* very subtle bob while walking (plus a breath when standing still) */
+  const dashing = p.dashTimer > 0;
+  const bob = dashing ? 0
+    : p.moving ? Math.sin(p.walk) * 1.15
+      : Math.sin(game.time * 2) * 0.35;
+  const stride = (p.moving && !dashing) ? Math.sin(p.walk) * 1.1 : 0;
+
+  /* ground shadow */
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.42)';
   ctx.beginPath();
-  ctx.ellipse(p.x, p.y + 11, 15, 6, 0, 0, TAU);
+  ctx.ellipse(p.x, p.y + SOLDIER.feet, 14, 5, 0, 0, TAU);
   ctx.fill();
+  ctx.restore();
 
   if (p.shield > 0) {
     ctx.save();
@@ -3552,10 +3721,10 @@ function drawPlayer() {
     ctx.lineWidth = 2;
     ctx.shadowColor = '#facc15';
     ctx.shadowBlur = 16;
-    ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 12, 0, TAU); ctx.stroke();
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 14, 0, TAU); ctx.stroke();
     ctx.globalAlpha = 0.18;
     ctx.fillStyle = '#fde68a';
-    ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 12, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 14, 0, TAU); ctx.fill();
     ctx.restore();
   }
 
@@ -3564,107 +3733,68 @@ function drawPlayer() {
     ctx.strokeStyle = 'rgba(250,204,21,0.7)';
     ctx.lineWidth = 1.6;
     ctx.setLineDash([6, 5]);
-    ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 17, game.time * 3, game.time * 3 + TAU); ctx.stroke();
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 19, game.time * 3, game.time * 3 + TAU); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ---- dash trail: blue afterimages of the trooper ---- */
+  if (p.trail && p.trail.length) {
+    for (let i = 0; i < p.trail.length; i++) {
+      const t = p.trail[i];
+      const a = Math.max(0, t.life / 0.3);
+      ctx.save();
+      ctx.globalAlpha = a * 0.30;
+      ctx.translate(t.x, t.y);
+      ctx.scale(t.dir * 0.96, 0.96);
+      ctx.fillStyle = '#38bdf8';
+      roundRect(ctx, -8.5, -22, 17, 38, 7.5);
+      ctx.fill();
+      ctx.globalAlpha = a * 0.5;
+      ctx.fillStyle = '#a5f3fc';
+      roundRect(ctx, -5.5, -18, 11, 3.6, 1.8);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+  if (dashing) {
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    ctx.strokeStyle = '#7dd3fc';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.shadowColor = 'rgba(56,189,248,0.8)';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.moveTo(p.x - p.dashDir.x * 40, p.y - p.dashDir.y * 40);
+    ctx.lineTo(p.x - p.dashDir.x * 10, p.y - p.dashDir.y * 10);
+    ctx.stroke();
     ctx.restore();
   }
 
   if (!blink) {
-    ctx.save();
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.angle);
-
-    const stride = p.moving ? Math.sin(p.walk) * 3.4 : 0;
-
-    /* backpack */
-    ctx.fillStyle = '#0a1c2c';
-    roundRect(ctx, -15, -6, 7, 12, 3);
-    ctx.fill();
-
-    /* legs */
-    ctx.fillStyle = '#123049';
-    ctx.fillRect(-11, -7 + stride * 0.5, 8, 5);
-    ctx.fillRect(-11, 2 - stride * 0.5, 8, 5);
-    ctx.fillStyle = '#1c4a70';
-    ctx.fillRect(-4, -7 + stride * 0.5, 4, 5);
-    ctx.fillRect(-4, 2 - stride * 0.5, 4, 5);
-
-    /* body */
-    const bodyGrad = ctx.createLinearGradient(-12, -8, 10, 8);
-    bodyGrad.addColorStop(0, '#0b2136');
-    bodyGrad.addColorStop(0.5, '#17456e');
-    bodyGrad.addColorStop(1, '#2a7bb0');
-    ctx.fillStyle = bodyGrad;
-    roundRect(ctx, -11, -7.5, 21, 15, 6);
-    ctx.fill();
-    ctx.strokeStyle = '#3f9ad0';
-    ctx.lineWidth = 1.4;
-    ctx.stroke();
-
-    /* chest light */
-    ctx.fillStyle = 'rgba(103,232,249,0.85)';
-    ctx.shadowColor = '#22d3ee';
-    ctx.shadowBlur = 8;
-    ctx.fillRect(-2, -1.6, 5, 3.2);
-    ctx.shadowBlur = 0;
-
-    /* shoulder pads */
-    for (const sy of [-1, 1]) {
-      ctx.fillStyle = '#1d4d78';
-      ctx.beginPath(); ctx.arc(1, sy * 9.5, 5.2, 0, TAU); ctx.fill();
-      ctx.strokeStyle = '#5cc0ea';
-      ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.arc(1, sy * 9.5, 5.2, 0, TAU); ctx.stroke();
-      ctx.fillStyle = 'rgba(103,232,249,0.75)';
-      ctx.beginPath(); ctx.arc(2.6, sy * 9.5, 1.6, 0, TAU); ctx.fill();
-    }
-
-    /* helmet */
-    ctx.fillStyle = '#0e2740';
-    roundRect(ctx, 1, -5.4, 12, 10.8, 4.6);
-    ctx.fill();
-    ctx.strokeStyle = '#4aa3d8';
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-
-    /* visor glow */
-    ctx.fillStyle = '#6ff0ff';
-    ctx.shadowColor = '#22d3ee';
-    ctx.shadowBlur = 16;
-    roundRect(ctx, 8.4, -3.8, 3.6, 7.6, 1.8);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    /* rifle */
-    ctx.fillStyle = '#16283c';
-    roundRect(ctx, 7, -2.4, 22, 5, 2);
-    ctx.fill();
-    ctx.fillStyle = '#4b6b86';
-    ctx.fillRect(9, -1.2, 16, 2.4);
-    ctx.fillStyle = '#8fe8ff';
-    ctx.shadowColor = '#38bdf8';
-    ctx.shadowBlur = 10;
-    ctx.fillRect(26, -1.6, 4.4, 3.2);
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#123049';
-    ctx.fillRect(12, 2.4, 4, 3.6);
-
-    ctx.restore();
+    const drawBody = function () {
+      ctx.save();
+      ctx.translate(p.x, p.y + bob);
+      ctx.scale(dir, 1);
+      drawSoldierBody(p, dir, stride);
+      ctx.restore();
+    };
+    /* arm + rifle, pivoting at the shoulder so it always aims at the cursor */
+    const drawGun = function () {
+      ctx.save();
+      ctx.translate(p.x + dir * 6.5, p.y + bob - 4.5);
+      ctx.rotate(p.angle);
+      if (Math.cos(p.angle) < 0) ctx.scale(1, -1);   /* keep the rifle upright */
+      drawSoldierRifle(p);
+      ctx.restore();
+    };
+    /* aiming up? the rifle passes behind the soldier instead of through him */
+    if (Math.sin(p.angle) < -0.15) { drawGun(); drawBody(); }
+    else { drawBody(); drawGun(); }
   }
-
-  /* dash afterimage */
-  if (p.dashTimer > 0) {
-    ctx.save();
-    ctx.globalAlpha = 0.35;
-    ctx.strokeStyle = '#7dd3fc';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(p.x - p.dashDir.x * 26, p.y - p.dashDir.y * 26);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-    ctx.restore();
-  }
-  ctx.restore();
 }
+
 /* =============================================================================
    RENDERING
    ============================================================================= */
