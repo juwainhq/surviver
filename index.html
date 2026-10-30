@@ -1674,6 +1674,7 @@ let worldW = 0, worldH = 0;
 const CAMERA_LERP = 0.08;                        // 8% of the remaining distance per frame
 const BG_MAX_PARALLAX = 0.15;                    // background layers move at most 15% of camera speed
 const BG_PARALLAX_GAIN = BG_MAX_PARALLAX / 0.83; // the deepest existing layer now lands exactly on 15%
+const GROUND_SCROLL_RATE = 0.4;                  // floor texture glides at 40% of the world scroll
 
 /* Caps one background layer's depth factor so it can never travel faster than
    15% of the camera, while keeping the layers' relative depth ordering. */
@@ -1716,6 +1717,47 @@ function updateCamera(dt) {
 function mouseWorldX() { return mouseX + viewX(); }
 function mouseWorldY() { return mouseY + viewY(); }
 
+/* ---------- Strict play area (exactly the visible canvas) ----------
+   The player is pinned to the canvas centre, so the camera window *is* the
+   play area: width W, height H, in world coordinates. Nothing may spawn
+   outside it. The stage floor starts at the horizon, and the sky band above
+   it is scenery, so spawns are also kept below the horizon: enemies then
+   always materialise on the stage, never in the empty space above it. */
+const PLAY_AREA_EDGE_INSET = 2; // minimum distance any spawn keeps from the edge
+
+function playAreaLeft()   { return viewX(); }
+function playAreaTop()    { return viewY(); }
+function playAreaRight()  { return viewX() + W; }
+function playAreaBottom() { return viewY() + H; }
+
+/* Top of the drawn stage floor (below the sky band). */
+function playAreaStageTop() { return viewY() + battlefieldHorizonY(); }
+
+/* Clamp a point so a body of radius `pad` ends up fully inside the play area
+   and on the stage floor. Every enemy spawn passes through this. */
+function clampToPlayArea(x, y, pad) {
+  const p = Math.max(PLAY_AREA_EDGE_INSET, typeof pad === "number" ? pad : 12);
+  const left = playAreaLeft() + p;
+  const right = playAreaRight() - p;
+  const top = playAreaStageTop() + p;
+  const bottom = playAreaBottom() - p;
+  return {
+    x: clamp(x, Math.min(left, right), Math.max(left, right)),
+    y: clamp(y, Math.min(top, bottom), Math.max(top, bottom))
+  };
+}
+
+/* Keep the player far enough from the 3x world's edges that the whole centred
+   play area stays inside the world. Without this the view could slide past a
+   world edge and show the void the world is not drawn in. */
+function clampPlayerToPlayWindow() {
+  const basePad = player.r + 6;
+  const padX = Math.max(basePad, Math.min(worldW / 2, W / 2 + basePad));
+  const padY = Math.max(basePad, Math.min(worldH / 2, H / 2 + basePad));
+  player.x = clamp(player.x, padX, Math.max(padX, worldW - padX));
+  player.y = clamp(player.y, padY, Math.max(padY, worldH - padY));
+}
+
 function resize() {
   // visualViewport tracks the actually visible area on mobile as the
   // browser toolbar shows/hides; fall back to the window elsewhere.
@@ -1739,10 +1781,9 @@ function resize() {
     player.y = worldH / 2;
   }
 
-  // Keep the player inside the 3x open world.
-  const wallPad = player.r + 6;
-  player.x = clamp(player.x, wallPad, Math.max(wallPad, worldW - wallPad));
-  player.y = clamp(player.y, wallPad, Math.max(wallPad, worldH - wallPad));
+  // Keep the player inside the 3x open world, and keep the centred play
+  // area inside the world as well.
+  clampPlayerToPlayWindow();
   player.prevX = player.x;
   player.prevY = player.y;
   snapCameraToPlayer();
@@ -4695,44 +4736,47 @@ function restartGame() {
   startBackgroundHum();
 }
 
-function clampToWorld(x, y, pad) {
-  const p = typeof pad === "number" ? pad : 12;
-  return {
-    x: clamp(x, p, Math.max(p, worldW - p)),
-    y: clamp(y, p, Math.max(p, worldH - p))
-  };
-}
+/* A random point sitting exactly ON one of the four edges of the play area.
+   `bodyRadius` keeps the whole enemy inside the boundary: the spawn is inset
+   by its radius, so nothing is ever placed outside the visible stage. */
+function randomEdgePosition(bodyRadius) {
+  const r = typeof bodyRadius === "number" ? bodyRadius : 12;
+  const inset = Math.max(4, r + 2);
+  const left = playAreaLeft() + inset;
+  const right = playAreaRight() - inset;
+  const top = playAreaStageTop() + inset;   // top edge = the stage horizon
+  const bottom = playAreaBottom() - inset;
 
-function randomEdgePosition(margin) {
-  // Pick a random edge just outside the camera's current viewport in the 3x open world.
   const edge = Math.floor(Math.random() * 4);
-  let raw;
+  let x, y;
   switch (edge) {
-    case 0:  raw = { x: rand(viewX() - margin, viewX() + W + margin), y: viewY() - margin }; break;
-    case 1:  raw = { x: viewX() + W + margin, y: rand(viewY() - margin, viewY() + H + margin) }; break;
-    case 2:  raw = { x: rand(viewX() - margin, viewX() + W + margin), y: viewY() + H + margin }; break;
-    default: raw = { x: viewX() - margin, y: rand(viewY() - margin, viewY() + H + margin) }; break;
+    case 0:  x = rand(left, right); y = top; break;      // top edge
+    case 1:  x = right; y = rand(top, bottom); break;    // right edge
+    case 2:  x = rand(left, right); y = bottom; break;   // bottom edge
+    default: x = left; y = rand(top, bottom); break;     // left edge
   }
-  return clampToWorld(raw.x, raw.y, Math.max(8, margin * 0.4));
+  return clampToPlayArea(x, y, inset);
 }
 
 function chooseSpawnPosition(r, margin, ignoredEnemy) {
-  // Spawn enemies along the camera viewport perimeter inside the 3x open world,
-  // ensuring a fair minimum distance from Commander Rael even near world corners.
+  // Every candidate sits ON the four edges of the play area (the visible
+  // canvas), inset by the body radius, so no enemy can ever appear outside the
+  // stage or in the empty space around it. A fair minimum distance from
+  // Commander Rael is still preferred when the edges allow it.
   const desiredDistance = Math.min(
     ENEMY_MIN_SPAWN_DISTANCE,
     Math.max(48, Math.hypot(W, H) * 0.35)
   );
   const desiredDistanceSq = desiredDistance * desiredDistance;
-  const pad = Math.max(8, r + 4);
+  const pad = Math.max(PLAY_AREA_EDGE_INSET, r + 4);
   const candidates = [
-    clampToWorld(viewX() + W / 2, viewY() - margin, pad),
-    clampToWorld(viewX() + W + margin, viewY() + H / 2, pad),
-    clampToWorld(viewX() + W / 2, viewY() + H + margin, pad),
-    clampToWorld(viewX() - margin, viewY() + H / 2, pad)
+    clampToPlayArea(playAreaLeft() + W / 2, playAreaStageTop(), pad),   // top edge
+    clampToPlayArea(playAreaRight(), playAreaTop() + H / 2, pad),      // right edge
+    clampToPlayArea(playAreaLeft() + W / 2, playAreaBottom(), pad),    // bottom edge
+    clampToPlayArea(playAreaLeft(), playAreaTop() + H / 2, pad)        // left edge
   ];
   for (let i = 0; i < ENEMY_SPAWN_POSITION_TRIES; i++) {
-    candidates.push(randomEdgePosition(margin));
+    candidates.push(randomEdgePosition(r));
   }
 
   let farthest = candidates[0];
@@ -4919,11 +4963,11 @@ function spawnWizardMiniBoss(slotIndex) {
   const idx = typeof slotIndex === "number" ? slotIndex : 0;
   let pos;
   if (idx === 0) {
-    pos = clampToWorld(player.x, player.y - Math.max(210, H * 0.32), r + 28);
+    pos = clampToPlayArea(player.x, player.y - Math.max(210, H * 0.32), r + 8);
   } else if (idx === 1) {
-    pos = clampToWorld(player.x - Math.max(230, W * 0.34), player.y + H * 0.10, r + 28);
+    pos = clampToPlayArea(player.x - Math.max(230, W * 0.34), player.y + H * 0.10, r + 8);
   } else {
-    pos = clampToWorld(player.x + Math.max(230, W * 0.34), player.y + H * 0.10, r + 28);
+    pos = clampToPlayArea(player.x + Math.max(230, W * 0.34), player.y + H * 0.10, r + 8);
   }
   // Ensure safe starting distance from Commander Rael.
   const dx = pos.x - player.x;
@@ -5600,10 +5644,8 @@ function updatePlayer(dt) {
     player.isMoving = false;
   }
 
-  // Keep the player inside the 3x open world.
-  const wallPad = player.r + 6;
-  player.x = clamp(player.x, wallPad, Math.max(wallPad, worldW - wallPad));
-  player.y = clamp(player.y, wallPad, Math.max(wallPad, worldH - wallPad));
+  // Keep the player inside the 3x open world and the play area on real world.
+  clampPlayerToPlayWindow();
 }
 
 /* ---------- Collectible glowing gems ---------- */
@@ -8149,10 +8191,12 @@ function drawBackground() {
   if (cachedFloor && typeof ctx.drawImage === "function" && H > horizonY + 1) {
     // Tile the cached terrain in world coordinates, rather than tying it to the screen.
     const tileH = H - horizonY;
-    // The floor texture drifts with the same hard 15% cap as every other
-    // background layer, so it barely slides under the actors.
-    const floorX = camera.x * BG_MAX_PARALLAX;
-    const floorY = camera.y * BG_MAX_PARALLAX;
+    // The floor is the ground the player actually walks on, so it reads as
+    // solid terrain: it glides at 40% of the world's scroll and always in the
+    // OPPOSITE direction to the player's movement (move right -> floor slides
+    // left), which gives a clear sense of travelling through a real world.
+    const floorX = camera.x * GROUND_SCROLL_RATE;
+    const floorY = camera.y * GROUND_SCROLL_RATE;
     const startX = -((floorX % W + W) % W);
     const startY = horizonY - ((floorY % tileH + tileH) % tileH);
     ctx.save();
@@ -9689,6 +9733,40 @@ function drawStaticHexGrid() {
   ctx.restore();
 }
 
+/* ---------- Play-area edge fade ----------
+   A soft rectangular fade hugging all four edges of the visible play area, so
+   the player can see exactly where the stage ends. Pure screen space: it never
+   moves with the camera, the player or screen shake. */
+const PLAY_AREA_FADE_RGB = "3, 6, 12";
+const PLAY_AREA_FADE_INNER = 0.10; // fade reaches zero at 10% of the viewport
+
+function drawPlayAreaVignette() {
+  if (!W || !H) return;
+  const fadeX = Math.max(28, W * PLAY_AREA_FADE_INNER);
+  const fadeY = Math.max(26, H * PLAY_AREA_FADE_INNER);
+  const edge = [
+    { x0: 0, y0: 0, x1: fadeX, y1: 0, rx: 0, ry: 0, rw: fadeX, rh: H },
+    { x0: W, y0: 0, x1: W - fadeX, y1: 0, rx: W - fadeX, ry: 0, rw: fadeX, rh: H },
+    { x0: 0, y0: 0, x1: 0, y1: fadeY, rx: 0, ry: 0, rw: W, rh: fadeY },
+    { x0: 0, y0: H, x1: 0, y1: H - fadeY, rx: 0, ry: H - fadeY, rw: W, rh: fadeY }
+  ];
+  ctx.save();
+  for (let i = 0; i < edge.length; i++) {
+    const e = edge[i];
+    if (typeof ctx.createLinearGradient === "function") {
+      const g = ctx.createLinearGradient(e.x0, e.y0, e.x1, e.y1);
+      g.addColorStop(0, "rgba(" + PLAY_AREA_FADE_RGB + ", 0.78)");
+      g.addColorStop(0.45, "rgba(" + PLAY_AREA_FADE_RGB + ", 0.32)");
+      g.addColorStop(1, "rgba(" + PLAY_AREA_FADE_RGB + ", 0)");
+      ctx.fillStyle = g;
+    } else {
+      ctx.fillStyle = "rgba(" + PLAY_AREA_FADE_RGB + ", 0.35)";
+    }
+    ctx.fillRect(e.rx, e.ry, e.rw, e.rh);
+  }
+  ctx.restore();
+}
+
 function drawParticles() {
   for (let i = 0; i < particles.length; i++) {
     const p = particles[i];
@@ -9746,6 +9824,7 @@ function draw() {
   drawParticles();       // explosion, laser, gem & death sparks
 
   ctx.restore();
+  drawPlayAreaVignette(); // soft fade marking where the play area ends
   drawStaticHexGrid();    // fixed 0.06-opacity hex anchor, drawn over the world
   drawWeatherLightning(); // castle lightning briefly illuminates the entire scene
   if (state === "boss_death") {
