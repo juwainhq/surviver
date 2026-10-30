@@ -91,10 +91,13 @@
   }
   .ability.ready .icon{ color:#dff6ff; text-shadow:0 0 14px rgba(143,232,255,.7); }
   .ability .cd{
-    position:absolute; font-family:var(--font-head); font-size:13px; font-weight:700;
-    color:#e8f4ff; text-shadow:0 0 10px rgba(0,0,0,.9);
+    position:absolute; font-family:var(--font-head); font-size:14px; font-weight:700;
+    color:#e8f4ff; letter-spacing:.5px;
+    text-shadow:0 0 4px #000, 0 0 10px rgba(0,0,0,.9);
   }
   .ability.ready .cd{ display:none; }
+  .ability.cooling .icon{ opacity:.22; }
+  .ability.cooling .label{ color:rgba(232,200,116,.45); }
   .ability .label{
     position:absolute; bottom:-15px; left:50%; transform:translateX(-50%);
     font-size:9.5px; letter-spacing:1.6px; color:rgba(232,200,116,.82); white-space:nowrap;
@@ -3315,6 +3318,7 @@ function setRing(el, readiness) {
   const r = clamp(readiness, 0, 1);
   ring.style.strokeDashoffset = String(RING_LEN * (1 - r));
   el.classList.toggle('ready', r >= 0.999);
+  el.classList.toggle('cooling', r < 0.999);
 }
 
 function updateHud() {
