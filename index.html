@@ -98,6 +98,65 @@
     font-size:9.5px; letter-spacing:1.4px; color:rgba(214,226,244,.55); white-space:nowrap;
   }
 
+  /* weapon switcher (bottom left) */
+  #weaponBar{
+    position:absolute; left:22px; bottom:20px;
+    display:flex; flex-direction:column; gap:9px; align-items:flex-start;
+  }
+  #weaponName{
+    font-family:var(--font-head); font-size:15px; font-weight:700;
+    letter-spacing:3.2px; text-transform:uppercase; color:#dff6ff;
+    text-shadow:0 0 18px rgba(143,232,255,.6), 0 2px 10px rgba(0,0,0,.9);
+    opacity:.95; transition:color .2s ease, text-shadow .2s ease;
+  }
+  #weaponBar.blade #weaponName{
+    color:#c7b3ff; text-shadow:0 0 18px rgba(167,139,250,.7), 0 2px 10px rgba(0,0,0,.9);
+  }
+  #weaponBar.plasma #weaponName{
+    color:#a9d8ff; text-shadow:0 0 18px rgba(59,130,246,.7), 0 2px 10px rgba(0,0,0,.9);
+  }
+  #weaponSlots{ display:flex; gap:10px; align-items:flex-end; }
+  .wslot{
+    position:relative; width:46px; height:46px; display:flex; align-items:center; justify-content:center;
+    border:1px solid rgba(214,226,244,.16); border-radius:50%;
+    background:radial-gradient(circle at 50% 45%, rgba(10,16,26,.55), rgba(4,7,12,.72));
+    color:rgba(214,226,244,.42);
+    transition:color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+  }
+  .wslot svg{ width:26px; height:26px; overflow:visible; }
+  .wslot svg *{ fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  .wslot .wkey{
+    position:absolute; top:-13px; left:50%; transform:translateX(-50%);
+    font-size:9.5px; letter-spacing:1.2px; color:rgba(214,226,244,.4);
+  }
+  .wslot.active{
+    color:#8fe8ff; border-color:rgba(143,232,255,.75);
+    box-shadow:0 0 20px rgba(56,189,248,.55), inset 0 0 14px rgba(56,189,248,.28);
+    animation:wGlow 2.2s ease-in-out infinite;
+  }
+  .wslot.active .wkey{ color:rgba(143,232,255,.9); }
+  #weaponBar.plasma .wslot.active{
+    color:#93c5fd; border-color:rgba(147,197,253,.8);
+    box-shadow:0 0 22px rgba(37,99,235,.6), inset 0 0 14px rgba(37,99,235,.32);
+    animation-name:wGlowBlue;
+  }
+  #weaponBar.blade .wslot.active{
+    color:#c4b5fd; border-color:rgba(196,181,253,.8);
+    box-shadow:0 0 22px rgba(139,92,246,.6), inset 0 0 14px rgba(139,92,246,.32);
+    animation-name:wGlowViolet;
+  }
+  @keyframes wGlow{ 0%,100%{ box-shadow:0 0 14px rgba(56,189,248,.4), inset 0 0 10px rgba(56,189,248,.22); } 50%{ box-shadow:0 0 26px rgba(56,189,248,.75), inset 0 0 16px rgba(56,189,248,.34); } }
+  @keyframes wGlowBlue{ 0%,100%{ box-shadow:0 0 14px rgba(37,99,235,.45), inset 0 0 10px rgba(37,99,235,.25); } 50%{ box-shadow:0 0 28px rgba(37,99,235,.8), inset 0 0 16px rgba(37,99,235,.4); } }
+  @keyframes wGlowViolet{ 0%,100%{ box-shadow:0 0 14px rgba(139,92,246,.45), inset 0 0 10px rgba(139,92,246,.25); } 50%{ box-shadow:0 0 28px rgba(139,92,246,.8), inset 0 0 16px rgba(139,92,246,.4); } }
+  .wslot.swap{ animation:wSwap .34s ease-out; }
+  @keyframes wSwap{ 0%{ transform:scale(1.28); } 100%{ transform:scale(1); } }
+  @media (max-width:820px){
+    #weaponBar{ left:12px; bottom:12px; }
+    .wslot{ width:38px; height:38px; }
+    .wslot svg{ width:21px; height:21px; }
+    #weaponName{ font-size:12px; letter-spacing:2px; }
+  }
+
   /* minimap */
   #minimap{
     position:absolute; right:20px; bottom:20px; width:150px; height:150px;
@@ -420,6 +479,36 @@
       </div>
     </div>
 
+    <div id="weaponBar">
+      <div id="weaponName">Laser Rifle</div>
+      <div id="weaponSlots">
+        <div class="wslot active" id="wslot0">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <rect x="4" y="14.5" width="13" height="4" rx="1.2"/>
+            <path d="M17 16.5h9M20 16.5v3.4M8.5 18.5v3"/>
+            <path d="M26 16.5h3"/>
+          </svg>
+          <span class="wkey">1</span>
+        </div>
+        <div class="wslot" id="wslot1">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <circle cx="16" cy="16" r="5.4"/>
+            <path d="M16 5.4a10.6 10.6 0 0 1 9.6 6M16 26.6a10.6 10.6 0 0 1-9.6-6"/>
+            <circle cx="16" cy="16" r="1.6"/>
+          </svg>
+          <span class="wkey">2</span>
+        </div>
+        <div class="wslot" id="wslot2">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M16 4.5a11.5 11.5 0 0 1 10.4 6.6"/>
+            <path d="M16 27.5a11.5 11.5 0 0 1-10.4-6.6"/>
+            <path d="M22.5 12.6l3.4 1.4-1 3.5M9.5 19.4l-3.4-1.4 1-3.5"/>
+          </svg>
+          <span class="wkey">3</span>
+        </div>
+      </div>
+    </div>
+
     <canvas id="minimap" width="300" height="300"></canvas>
 
     <div id="bossBar">
@@ -630,6 +719,28 @@ const Sound = (function () {
     chest()      {
       [784, 988, 1319].forEach((f, i) => tone({ freq: f, dur: 0.2, type: 'triangle', vol: 0.05, delay: i * 0.06 }));
       noise({ freq: 2400, dur: 0.18, vol: 0.028 });
+    },
+    /* ---- one voice per weapon ---- */
+    plasmaFire() {
+      tone({ freq: 196, to: 74, dur: 0.26, type: 'sawtooth', vol: 0.06 });
+      tone({ freq: 440, to: 160, dur: 0.2, type: 'sine', vol: 0.035, delay: 0.02 });
+    },
+    plasmaBoom() {
+      noise({ freq: 820, dur: 0.36, vol: 0.075 });
+      tone({ freq: 150, to: 38, dur: 0.38, type: 'sawtooth', vol: 0.07 });
+      tone({ freq: 88, to: 30, dur: 0.5, type: 'sine', vol: 0.05, delay: 0.03 });
+    },
+    arcHum() {
+      tone({ freq: 620, to: 840, dur: 0.2, type: 'triangle', vol: 0.018 });
+      tone({ freq: 1180, to: 1520, dur: 0.16, type: 'sine', vol: 0.012, delay: 0.015 });
+    },
+    arcHit() {
+      noise({ freq: 2800, dur: 0.08, vol: 0.026 });
+      tone({ freq: 1320, to: 720, dur: 0.07, type: 'square', vol: 0.018 });
+    },
+    weaponSwitch() {
+      tone({ freq: 520, to: 940, dur: 0.11, type: 'triangle', vol: 0.038 });
+      tone({ freq: 780, to: 1240, dur: 0.08, type: 'sine', vol: 0.02, delay: 0.05 });
     }
   };
 })();
@@ -772,6 +883,13 @@ const UI = {
   gemVal: document.getElementById('gemVal'),
   hud: document.getElementById('hud'),
   minimap: document.getElementById('minimap'),
+  weaponBar: document.getElementById('weaponBar'),
+  weaponName: document.getElementById('weaponName'),
+  weaponSlots: [
+    document.getElementById('wslot0'),
+    document.getElementById('wslot1'),
+    document.getElementById('wslot2')
+  ],
   bossBar: document.getElementById('bossBar'),
   bossName: document.getElementById('bossName'),
   bossFill: document.getElementById('bossFill'),
@@ -1013,6 +1131,10 @@ function makePlayer() {
     damage: 1,
     invuln: 0,
     hitFlash: 0,        /* brief red flash when damage lands */
+    weapon: 0,          /* 0 laser rifle, 1 plasma cannon, 2 arc blade */
+    bladeSpin: 0,
+    bladeCd: 0,
+    bladeHum: 0,
     dashTimer: 0,
     dashCd: 0,
     dashDir: { x: 1, y: 0 },
@@ -1037,6 +1159,7 @@ function resetRun() {
   game.killsThisZone = 0;
   game.upgradeLevels = {};
   game.player = makePlayer();
+  syncWeaponHud();
   game.timeScale = 1;
   game.slowmo = 0;
   game.shake = 0;
@@ -1063,6 +1186,7 @@ function loadZone(zoneIndex, opts) {
   game.bossFight = null;
   game.portal = null;
   BossMusic.stop();
+  syncWeaponHud();
   UI.bossIntro.classList.remove('show');
   UI.bossBar.classList.remove('show');
   UI.dangerBorder.classList.remove('on');
@@ -1297,6 +1421,9 @@ window.addEventListener('keydown', (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   game.keys[k] = true;
   if (game.screen !== 'playing') return;
+  if (k === '1') selectWeapon(0);
+  if (k === '2') selectWeapon(1);
+  if (k === '3') selectWeapon(2);
   if (k === ' ') { e.preventDefault(); novaBlast(); }
   if (k === 'q') timeFreeze();
   if (k === 'Shift') dash();
@@ -1385,14 +1512,104 @@ function updatePlayer(dt) {
     if (p.overchargeTimer >= 30) p.overchargeTimer = 0;
   }
   const overcharged = p.overcharge && p.overchargeTimer < 8;
-  if (game.mouse.down && p.fireTimer <= 0) {
-    fireLaser();
-    p.fireTimer = p.fireRate * (overcharged ? 0.5 : 1);
+  if (p.weapon === 2) {
+    /* the blade swings on its own — no clicking needed */
+    updateArcBlade(dt);
+  } else if (game.mouse.down && p.fireTimer <= 0) {
+    if (p.weapon === 1) {
+      firePlasma();
+      p.fireTimer = p.fireRate * 4.2 * (overcharged ? 0.5 : 1);
+    } else {
+      fireLaser();
+      p.fireTimer = p.fireRate * (overcharged ? 0.5 : 1);
+    }
   }
 
   /* cooldowns */
   if (game.freezeTimer > 0) game.freezeTimer = Math.max(0, game.freezeTimer - dt);
   if (game.freezeCd > 0) game.freezeCd = Math.max(0, game.freezeCd - dt);
+}
+
+/* ------------------------------ weapons ------------------------------------ */
+/* Three weapons on keys 1-3. The rifle and cannon share the fire-rate upgrade,
+   the blade simply bites whatever comes within 80px. */
+const WEAPONS = [
+  { id: 'laser', name: 'Laser Rifle', key: '1', colour: '#8fe8ff' },
+  { id: 'plasma', name: 'Plasma Cannon', key: '2', colour: '#60a5fa' },
+  { id: 'blade', name: 'Arc Blade', key: '3', colour: '#a78bfa' }
+];
+const BLADE_RANGE = 80;
+
+function syncWeaponHud() {
+  const i = game.player ? game.player.weapon : 0;
+  const w = WEAPONS[i] || WEAPONS[0];
+  UI.weaponName.textContent = w.name;
+  UI.weaponBar.classList.toggle('plasma', w.id === 'plasma');
+  UI.weaponBar.classList.toggle('blade', w.id === 'blade');
+  for (let k = 0; k < UI.weaponSlots.length; k++) {
+    UI.weaponSlots[k].classList.toggle('active', k === i);
+  }
+}
+
+function selectWeapon(i) {
+  const p = game.player;
+  if (!p || game.screen !== 'playing') return;
+  const next = clamp(i, 0, WEAPONS.length - 1);
+  if (next === p.weapon) return;
+  p.weapon = next;
+  p.fireTimer = Math.min(p.fireTimer, 0.1);
+  p.bladeCd = 0;
+  Sound.weaponSwitch();
+  syncWeaponHud();
+  const slot = UI.weaponSlots[next];
+  if (slot) {
+    slot.classList.remove('swap');
+    void slot.offsetWidth;
+    slot.classList.add('swap');
+  }
+  game.particles.push({
+    ring: true, x: p.x, y: p.y, r: 6, maxR: 54, life: 0, maxLife: 0.32,
+    color: WEAPONS[next].colour
+  });
+}
+
+/* ------------------------------ arc blade ---------------------------------- */
+/* A spinning ring of energy blades: damages everything inside 80px on a short
+   tick, no aiming and no clicking. */
+function updateArcBlade(dt) {
+  const p = game.player;
+  p.bladeSpin += dt * 7.2;
+  p.bladeCd -= dt;
+  p.bladeHum -= dt;
+  if (p.bladeHum <= 0) {
+    Sound.arcHum();
+    p.bladeHum = 0.44;
+  }
+  if (p.bladeCd > 0) return;
+  p.bladeCd = 0.16;
+
+  let struck = false;
+  for (let i = game.enemies.length - 1; i >= 0; i--) {
+    const e = game.enemies[i];
+    if (dist(p.x, p.y, e.x, e.y) > BLADE_RANGE + e.r) continue;
+    const a = Math.atan2(e.y - p.y, e.x - p.x);
+    damageEnemy(e, p.damage * 0.52, true);
+    e.x = clamp(e.x + Math.cos(a) * 5, 40, WORLD - 40);
+    e.y = clamp(e.y + Math.sin(a) * 5, 40, WORLD - 40);
+    struck = true;
+  }
+  if (game.boss && dist(p.x, p.y, game.boss.x, game.boss.y) <= BLADE_RANGE + game.boss.r) {
+    damageBoss(p.damage * 0.5);
+    struck = true;
+  }
+  if (struck) {
+    Sound.arcHit();
+    for (let i = 0; i < 4; i++) {
+      const a = rand(0, TAU);
+      spawnParticle(p.x + Math.cos(a) * BLADE_RANGE * 0.78, p.y + Math.sin(a) * BLADE_RANGE * 0.78,
+        Math.cos(a) * rand(40, 150), Math.sin(a) * rand(40, 150), 0.22, 5, '#c4b5fd', 3);
+    }
+  }
 }
 
 function fireLaser() {
@@ -1401,18 +1618,74 @@ function fireLaser() {
   for (let i = 0; i < angles.length; i++) {
     const a = angles[i];
     game.bullets.push({
+      kind: 'laser',
       x: p.x + Math.cos(a) * (p.r * 0.45),
       y: p.y + Math.sin(a) * (p.r * 0.45),
       vx: Math.cos(a) * p.bulletSpeed,
       vy: Math.sin(a) * p.bulletSpeed,
       r: 5,
       life: 1.1,
-      dmg: p.damage
+      dmg: p.damage,
+      knock: 9          /* bolts shove enemies back a little */
     });
   }
   Sound.shoot();
   spawnParticle(p.x + Math.cos(p.angle) * (p.r + 26), p.y + Math.sin(p.angle) * (p.r + 26),
     rand(-40, 40), rand(-40, 40), 0.16, 7, '#8fe8ff', 2.4);
+}
+
+function firePlasma() {
+  const p = game.player;
+  const a = p.angle;
+  game.bullets.push({
+    kind: 'plasma',
+    x: p.x + Math.cos(a) * (p.r + 26),
+    y: p.y + Math.sin(a) * (p.r + 26),
+    vx: Math.cos(a) * 330,
+    vy: Math.sin(a) * 330,
+    r: 16,
+    life: 2.2,
+    dmg: p.damage * 2.2,
+    splash: 118,
+    spin: rand(0, TAU)
+  });
+  Sound.plasmaFire();
+  game.shake = Math.max(game.shake, 0.2);
+  for (let i = 0; i < 6; i++) {
+    const s = a + rand(-0.5, 0.5);
+    spawnParticle(p.x + Math.cos(a) * (p.r + 14), p.y + Math.sin(a) * (p.r + 14),
+      Math.cos(s) * rand(40, 160), Math.sin(s) * rand(40, 160), 0.24, 7, '#93c5fd', 3);
+  }
+}
+
+/* splash damage to everything close to the burst */
+function explodePlasma(b) {
+  const R = b.splash || 118;
+  Sound.plasmaBoom();
+  game.shake = Math.max(game.shake, 0.42);
+  game.flashTimer = Math.max(game.flashTimer, 0.12);
+  game.flashColor = '#bcd8ff';
+  for (let i = game.enemies.length - 1; i >= 0; i--) {
+    const e = game.enemies[i];
+    if (dist(b.x, b.y, e.x, e.y) > R + e.r) continue;
+    const a = Math.atan2(e.y - b.y, e.x - b.x);
+    damageEnemy(e, b.dmg, true);
+    e.x = clamp(e.x + Math.cos(a) * 18, 40, WORLD - 40);
+    e.y = clamp(e.y + Math.sin(a) * 18, 40, WORLD - 40);
+  }
+  if (game.boss && dist(b.x, b.y, game.boss.x, game.boss.y) <= R + game.boss.r) {
+    damageBoss(b.dmg * 0.55);
+  }
+  for (let i = 0; i < game.breakables.length; i++) {
+    const w = game.breakables[i];
+    if (!w.broken && dist(b.x, b.y, w.x, w.y) <= R + 52) damageBreakable(w);
+  }
+  for (let i = 0; i < 22; i++) {
+    const a = rand(0, TAU);
+    spawnParticle(b.x, b.y, Math.cos(a) * rand(80, 360), Math.sin(a) * rand(80, 360),
+      rand(0.25, 0.5), rand(5, 11), i % 3 ? '#60a5fa' : '#e0f2fe', 3.2);
+  }
+  game.particles.push({ ring: true, x: b.x, y: b.y, r: 10, maxR: R, life: 0, maxLife: 0.38, color: '#93c5fd' });
 }
 
 function novaBlast() {
@@ -1701,6 +1974,7 @@ function updateBullets(dt) {
     b.y += b.vy * dt;
     b.life -= dt;
     if (b.life <= 0 || b.x < -40 || b.y < -40 || b.x > WORLD + 40 || b.y > WORLD + 40) {
+      if (b.kind === 'plasma') explodePlasma(b);
       game.bullets.splice(i, 1);
       continue;
     }
@@ -1736,15 +2010,27 @@ function updateBullets(dt) {
       if (t !== null && t < bestT) { bestT = t; hitKind = 'chest'; hitObj = c; }
     }
 
-    if (hitKind === 'enemy') { damageEnemy(hitObj, b.dmg, false); hit = true; }
+    if (hitKind === 'enemy') {
+      damageEnemy(hitObj, b.dmg, false);
+      if (b.knock) {
+        const a = Math.atan2(b.vy, b.vx);
+        hitObj.x = clamp(hitObj.x + Math.cos(a) * b.knock, 40, WORLD - 40);
+        hitObj.y = clamp(hitObj.y + Math.sin(a) * b.knock, 40, WORLD - 40);
+      }
+      hit = true;
+    }
     else if (hitKind === 'boss') { damageBoss(b.dmg); hit = true; }
     else if (hitKind === 'wall') { damageBreakable(hitObj); hit = true; }
     else if (hitKind === 'chest') { openChest(hitObj); hit = true; }
 
     if (hit) {
-      for (let k = 0; k < 5; k++) {
-        const a = rand(0, TAU);
-        spawnParticle(b.x, b.y, Math.cos(a) * rand(40, 160), Math.sin(a) * rand(40, 160), 0.2, 6, '#8fe8ff', 2);
+      if (b.kind === 'plasma') {
+        explodePlasma(b);
+      } else {
+        for (let k = 0; k < 5; k++) {
+          const a = rand(0, TAU);
+          spawnParticle(b.x, b.y, Math.cos(a) * rand(40, 160), Math.sin(a) * rand(40, 160), 0.2, 6, '#8fe8ff', 2);
+        }
       }
       game.bullets.splice(i, 1);
     }
@@ -2703,7 +2989,8 @@ function updateHud() {
   UI.scoreVal.textContent = String(Math.floor(game.score));
   UI.gemVal.textContent = String(game.gems);
 
-  setRing(UI.abilities.laser, p.fireTimer <= 0 ? 1 : 1 - p.fireTimer / (p.fireRate * 1.6));
+  const cycle = p.fireRate * (p.weapon === 1 ? 6.7 : 1.6);
+  setRing(UI.abilities.laser, p.fireTimer <= 0 ? 1 : 1 - p.fireTimer / cycle);
   setRing(UI.abilities.nova, p.novaCharge / 5);
   setRing(UI.abilities.freeze, game.freezeCd <= 0 ? 1 : 1 - game.freezeCd / 15);
   setRing(UI.abilities.dash, p.dashCd <= 0 ? 1 : 1 - p.dashCd / 5);
@@ -3800,20 +4087,21 @@ function drawSoldierRifle(p, g) {
   ctx.fillStyle = '#3c4d61';
   roundRect(ctx, 16.5, -2.1, 15, 4.2, 1.5);
   ctx.fill();
-  /* energy conduit along the barrel */
+  /* energy conduit along the barrel (dead while the arc blade is out) */
+  const idle = p.weapon === 2;
   ctx.save();
   ctx.shadowColor = g.glow;
-  ctx.shadowBlur = 10;
-  ctx.fillStyle = 'rgba(' + g.rgb + ',0.9)';
+  ctx.shadowBlur = idle ? 0 : 10;
+  ctx.fillStyle = idle ? 'rgba(120,150,180,0.3)' : 'rgba(' + g.rgb + ',0.9)';
   ctx.fillRect(18, -0.7, 12.5, 1.5);
   /* muzzle: glowing tip */
   const tip = ctx.createRadialGradient(30.8, 0, 0, 30.8, 0, 5.4);
-  tip.addColorStop(0, 'rgba(255,255,255,0.95)');
-  tip.addColorStop(0.42, 'rgba(' + g.rgb + ',0.7)');
-  tip.addColorStop(1, 'rgba(' + g.rgb + ',0)');
+  tip.addColorStop(0, idle ? 'rgba(200,214,228,0.5)' : 'rgba(255,255,255,0.95)');
+  tip.addColorStop(0.42, idle ? 'rgba(148,163,184,0.3)' : 'rgba(' + g.rgb + ',0.7)');
+  tip.addColorStop(1, idle ? 'rgba(148,163,184,0)' : 'rgba(' + g.rgb + ',0)');
   ctx.fillStyle = tip;
   ctx.beginPath(); ctx.arc(30.8, 0, 5.4, 0, TAU); ctx.fill();
-  ctx.fillStyle = '#eafcff';
+  ctx.fillStyle = idle ? '#9aa7b5' : '#eafcff';
   roundRect(ctx, 28.6, -2, 3.6, 4, 1.9);
   ctx.fill();
   ctx.restore();
@@ -3863,6 +4151,47 @@ function drawSoldierFlash(dir, stride, alpha, gunAng) {
   ctx.fillStyle = '#ff4d4d';
   roundRect(ctx, 5.4, -3.2, 26, 5.4, 1.6);
   ctx.fill();
+  ctx.restore();
+}
+
+/* spinning energy blades, drawn around the trooper while the arc blade is out */
+function drawArcBlade(p) {
+  const t = p.bladeSpin;
+  ctx.save();
+  ctx.translate(p.x, p.y + 2);
+
+  /* range ring */
+  ctx.globalAlpha = 0.18 + 0.07 * Math.sin(game.time * 4);
+  ctx.strokeStyle = '#a78bfa';
+  ctx.lineWidth = 1.4;
+  ctx.setLineDash([10, 10]);
+  ctx.lineDashOffset = -game.time * 34;
+  ctx.beginPath(); ctx.arc(0, 0, BLADE_RANGE, 0, TAU); ctx.stroke();
+  ctx.setLineDash([]);
+
+  /* three sweeping blades */
+  for (let i = 0; i < 3; i++) {
+    const a0 = t + i * (TAU / 3);
+    const hot = i % 2 === 0;
+    ctx.globalAlpha = 0.85;
+    ctx.strokeStyle = hot ? '#8be9ff' : '#c4b5fd';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.shadowColor = hot ? '#22d3ee' : '#8b5cf6';
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.arc(0, 0, 58, a0, a0 + 0.9);
+    ctx.stroke();
+
+    /* bright leading edge */
+    ctx.globalAlpha = 0.95;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.8;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(0, 0, 58, a0 + 0.55, a0 + 0.9);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -3979,6 +4308,8 @@ function drawPlayer() {
       drawSoldierFlash(dir, stride, Math.min(1, p.hitFlash / 0.22) * 0.62, p.angle);
     }
   }
+
+  if (p.weapon === 2) drawArcBlade(p);
 }
 
 /* =============================================================================
@@ -4387,6 +4718,7 @@ function drawObstacles() {
 function drawBullets() {
   for (let i = 0; i < game.bullets.length; i++) {
     const b = game.bullets[i];
+    if (b.kind === 'plasma') { drawPlasmaOrb(b); continue; }
     const a = Math.atan2(b.vy, b.vx);
     ctx.save();
     ctx.translate(b.x, b.y);
@@ -4402,6 +4734,47 @@ function drawBullets() {
     ctx.restore();
   }
   ctx.shadowBlur = 0;
+}
+
+/* a heavy blue orb, trailing plasma */
+function drawPlasmaOrb(b) {
+  const t = game.time;
+  const pulse = 1 + 0.08 * Math.sin(t * 16 + (b.spin || 0));
+  const R = b.r * 2.5 * pulse;
+  ctx.save();
+  /* tail */
+  const tail = ctx.createLinearGradient(b.x - b.vx * 0.045, b.y - b.vy * 0.045, b.x, b.y);
+  tail.addColorStop(0, 'rgba(59,130,246,0)');
+  tail.addColorStop(1, 'rgba(147,197,253,0.55)');
+  ctx.strokeStyle = tail;
+  ctx.lineWidth = b.r * 1.5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(b.x - b.vx * 0.045, b.y - b.vy * 0.045);
+  ctx.lineTo(b.x, b.y);
+  ctx.stroke();
+
+  /* body */
+  const g = ctx.createRadialGradient(b.x, b.y, 2, b.x, b.y, R);
+  g.addColorStop(0, 'rgba(240,250,255,0.98)');
+  g.addColorStop(0.3, 'rgba(147,197,253,0.95)');
+  g.addColorStop(0.62, 'rgba(59,130,246,0.55)');
+  g.addColorStop(1, 'rgba(37,99,235,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, TAU); ctx.fill();
+
+  /* crackling core */
+  ctx.strokeStyle = 'rgba(224,242,254,0.9)';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  for (let k = 0; k < 5; k++) {
+    const a = t * 6 + (b.spin || 0) + k * (TAU / 5);
+    const rr = b.r * (0.5 + 0.35 * Math.sin(t * 9 + k));
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(b.x + Math.cos(a) * rr, b.y + Math.sin(a) * rr);
+  }
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawEnemyBullets() {
