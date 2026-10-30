@@ -79,705 +79,90 @@
     touch-action: none;
   }
 
-  /* ---------- 1) Top-Left Unified HUD Panel ---------- */
+  /* ---------- Minimal, panel-free gameplay HUD ---------- */
   #hud {
-    position: fixed;
-    top: max(16px, env(safe-area-inset-top));
-    left: max(18px, env(safe-area-inset-left));
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-width: 268px;
-    max-width: calc(100vw - 132px);
-    padding: 13px 16px;
-    border-radius: 16px;
-    background: rgba(8, 13, 26, 0.72);
-    border: 1px solid rgba(125, 211, 252, 0.24);
-    box-shadow:
-      0 10px 30px rgba(0, 0, 0, 0.55),
-      0 0 22px rgba(56, 189, 248, 0.20),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    pointer-events: none;
-    z-index: 6;
+    position: fixed; inset: 0; z-index: 6; pointer-events: none;
+    font-family: var(--font-stats); color: #f8fafc;
+    text-shadow: 0 1px 5px rgba(0,0,0,.85);
   }
-
-  .hud-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+  .hud-left {
+    position: absolute; top: max(20px, env(safe-area-inset-top));
+    left: max(22px, env(safe-area-inset-left));
+    display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
   }
-
-  /* Player Health: 3 Glowing Blue Orbs in the HUD */
-  .health-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .health-orbs-label {
-    font-family: var(--font-stats);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #bae6fd;
-    text-shadow: 0 0 8px rgba(56, 189, 248, 0.55);
-  }
-
-  .health-orbs-row {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-  }
-
-  .health-orb {
-    position: relative;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    transition: transform 0.22s ease, opacity 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
-  }
-
+  .health-orbs-row { display: flex; align-items: center; gap: 8px; }
+  .health-orb { width: 11px; height: 11px; border-radius: 50%; display: block; }
   .health-orb.active {
-    background: radial-gradient(circle at 34% 30%, #ffffff 0%, #bae6fd 24%, #38bdf8 55%, #0284c7 82%, #1d4ed8 100%);
-    border: 1px solid rgba(224, 242, 254, 0.9);
-    box-shadow:
-      0 0 10px rgba(56, 189, 248, 0.95),
-      0 0 22px rgba(34, 211, 238, 0.58),
-      inset 0 1px 3px rgba(255, 255, 255, 0.9);
-    animation: healthOrbPulse 2.2s ease-in-out infinite;
+    background: radial-gradient(circle at 35% 30%, #f0faff, #4cc9ff 55%, #1674c8);
+    box-shadow: 0 0 8px rgba(56,189,248,.8);
   }
-
-  #healthOrb1.active { animation-delay: 0.35s; }
-  #healthOrb2.active { animation-delay: 0.70s; }
-
-  @keyframes healthOrbPulse {
-    0%, 100% {
-      transform: scale(1);
-      box-shadow:
-        0 0 10px rgba(56, 189, 248, 0.92),
-        0 0 20px rgba(34, 211, 238, 0.52),
-        inset 0 1px 3px rgba(255, 255, 255, 0.9);
-    }
-    50% {
-      transform: scale(1.07);
-      box-shadow:
-        0 0 14px rgba(125, 211, 252, 1),
-        0 0 28px rgba(56, 189, 248, 0.72),
-        inset 0 1px 4px rgba(255, 255, 255, 0.95);
-    }
+  .health-orb.depleted { background: rgba(148,163,184,.2); }
+  .health-orb.just-lost { animation: orbLost .4s ease-out; }
+  @keyframes orbLost {
+    0% { background: #fff; box-shadow: 0 0 14px #f87171; transform: scale(1.5); }
+    100% { background: rgba(148,163,184,.2); box-shadow: none; transform: scale(1); }
   }
-
-  .health-orb.depleted {
-    background: radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.85) 0%, rgba(5, 9, 20, 0.96) 100%);
-    border: 1.5px solid rgba(56, 189, 248, 0.24);
-    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.85);
-    opacity: 0.45;
-    transform: scale(0.84);
-    animation: none;
-  }
-
-  .health-orb.just-lost {
-    animation: orbShatterFlash 0.42s ease-out forwards;
-  }
-
-  @keyframes orbShatterFlash {
-    0% {
-      opacity: 1;
-      transform: scale(1.55);
-      background: #ffffff;
-      border-color: #fecaca;
-      box-shadow: 0 0 22px #ffffff, 0 0 38px #f87171;
-    }
-    38% {
-      opacity: 0.9;
-      transform: scale(1.18);
-      background: radial-gradient(circle, #fecaca 0%, #f87171 60%, #991b1b 100%);
-      box-shadow: 0 0 18px rgba(248, 113, 113, 0.9);
-    }
-    100% {
-      opacity: 0.45;
-      transform: scale(0.84);
-      background: radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.85) 0%, rgba(5, 9, 20, 0.96) 100%);
-      border-color: rgba(56, 189, 248, 0.24);
-      box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.85);
-    }
-  }
-
-  #hud.hud-damage-flash {
-    animation: hudHitPulse 0.34s ease-out;
-  }
-
-  @keyframes hudHitPulse {
-    0% {
-      border-color: rgba(248, 113, 113, 0.9);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 32px rgba(248, 113, 113, 0.65);
-    }
-    100% {
-      border-color: rgba(125, 211, 252, 0.24);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 22px rgba(56, 189, 248, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    }
-  }
-
-  /* Current Level as a Golden Badge */
   #level {
-    font-family: var(--font-stats);
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    padding: 4px 11px;
-    border-radius: 999px;
-    color: #fef08a;
-    background: linear-gradient(135deg, rgba(250, 204, 21, 0.24) 0%, rgba(180, 83, 9, 0.42) 100%);
-    border: 1px solid rgba(250, 204, 21, 0.72);
-    box-shadow:
-      0 0 14px rgba(250, 204, 21, 0.35),
-      inset 0 1px 0 rgba(254, 249, 195, 0.4);
-    text-shadow: 0 0 10px rgba(250, 204, 21, 0.65);
-    font-variant-numeric: tabular-nums;
+    font-family: var(--font-heading); font-size: 12px; font-weight: 700;
+    font-variant: small-caps; letter-spacing: .12em; line-height: 1.2;
+    color: #e7edf4; max-width: 240px;
   }
-
-  .hud-divider {
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(90deg, rgba(125, 211, 252, 0.24) 0%, rgba(125, 211, 252, 0.06) 100%);
-  }
-
-  /* Score with Gem Icon + Multiplier & Survival Timer */
-  .score-gem-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .hud-gem-icon {
-    width: 18px;
-    height: 18px;
-    color: #34d399;
-    filter: drop-shadow(0 0 7px rgba(52, 211, 153, 0.8));
-  }
-
-  #combo {
-    font-family: var(--font-stats);
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    color: #f8fafc;
-    text-shadow: 0 0 12px rgba(192, 132, 252, 0.5);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-
-  #combo.bump, #gems.bump { animation: comboBump 0.4s ease-out; }
-
-  @keyframes comboBump {
-    0% { transform: scale(1); }
-    40% { transform: scale(1.12); }
-    100% { transform: scale(1); }
-  }
-
-  .hud-substats {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: var(--font-stats);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-
-  #gems {
-    color: #6ee7b7;
-    text-shadow: 0 0 10px rgba(52, 211, 153, 0.45);
-  }
-
-  #timer {
-    color: #7dd3fc;
-    text-shadow: 0 0 10px rgba(56, 189, 248, 0.45);
-  }
-
-  #bestTime {
-    color: #fde047;
-    text-shadow: 0 0 10px rgba(250, 204, 21, 0.4);
-  }
-
   #objective {
-    font-family: var(--font-stats);
-    font-size: 13.5px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    color: #bae6fd;
-    text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+    position: absolute; top: max(20px, env(safe-area-inset-top)); left: 50%;
+    transform: translateX(-50%); width: min(45vw, 650px); text-align: center;
+    font-family: var(--font-heading); font-style: italic; font-size: clamp(13px,1.3vw,17px);
+    line-height: 1.35; color: #f7d687; letter-spacing: .02em;
     font-variant-numeric: tabular-nums;
   }
-
-  /* Brief banner shown when the difficulty level increases */
-  #levelUp {
-    position: fixed;
-    top: 18%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0.9);
-    font-family: var(--font-heading);
-    font-size: clamp(28px, 5vw, 44px);
-    font-weight: 900;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: #fb923c;
-    text-shadow: 0 0 22px rgba(251, 146, 60, 0.6);
-    pointer-events: none;
-    z-index: 6;
-    opacity: 0;
-    transition: opacity 0.25s ease, transform 0.25s ease;
-    white-space: nowrap;
+  #objective.story-flash { animation: objectiveStory 4.5s ease-out; }
+  @keyframes objectiveStory {
+    0% { opacity: .2; text-shadow: 0 0 16px rgba(255,209,115,.9); }
+    12% { opacity: 1; text-shadow: 0 0 12px rgba(255,209,115,.8); }
+    100% { opacity: 1; text-shadow: 0 1px 5px rgba(0,0,0,.85); }
   }
-
-  #levelUp.visible {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-    animation: levelUpPop 0.6s cubic-bezier(0.2, 1.4, 0.3, 1) both;
+  .hud-score {
+    position: absolute; top: max(20px, env(safe-area-inset-top));
+    right: max(22px, env(safe-area-inset-right)); display: flex; align-items: center;
+    gap: 16px; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums;
   }
-
-  @keyframes levelUpPop {
-    0% {
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(0.65);
-      letter-spacing: 8px;
-      filter: blur(4px);
-    }
-    55% {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1.12);
-      letter-spacing: 3px;
-      filter: blur(0);
-    }
-    100% {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
-      letter-spacing: 2px;
-      filter: blur(0);
-    }
+  .hud-stat { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .hud-stat svg { width: 15px; height: 15px; color: #e4c881; }
+  .hud-stat.gem svg { color: #6ee7b7; }
+  .hud-bottom {
+    position: absolute; bottom: max(24px, env(safe-area-inset-bottom)); left: 50%;
+    transform: translateX(-50%); display: flex; align-items: center; gap: 18px;
   }
-
-  /* Brief warning banner when a 60-second Boss enters the arena */
-  #bossAlert {
-    position: fixed;
-    top: 25%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0.9);
-    max-width: calc(100vw - 24px);
-    font-family: var(--font-heading);
-    font-size: clamp(22px, 4.4vw, 38px);
-    font-weight: 900;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: #fb7185;
-    text-shadow: 0 0 24px rgba(244, 63, 94, 0.75);
-    pointer-events: none;
-    z-index: 6;
-    opacity: 0;
-    text-align: center;
-    transition: opacity 0.25s ease, transform 0.25s ease;
+  #laserSlot { width: clamp(105px, 15vw, 190px); }
+  .weapon-track { width: 100%; height: 2px; background: rgba(186,230,253,.25); }
+  #laserCooldownFill {
+    display: block; width: 100%; height: 100%; background: #8fe8ff;
+    box-shadow: 0 0 8px rgba(56,189,248,.9); transition: width .06s linear;
   }
-
-  #bossAlert.visible {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-    animation: levelUpPop 0.65s cubic-bezier(0.2, 1.4, 0.3, 1) both;
-  }
-
-  /* Giant title flashed briefly at the beginning of every run. */
-  #runTitle {
-    position: fixed;
-    top: 36%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0.88);
-    font-family: var(--font-heading);
-    font-size: clamp(52px, 11vw, 118px);
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: 0.14em;
-    color: #fff;
-    text-shadow:
-      0 0 10px rgba(255, 255, 255, 0.9),
-      0 0 30px rgba(34, 211, 238, 0.8),
-      0 0 76px rgba(34, 211, 238, 0.45);
-    pointer-events: none;
-    z-index: 7;
-    opacity: 0;
-    white-space: nowrap;
-  }
-
-  #runTitle.visible { animation: runTitleIntro 1.25s ease-out both; }
-
-  @keyframes runTitleIntro {
-    0% {
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(0.88);
-      filter: blur(5px);
-    }
-    18% {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
-      filter: blur(0);
-    }
-    65% {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1.02);
-      filter: blur(0);
-    }
-    100% {
-      opacity: 0;
-      transform: translate(-50%, -54%) scale(1.05);
-      filter: blur(2px);
-    }
-  }
-
-  /* ---------- 2) Top-Right "Future Bomb" Circular Charge Indicator ---------- */
   #bombSlot {
-    position: fixed;
-    top: max(16px, env(safe-area-inset-top));
-    right: max(18px, env(safe-area-inset-right));
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    cursor: pointer;
-    z-index: 6;
-    transition: transform 0.15s ease;
+    position: static; pointer-events: auto; cursor: pointer; color: #aebacb;
+    display: flex; align-items: center; justify-content: center; padding: 3px;
+    transition: color .2s, transform .15s;
   }
-
-  #bombSlot:hover { transform: scale(1.04); }
-  #bombSlot:active { transform: scale(0.96); }
-
-  .bomb-ring-wrap {
-    position: relative;
-    width: 82px;
-    height: 82px;
-    border-radius: 50%;
-    background: rgba(8, 13, 26, 0.74);
-    border: 1px solid rgba(192, 132, 252, 0.34);
-    box-shadow:
-      0 8px 26px rgba(0, 0, 0, 0.55),
-      0 0 20px rgba(168, 85, 247, 0.25),
-      inset 0 0 16px rgba(56, 189, 248, 0.14);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  #bombSlot svg { width: 25px; height: 25px; filter: drop-shadow(0 1px 3px rgba(0,0,0,.85)); }
+  #bombSlot.bomb-ready { color: #d9baff; filter: drop-shadow(0 0 6px rgba(192,132,252,.8)); }
+  #bombSlot:focus-visible { outline: 1px solid #c4b5fd; outline-offset: 4px; }
+  #bombSlot:active { transform: scale(.92); }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
   }
-
-  .bomb-ring-svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    transform: rotate(-90deg);
+  @media (max-width: 1100px) {
+    #objective { top: calc(max(14px, env(safe-area-inset-top)) + 58px); width: calc(100vw - 28px); }
   }
-
-  .bomb-ring-track {
-    fill: none;
-    stroke: rgba(255, 255, 255, 0.10);
-    stroke-width: 5.5;
+  @media (max-width: 700px) {
+    .hud-left { top: max(14px, env(safe-area-inset-top)); left: max(14px, env(safe-area-inset-left)); gap: 7px; }
+    #level { font-size: 10px; max-width: 35vw; }
+    .health-orb { width: 9px; height: 9px; }
+    .hud-score { top: max(14px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); font-size: 14px; gap: 9px; }
+    .hud-stat svg { width: 13px; height: 13px; }
+    #objective { top: calc(max(14px, env(safe-area-inset-top)) + 58px); width: calc(100vw - 28px); font-size: 13px; }
+    .hud-bottom { bottom: max(18px, env(safe-area-inset-bottom)); }
   }
-
-  #bombRingProgress {
-    fill: none;
-    stroke: #c084fc;
-    stroke-width: 5.5;
-    stroke-linecap: round;
-    stroke-dasharray: 226.2;
-    stroke-dashoffset: 226.2;
-    filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.85));
-    transition: stroke-dashoffset 0.22s ease-out, stroke 0.2s ease;
-  }
-
-  .bomb-ring-center {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    gap: 2px;
-  }
-
-  .bomb-icon {
-    font-size: 18px;
-    color: #e879f9;
-    text-shadow: 0 0 10px rgba(232, 121, 249, 0.75);
-  }
-
-  #bombStatus {
-    font-family: var(--font-stats);
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: #f5d0fe;
-    text-shadow: 0 0 10px rgba(192, 132, 252, 0.6);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .bomb-caption {
-    font-family: var(--font-heading);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #e2e8f0;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: rgba(8, 13, 26, 0.72);
-    border: 1px solid rgba(192, 132, 252, 0.30);
-    box-shadow: 0 0 12px rgba(168, 85, 247, 0.22);
-    text-shadow: 0 0 8px rgba(192, 132, 252, 0.45);
-    white-space: nowrap;
-  }
-
-  #bombSlot.bomb-ready .bomb-ring-wrap {
-    border-color: rgba(103, 232, 249, 0.85);
-    box-shadow:
-      0 8px 28px rgba(0, 0, 0, 0.6),
-      0 0 28px rgba(192, 132, 252, 0.65),
-      0 0 44px rgba(56, 189, 248, 0.35),
-      inset 0 0 20px rgba(192, 132, 252, 0.30);
-    animation: bombReadyPulse 1.05s ease-in-out infinite alternate;
-  }
-
-  #bombSlot.bomb-ready #bombRingProgress {
-    stroke: #67e8f9;
-    filter: drop-shadow(0 0 9px rgba(103, 232, 249, 0.95));
-  }
-
-  #bombSlot.bomb-ready #bombStatus {
-    color: #fef08a;
-    text-shadow: 0 0 12px rgba(250, 204, 21, 0.85);
-  }
-
-  @keyframes bombReadyPulse {
-    from { transform: scale(1); }
-    to   { transform: scale(1.06); }
-  }
-
-  /* ---------- 3) Bottom-Right Shield Cooldown Button with Timer ---------- */
-  #shieldSlot {
-    position: fixed;
-    bottom: max(20px, env(safe-area-inset-bottom));
-    right: max(20px, env(safe-area-inset-right));
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 11px 16px;
-    min-width: 172px;
-    border-radius: 16px;
-    background: rgba(8, 13, 26, 0.74);
-    border: 1px solid rgba(56, 189, 248, 0.42);
-    box-shadow:
-      0 8px 28px rgba(0, 0, 0, 0.55),
-      0 0 22px rgba(56, 189, 248, 0.24),
-      inset 0 1px 0 rgba(186, 230, 253, 0.18);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    cursor: pointer;
-    z-index: 6;
-    transition: transform 0.14s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-  }
-
-  #shieldSlot:hover { transform: translateY(-2px); }
-  #shieldSlot:active { transform: scale(0.97); }
-
-  #shieldSlot.ready {
-    border-color: rgba(56, 189, 248, 0.75);
-    box-shadow:
-      0 8px 28px rgba(0, 0, 0, 0.55),
-      0 0 26px rgba(56, 189, 248, 0.36),
-      inset 0 1px 0 rgba(224, 242, 254, 0.25);
-  }
-
-  #shieldSlot.active-state {
-    border-color: rgba(250, 204, 21, 0.88);
-    box-shadow:
-      0 8px 28px rgba(0, 0, 0, 0.55),
-      0 0 28px rgba(250, 204, 21, 0.48),
-      inset 0 0 16px rgba(250, 204, 21, 0.18);
-  }
-
-  .shield-emblem {
-    width: 38px;
-    height: 38px;
-    border-radius: 11px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(56, 189, 248, 0.14);
-    border: 1px solid rgba(56, 189, 248, 0.45);
-    color: #38bdf8;
-    box-shadow: 0 0 14px rgba(56, 189, 248, 0.30);
-  }
-
-  #shieldSlot.active-state .shield-emblem {
-    background: rgba(250, 204, 21, 0.18);
-    border-color: rgba(250, 204, 21, 0.7);
-    color: #fde047;
-    box-shadow: 0 0 16px rgba(250, 204, 21, 0.45);
-  }
-
-  .shield-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    flex: 1 1 auto;
-  }
-
-  .shield-label {
-    font-family: var(--font-heading);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: rgba(226, 232, 240, 0.82);
-  }
-
-  #shieldStatus {
-    font-family: var(--font-stats);
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1.05;
-    letter-spacing: 0.04em;
-    color: #67e8f9;
-    text-shadow: 0 0 12px rgba(56, 189, 248, 0.55);
-    font-variant-numeric: tabular-nums;
-  }
-
-  #shieldSlot.active-state #shieldStatus {
-    color: #fde047;
-    text-shadow: 0 0 12px rgba(250, 204, 21, 0.65);
-  }
-
-  .shield-bar-track {
-    width: 100%;
-    height: 4px;
-    margin-top: 3px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.10);
-    overflow: hidden;
-  }
-
-  #shieldCooldownFill {
-    width: 100%;
-    height: 100%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, #0284c7 0%, #38bdf8 65%, #bae6fd 100%);
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
-    transition: width 0.08s linear;
-  }
-
-  #hint {
-    position: fixed;
-    bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: calc(100vw - 420px);
-    padding: 5px 14px;
-    border-radius: 999px;
-    background: rgba(8, 13, 26, 0.55);
-    border: 1px solid rgba(148, 163, 184, 0.16);
-    box-shadow: 0 0 16px rgba(56, 189, 248, 0.10);
-    color: rgba(226, 232, 240, 0.68);
-    font-family: var(--font-stats);
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.35;
-    letter-spacing: 0.04em;
-    pointer-events: none;
-    z-index: 5;
-    text-align: center;
-    white-space: normal;
-    transition: opacity 0.6s ease;
-  }
-
-  #hint kbd {
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-bottom-width: 2px;
-    border-radius: 5px;
-    padding: 1px 7px;
-    font-family: inherit;
-    font-size: 12px;
-    color: #fff;
-  }
-
-  /* ---------- Touch controls (shown only on coarse-pointer/touch devices) ---------- */
-  #touchControls {
-    display: none; /* enabled by the coarse-pointer media query near the end */
-    position: fixed;
-    right: max(14px, env(safe-area-inset-right));
-    bottom: max(14px, env(safe-area-inset-bottom));
-    width: min(196px, 54vw, 44dvh);
-    aspect-ratio: 1;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: repeat(3, minmax(0, 1fr));
-    grid-template-areas:
-      ". up ."
-      "left . right"
-      ". down .";
-    gap: 8px;
-    z-index: 8;
-    touch-action: none;
-  }
-
-  .touch-btn {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.09);
-    color: #fff;
-    font-family: inherit;
-    font-size: clamp(24px, 8vw, 34px);
-    font-weight: 900;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
-    -webkit-tap-highlight-color: transparent;
-    backdrop-filter: blur(5px);
-    box-shadow: 0 0 18px rgba(34, 211, 238, 0.12);
-  }
-
-  .touch-btn.active,
-  .touch-btn:active {
-    background: rgba(34, 211, 238, 0.88);
-    border-color: rgba(255, 255, 255, 0.8);
-    color: #000;
-    transform: scale(0.94);
-    box-shadow: 0 0 24px rgba(34, 211, 238, 0.55);
-  }
-
-  .touch-up { grid-area: up; }
-  .touch-left { grid-area: left; }
-  .touch-right { grid-area: right; }
-  .touch-down { grid-area: down; }
 
   /* ---------- Story Intro / Start screen ---------- */
   #startScreen {
@@ -804,6 +189,8 @@
     align-items: center;
     gap: 16px;
     width: min(690px, 100%);
+    flex: 0 0 auto;
+    margin: auto;
     padding: 30px 32px 26px;
     border-radius: 14px;
     background: linear-gradient(180deg, rgba(17, 22, 36, 0.86) 0%, rgba(8, 11, 19, 0.93) 100%);
@@ -1794,57 +1181,6 @@
 
   /* ---------- Small screens: keep every fixed layer within the viewport ---------- */
   @media (max-width: 600px) {
-    #hud {
-      top: max(10px, env(safe-area-inset-top));
-      left: max(10px, env(safe-area-inset-left));
-      min-width: 0;
-      width: calc(100vw - 106px);
-      max-width: calc(100vw - 106px);
-      gap: 7px;
-      padding: 9px 11px;
-      border-radius: 13px;
-    }
-
-    #level { font-size: 12px; padding: 3px 8px; }
-    #combo { font-size: 15px; }
-    .hud-substats { font-size: 11.5px; gap: 7px; }
-
-    #bombSlot {
-      top: max(10px, env(safe-area-inset-top));
-      right: max(10px, env(safe-area-inset-right));
-    }
-
-    .bomb-ring-wrap { width: 66px; height: 66px; }
-    #bombStatus { font-size: 12px; }
-    .bomb-caption { font-size: 8.5px; padding: 2px 6px; }
-
-    #shieldSlot {
-      bottom: max(12px, env(safe-area-inset-bottom));
-      right: max(10px, env(safe-area-inset-right));
-      min-width: 142px;
-      padding: 8px 11px;
-      gap: 9px;
-      border-radius: 13px;
-    }
-
-    .shield-emblem { width: 32px; height: 32px; }
-    #shieldStatus { font-size: 15px; }
-
-    #hint { display: none; }
-
-    #levelUp {
-      max-width: calc(100vw - 20px);
-      font-size: clamp(24px, 8vw, 36px);
-      text-align: center;
-      white-space: normal;
-    }
-
-    #runTitle {
-      max-width: 100vw;
-      font-size: clamp(42px, 15vw, 72px);
-      letter-spacing: 0.08em;
-    }
-
     #startScreen {
       gap: 12px;
       padding:
@@ -1896,8 +1232,6 @@
 
     #finalStats { font-size: 19px; }
     #finalBest, #finalScore { font-size: 17px; }
-    .health-orb { width: 15px; height: 15px; }
-    .health-orbs-row { gap: 7px; }
 
     .gameover-actions {
       width: 100%;
@@ -1956,93 +1290,46 @@
     #levelCardBtn { width: min(260px, 100%); min-width: 0; padding: 12px 24px; font-size: 15.5px; }
   }
 
-  /* Touch devices get the D-pad; place the bottom-right Shield button cleanly above it. */
-  @media (hover: none) and (pointer: coarse) {
-    #touchControls { display: grid; }
-    #hint { display: none; }
-    .upgrade-key { display: none; }
-    #shieldSlot {
-      right: max(14px, env(safe-area-inset-right));
-      bottom: calc(max(14px, env(safe-area-inset-bottom)) + min(196px, 54vw, 44dvh) + 12px);
-    }
-  }
 </style>
 </head>
 <body>
 
 <canvas id="game"></canvas>
 
-<!-- 1) Top-Left HUD: 3 Glowing Blue Health Orbs, Golden Level Badge, Score + Gem Icon -->
+<!-- Minimal gameplay HUD: only the requested floating elements. -->
 <div id="hud" aria-label="Player status">
-  <div class="hud-row">
-    <div class="health-group" id="healthOrbs" role="status" aria-label="Health: 3 of 3 orbs">
-      <span class="health-orbs-label">HP</span>
-      <div class="health-orbs-row">
-        <span class="health-orb active" id="healthOrb0" aria-hidden="true"></span>
-        <span class="health-orb active" id="healthOrb1" aria-hidden="true"></span>
-        <span class="health-orb active" id="healthOrb2" aria-hidden="true"></span>
-      </div>
+  <div class="hud-left">
+    <div id="healthOrbs" class="health-orbs-row" role="status" aria-label="Health: 3 of 3 orbs">
+      <span class="health-orb active" id="healthOrb0" aria-hidden="true"></span>
+      <span class="health-orb active" id="healthOrb1" aria-hidden="true"></span>
+      <span class="health-orb active" id="healthOrb2" aria-hidden="true"></span>
     </div>
-    <div id="level">Level 1</div>
+    <div id="level">The Village Raid</div>
   </div>
-  <div class="hud-divider" aria-hidden="true"></div>
-  <div class="hud-row">
-    <div class="score-gem-group">
-      <svg class="hud-gem-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M12 2L4.5 9.5 12 22l7.5-12.5L12 2zm0 3.3l4.2 4.2H7.8L12 5.3z"/>
-      </svg>
-      <div id="combo">0 · x1</div>
-    </div>
-    <div class="hud-substats">
-      <span id="gems">0/10</span>
-      <span id="timer">Time: 0s</span>
-      <span id="bestTime">Best: 0s</span>
-    </div>
+  <div id="objective" aria-live="polite">Survive 30s — 30s remaining</div>
+  <div class="hud-score">
+    <span class="hud-stat" aria-label="Score"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.8 6.1 6.7.8-4.9 4.7 1.2 6.7L12 17l-5.8 3.3 1.2-6.7L2.5 8.9l6.7-.8z"/></svg><span id="combo">0</span></span>
+    <span class="hud-stat gem" aria-label="Gems"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2L4.5 9.5 12 22l7.5-12.5L12 2zm0 3.3l4.2 4.2H7.8z"/></svg><span id="gems">0</span></span>
   </div>
-  <div id="objective">The Village Raid · Survive: 30s</div>
+  <div class="hud-bottom">
+    <div id="laserSlot" role="progressbar" aria-label="Weapon charge" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+      <span id="laserStatus" class="sr-only">Ready</span>
+      <div class="weapon-track"><span id="laserCooldownFill"></span></div>
+    </div>
+    <button type="button" id="bombSlot" aria-label="Future Bomb: 0 of 5 kills" title="Future Bomb · Space">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><defs><linearGradient id="bombChargeGradient" x1="0" y1="1" x2="0" y2="0"><stop id="bombChargeStop" offset="0%" stop-color="#c4a5fa" stop-opacity=".65"/><stop id="bombEmptyStop" offset="0%" stop-color="#c4a5fa" stop-opacity="0"/></linearGradient></defs><circle cx="11" cy="14" r="7" fill="url(#bombChargeGradient)"/><path d="M14.5 8.2l1.8-2.5 1.7 1.2M17.5 4l.5-1.7m2.1 2.6l1.6-.7M10 10l-2 2"/></svg>
+      <span id="bombStatus" class="sr-only">0/5</span>
+    </button>
+  </div>
 </div>
-
-<!-- 2) Top-Right HUD: "Future Bomb" Circular Charge Indicator -->
-<button type="button" id="bombSlot" aria-label="Future Bomb charge">
-  <div class="bomb-ring-wrap">
-    <svg class="bomb-ring-svg" viewBox="0 0 82 82" aria-hidden="true">
-      <circle class="bomb-ring-track" cx="41" cy="41" r="36"></circle>
-      <circle id="bombRingProgress" cx="41" cy="41" r="36"></circle>
-    </svg>
-    <div class="bomb-ring-center">
-      <span class="bomb-icon" aria-hidden="true">✦</span>
-      <span id="bombStatus">0/5</span>
-    </div>
-  </div>
-  <span class="bomb-caption">Future Bomb · Space</span>
-</button>
-
-<!-- 3) Bottom-Right HUD: Shield Cooldown Button with Timer -->
-<button type="button" class="ready" id="shieldSlot" aria-label="Activate Short-Range Energy Shield">
-  <div class="shield-emblem" aria-hidden="true">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2L4 5.5v6.1c0 5.1 3.4 9.8 8 11.4 4.6-1.6 8-6.3 8-11.4V5.5L12 2zm0 2.3l6 2.6v4.7c0 4-2.5 7.8-6 9.2-3.5-1.4-6-5.2-6-9.2V6.9l6-2.6z"/>
-    </svg>
-  </div>
-  <div class="shield-info">
-    <span class="shield-label">Shield · RMB</span>
-    <span id="shieldStatus">Ready</span>
-    <div class="shield-bar-track"><div id="shieldCooldownFill"></div></div>
-  </div>
-</button>
-
-<div id="levelUp"></div>
-<div id="bossAlert"></div>
-<div id="runTitle" aria-hidden="true">SURVIVE</div>
-
-<div id="hint">Move <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>/<kbd>Arrows</kbd> &nbsp;·&nbsp; <kbd>Left Click</kbd> Blue Laser &nbsp;·&nbsp; <kbd>Right Click</kbd> 2s Shield &nbsp;·&nbsp; <kbd>Space</kbd> Future Bomb</div>
-
-<!-- On-screen D-pad: CSS reveals this only on coarse-pointer (touch) devices. -->
-<div id="touchControls" aria-label="Touch directional controls">
-  <button type="button" class="touch-btn touch-up" id="touchUp" aria-label="Move up" aria-pressed="false">▲</button>
-  <button type="button" class="touch-btn touch-left" id="touchLeft" aria-label="Move left" aria-pressed="false">◀</button>
-  <button type="button" class="touch-btn touch-right" id="touchRight" aria-label="Move right" aria-pressed="false">▶</button>
-  <button type="button" class="touch-btn touch-down" id="touchDown" aria-label="Move down" aria-pressed="false">▼</button>
+<!-- Retained off-screen state hooks; gameplay controls are keyboard, mouse and touch gestures. -->
+<div hidden>
+  <span id="timer"></span><span id="bestTime"></span><span id="hint"></span>
+  <button id="shieldSlot" type="button"><span id="shieldStatus"></span><span id="shieldCooldownFill"></span></button>
+  <span id="levelUp"></span><span id="bossAlert"></span><span id="storyEvent"></span>
+  <div id="bossHud"><span id="bossName"></span><span id="bossHpText"></span><span id="bossHpFill"></span></div>
+  <span id="runTitle"></span>
+  <div id="touchControls"><button id="touchUp"></button><button id="touchDown"></button><button id="touchLeft"></button><button id="touchRight"></button></div>
 </div>
 
 <div id="startScreen" class="visible" role="dialog" aria-labelledby="introTitle">
@@ -2053,7 +1340,7 @@
     <p id="storyText">Year 3047. Commander Rael was crossing the galaxy when a wormhole dragged him to 1347 AD. Surrounded by dark forces, he must fight his way back to the future. Survive.</p>
     <div id="startBest">Best: 0s</div>
     <button id="beginFightBtn" type="button">Begin Fight</button>
-    <div id="startInstructions">WASD / Arrows Move · Left Click: Blue Laser · Right Click: 2s Energy Shield (30s CD) · Space: Future Bomb (every 5 kills)</div>
+    <div id="startInstructions">WASD / Arrows Move · Left Click: Blue Laser · Right Click: 2s Energy Shield (30s CD) · Space: Future Bomb (every 5 kills)<br>Touch: drag on the left to move · tap on the right to fire · two fingers on the right for shield · tap the bomb icon when ready<br>Shoot barrels for splash damage and crates for supplies · Pillars crack after 3 hits and shatter on the next</div>
   </div>
 </div>
 
@@ -2184,7 +1471,6 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-const hudEl       = document.getElementById("hud");
 const timerEl     = document.getElementById("timer");
 const levelEl     = document.getElementById("level");
 const objectiveEl = document.getElementById("objective");
@@ -2198,6 +1484,11 @@ const healthOrbEls = [
 ];
 const levelUpEl   = document.getElementById("levelUp");
 const bossAlertEl = document.getElementById("bossAlert");
+const storyEventEl = document.getElementById("storyEvent");
+const bossHudEl = document.getElementById("bossHud");
+const bossNameEl = document.getElementById("bossName");
+const bossHpTextEl = document.getElementById("bossHpText");
+const bossHpFillEl = document.getElementById("bossHpFill");
 const laserSlotEl = document.getElementById("laserSlot");
 const laserStatusEl = document.getElementById("laserStatus");
 const laserCooldownFillEl = document.getElementById("laserCooldownFill");
@@ -2206,6 +1497,8 @@ const shieldStatusEl = document.getElementById("shieldStatus");
 const shieldCooldownFillEl = document.getElementById("shieldCooldownFill");
 const bombSlotEl = document.getElementById("bombSlot");
 const bombStatusEl = document.getElementById("bombStatus");
+const bombChargeStopEl = document.getElementById("bombChargeStop");
+const bombEmptyStopEl = document.getElementById("bombEmptyStop");
 const bombChargeFillEl = document.getElementById("bombChargeFill");
 const bombRingProgressEl = document.getElementById("bombRingProgress");
 const levelCardScreenEl = document.getElementById("levelCardScreen");
@@ -2265,35 +1558,79 @@ const touchDownBtn = document.getElementById("touchDown");
 const touchLeftBtn = document.getElementById("touchLeft");
 const touchRightBtn = document.getElementById("touchRight");
 
-/* ---------- Canvas sizing ---------- */
+/* ---------- Canvas & 3x Open-World Camera Sizing ---------- */
+const WORLD_SCALE = 3; // open world is 3x the canvas size in both width & height
 let W = 0, H = 0;
+let worldW = 0, worldH = 0;
+
+const camera = {
+  x: 0,
+  y: 0,
+  targetX: 0,
+  targetY: 0
+};
+
+function snapCameraToPlayer() {
+  const maxCamX = Math.max(0, worldW - W);
+  const maxCamY = Math.max(0, worldH - H);
+  camera.targetX = clamp(player.x - W / 2, 0, maxCamX);
+  camera.targetY = clamp(player.y - H / 2, 0, maxCamY);
+  camera.x = camera.targetX;
+  camera.y = camera.targetY;
+}
+
+function updateCamera(dt) {
+  const maxCamX = Math.max(0, worldW - W);
+  const maxCamY = Math.max(0, worldH - H);
+  camera.targetX = clamp(player.x - W / 2, 0, maxCamX);
+  camera.targetY = clamp(player.y - H / 2, 0, maxCamY);
+  const follow = dt > 0 ? (1 - Math.exp(-12 * dt)) : 1;
+  camera.x = clamp(camera.x + (camera.targetX - camera.x) * follow, 0, maxCamX);
+  camera.y = clamp(camera.y + (camera.targetY - camera.y) * follow, 0, maxCamY);
+}
+
+function mouseWorldX() { return mouseX + camera.x; }
+function mouseWorldY() { return mouseY + camera.y; }
 
 function resize() {
   // visualViewport tracks the actually visible area on mobile as the
   // browser toolbar shows/hides; fall back to the window elsewhere.
+  const prevWorldW = worldW;
+  const prevWorldH = worldH;
   const viewport = window.visualViewport;
   W = Math.max(1, Math.floor(viewport ? viewport.width : window.innerWidth));
   H = Math.max(1, Math.floor(viewport ? viewport.height : window.innerHeight));
+  worldW = W * WORLD_SCALE;
+  worldH = H * WORLD_SCALE;
   canvas.width = W;
   canvas.height = H;
   canvas.style.width = W + "px";
   canvas.style.height = H + "px";
-  // Keep the player inside the (possibly shrunken) arena.
-  player.x = clamp(player.x, player.r, Math.max(player.r, W - player.r));
-  player.y = clamp(player.y, player.r, Math.max(player.r, H - player.r));
-  player.prevX = player.x;
-  player.prevY = player.y;
 
-  // Keep any dropped gems inside the reachable viewport after resize.
-  const gemMargin = Math.min(GEM_WALL_MARGIN, Math.min(W, H) * 0.25);
-  for (let i = 0; i < gems.length; i++) {
-    gems[i].x = clamp(gems[i].x, gemMargin, Math.max(gemMargin, W - gemMargin));
-    gems[i].y = clamp(gems[i].y, gemMargin, Math.max(gemMargin, H - gemMargin));
+  if (prevWorldW > 0 && prevWorldH > 0 && (player.x !== 0 || player.y !== 0)) {
+    player.x = (player.x / prevWorldW) * worldW;
+    player.y = (player.y / prevWorldH) * worldH;
+  } else if (player.x === 0 && player.y === 0) {
+    player.x = worldW / 2;
+    player.y = worldH / 2;
   }
 
-  // That clamp can itself move the player into a chaser when the
-  // viewport shrinks/rotates. Push any overlapped enemy just outside
-  // the hitbox instead of handing out an unavoidable resize death.
+  // Keep the player inside the 3x open world.
+  const wallPad = player.r + 6;
+  player.x = clamp(player.x, wallPad, Math.max(wallPad, worldW - wallPad));
+  player.y = clamp(player.y, wallPad, Math.max(wallPad, worldH - wallPad));
+  player.prevX = player.x;
+  player.prevY = player.y;
+  snapCameraToPlayer();
+
+  // Keep any dropped gems inside the reachable 3x open world after resize.
+  const gemMargin = Math.min(GEM_WALL_MARGIN, Math.min(W, H) * 0.25);
+  for (let i = 0; i < gems.length; i++) {
+    gems[i].x = clamp(gems[i].x, gemMargin, Math.max(gemMargin, worldW - gemMargin));
+    gems[i].y = clamp(gems[i].y, gemMargin, Math.max(gemMargin, worldH - gemMargin));
+  }
+
+  // Push any overlapped enemy just outside the hitbox after resize.
   for (let i = 0; i < enemies.length; i++) {
     const e = enemies[i];
     const minDistance = e.r + player.r + 2;
@@ -2302,7 +1639,7 @@ function resize() {
     let distanceSq = dx * dx + dy * dy;
     if (distanceSq >= minDistance * minDistance) continue;
     if (distanceSq < 0.0001) {
-      dx = e.x < W / 2 ? -1 : 1;
+      dx = e.x < worldW / 2 ? -1 : 1;
       dy = 0;
       distanceSq = 1;
     }
@@ -2312,6 +1649,10 @@ function resize() {
     e.prevX = e.x;
     e.prevY = e.y;
     e.trail.length = 0;
+  }
+  // Rebuild placements for the resized 3x map, without spawning on actors.
+  if (prevWorldW > 0 && (prevWorldW !== worldW || prevWorldH !== worldH)) {
+    initializeStageObjects();
   }
 }
 window.addEventListener("resize", resize);
@@ -2706,6 +2047,13 @@ let enemies = [];        // { x, y, r, hp, maxHp, isBoss, speed, spawnFlash, tra
 let bullets = [];        // player blue laser blasts
 let enemyBullets = [];   // boss spread orbs & dark archer arrows
 let gems = [];           // { x, y, r, pickupR, life, maxLife, spawnPop, phase }
+// A bounded collection of destructibles and health pickups, in world coordinates.
+const stageObjects = [];
+const healthPickups = [];
+let objectAreaKey = "";
+const BARREL_BLAST_RADIUS = 105;
+const BARREL_BLAST_DAMAGE = 2;
+const HEALTH_PICKUP_LIFETIME = 15;
 let particles = [];      // explosion, gem & death sparks
 let explosionRings = []; // brief contact shockwaves
 let futureBombWaves = []; // full-arena shockwaves from Future Bomb { x, y, maxR, life, maxLife }
@@ -2726,7 +2074,11 @@ let bombChargeKills = 0;     // 0..5 kills charging the next Future Bomb
 let futureBombReady = false; // true once 5 kills have charged Future Bomb
 let bombFlashTimer = 0;      // brief full-screen flash when Future Bomb detonates
 const touchDirections = { up: false, down: false, left: false, right: false };
-const activeTouchPointers = new Map(); // pointerId -> direction (supports multi-touch diagonals)
+const activeTouchPointers = new Map(); // retained for legacy D-pad state
+let movementTouchId = null;
+let movementTouchOrigin = { x: 0, y: 0 };
+const aimTouchIds = new Set();
+let primaryAimTouchId = null;
 
 /* Background stars. Positions are stored as 0–1 fractions of the screen
    so they survive window resizes; `depth` (0–1) drives twinkle
@@ -2849,15 +2201,10 @@ function refreshHealthHud(lostOrbIndex) {
     }
   }
 
-  if (typeof lostOrbIndex === "number" && hudEl) {
-    hudEl.classList.remove("hud-damage-flash");
-    void hudEl.offsetWidth;
-    hudEl.classList.add("hud-damage-flash");
-  }
 }
 
 function formatGems() {
-  return gemsCollected + "/" + nextGemThreshold() + " Gems";
+  return String(gemsCollected);
 }
 
 function refreshGems() {
@@ -2873,7 +2220,7 @@ function refreshGems() {
 }
 
 function formatCombo() {
-  return Math.floor(currentScore()) + " · x" + scoreMultiplier();
+  return String(Math.floor(currentScore()));
 }
 
 /* Update the HUD multiplier/score only when its displayed value changes;
@@ -2887,6 +2234,7 @@ function refreshCombo() {
   displayedCombo = multiplier;
   displayedScore = wholeScore;
   comboEl.textContent = formatCombo();
+  comboEl.setAttribute("aria-label", "Score " + wholeScore + ", multiplier times " + multiplier);
 
   if (comboIncreased) {
     comboEl.classList.remove("bump");
@@ -3790,7 +3138,7 @@ const CAMPAIGN_LEVELS = [
       "Iron-clad knights charge through the burning village mist."
     ],
     story: "Torn from Year 3047, Rael crashes onto smoking cobblestones. Iron-clad knights charge through the burning village mist.",
-    goalLabel: "Goal: Survive 30 seconds against basic knights"
+    goalLabel: "Goal: Defend for 30 seconds, then defeat Sir Garrick"
   },
   {
     num: 2,
@@ -3805,7 +3153,7 @@ const CAMPAIGN_LEVELS = [
       "Twenty hooded archers wait in ambush beneath the dark canopy."
     ],
     story: "Beyond the burning hamlet, twisted boughs swallow the moonlight. Twenty hooded archers wait in ambush beneath the dark canopy.",
-    goalLabel: "Goal: Defeat 20 Dark Archers"
+    goalLabel: "Goal: Defeat 20 archers, then face Morrigan"
   },
   {
     num: 3,
@@ -3820,22 +3168,22 @@ const CAMPAIGN_LEVELS = [
       "Hold the courtyard for forty-five seconds against the dark siege."
     ],
     story: "Dreadkeep’s iron portcullis groans open before the fortress walls. Hold the courtyard for forty-five seconds against the dark siege.",
-    goalLabel: "Goal: Survive a 45-second siege against mixed enemies"
+    goalLabel: "Goal: Defend for 45 seconds, then face Marshal Voss"
   },
   {
     num: 4,
     name: "The Sorcerer’s Tower",
     theme: "tower",
-    goalType: "kill_minibosses",
-    goalTarget: 3,
+    goalType: "kill_wizards",
+    goalTarget: 20,
     spawnInterval: 1.25,
     speedMult: 1.18,
     storyLines: [
       "Arcane lightning crackles through the spire’s forbidden sanctum.",
-      "Three Elder Dark Wizards channel stolen chrono-energy above."
+      "Dark wizards channel stolen chrono-energy above."
     ],
-    story: "Arcane lightning crackles through the spire’s forbidden sanctum. Three Elder Dark Wizards channel stolen chrono-energy above.",
-    goalLabel: "Goal: Defeat 3 Dark Wizard Mini-Bosses"
+    story: "Arcane lightning crackles through the spire’s forbidden sanctum. Dark wizards channel stolen chrono-energy above.",
+    goalLabel: "Goal: Defeat 20 dark wizards, then face Eldra"
   },
   {
     num: 5,
@@ -3850,13 +3198,27 @@ const CAMPAIGN_LEVELS = [
       "Survive sixty seconds against all dark legions and their Warlord!"
     ],
     story: "At the summit, the unstable Time Portal roars open toward 3047 AD. Survive sixty seconds against all dark legions and their Warlord!",
-    goalLabel: "Goal: Survive 60 seconds against all enemies & the Giant Final Boss"
+    goalLabel: "Goal: Defend for 60 seconds, then defeat the Dread Warlord"
   }
 ];
 
+// Each stage has a distinct turning point, champion and attack pattern.
+const CAMPAIGN_DRAMA = [null,
+  { line: "The village bells ring as the Ashen Guard storms the flames.", boss: "Sir Garrick, the Ashen Blade", type: "red", hp: 14, pattern: "charge", tint: "rgba(147,35,19,0.34)" },
+  { line: "The forest darkens as the Thorn Court sends its hunters.", boss: "Morrigan, the Thorn Huntress", type: "orange", hp: 16, pattern: "arrows", tint: "rgba(21,112,63,0.34)" },
+  { line: "The gates thunder open and Dreadkeep unleashes its iron legion.", boss: "Marshal Voss, the Iron Siege", type: "boss", hp: 20, pattern: "ring", tint: "rgba(105,40,49,0.38)" },
+  { line: "The tower trembles as forbidden voices summon the coven.", boss: "Eldra, the Rift Sorceress", type: "purple", hp: 20, pattern: "spiral", tint: "rgba(110,30,150,0.38)" },
+  { line: "The sky fractures as the Warlord calls his last legion through time.", boss: "The Dread Warlord", type: "boss", hp: 30, pattern: "rift", tint: "rgba(25,70,180,0.38)" }
+];
+const BOSS_DEATH_DURATION = 1.6;
+let campaignPhase = 1; // 1: waves, 2: halfway event, 3: champion
+let campaignBoss = null;
+let storyEventTimer = 0;
+let bossDeathTimer = 0;
+
 let campaignLevel = 1;       // 1..5
 let levelElapsed = 0;        // seconds survived inside the current level
-let levelGoalProgress = 0;   // kill count toward current level goal (Levels 2 & 4)
+let levelGoalProgress = 0;   // kill count toward the current wave objective
 let levelTransitionTimer = 0; // seconds spent on the dramatic transition card
 let levelCardFadingOut = false;
 let levelCardFadeOutTimer = 0;
@@ -3876,44 +3238,135 @@ function formatLevel(lvl) { return "Level " + lvl; }
 function enemySpeedMultiplier() {
   const cfg = currentLevelConfig();
   const reliefFactor = Math.pow(0.90, Math.min(2, difficultyReliefLevels));
-  return cfg.speedMult * reliefFactor;
+  return cfg.speedMult * reliefFactor * (campaignPhase >= 2 ? 1.25 : 1);
 }
 
 function currentSpawnInterval() {
   const cfg = currentLevelConfig();
   const reliefFactor = Math.pow(1.10, Math.min(2, difficultyReliefLevels));
-  return Math.max(MIN_SPAWN_INTERVAL, cfg.spawnInterval * reliefFactor);
+  return Math.max(MIN_SPAWN_INTERVAL, cfg.spawnInterval * reliefFactor * (campaignPhase >= 2 ? 0.8 : 1));
+}
+
+function isTimedWave(cfg) {
+  return cfg.goalType === "survive" || cfg.goalType === "survive_final";
+}
+
+function waveProgress() {
+  const cfg = currentLevelConfig();
+  return isTimedWave(cfg) ? levelElapsed : levelGoalProgress;
 }
 
 function refreshObjectiveHud() {
   if (!objectiveEl) return;
   const cfg = currentLevelConfig();
-  if (cfg.goalType === "survive" || cfg.goalType === "survive_final") {
-    const left = Math.max(0, Math.ceil(cfg.goalTarget - levelElapsed));
-    objectiveEl.textContent = cfg.name + " · Survive " + left + "s";
-  } else if (cfg.goalType === "kill_archers") {
-    objectiveEl.textContent = cfg.name + " · Archers " +
-      Math.min(cfg.goalTarget, levelGoalProgress) + "/" + cfg.goalTarget;
-  } else if (cfg.goalType === "kill_minibosses") {
-    objectiveEl.textContent = cfg.name + " · Mini-Bosses " +
-      Math.min(cfg.goalTarget, levelGoalProgress) + "/" + cfg.goalTarget;
+  let text;
+  if (storyEventTimer > 0 && state !== "boss_death") {
+    text = CAMPAIGN_DRAMA[campaignLevel].line;
+  } else if (campaignPhase === 3) {
+    const hp = campaignBoss ? " — " + Math.ceil(Math.max(0, campaignBoss.hp)) + " / " + campaignBoss.maxHp : "";
+    text = "Defeat " + CAMPAIGN_DRAMA[campaignLevel].boss + hp;
+  } else if (isTimedWave(cfg)) {
+    text = "Survive " + cfg.goalTarget + "s — " + Math.max(0, Math.ceil(cfg.goalTarget - levelElapsed)) + "s remaining";
+  } else {
+    const name = cfg.goalType === "kill_archers" ? "archers" : "wizards";
+    text = "Defeat " + cfg.goalTarget + " " + name + " — " + Math.max(0, cfg.goalTarget - levelGoalProgress) + " remaining";
   }
+  if (objectiveEl.textContent !== text) objectiveEl.textContent = text;
 }
 
 function recordCampaignEnemyDefeat(enemy) {
-  if (!enemy) return;
+  if (!enemy || campaignPhase >= 3 || enemy.isBoss || enemy.isMiniBoss || enemy.isSplitChild) return;
   const cfg = currentLevelConfig();
-  if (cfg.goalType === "kill_archers") {
-    if (!enemy.isBoss && !enemy.isMiniBoss && normalizeEnemyType(enemy.type) === "orange") {
-      levelGoalProgress += 1;
-      refreshObjectiveHud();
-    }
-  } else if (cfg.goalType === "kill_minibosses") {
-    if (enemy.isMiniBoss) {
-      levelGoalProgress += 1;
-      refreshObjectiveHud();
-    }
+  const type = normalizeEnemyType(enemy.type);
+  if ((cfg.goalType === "kill_archers" && type === "orange") ||
+      (cfg.goalType === "kill_wizards" && type === "purple")) {
+    levelGoalProgress += 1;
+    refreshObjectiveHud();
   }
+}
+
+function showStoryEvent(text) {
+  if (!storyEventEl) return;
+  storyEventEl.textContent = text;
+  storyEventEl.classList.remove("visible");
+  void storyEventEl.offsetWidth;
+  storyEventEl.classList.add("visible");
+  storyEventTimer = 4.5;
+  objectiveEl.classList.remove("story-flash");
+  void objectiveEl.offsetWidth;
+  objectiveEl.classList.add("story-flash");
+}
+
+function refreshCampaignBossHud() {
+  const visible = campaignPhase === 3 && campaignBoss && (state === "playing" || state === "upgrading" || state === "boss_death");
+  bossHudEl.classList.toggle("visible", !!visible);
+  if (!visible) return;
+  bossNameEl.textContent = campaignBoss.name;
+  const hp = Math.max(0, campaignBoss.hp);
+  bossHpTextEl.textContent = Math.ceil(hp) + " / " + campaignBoss.maxHp;
+  bossHpFillEl.style.width = (100 * hp / campaignBoss.maxHp) + "%";
+  bossHudEl.setAttribute("aria-label", campaignBoss.name + ": " + Math.ceil(hp) + " of " + campaignBoss.maxHp + " health");
+  refreshObjectiveHud();
+}
+
+function triggerMidpointEvent() {
+  if (campaignPhase !== 1) return;
+  campaignPhase = 2;
+  // Existing enemies and all future reinforcements receive the same speed boost.
+  for (let i = 0; i < enemies.length; i++) {
+    if (!enemies[i].isBoss && !enemies[i].isMiniBoss) enemies[i].speed *= 1.25;
+  }
+  for (let i = 0; i < 3; i++) spawnEnemy();
+  spawnTimer = currentSpawnInterval();
+  showStoryEvent(CAMPAIGN_DRAMA[campaignLevel].line);
+  screenShakeTimer = Math.max(screenShakeTimer, 0.22);
+  playBossSpawnSound();
+  refreshObjectiveHud();
+}
+
+function spawnCampaignChampion() {
+  if (campaignPhase >= 3) return;
+  campaignPhase = 3;
+  const cfg = CAMPAIGN_DRAMA[campaignLevel];
+  const giant = cfg.type === "boss";
+  const radius = campaignLevel === 5 ? FINAL_BOSS_RADIUS : (giant ? 34 : 25);
+  const pos = chooseSpawnPosition(radius, radius + 8, null);
+  campaignBoss = {
+    x: pos.x, y: pos.y, prevX: pos.x, prevY: pos.y, vx: 0, vy: 0,
+    r: radius, hp: cfg.hp, maxHp: cfg.hp, name: cfg.boss, pattern: cfg.pattern,
+    isCampaignBoss: true, isBoss: giant, isMiniBoss: true,
+    isFinalBoss: campaignLevel === 5, type: cfg.type, canSplit: false,
+    isSplitChild: false, facingX: pos.x <= player.x ? 1 : -1,
+    speed: giant ? 63 : 85, fireTimer: 1.8, volleyCount: 0,
+    hitFlash: 0, zigPhase: 0, zigRate: 9, spawnFlash: ENEMY_SPAWN_FLASH_DURATION,
+    trail: []
+  };
+  enemies.push(campaignBoss);
+  showBossAlert(cfg.boss + " arrives!");
+  playBossSpawnSound();
+  refreshObjectiveHud();
+  refreshCampaignBossHud();
+}
+
+function advanceCampaignPhases() {
+  if (state !== "playing" || campaignPhase >= 3) return;
+  const target = currentLevelConfig().goalTarget;
+  if (campaignPhase === 1 && waveProgress() >= target / 2 - 1e-9) triggerMidpointEvent();
+  if (campaignPhase === 2 && waveProgress() >= target - 1e-9) spawnCampaignChampion();
+}
+
+function startChampionDeath(boss) {
+  if (!boss || boss !== campaignBoss || state !== "playing") return;
+  boss.hp = 0;
+  state = "boss_death";
+  bossDeathTimer = BOSS_DEATH_DURATION;
+  mouseLeftHeld = false;
+  keys = Object.create(null);
+  clearTouchControls();
+  enemyBullets.length = 0; // no unavoidable hits while the finishing blow plays
+  screenShakeTimer = Math.max(screenShakeTimer, 0.35);
+  showBossAlert(boss.name + " defeated!");
+  refreshCampaignBossHud();
 }
 
 function hideLevelUp() {
@@ -3947,7 +3400,7 @@ function refreshLevel() {
   const lvl = currentLevel();
   if (lvl !== displayedLevel) {
     displayedLevel = lvl;
-    levelEl.textContent = formatLevel(lvl);
+    levelEl.textContent = currentLevelConfig().name;
   }
   refreshObjectiveHud();
 }
@@ -4061,6 +3514,7 @@ function refreshAbilityHud() {
     laserSlotEl.classList.toggle("ready", ready);
     laserStatusEl.textContent = ready ? "READY" : "RECHARGING";
     laserCooldownFillEl.style.width = Math.round(ratio * 100) + "%";
+    laserSlotEl.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
   }
 
   if (shieldSlotEl && shieldStatusEl) {
@@ -4095,9 +3549,16 @@ function refreshAbilityHud() {
       ? 1
       : clamp(bombChargeKills / FUTURE_BOMB_KILLS_REQUIRED, 0, 1);
     bombSlotEl.classList.toggle("bomb-ready", futureBombReady);
+    if (bombChargeStopEl && bombEmptyStopEl) {
+      const offset = Math.round(ratio * 100) + "%";
+      bombChargeStopEl.setAttribute("offset", offset);
+      bombEmptyStopEl.setAttribute("offset", offset);
+    }
     bombStatusEl.textContent = futureBombReady
       ? "READY"
       : (bombChargeKills + "/" + FUTURE_BOMB_KILLS_REQUIRED);
+    bombSlotEl.setAttribute("aria-label", futureBombReady ? "Future Bomb ready — activate" :
+      "Future Bomb: " + bombChargeKills + " of " + FUTURE_BOMB_KILLS_REQUIRED + " kills");
     if (bombChargeFillEl) {
       bombChargeFillEl.style.width = Math.round(ratio * 100) + "%";
     }
@@ -4182,14 +3643,21 @@ function triggerFutureBomb() {
   futureBombReady = false;
   bombChargeKills = 0;
 
-  // Vaporize all enemy projectiles on screen immediately.
-  enemyBullets.length = 0;
+  // The Future Bomb affects only the current viewport, not the entire world.
+  function onScreen(entity) {
+    const r = entity.r || 0;
+    return entity.x + r >= camera.x && entity.x - r <= camera.x + W &&
+      entity.y + r >= camera.y && entity.y - r <= camera.y + H;
+  }
+  for (let i = enemyBullets.length - 1; i >= 0; i--) {
+    if (onScreen(enemyBullets[i])) enemyBullets.splice(i, 1);
+  }
 
-  // Wipe every enemy on screen (including Dark Wizards without spawning
-  // leftover ghosts, and any active Boss with full 10-gem reward).
+  // Wipe visible enemies (without spawning leftover ghosts).
   let bossWasWiped = false;
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
+    if (!onScreen(e)) continue;
     recordCampaignEnemyDefeat(e);
     if (e.isBoss) {
       spawnBossExplosion(e, e.x, e.y);
@@ -4203,8 +3671,9 @@ function triggerFutureBomb() {
       spawnGem(e.x, e.y);
     }
     registerEnemyKill(false);
+    enemies.splice(i, 1);
+    if (e.isCampaignBoss) startChampionDeath(e);
   }
-  enemies.length = 0;
   if (bossWasWiped) applyBossDefeatRelief();
 
   // Launch full-screen Future Bomb shockwave rings, flash, sparks & shake.
@@ -4415,8 +3884,8 @@ function consumeShieldOnHit(hitEnemyIndex) {
     if (dist > SHIELD_KNOCKBACK_RADIUS) continue;
     if (dist < 0.001) { dx = 1; dy = 0; dist = 1; }
     const targetDist = Math.max(dist + 34, player.r + other.r + 36);
-    other.x = player.x + (dx / dist) * targetDist;
-    other.y = player.y + (dy / dist) * targetDist;
+    moveActorWithPillars(other, player.x + (dx / dist) * targetDist,
+      player.y + (dy / dist) * targetDist);
     other.prevX = other.x;
     other.prevY = other.y;
     other.trail.length = 0;
@@ -4536,8 +4005,8 @@ function damagePlayer(amount, hitEnemyIndex) {
     if (dist > 95) continue;
     if (dist < 0.001) { dx = 1; dy = 0; dist = 1; }
     const pushTarget = Math.max(dist + 28, player.r + other.r + 30);
-    other.x = player.x + (dx / dist) * pushTarget;
-    other.y = player.y + (dy / dist) * pushTarget;
+    moveActorWithPillars(other, player.x + (dx / dist) * pushTarget,
+      player.y + (dy / dist) * pushTarget);
     other.prevX = other.x;
     other.prevY = other.y;
   }
@@ -4556,13 +4025,18 @@ function damagePlayer(amount, hitEnemyIndex) {
   return true;
 }
 
-/* Prepare `levelNum` (1..5), rebuild the stage background cache, and
-   spawn any stage bosses (Level 4's 3 Dark Wizard Mini-Bosses or
-   Level 5's Giant Final Boss). */
+/* Prepare a fresh stage; its unique champion arrives only after the wave goal. */
 function setupCampaignLevel(levelNum, isInitialStart) {
   campaignLevel = clamp(levelNum, 1, TOTAL_CAMPAIGN_LEVELS);
   levelElapsed = 0;
   levelGoalProgress = 0;
+  campaignPhase = 1;
+  campaignBoss = null;
+  storyEventTimer = 0;
+  bossDeathTimer = 0;
+  if (storyEventEl) storyEventEl.classList.remove("visible");
+  objectiveEl.classList.remove("story-flash");
+  if (bossHudEl) bossHudEl.classList.remove("visible");
   difficultyReliefLevels = 0;
   stoneFloorCache = null;
   levelStartSurvivalTime = survivalTime;
@@ -4570,29 +4044,26 @@ function setupCampaignLevel(levelNum, isInitialStart) {
   enemies.length = 0;
   enemyBullets.length = 0;
   bullets.length = 0;
+  stageObjects.length = 0;
+  healthPickups.length = 0;
   mouseLeftHeld = false;
 
   if (!isInitialStart) {
-    player.x = W / 2;
-    player.y = clamp(H * 0.58, player.r, Math.max(player.r, H - player.r));
+    player.x = worldW / 2;
+    player.y = worldH / 2;
     player.prevX = player.x;
     player.prevY = player.y;
     player.hp = Math.min(player.maxHp || PLAYER_MAX_HP, player.hp + 1);
     refreshHealthHud();
   }
+  snapCameraToPlayer();
 
   displayedLevel = 0;
   refreshLevel();
   refreshObjectiveHud();
   spawnTimer = 0.65;
 
-  if (campaignLevel === 4) {
-    for (let m = 0; m < 3; m++) {
-      spawnWizardMiniBoss(m);
-    }
-  } else if (campaignLevel === 5) {
-    spawnBoss(true);
-  }
+  initializeStageObjects();
 }
 
 /* Render the single free Data Chip upgrade card granted during a level transition. */
@@ -4696,6 +4167,8 @@ function beginCurrentCampaignLevel() {
 function triggerVictory() {
   if (state === "victory") return;
   state = "victory";
+  bossHudEl.classList.remove("visible");
+  storyEventEl.classList.remove("visible");
   levelCardFadingOut = false;
   levelCardFadeOutTimer = 0;
   pendingTransitionUpgrade = null;
@@ -4704,6 +4177,7 @@ function triggerVictory() {
   bullets.length = 0;
   enemyBullets.length = 0;
   gems.length = 0;
+  healthPickups.length = 0;
   mouseLeftHeld = false;
   activeShieldTimer = 0;
   clearTouchControls();
@@ -4732,8 +4206,8 @@ function triggerVictory() {
     const a = (i / 64) * Math.PI * 2 + rand(-0.08, 0.08);
     const sp = rand(90, 420);
     particles.push({
-      x: W / 2,
-      y: H * 0.42,
+      x: camera.x + W / 2,
+      y: camera.y + H * 0.42,
       vx: Math.cos(a) * sp,
       vy: Math.sin(a) * sp,
       life: 0,
@@ -4817,21 +4291,14 @@ function completeCurrentLevel() {
   }
 }
 
-function checkLevelGoalMet() {
-  const cfg = currentLevelConfig();
-  if (cfg.goalType === "survive" || cfg.goalType === "survive_final") {
-    return levelElapsed >= cfg.goalTarget - 1e-9;
-  }
-  return levelGoalProgress >= cfg.goalTarget;
-}
-
 function resetGame() {
   // Reset every run-scoped value here. The persistent best time is
   // intentionally the one score-related value that survives replay.
-  player.x = W / 2;
-  player.y = H / 2;
+  player.x = worldW / 2;
+  player.y = worldH / 2;
   player.prevX = player.x;
   player.prevY = player.y;
+  snapCameraToPlayer();
   player.hp = PLAYER_MAX_HP;
   player.maxHp = PLAYER_MAX_HP;
   playerHitInvulnTimer = 0;
@@ -4945,10 +4412,11 @@ function retryCurrentLevel() {
   initAudio();
   const lvl = clamp(campaignLevel, 1, TOTAL_CAMPAIGN_LEVELS);
 
-  player.x = W / 2;
-  player.y = H / 2;
+  player.x = worldW / 2;
+  player.y = worldH / 2;
   player.prevX = player.x;
   player.prevY = player.y;
+  snapCameraToPlayer();
   player.hp = PLAYER_MAX_HP;
   player.maxHp = PLAYER_MAX_HP;
   playerHitInvulnTimer = 0;
@@ -5029,33 +4497,41 @@ function restartGame() {
   startBackgroundHum();
 }
 
+function clampToWorld(x, y, pad) {
+  const p = typeof pad === "number" ? pad : 12;
+  return {
+    x: clamp(x, p, Math.max(p, worldW - p)),
+    y: clamp(y, p, Math.max(p, worldH - p))
+  };
+}
+
 function randomEdgePosition(margin) {
-  // Pick a random edge: 0 = top, 1 = right, 2 = bottom, 3 = left.
+  // Pick a random edge just outside the camera's current viewport in the 3x open world.
   const edge = Math.floor(Math.random() * 4);
+  let raw;
   switch (edge) {
-    case 0:  return { x: rand(0, W), y: -margin };       // top
-    case 1:  return { x: W + margin, y: rand(0, H) };    // right
-    case 2:  return { x: rand(0, W), y: H + margin };    // bottom
-    default: return { x: -margin, y: rand(0, H) };       // left
+    case 0:  raw = { x: rand(camera.x - margin, camera.x + W + margin), y: camera.y - margin }; break;
+    case 1:  raw = { x: camera.x + W + margin, y: rand(camera.y - margin, camera.y + H + margin) }; break;
+    case 2:  raw = { x: rand(camera.x - margin, camera.x + W + margin), y: camera.y + H + margin }; break;
+    default: raw = { x: camera.x - margin, y: rand(camera.y - margin, camera.y + H + margin) }; break;
   }
+  return clampToWorld(raw.x, raw.y, Math.max(8, margin * 0.4));
 }
 
 function chooseSpawnPosition(r, margin, ignoredEnemy) {
-  // A player camping on an edge could otherwise have an enemy appear
-  // only a few pixels away. Try several edge points and prefer one at
-  // a fair distance that is not already inside another enemy. Four
-  // deterministic edge midpoints are included as a fallback, so the
-  // result is as far from the player as the arena geometry permits.
+  // Spawn enemies along the camera viewport perimeter inside the 3x open world,
+  // ensuring a fair minimum distance from Commander Rael even near world corners.
   const desiredDistance = Math.min(
     ENEMY_MIN_SPAWN_DISTANCE,
     Math.max(48, Math.hypot(W, H) * 0.35)
   );
   const desiredDistanceSq = desiredDistance * desiredDistance;
+  const pad = Math.max(8, r + 4);
   const candidates = [
-    { x: W / 2, y: -margin },
-    { x: W + margin, y: H / 2 },
-    { x: W / 2, y: H + margin },
-    { x: -margin, y: H / 2 }
+    clampToWorld(camera.x + W / 2, camera.y - margin, pad),
+    clampToWorld(camera.x + W + margin, camera.y + H / 2, pad),
+    clampToWorld(camera.x + W / 2, camera.y + H + margin, pad),
+    clampToWorld(camera.x - margin, camera.y + H / 2, pad)
   ];
   for (let i = 0; i < ENEMY_SPAWN_POSITION_TRIES; i++) {
     candidates.push(randomEdgePosition(margin));
@@ -5075,7 +4551,11 @@ function chooseSpawnPosition(r, margin, ignoredEnemy) {
     }
     if (playerDistanceSq < desiredDistanceSq) return;
 
-    let overlapsEnemy = false;
+    let overlapsEnemy = stageObjects.some(function (object) {
+      return object.alive && object.type === "pillar" &&
+        Math.hypot(candidate.x - object.x, candidate.y - object.y) < r + object.r + 8;
+    });
+    if (overlapsEnemy) return;
     for (let i = 0; i < enemies.length; i++) {
       const other = enemies[i];
       if (other === ignoredEnemy) continue; // its old position is being vacated
@@ -5100,7 +4580,7 @@ function chooseRandomEnemyType() {
   if (campaignLevel === 1) return "red";     // Level 1: basic knights
   if (campaignLevel === 2) return "orange";  // Level 2: dark archers
   if (campaignLevel === 4) {
-    return Math.random() < 0.55 ? "purple" : "red";
+    return Math.random() < 0.75 ? "purple" : "red";
   }
   return ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
 }
@@ -5241,11 +4721,11 @@ function spawnWizardMiniBoss(slotIndex) {
   const idx = typeof slotIndex === "number" ? slotIndex : 0;
   let pos;
   if (idx === 0) {
-    pos = { x: W * 0.5, y: Math.max(r + 28, H * 0.20) };
+    pos = clampToWorld(player.x, player.y - Math.max(210, H * 0.32), r + 28);
   } else if (idx === 1) {
-    pos = { x: Math.max(r + 24, W * 0.14), y: H * 0.42 };
+    pos = clampToWorld(player.x - Math.max(230, W * 0.34), player.y + H * 0.10, r + 28);
   } else {
-    pos = { x: Math.min(W - r - 24, W * 0.86), y: H * 0.42 };
+    pos = clampToWorld(player.x + Math.max(230, W * 0.34), player.y + H * 0.10, r + 28);
   }
   // Ensure safe starting distance from Commander Rael.
   const dx = pos.x - player.x;
@@ -5454,6 +4934,10 @@ function releaseTouchPointer(e) {
 }
 
 function clearTouchControls() {
+  if (aimTouchIds.size) mouseLeftHeld = false;
+  aimTouchIds.clear();
+  primaryAimTouchId = null;
+  movementTouchId = null;
   activeTouchPointers.clear();
   touchButtons.forEach(function (button) {
     touchDirections[button.direction] = false;
@@ -5571,7 +5055,7 @@ canvas.addEventListener("mousedown", function (e) {
   if (e.button === 0 || e.button === undefined) {
     if (e.preventDefault) e.preventDefault();
     mouseLeftHeld = true;
-    fireLaserTowards(mouseX, mouseY);
+    fireLaserTowards(mouseWorldX(), mouseWorldY());
   }
 });
 
@@ -5581,23 +5065,71 @@ window.addEventListener("mouseup", function (e) {
   }
 });
 
-/* Allow touch taps on the arena canvas to aim & fire the Blue Laser too. */
+/* Invisible touch gestures keep the gameplay HUD free of buttons:
+   drag left to move, hold right to aim/fire, two right-side fingers for shield. */
 canvas.addEventListener("pointerdown", function (e) {
-  if (!e || e.pointerType !== "touch") return;
-  if (state !== "playing") return;
+  if (!e || e.pointerType !== "touch" || state !== "playing") return;
   e.preventDefault();
   initAudio();
-  updateMouseFromEvent(e);
-  fireLaserTowards(mouseX, mouseY);
+  if (canvas.setPointerCapture) {
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* optional */ }
+  }
+  const rect = canvas.getBoundingClientRect();
+  if (e.clientX < rect.left + rect.width * 0.45 && movementTouchId === null) {
+    movementTouchId = e.pointerId;
+    movementTouchOrigin = { x: e.clientX, y: e.clientY };
+    return;
+  }
+  aimTouchIds.add(e.pointerId);
+  if (aimTouchIds.size === 1) {
+    primaryAimTouchId = e.pointerId;
+    updateMouseFromEvent(e);
+    mouseLeftHeld = true;
+    fireLaserTowards(mouseWorldX(), mouseWorldY());
+  } else {
+    activateShortRangeShield();
+  }
 });
+canvas.addEventListener("pointermove", function (e) {
+  if (!e || e.pointerType !== "touch") return;
+  if (e.pointerId === movementTouchId) {
+    const dx = e.clientX - movementTouchOrigin.x;
+    const dy = e.clientY - movementTouchOrigin.y;
+    const deadZone = 10;
+    touchDirections.left = dx < -deadZone;
+    touchDirections.right = dx > deadZone;
+    touchDirections.up = dy < -deadZone;
+    touchDirections.down = dy > deadZone;
+    e.preventDefault();
+  } else if (e.pointerId === primaryAimTouchId && state === "playing") {
+    updateMouseFromEvent(e);
+    e.preventDefault();
+  }
+});
+function releaseCanvasTouch(e) {
+  if (!e || e.pointerType !== "touch") return;
+  if (e.pointerId === movementTouchId) {
+    movementTouchId = null;
+    touchDirections.left = touchDirections.right = touchDirections.up = touchDirections.down = false;
+  }
+  if (aimTouchIds.delete(e.pointerId)) {
+    if (e.pointerId === primaryAimTouchId) {
+      primaryAimTouchId = aimTouchIds.size ? aimTouchIds.values().next().value : null;
+    }
+    if (!aimTouchIds.size) mouseLeftHeld = false;
+  }
+}
+canvas.addEventListener("pointerup", releaseCanvasTouch);
+canvas.addEventListener("pointercancel", releaseCanvasTouch);
+canvas.addEventListener("lostpointercapture", releaseCanvasTouch);
 
 /* On-screen cooldown bar buttons also trigger abilities when clicked/tapped. */
 if (laserSlotEl) {
   laserSlotEl.addEventListener("click", function (e) {
     if (e && e.stopPropagation) e.stopPropagation();
     if (state === "playing") {
-      const tx = mouseTracked ? mouseX : (player.x + Math.cos(player.facingAngle || 0) * 120);
-      const ty = mouseTracked ? mouseY : (player.y + Math.sin(player.facingAngle || 0) * 120);
+      const tx = mouseTracked ? mouseWorldX() : (player.x + Math.cos(player.facingAngle || 0) * 120);
+      const ty = mouseTracked ? mouseWorldY() : (player.y + Math.sin(player.facingAngle || 0) * 120);
       fireLaserTowards(tx, ty);
     }
   });
@@ -5613,6 +5145,225 @@ if (bombSlotEl) {
     if (e && e.stopPropagation) e.stopPropagation();
     triggerFutureBomb();
   });
+}
+
+/* ---------- Destructible world objects ---------- */
+function objectArea(x, y) {
+  return { x: clamp(Math.floor(x / Math.max(1, W)), 0, 2),
+           y: clamp(Math.floor(y / Math.max(1, H)), 0, 2) };
+}
+
+function placeStageObject(object, areaX, areaY) {
+  const left = areaX * W, top = areaY * H;
+  const marginX = Math.min(W * 0.2, object.r + 24);
+  const marginY = Math.min(H * 0.2, object.r + 24);
+  for (let attempt = 0; attempt < 70; attempt++) {
+    const x = rand(left + marginX, left + W - marginX);
+    const y = rand(top + marginY, top + H - marginY);
+    // Never materialize objects on the player, boss, enemies, or other objects.
+    if (Math.hypot(x - player.x, y - player.y) < object.r + player.r + 100) continue;
+    if (enemies.some(function (e) { return Math.hypot(x - e.x, y - e.y) < object.r + e.r + 35; })) continue;
+    if (stageObjects.some(function (o) {
+      return o !== object && o.alive && Math.hypot(x - o.x, y - o.y) < object.r + o.r + 30;
+    })) continue;
+    object.x = x; object.y = y;
+    object.hits = 0; object.alive = true;
+    return true;
+  }
+  return false;
+}
+
+function initializeStageObjects() {
+  stageObjects.length = 0;
+  healthPickups.length = 0;
+  const area = objectArea(player.x, player.y);
+  objectAreaKey = area.x + "," + area.y;
+  // Three objects in each of the nine map areas, with each type represented.
+  const types = ["barrel", "pillar", "crate"];
+  for (let ay = 0; ay < 3; ay++) {
+    for (let ax = 0; ax < 3; ax++) {
+      for (let k = 0; k < types.length; k++) {
+        const type = types[k];
+        const o = { type: type, r: type === "pillar" ? 20 : 15,
+          x: 0, y: 0, hits: 0, alive: false };
+        stageObjects.push(o);
+        placeStageObject(o, ax, ay);
+      }
+    }
+  }
+}
+
+function updateObjectArea() {
+  const area = objectArea(player.x, player.y);
+  const key = area.x + "," + area.y;
+  if (key === objectAreaKey) return;
+  objectAreaKey = key;
+  // Recycle only destroyed objects, in fresh positions within the new area.
+  // Existing objects keep their state and nothing appears on top of an actor.
+  for (let i = 0; i < stageObjects.length; i++) {
+    if (!stageObjects[i].alive) placeStageObject(stageObjects[i], area.x, area.y);
+  }
+}
+
+// Swept circle against solid pillars with tangential sliding. The continuous
+// check also prevents tunnelling at high player speed or during knockback.
+function moveActorWithPillars(actor, targetX, targetY) {
+  let x = actor.x, y = actor.y;
+  let dx = targetX - x, dy = targetY - y;
+  for (let iteration = 0; iteration < 4; iteration++) {
+    let earliest = 1, hit = null;
+    for (let i = 0; i < stageObjects.length; i++) {
+      const o = stageObjects[i];
+      if (!o.alive || o.type !== "pillar") continue;
+      const r = actor.r + o.r + 0.05;
+      let rx = x - o.x, ry = y - o.y;
+      let dist = Math.hypot(rx, ry);
+      if (dist < r) {
+        if (dist < 0.0001) { rx = 1; ry = 0; dist = 1; }
+        x = o.x + rx / dist * (r + 0.01);
+        y = o.y + ry / dist * (r + 0.01);
+        rx = x - o.x; ry = y - o.y;
+      }
+      const a = dx * dx + dy * dy;
+      const b = 2 * (rx * dx + ry * dy);
+      const c = rx * rx + ry * ry - r * r;
+      if (a < 0.000001 || b >= 0) continue;
+      const disc = b * b - 4 * a * c;
+      if (disc < 0) continue;
+      const t = (-b - Math.sqrt(disc)) / (2 * a);
+      if (t >= 0 && t < earliest) { earliest = t; hit = o; }
+    }
+    x += dx * earliest; y += dy * earliest;
+    if (!hit) break;
+    const nx = (x - hit.x) / (actor.r + hit.r + 0.05);
+    const ny = (y - hit.y) / (actor.r + hit.r + 0.05);
+    x += nx * 0.01; y += ny * 0.01;
+    const remainingX = dx * (1 - earliest), remainingY = dy * (1 - earliest);
+    const inward = Math.min(0, remainingX * nx + remainingY * ny);
+    dx = remainingX - inward * nx;
+    dy = remainingY - inward * ny;
+    if (Math.hypot(dx, dy) < 0.001) break;
+  }
+  actor.x = x; actor.y = y;
+}
+
+function damageStageObject(object) {
+  if (!object || !object.alive) return;
+  object.hits++;
+  if (object.type === "pillar" && object.hits <= 3) {
+    // Three shots progressively crack the column; the next shot shatters it.
+    for (let i = 0; i < 6; i++) {
+      const a = rand(0, Math.PI * 2), speed = rand(25, 90);
+      particles.push({ x: object.x, y: object.y, vx: Math.cos(a) * speed,
+        vy: Math.sin(a) * speed, life: 0, maxLife: rand(0.2, 0.4),
+        size: rand(2, 4), color: "#a8b3c0" });
+    }
+    playBossHitSound();
+    return;
+  }
+  object.alive = false;
+  const isBarrel = object.type === "barrel";
+  const colors = object.type === "pillar" ? ["#d1d5db", "#64748b", "#475569"] :
+    ["#e7b66b", "#b87532", "#704123"];
+  const count = isBarrel ? 24 : 16;
+  for (let i = 0; i < count; i++) {
+    const a = (i / count) * Math.PI * 2 + rand(-0.2, 0.2);
+    const speed = rand(65, isBarrel ? 260 : 170);
+    particles.push({ x: object.x, y: object.y, vx: Math.cos(a) * speed,
+      vy: Math.sin(a) * speed, life: 0, maxLife: rand(0.3, 0.65),
+      size: rand(3, 6), color: colors[i % colors.length],
+      splinter: object.type !== "pillar" });
+  }
+  if (isBarrel) {
+    explosionRings.push({ x: object.x, y: object.y, baseR: BARREL_BLAST_RADIUS,
+      flashColor: "#fde68a", ringColor: "#fb923c", life: 0, maxLife: 0.35 });
+    screenShakeTimer = Math.max(screenShakeTimer, 0.16);
+    playEnemyExplosionSound();
+    // Snapshot targets: a wizard's newly spawned ghosts must not be hit twice.
+    const targets = enemies.filter(function (e) {
+      return Math.hypot(e.x - object.x, e.y - object.y) <= BARREL_BLAST_RADIUS + e.r;
+    });
+    targets.forEach(function (e) {
+      const index = enemies.indexOf(e);
+      if (index !== -1) damageEnemyAt(index, BARREL_BLAST_DAMAGE, e.x, e.y, null);
+    });
+  } else if (object.type === "crate") {
+    if (Math.random() < 0.5) spawnGem(object.x, object.y);
+    else healthPickups.push({ x: object.x, y: object.y, r: 9, pickupR: 10, life: 0 });
+    playEnemyExplosionSound();
+  } else {
+    playEnemyExplosionSound();
+  }
+}
+
+function updateHealthPickups(dt) {
+  for (let i = healthPickups.length - 1; i >= 0; i--) {
+    const orb = healthPickups[i];
+    orb.life += dt;
+    if (orb.life >= HEALTH_PICKUP_LIFETIME) { healthPickups.splice(i, 1); continue; }
+    if (player.hp < player.maxHp && playerHitsGem(orb)) {
+      player.hp = Math.min(player.maxHp, player.hp + 1);
+      refreshHealthHud();
+      floatingTexts.push({ x: orb.x, y: orb.y - 12, vy: -35, text: "+1 HEALTH",
+        color: "#7dd3fc", big: true, life: 0, maxLife: 0.8 });
+      playGemPickupSound(false, scoreMultiplier());
+      healthPickups.splice(i, 1);
+    }
+  }
+}
+
+function drawHealthPickups() {
+  ctx.save();
+  for (let i = 0; i < healthPickups.length; i++) {
+    const orb = healthPickups[i];
+    if (orb.life > HEALTH_PICKUP_LIFETIME - 3 && Math.sin(animTime * 12) < 0) continue;
+    const y = orb.y + Math.sin(animTime * 4 + i) * 3;
+    ctx.shadowColor = "#38bdf8"; ctx.shadowBlur = 17;
+    ctx.fillStyle = "#38bdf8";
+    ctx.beginPath(); ctx.arc(orb.x, y, orb.r, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0; ctx.fillStyle = "#e0f2fe";
+    ctx.fillRect(orb.x - 2, y - 6, 4, 12); ctx.fillRect(orb.x - 6, y - 2, 12, 4);
+  }
+  ctx.restore();
+}
+
+function drawStageObjects() {
+  ctx.save();
+  for (let i = 0; i < stageObjects.length; i++) {
+    const o = stageObjects[i];
+    if (!o.alive || o.x < camera.x - 50 || o.x > camera.x + W + 50 ||
+        o.y < camera.y - 60 || o.y > camera.y + H + 60) continue;
+    const x = o.x, y = o.y;
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    ctx.beginPath(); ctx.ellipse(x, y + 12, o.r + 4, 8, 0, 0, Math.PI * 2); ctx.fill();
+    if (o.type === "barrel") {
+      ctx.fillStyle = "#6e3e22"; ctx.fillRect(x - 13, y - 14, 26, 28);
+      ctx.fillStyle = "#a66a35"; ctx.fillRect(x - 10, y - 12, 20, 24);
+      ctx.fillStyle = "#342820"; ctx.fillRect(x - 13, y - 8, 26, 3); ctx.fillRect(x - 13, y + 7, 26, 3);
+      ctx.fillStyle = "#d5a160"; ctx.fillRect(x - 8, y - 12, 2, 24);
+      ctx.fillStyle = "#fbbf24"; ctx.fillRect(x - 2, y - 3, 4, 6);
+    } else if (o.type === "crate") {
+      ctx.fillStyle = "#754b29"; ctx.fillRect(x - 14, y - 14, 28, 28);
+      ctx.fillStyle = "#b47c40"; ctx.fillRect(x - 11, y - 11, 22, 22);
+      ctx.strokeStyle = "#54361e"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x - 10, y - 10); ctx.lineTo(x + 10, y + 10);
+      ctx.moveTo(x + 10, y - 10); ctx.lineTo(x - 10, y + 10); ctx.stroke();
+      ctx.fillStyle = "#67e8f9"; ctx.fillRect(x - 2, y - 2, 4, 4);
+    } else {
+      ctx.fillStyle = "#394453"; ctx.fillRect(x - 18, y - 16, 36, 32);
+      ctx.fillStyle = "#667485"; ctx.fillRect(x - 14, y - 19, 28, 30);
+      ctx.fillStyle = "#9aa9b6"; ctx.fillRect(x - 18, y - 20, 36, 5);
+      ctx.fillStyle = "#465264"; ctx.fillRect(x - 19, y + 10, 38, 6);
+      if (o.hits > 0) {
+        ctx.strokeStyle = "#1f2937"; ctx.lineWidth = 2; ctx.beginPath();
+        ctx.moveTo(x - 2, y - 14); ctx.lineTo(x + 3, y - 6); ctx.lineTo(x - 2, y + 2);
+        if (o.hits >= 2) { ctx.lineTo(x + 5, y + 9); ctx.moveTo(x + 3, y - 6); ctx.lineTo(x + 9, y - 9); }
+        if (o.hits >= 3) { ctx.moveTo(x - 2, y + 2); ctx.lineTo(x - 10, y + 6); ctx.moveTo(x - 2, y - 14); ctx.lineTo(x - 9, y - 9); }
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
 }
 
 /* ---------- Update ---------- */
@@ -5631,8 +5382,7 @@ function updatePlayer(dt) {
     const len = Math.hypot(dx, dy);
     dx /= len; dy /= len;
     const speed = currentPlayerSpeed();
-    player.x += dx * speed * dt;
-    player.y += dy * speed * dt;
+    moveActorWithPillars(player, player.x + dx * speed * dt, player.y + dy * speed * dt);
 
     // Face the direction Commander Rael is moving.
     player.isMoving = true;
@@ -5651,21 +5401,22 @@ function updatePlayer(dt) {
     player.isMoving = false;
   }
 
-  // Keep the player inside the arena.
-  player.x = clamp(player.x, player.r, W - player.r);
-  player.y = clamp(player.y, player.r, H - player.r);
+  // Keep the player inside the 3x open world.
+  const wallPad = player.r + 6;
+  player.x = clamp(player.x, wallPad, Math.max(wallPad, worldW - wallPad));
+  player.y = clamp(player.y, wallPad, Math.max(wallPad, worldH - wallPad));
 }
 
 /* ---------- Collectible glowing gems ---------- */
 /* Drop a glowing emerald gem at a defeated enemy's position, clamped
-   inside the visible arena so every dropped gem can be reached. */
+   inside the 3x open world so every dropped gem can be reached. */
 function spawnGem(x, y) {
   if (gems.length >= MAX_ACTIVE_GEMS) {
     gems.shift(); // drop oldest nearly-expired gem if capped
   }
   const margin = Math.min(GEM_WALL_MARGIN, Math.min(W, H) * 0.25);
-  const gx = clamp(x, margin, Math.max(margin, W - margin));
-  const gy = clamp(y, margin, Math.max(margin, H - margin));
+  const gx = clamp(x, margin, Math.max(margin, worldW - margin));
+  const gy = clamp(y, margin, Math.max(margin, worldH - margin));
   const gem = {
     x: gx,
     y: gy,
@@ -5785,8 +5536,8 @@ function updateGems(dt) {
       if (dist > 0.001 && dist <= magnetRadius) {
         const pullScale = 0.75 + 0.65 * (1 - dist / magnetRadius);
         const step = Math.min(dist, magnetSpeed * pullScale * dt);
-        g.x = clamp(g.x + (dx / dist) * step, margin, Math.max(margin, W - margin));
-        g.y = clamp(g.y + (dy / dist) * step, margin, Math.max(margin, H - margin));
+        g.x = clamp(g.x + (dx / dist) * step, margin, Math.max(margin, worldW - margin));
+        g.y = clamp(g.y + (dy / dist) * step, margin, Math.max(margin, worldH - margin));
         g.magnetized = true;
       } else {
         g.magnetized = false;
@@ -5823,9 +5574,17 @@ function updateFloatingTexts(dt) {
 
 /* ---------- Player bullets ---------- */
 function bulletIsOffscreen(b) {
+  if (
+    b.x < -BULLET_OFFSCREEN_MARGIN || b.x > worldW + BULLET_OFFSCREEN_MARGIN ||
+    b.y < -BULLET_OFFSCREEN_MARGIN || b.y > worldH + BULLET_OFFSCREEN_MARGIN
+  ) {
+    return true;
+  }
+  const camPadX = Math.max(BULLET_OFFSCREEN_MARGIN, W * 0.85);
+  const camPadY = Math.max(BULLET_OFFSCREEN_MARGIN, H * 0.85);
   return (
-    b.x < -BULLET_OFFSCREEN_MARGIN || b.x > W + BULLET_OFFSCREEN_MARGIN ||
-    b.y < -BULLET_OFFSCREEN_MARGIN || b.y > H + BULLET_OFFSCREEN_MARGIN
+    b.x < camera.x - camPadX || b.x > camera.x + W + camPadX ||
+    b.y < camera.y - camPadY || b.y > camera.y + H + camPadY
   );
 }
 
@@ -6050,6 +5809,7 @@ function damageEnemyAt(enemyIndex, damage, impactX, impactY, bullet) {
   const cy = typeof impactY === "number" ? impactY : e.y;
 
   if (e.hp > 0) {
+    if (e.isCampaignBoss) refreshCampaignBossHud();
     e.hitFlash = BOSS_HIT_FLASH_DURATION;
     const hitColors = ["#ffffff", "#fda4af", "#67e8f9"];
     for (let i = 0; i < 6; i++) {
@@ -6068,6 +5828,16 @@ function damageEnemyAt(enemyIndex, damage, impactX, impactY, bullet) {
     }
     playBossHitSound();
     return false;
+  }
+
+  if (e.isCampaignBoss) {
+    spawnBossExplosion(e, e.x, e.y);
+    spawnBossGemCluster(e.x, e.y, e.isBoss ? BOSS_GEM_DROP_COUNT : 4);
+    enemies.splice(enemyIndex, 1);
+    registerEnemyKill(true);
+    applyBossDefeatRelief();
+    startChampionDeath(e);
+    return true;
   }
 
   if (e.isBoss) {
@@ -6139,6 +5909,21 @@ function resolveBulletHit(b, enemyStartFraction) {
       hitEnemyIndex = j;
     }
   }
+  let hitObject = null;
+  for (let j = 0; j < stageObjects.length; j++) {
+    const object = stageObjects[j];
+    if (!object.alive) continue;
+    const hitTime = bulletEnemyHitTime(b, object, 0);
+    if (hitTime !== null && hitTime < earliestHitTime) {
+      earliestHitTime = hitTime;
+      hitObject = object;
+      hitEnemyIndex = -1;
+    }
+  }
+  if (hitObject) {
+    damageStageObject(hitObject);
+    return true;
+  }
   if (hitEnemyIndex === -1) return false;
 
   const hitEnemy = enemies[hitEnemyIndex];
@@ -6160,8 +5945,8 @@ function fireLaserTowards(targetX, targetY) {
   if (state !== "playing") return false;
   if (laserCooldown > BULLET_FIRE_EPSILON) return false;
 
-  const dx = (typeof targetX === "number" ? targetX : mouseX) - player.x;
-  const dy = (typeof targetY === "number" ? targetY : mouseY) - player.y;
+  const dx = (typeof targetX === "number" ? targetX : mouseWorldX()) - player.x;
+  const dy = (typeof targetY === "number" ? targetY : mouseWorldY()) - player.y;
   const aimAngle = (Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001)
     ? Math.atan2(dy, dx)
     : (player.facingAngle || 0);
@@ -6243,8 +6028,8 @@ function fireLaserTowards(targetX, targetY) {
 }
 
 function fireBullets() {
-  const tx = mouseTracked ? mouseX : (player.x + Math.cos(player.facingAngle || 0) * 140);
-  const ty = mouseTracked ? mouseY : (player.y + Math.sin(player.facingAngle || 0) * 140);
+  const tx = mouseTracked ? mouseWorldX() : (player.x + Math.cos(player.facingAngle || 0) * 140);
+  const ty = mouseTracked ? mouseWorldY() : (player.y + Math.sin(player.facingAngle || 0) * 140);
   return fireLaserTowards(tx, ty);
 }
 
@@ -6255,7 +6040,7 @@ function updateShooting(dt) {
     laserCooldown = Math.max(0, laserCooldown - dt);
   }
   if (mouseLeftHeld && laserCooldown <= BULLET_FIRE_EPSILON) {
-    fireLaserTowards(mouseX, mouseY);
+    fireLaserTowards(mouseWorldX(), mouseWorldY());
   }
 }
 
@@ -6459,6 +6244,53 @@ function fireArcherArrow(archer, postFireDt) {
   return true;
 }
 
+/* Unique champion attacks: a charging knight, arrow fan, siege ring,
+   rotating arcane spiral, and alternating final-rift volleys. */
+function fireChampionPattern(boss, postFireDt) {
+  const aim = Math.atan2(player.y - boss.y, player.x - boss.x);
+  const phase = boss.volleyCount++;
+  const angles = [];
+  let kind = "boss_orb", speed = 235;
+  if (boss.pattern === "charge") {
+    for (let i = -1; i <= 1; i++) angles.push(aim + i * 0.24);
+    boss.splitBurstVx = Math.cos(aim) * 230;
+    boss.splitBurstVy = Math.sin(aim) * 230;
+  } else if (boss.pattern === "arrows") {
+    kind = "arrow"; speed = 280;
+    for (let i = -2; i <= 2; i++) angles.push(aim + i * 0.14);
+  } else if (boss.pattern === "ring") {
+    for (let i = 0; i < 8; i++) angles.push(phase * 0.25 + i * Math.PI * 2 / 8);
+  } else if (boss.pattern === "spiral") {
+    kind = "arcane_orb"; speed = 210;
+    for (let i = 0; i < 7; i++) angles.push(phase * 0.53 + i * Math.PI * 2 / 7);
+  } else {
+    kind = "arcane_orb";
+    if (phase % 2 === 0) {
+      for (let i = -3; i <= 3; i++) angles.push(aim + i * 0.14);
+    } else {
+      for (let i = 0; i < 10; i++) angles.push(phase * 0.2 + i * Math.PI * 2 / 10);
+    }
+  }
+  playBossShootSound();
+  for (let i = 0; i < angles.length && state === "playing"; i++) {
+    const dx = Math.cos(angles[i]), dy = Math.sin(angles[i]);
+    const radius = kind === "arrow" ? TYPE2_ARROW_RADIUS : 5;
+    const startX = boss.x + dx * (boss.r + radius + 3);
+    const startY = boss.y + dy * (boss.r + radius + 3);
+    const travel = Math.max(0, postFireDt || 0) * speed;
+    const shot = { kind: kind, x: startX + dx * travel, y: startY + dy * travel,
+      prevX: startX, prevY: startY, vx: dx * speed, vy: dy * speed,
+      dirX: dx, dirY: dy, r: radius, distanceTraveled: travel };
+    if (enemyBulletHitsPlayer(shot)) {
+      if (activeShieldTimer > 0) continue;
+      if (shieldCharges > 0) { consumeShieldOnHit(-1); continue; }
+      damagePlayer(PLAYER_HIT_DAMAGE, -1);
+    } else if (!bulletIsOffscreen(shot)) {
+      enemyBullets.push(shot);
+    }
+  }
+}
+
 /* Bosses fire aimed 5-bullet spreads every 3s; Type 2 Dark Archers
    inside the arena loose aimed arrows back at Commander Rael. */
 function updateBossShooting(dt) {
@@ -6466,6 +6298,15 @@ function updateBossShooting(dt) {
     if (state !== "playing") return;
     const e = enemies[i];
 
+    if (e.isCampaignBoss) {
+      const interval = e.pattern === "charge" ? 2.8 : e.pattern === "rift" ? 2.2 : 2.7;
+      e.fireTimer -= dt;
+      while (e.fireTimer <= BOSS_FIRE_EPSILON && state === "playing") {
+        fireChampionPattern(e, Math.max(0, -e.fireTimer));
+        e.fireTimer += interval;
+      }
+      continue;
+    }
     if (e.isBoss || e.isMiniBoss) {
       const interval = e.isMiniBoss ? 3.2 : BOSS_FIRE_INTERVAL;
       if (typeof e.fireTimer !== "number") e.fireTimer = interval;
@@ -6483,10 +6324,10 @@ function updateBossShooting(dt) {
     }
 
     if (normalizeEnemyType(e.type) === "orange") {
-      // Only draw & loose arrows once visible inside the arena.
+      // Only draw & loose arrows once visible inside or near the camera viewport.
       const insideArena = (
-        e.x >= -6 && e.x <= W + 6 &&
-        e.y >= -6 && e.y <= H + 6
+        e.x >= camera.x - 16 && e.x <= camera.x + W + 16 &&
+        e.y >= camera.y - 16 && e.y <= camera.y + H + 16
       );
       if (!insideArena) continue;
 
@@ -6571,8 +6412,8 @@ function updateActiveShield(dt) {
       if (e.isBoss || e.isMiniBoss) {
         if (dist < 0.001) { dx = 1; dy = 0; dist = 1; }
         const pushDist = domeContact + 6;
-        e.x = player.x + (dx / dist) * pushDist;
-        e.y = player.y + (dy / dist) * pushDist;
+        moveActorWithPillars(e, player.x + (dx / dist) * pushDist,
+          player.y + (dy / dist) * pushDist);
         e.prevX = e.x;
         e.prevY = e.y;
         e.hitFlash = BOSS_HIT_FLASH_DURATION * 0.6;
@@ -6704,6 +6545,22 @@ function updateEnemies(dt) {
       vy += (separationY / separationLength) * separationSpeed;
     }
 
+    // Steer around nearby pillars so enemies do not remain stuck against them.
+    for (let p = 0; p < stageObjects.length; p++) {
+      const pillar = stageObjects[p];
+      if (!pillar.alive || pillar.type !== "pillar") continue;
+      const ox = pillar.x - e.x, oy = pillar.y - e.y;
+      const ahead = ox * dirX + oy * dirY;
+      const side = ox * (-dirY) + oy * dirX;
+      const clearance = e.r + pillar.r + 16;
+      if (ahead > 0 && ahead < clearance + 80 && Math.abs(side) < clearance) {
+        const turn = side >= 0 ? -1 : 1;
+        const strength = (1 - Math.abs(side) / clearance) * e.speed * 1.8;
+        vx += -dirY * turn * strength;
+        vy += dirX * turn * strength;
+      }
+    }
+
     // Reuse scratch fields instead of allocating a velocity object
     // for every enemy on every frame.
     e.vx = vx;
@@ -6713,12 +6570,33 @@ function updateEnemies(dt) {
   // Second pass: apply movement and remember the swept segment's
   // start. Later levels can move an enemy farther than the combined
   // radii in one capped frame, so endpoint-only collision could tunnel.
+  const maxRoamDist = Math.max(600, Math.hypot(W, H) * 1.15);
+  const maxRoamDistSq = maxRoamDist * maxRoamDist;
+
   for (let i = 0; i < enemies.length; i++) {
     const e = enemies[i];
     e.prevX = e.x;
     e.prevY = e.y;
-    e.x += e.vx * dt;
-    e.y += e.vy * dt;
+    moveActorWithPillars(e, e.x + e.vx * dt, e.y + e.vy * dt);
+    e.x = clamp(e.x, e.r + 2, Math.max(e.r + 2, worldW - e.r - 2));
+    e.y = clamp(e.y, e.r + 2, Math.max(e.r + 2, worldH - e.r - 2));
+
+    // If a non-boss enemy falls far behind as the player traverses the 3x open world,
+    // reposition it onto the current camera perimeter so the world stays lively.
+    if (!e.isBoss && !e.isMiniBoss) {
+      const pdx = e.x - player.x;
+      const pdy = e.y - player.y;
+      if (pdx * pdx + pdy * pdy > maxRoamDistSq) {
+        const nextPos = chooseSpawnPosition(e.r, e.r + 8, e);
+        e.x = nextPos.x;
+        e.y = nextPos.y;
+        e.prevX = nextPos.x;
+        e.prevY = nextPos.y;
+        e.trail.length = 0;
+        e.spawnFlash = ENEMY_SPAWN_FLASH_DURATION;
+        continue;
+      }
+    }
 
     // Record where the enemy has been, so it leaves a faint trail.
     e.trail.push({ x: e.x, y: e.y, age: 0 });
@@ -6795,9 +6673,12 @@ function updateExplosionRings(dt) {
 function gameOver() {
   if (state === "gameover" || state === "victory") return;
   state = "gameover";
+  bossHudEl.classList.remove("visible");
+  storyEventEl.classList.remove("visible");
   bullets.length = 0;      // live shots do not hang frozen behind Game Over
   enemyBullets.length = 0; // clear boss spread shots behind Game Over
   gems.length = 0;         // clear uncollected gems behind the Game Over overlay
+  healthPickups.length = 0;
   currentUpgradeChoices = [];
   levelCardFadingOut = false;
   levelCardFadeOutTimer = 0;
@@ -6854,11 +6735,29 @@ function gameOver() {
 }
 
 function update(dt) {
-  animTime += dt;   // drives pulse/twinkle visuals, even after Game Over
+  animTime += state === "boss_death" ? dt * 0.16 : dt;
+  updateWeather(state === "boss_death" ? dt * 0.16 : dt); // visual-only; independent of gameplay particles and timers
 
   // While the 20-second upgrade overlay is open, gameplay is completely
   // paused: timers, enemies, bullets, and gem countdowns stay frozen.
   if (state === "upgrading") return;
+
+  if (state === "boss_death") {
+    bossDeathTimer -= dt;
+    const slowDt = dt * 0.16;
+    updateImpactEffects(slowDt);
+    updateParticles(slowDt);
+    updateExplosionRings(slowDt);
+    updateFutureBombWaves(slowDt);
+    updateFloatingTexts(slowDt);
+    updateEnemies(slowDt);
+    if (bossDeathTimer <= 0) {
+      keys = Object.create(null);
+      state = "playing";
+      completeCurrentLevel();
+    }
+    return;
+  }
 
   if (state === "level_transition") {
     levelTransitionTimer += dt;
@@ -6879,6 +6778,13 @@ function update(dt) {
   updateFloatingTexts(dt);
 
   // Fade out transient HUD banners.
+  if (storyEventTimer > 0) {
+    storyEventTimer -= dt;
+    if (storyEventTimer <= 0) {
+      if (storyEventEl) storyEventEl.classList.remove("visible");
+      objectiveEl.classList.remove("story-flash");
+    }
+  }
   if (levelUpTimer > 0) {
     levelUpTimer -= dt;
     if (levelUpTimer <= 0) hideLevelUp();
@@ -6898,13 +6804,13 @@ function update(dt) {
   // a 20-second Data Chip upgrade milestone.
   const cfg = currentLevelConfig();
   const isTimedGoal = cfg.goalType === "survive" || cfg.goalType === "survive_final";
-  const timeToLevelGoal = isTimedGoal ? Math.max(0, cfg.goalTarget - levelElapsed) : Infinity;
+  const timeToLevelGoal = isTimedGoal && campaignPhase < 3 ? Math.max(0, cfg.goalTarget - levelElapsed) : Infinity;
   const timeToUpgrade = Math.max(0, nextUpgradeTime - survivalTime);
   const nextStop = Math.min(timeToLevelGoal, timeToUpgrade);
   const playDt = dt >= nextStop - UPGRADE_TIME_EPSILON ? nextStop : dt;
 
   survivalTime += playDt;
-  levelElapsed += playDt;
+  if (campaignPhase < 3) levelElapsed += playDt;
   refreshTimer();
   refreshLevel();
   updateBackgroundHum();
@@ -6917,10 +6823,15 @@ function update(dt) {
   }
 
   updatePlayer(playDt);
+  updateObjectArea();
+  updateCamera(playDt);
   updateGems(playDt);
+  updateHealthPickups(playDt);
   updateEnemies(playDt);
   updateBullets(playDt);
+  if (state !== "playing") return;
   updateShooting(playDt);
+  if (state !== "playing") return;
   updateActiveShield(playDt);
   updateEnemyBullets(playDt);
   if (state !== "playing") return;
@@ -6954,13 +6865,11 @@ function update(dt) {
 
   if (state !== "playing") return;
 
-  // Check if the current level's goal has been achieved!
-  if (checkLevelGoalMet()) {
-    completeCurrentLevel();
-    return;
-  }
+  // Wave milestones lead to the midpoint event and then the champion.
+  advanceCampaignPhases();
+  refreshCampaignBossHud();
 
-  if (survivalTime >= nextUpgradeTime - UPGRADE_TIME_EPSILON) {
+  if (state === "playing" && survivalTime >= nextUpgradeTime - UPGRADE_TIME_EPSILON) {
     openUpgradeSelection();
   }
 }
@@ -7603,10 +7512,315 @@ function drawFinalPortalBackdrop(horizonY) {
   ctx.restore();
 }
 
+// Decorative layers are screen projections of repeating world-space scenery.
+// Different depth factors make the scenery slide at different rates; animation
+// uses animTime only and never changes collision or campaign state.
+function layerOffset(value, period) {
+  return ((value % period) + period) % period;
+}
+
+function drawParallaxDetails(theme, horizon) {
+  ctx.save();
+  const t = animTime;
+  const span = Math.max(1, W + 180);
+  if (theme === "village") {
+    // Rows of wheat sweep past with the ground, swaying in the wind.
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, horizon, W, Math.max(0, H - horizon)); ctx.clip();
+    const stepX = 34, stepY = 44;
+    const ox = layerOffset(camera.x * 0.83, stepX);
+    const oy = layerOffset(camera.y * 0.83, stepY);
+    ctx.lineWidth = 1.3;
+    for (let y = horizon - oy; y < H + stepY; y += stepY) {
+      for (let x = -ox; x < W + stepX; x += stepX) {
+        const sway = Math.sin(t * 1.8 + x * 0.025 + y * 0.02) * 3;
+        ctx.strokeStyle = "rgba(194,155,70,0.48)";
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + sway, y - 12); ctx.stroke();
+        ctx.fillStyle = "rgba(241,194,92,0.65)";
+        ctx.fillRect(x + sway - 1, y - 15, 3, 5);
+      }
+    }
+    ctx.restore();
+    // More distant flaming cottages scroll independently of the wheat.
+    for (let i = 0; i < 6; i++) {
+      const x = layerOffset(i * 270 - camera.x * 0.22, span) - 90;
+      const y = horizon - 4 + Math.sin(i * 2) * 3;
+      ctx.fillStyle = "#15111a"; ctx.fillRect(x - 16, y - 22, 32, 22);
+      ctx.beginPath(); ctx.moveTo(x - 20, y - 22); ctx.lineTo(x, y - 38); ctx.lineTo(x + 20, y - 22); ctx.fill();
+      const flicker = 6 + 4 * Math.abs(Math.sin(t * 8 + i));
+      ctx.shadowColor = "#fb923c"; ctx.shadowBlur = 12;
+      ctx.fillStyle = "#f97316"; ctx.beginPath(); ctx.moveTo(x - 8, y - 28); ctx.lineTo(x - 3, y - 34 - flicker); ctx.lineTo(x + 1, y - 28); ctx.lineTo(x + 7, y - 40 - flicker * 0.7); ctx.lineTo(x + 12, y - 27); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    // Tiny fleeing peasants, with independent stride animation.
+    for (let i = 0; i < 5; i++) {
+      const x = layerOffset(i * 240 + t * (28 + i * 3) - camera.x * 0.48, span) - 90;
+      const y = horizon + 20 + i % 3 * 12 - layerOffset(camera.y * 0.12, 18);
+      const stride = Math.sin(t * 12 + i) * 5;
+      ctx.strokeStyle = "rgba(184,171,150,0.8)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x, y - 9); ctx.lineTo(x + 2, y - 3);
+      ctx.lineTo(x - stride, y + 3); ctx.moveTo(x + 2, y - 3); ctx.lineTo(x + stride, y + 3);
+      ctx.moveTo(x + 1, y - 7); ctx.lineTo(x - 5 - stride * 0.4, y - 4); ctx.stroke();
+      ctx.fillStyle = "#c3a88d"; ctx.beginPath(); ctx.arc(x, y - 12, 2.5, 0, Math.PI * 2); ctx.fill();
+    }
+  } else if (theme === "forest") {
+    // Near trees move faster than the existing distant treeline.
+    for (let i = 0; i < Math.ceil(W / 150) + 3; i++) {
+      const x = i * 150 - layerOffset(camera.x * 0.65, 150) - 90;
+      const sway = Math.sin(t * 0.8 + i) * 4;
+      ctx.strokeStyle = "rgba(6,14,11,0.88)"; ctx.lineWidth = 9;
+      ctx.beginPath(); ctx.moveTo(x, horizon + 8); ctx.lineTo(x + sway, horizon - 42); ctx.lineTo(x - 12 + sway, horizon - 68); ctx.stroke();
+      ctx.fillStyle = "rgba(4,18,13,0.78)"; ctx.beginPath(); ctx.arc(x + sway, horizon - 62, 23, 0, Math.PI * 2); ctx.fill();
+    }
+    // Bats cross the sky with flapping wings.
+    for (let i = 0; i < 8; i++) {
+      const x = layerOffset(i * 170 + t * (35 + i * 2) - camera.x * 0.25, span) - 90;
+      const y = 30 + (i * 31) % Math.max(35, horizon - 35) + Math.sin(t * 2 + i) * 8;
+      const flap = Math.sin(t * 13 + i * 2) * 6;
+      ctx.strokeStyle = "#080a12"; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(x - 9, y + flap); ctx.lineTo(x - 3, y - 2); ctx.lineTo(x, y); ctx.lineTo(x + 3, y - 2); ctx.lineTo(x + 9, y + flap); ctx.stroke();
+    }
+    // Translucent fog drifts across the ground at a slower depth.
+    ctx.save(); ctx.beginPath(); ctx.rect(0, horizon, W, Math.max(0, H - horizon)); ctx.clip();
+    for (let i = 0; i < 7; i++) {
+      const x = layerOffset(i * 240 + t * 13 - camera.x * 0.28, W + 360) - 180;
+      const y = horizon + layerOffset(i * 91 - camera.y * 0.20 + Math.sin(t * 0.4 + i) * 12, Math.max(1, H - horizon));
+      const fog = ctx.createRadialGradient(x, y, 2, x, y, 120);
+      fog.addColorStop(0, "rgba(161,201,185,0.14)"); fog.addColorStop(1, "rgba(161,201,185,0)");
+      ctx.fillStyle = fog; ctx.beginPath(); ctx.ellipse(x, y, 120, 32, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  } else if (theme === "castle_gates") {
+    // Rank of soldiers marches along the battlements.
+    for (let i = 0; i < Math.ceil(W / 48) + 4; i++) {
+      const x = i * 48 - layerOffset(camera.x * 0.35 - t * 16, 48) - 40;
+      const y = horizon - 10;
+      const stride = Math.sin(t * 9 + i) * 4;
+      ctx.strokeStyle = "#748095"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x, y - 12); ctx.lineTo(x, y - 3); ctx.lineTo(x - stride, y + 2);
+      ctx.moveTo(x, y - 3); ctx.lineTo(x + stride, y + 2); ctx.moveTo(x + 3, y - 6); ctx.lineTo(x + 7, y - 19); ctx.stroke();
+      ctx.fillStyle = "#414e62"; ctx.fillRect(x - 3, y - 12, 6, 9);
+      ctx.fillStyle = "#9caab8"; ctx.beginPath(); ctx.arc(x, y - 15, 3, 0, Math.PI * 2); ctx.fill();
+    }
+    // Catapult projectiles trace glowing parabolic arcs across the sky.
+    for (let i = 0; i < 3; i++) {
+      const phase = layerOffset(t * 0.10 + i / 3, 1);
+      const x = phase * (W + 120) - 60 - (camera.x - W) * 0.12;
+      const y = horizon - 5 - Math.sin(phase * Math.PI) * (horizon * 0.75);
+      ctx.strokeStyle = "rgba(251,146,60,0.45)"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x - 24, y + 8); ctx.lineTo(x, y); ctx.stroke();
+      ctx.shadowColor = "#f97316"; ctx.shadowBlur = 16; ctx.fillStyle = "#fde68a";
+      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+    }
+  } else if (theme === "tower") {
+    // Pillars and intermittent jagged electrical arcs between them.
+    const spacing = 180, offset = layerOffset(camera.x * 0.43, spacing);
+    for (let x = -offset - spacing; x < W + spacing; x += spacing) {
+      ctx.fillStyle = "rgba(40,29,61,0.82)"; ctx.fillRect(x - 9, horizon - 110, 18, 110);
+      ctx.fillStyle = "rgba(154,113,192,0.32)"; ctx.fillRect(x - 11, horizon - 110, 22, 5);
+      if (Math.sin(t * 5 + x * 0.01) > 0.1) {
+        ctx.strokeStyle = "rgba(203,154,255,0.8)"; ctx.lineWidth = 1.5; ctx.shadowColor = "#c084fc"; ctx.shadowBlur = 10;
+        ctx.beginPath(); ctx.moveTo(x, horizon - 72);
+        for (let k = 1; k <= 6; k++) ctx.lineTo(x + k * spacing / 6, horizon - 72 + (k === 6 ? 0 : Math.sin(t * 24 + k * 4 + x) * 12));
+        ctx.stroke(); ctx.shadowBlur = 0;
+      }
+    }
+    for (let i = 0; i < 9; i++) {
+      const x = layerOffset(i * 173 - camera.x * 0.3, span) - 90;
+      const y = horizon + 20 + layerOffset(i * 79 - camera.y * 0.3, Math.max(1, H - horizon)) + Math.sin(t * 2 + i) * 12;
+      const r = 3 + i % 3;
+      ctx.shadowColor = "#a855f7"; ctx.shadowBlur = 16; ctx.fillStyle = i % 2 ? "#e9d5ff" : "#a78bfa";
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+    }
+  } else if (theme === "portal") {
+    // A rotating galaxy spiral around the existing portal.
+    const px = W * 0.5 - (camera.x - W) * 0.15;
+    const py = horizon * 0.62 - (camera.y - H) * 0.025;
+    ctx.save(); ctx.translate(px, py); ctx.rotate(t * 0.27);
+    for (let arm = 0; arm < 3; arm++) {
+      ctx.strokeStyle = arm === 0 ? "rgba(103,232,249,0.6)" : "rgba(192,132,252,0.48)";
+      ctx.lineWidth = 2; ctx.beginPath();
+      for (let j = 0; j < 70; j++) {
+        const r = 4 + j * 1.8, a = arm * Math.PI * 2 / 3 + j * 0.12;
+        if (j === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+        else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+    // Temporal rifts open and close at different phases and depths.
+    for (let i = 0; i < 7; i++) {
+      const x = layerOffset(i * 260 - camera.x * 0.38, W + 180) - 90;
+      const y = horizon + 15 + layerOffset(i * 107 - camera.y * 0.32, Math.max(1, H - horizon));
+      const open = Math.max(0, Math.sin(t * 0.8 + i * 1.9));
+      if (open < 0.06) continue;
+      ctx.shadowColor = "#22d3ee"; ctx.shadowBlur = 18; ctx.strokeStyle = "rgba(103,232,249," + (0.25 + open * 0.65) + ")"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(x, y, 2 + open * 13, 18 + open * 7, 0.3, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = "rgba(76,29,149," + (open * 0.3) + ")"; ctx.fill(); ctx.shadowBlur = 0;
+    }
+  }
+  ctx.restore();
+}
+
+/* ---------- Background-only weather particle systems ----------
+   These use their own deterministic seeds and normalized coordinates, never
+   the gameplay particle arrays or Math.random(). Viewport resizing therefore
+   keeps the effects in bounds without affecting combat or random spawns. */
+const WEATHER_COUNTS = { village: 72, forest: 130, castle_gates: 210, tower: 115, portal: 110 };
+let weatherTheme = "";
+let weatherElapsed = 0;
+let weatherParticles = [];
+
+function syncWeather() {
+  const theme = currentLevelConfig().theme;
+  if (theme === weatherTheme) return;
+  weatherTheme = theme;
+  weatherElapsed = 0;
+  weatherParticles = [];
+  const themeSeed = { village: 11, forest: 23, castle_gates: 37, tower: 47, portal: 59 }[theme] || 11;
+  const count = WEATHER_COUNTS[theme] || 0;
+  for (let i = 0; i < count; i++) {
+    weatherParticles.push({
+      u: stoneHash(i + 1, themeSeed),
+      v: stoneHash(i + 31, themeSeed + 7),
+      speed: 0.65 + stoneHash(i + 47, themeSeed + 13) * 0.7,
+      size: 0.7 + stoneHash(i + 83, themeSeed + 19) * 1.4,
+      phase: stoneHash(i + 113, themeSeed + 29) * Math.PI * 2,
+      side: i % 4
+    });
+  }
+}
+
+function updateWeather(dt) {
+  syncWeather();
+  weatherElapsed += Math.max(0, dt);
+}
+
+function weatherWrap(v, size) {
+  return ((v % size) + size) % size;
+}
+
+// Soft rising wisps; each puff is visual only and wraps at its own lifetime.
+function drawWeatherWisps(count, color, upwardSpeed, baseRadius) {
+  const h = Math.max(1, H);
+  for (let i = 0; i < count && i < weatherParticles.length; i++) {
+    const p = weatherParticles[i];
+    const progress = weatherWrap(p.v + weatherElapsed * upwardSpeed * p.speed, 1);
+    const x = weatherWrap(p.u * W + Math.sin(weatherElapsed * 0.55 + p.phase) * 30 - camera.x * 0.13, Math.max(1, W));
+    const y = h - progress * h * 0.72;
+    const radius = baseRadius * p.size * (0.6 + progress * 0.8);
+    const alpha = Math.sin(progress * Math.PI) * (weatherTheme === "forest" ? 0.12 : 0.10);
+    const fog = ctx.createRadialGradient(x, y, 0, x, y, Math.max(1, radius));
+    fog.addColorStop(0, "rgba(" + color + "," + alpha.toFixed(3) + ")");
+    fog.addColorStop(1, "rgba(" + color + ",0)");
+    ctx.fillStyle = fog;
+    ctx.beginPath();
+    ctx.ellipse(x, y, radius, radius * 0.42, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawWeatherBackground() {
+  syncWeather(); // a goal may change levels between update() and draw()
+  if (!W || !H) return;
+  const t = weatherElapsed;
+  ctx.save();
+
+  if (weatherTheme === "village") {
+    // Gold sparks rise from the burning village, drifting in the warm air.
+    for (let i = 0; i < weatherParticles.length; i++) {
+      const p = weatherParticles[i];
+      const x = weatherWrap(p.u * W + Math.sin(t * 1.5 + p.phase) * 18 - camera.x * 0.18, W);
+      const y = weatherWrap(p.v * H - t * 45 * p.speed - camera.y * 0.12, H);
+      const flicker = 0.4 + 0.6 * Math.abs(Math.sin(t * 5 + p.phase));
+      ctx.globalAlpha = 0.35 + flicker * 0.55;
+      ctx.fillStyle = i % 4 === 0 ? "#fff0a3" : (i % 3 === 0 ? "#fb923c" : "#fbbf24");
+      ctx.beginPath(); ctx.arc(x, y, p.size, 0, Math.PI * 2); ctx.fill();
+    }
+  } else if (weatherTheme === "forest") {
+    // Green rain falls over rolling, ground-hugging mist.
+    drawWeatherWisps(18, "142,200,166", 0.055, 65);
+    ctx.strokeStyle = "rgba(119,227,167,0.43)";
+    ctx.lineWidth = 1.15;
+    ctx.beginPath();
+    for (let i = 0; i < weatherParticles.length; i++) {
+      const p = weatherParticles[i];
+      const x = weatherWrap(p.u * W - t * 14 - camera.x * 0.16, W);
+      const y = weatherWrap(p.v * H + t * 185 * p.speed - camera.y * 0.12, H);
+      ctx.moveTo(x, y); ctx.lineTo(x - 2.5, y + 7 + p.size * 2);
+    }
+    ctx.stroke();
+  } else if (weatherTheme === "castle_gates") {
+    // Dense, wind-slanted grey rain over the siege.
+    ctx.strokeStyle = "rgba(192,202,215,0.48)";
+    ctx.lineWidth = 1.25;
+    ctx.beginPath();
+    for (let i = 0; i < weatherParticles.length; i++) {
+      const p = weatherParticles[i];
+      const x = weatherWrap(p.u * W - t * 55 - camera.x * 0.2, W);
+      const y = weatherWrap(p.v * H + t * 360 * p.speed - camera.y * 0.17, H);
+      ctx.moveTo(x, y); ctx.lineTo(x - 5, y + 13 + p.size * 4);
+    }
+    ctx.stroke();
+  } else if (weatherTheme === "tower") {
+    drawWeatherWisps(20, "138,115,166", 0.07, 55);
+    // Glowing purple magic sparks rain down through the tower.
+    for (let i = 0; i < weatherParticles.length; i++) {
+      const p = weatherParticles[i];
+      const x = weatherWrap(p.u * W + Math.sin(t * 2 + p.phase) * 9 - camera.x * 0.16, W);
+      const y = weatherWrap(p.v * H + t * 100 * p.speed - camera.y * 0.12, H);
+      ctx.globalAlpha = 0.45 + 0.45 * Math.abs(Math.sin(t * 4 + p.phase));
+      ctx.fillStyle = i % 3 === 0 ? "#f5d0fe" : "#c084fc";
+      ctx.fillRect(x, y, Math.max(1, p.size), 3 + p.size * 2);
+    }
+  } else if (weatherTheme === "portal") {
+    // Every particle starts at one of the four edges and spirals inward
+    // toward the same parallax-adjusted center as the visible time portal.
+    const horizon = battlefieldHorizonY();
+    const cx = W * 0.5 - (camera.x - W) * 0.42 * 0.35;
+    const cy = horizon * 0.62 - (camera.y - H) * 0.12 * 0.18;
+    for (let i = 0; i < weatherParticles.length; i++) {
+      const p = weatherParticles[i];
+      const progress = weatherWrap(p.v + t * 0.12 * p.speed, 1);
+      let sx, sy;
+      if (p.side === 0) { sx = p.u * W; sy = 0; }
+      else if (p.side === 1) { sx = W; sy = p.u * H; }
+      else if (p.side === 2) { sx = p.u * W; sy = H; }
+      else { sx = 0; sy = p.u * H; }
+      const spiral = Math.sin(progress * Math.PI) * 32;
+      const angle = p.phase + progress * Math.PI * 4 + t * 0.6;
+      const x = sx + (cx - sx) * progress + Math.cos(angle) * spiral;
+      const y = sy + (cy - sy) * progress + Math.sin(angle) * spiral;
+      ctx.globalAlpha = 0.4 + 0.5 * Math.sin(progress * Math.PI);
+      ctx.fillStyle = i % 4 === 0 ? "#e0f2fe" : "#38bdf8";
+      ctx.beginPath(); ctx.arc(x, y, p.size * (1 - progress * 0.35), 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawWeatherLightning() {
+  if (weatherTheme !== "castle_gates") return;
+  // One brief, double-pulsed flash at an irregular time in each 9s cycle.
+  const cycle = Math.floor(weatherElapsed / 9);
+  const phase = weatherElapsed - cycle * 9;
+  const strike = 2.5 + stoneHash(cycle + 1, 455) * 4;
+  const age = phase - strike;
+  if (age < 0 || age > 0.28) return;
+  const first = Math.max(0, 1 - age / 0.11) * 0.32;
+  const second = Math.max(0, 1 - Math.abs(age - 0.19) / 0.065) * 0.18;
+  ctx.save();
+  ctx.globalAlpha = Math.max(first, second);
+  ctx.fillStyle = "#dbeafe";
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+}
+
 function drawBackground() {
   const horizonY = battlefieldHorizonY();
-  const parX = (player.x - W / 2) * -0.03;
-  const parY = (player.y - H / 2) * -0.02;
+  // Distant layers move more slowly than the world-space ground.
+  const parX = -(camera.x - W) * 0.42;
+  const parY = -(camera.y - H) * 0.12;
   const theme = currentLevelConfig().theme || "village";
 
   // 1. Stage sky palette.
@@ -7685,6 +7899,10 @@ function drawBackground() {
   }
 
   // 4. Stage-specific architectural / landscape backdrop.
+  if (theme === "tower" || theme === "castle_gates") {
+    ctx.fillStyle = theme === "tower" ? "#0c0a18" : "#111622";
+    ctx.fillRect(0, Math.max(0, horizonY - 88), W, 92);
+  }
   if (theme === "village") {
     ctx.fillStyle = "#0b1323";
     ctx.beginPath();
@@ -7702,20 +7920,43 @@ function drawBackground() {
   } else if (theme === "forest") {
     drawDarkForestBackdrop(horizonY, parX);
   } else if (theme === "castle_gates") {
+    ctx.save();
+    ctx.translate(parX * 0.5, parY * 0.15);
     drawCastleGatesBackdrop(horizonY);
+    ctx.restore();
   } else if (theme === "tower") {
+    ctx.save();
+    ctx.translate(parX * 0.4, parY * 0.12);
     drawSorcerersTowerBackdrop(horizonY);
+    ctx.restore();
   } else if (theme === "portal") {
+    ctx.save();
+    ctx.translate(parX * 0.35, parY * 0.18);
     drawFinalPortalBackdrop(horizonY);
+    ctx.restore();
   }
 
   // 5. Stage ground texture (cached offscreen per viewport & level theme).
   const cachedFloor = ensureStoneFloorCache(horizonY, theme);
-  if (cachedFloor && typeof ctx.drawImage === "function") {
-    ctx.drawImage(cachedFloor, 0, 0);
+  if (cachedFloor && typeof ctx.drawImage === "function" && H > horizonY + 1) {
+    // Tile the cached terrain in world coordinates, rather than tying it to the screen.
+    const tileH = H - horizonY;
+    const startX = -((camera.x % W + W) % W);
+    const startY = horizonY - ((camera.y % tileH + tileH) % tileH);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, horizonY, W, H - horizonY);
+    ctx.clip();
+    for (let y = startY; y < H; y += tileH) {
+      for (let x = startX; x < W; x += W) {
+        ctx.drawImage(cachedFloor, 0, horizonY, W, tileH, x, y, W, tileH);
+      }
+    }
+    ctx.restore();
   } else {
     renderStageFloor(ctx, W, H, horizonY, theme);
   }
+  drawParallaxDetails(theme, horizonY);
 
   // Live glowing portal reflection on Level 5's obsidian floor.
   if (theme === "portal") {
@@ -7748,6 +7989,15 @@ function drawBackground() {
   vg.addColorStop(1, "rgba(2, 4, 9, 0.58)");
   ctx.fillStyle = vg;
   ctx.fillRect(0, 0, W, H);
+
+  // The halfway event changes the sky for the rest of this stage.
+  if (campaignPhase >= 2) {
+    const skyShift = ctx.createLinearGradient(0, 0, 0, Math.max(1, horizonY + 50));
+    skyShift.addColorStop(0, CAMPAIGN_DRAMA[campaignLevel].tint);
+    skyShift.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = skyShift;
+    ctx.fillRect(0, 0, W, horizonY + 50);
+  }
 }
 
 /* Crisp integer-snapped pixel-block helper for Commander Rael's
@@ -8366,15 +8616,17 @@ function drawBosses() {
 function drawBossHealthBars() {
   for (let i = 0; i < enemies.length; i++) {
     const b = enemies[i];
-    if (!b.isBoss && !b.isMiniBoss) continue;
+    if ((!b.isBoss && !b.isMiniBoss) || b.isCampaignBoss) continue;
 
     const maxHp = Math.max(1, b.maxHp || (b.isMiniBoss ? MINIBOSS_MAX_HP : BOSS_MAX_HP));
     const hpRatio = clamp(b.hp / maxHp, 0, 1);
     const barW = b.isMiniBoss ? 58 : Math.max(82, b.r * 2.2);
     const barH = b.isMiniBoss ? 6 : 8;
-    const centerX = clamp(b.x, barW / 2 + 10, Math.max(barW / 2 + 10, W - barW / 2 - 10));
+    if (b.x + b.r < camera.x || b.x - b.r > camera.x + W ||
+        b.y + b.r < camera.y || b.y - b.r > camera.y + H) continue;
+    const centerX = clamp(b.x, camera.x + barW / 2 + 10, Math.max(camera.x + barW / 2 + 10, camera.x + W - barW / 2 - 10));
     const aboveY = b.y - b.r - (b.isMiniBoss ? 22 : 18);
-    const barY = aboveY >= 20 ? aboveY : Math.min(H - 18, b.y + b.r + 12);
+    const barY = aboveY >= camera.y + 20 ? aboveY : Math.min(camera.y + H - 18, b.y + b.r + 12);
     const leftX = centerX - barW / 2;
 
     ctx.save();
@@ -8521,7 +8773,7 @@ function drawEnemyBullets() {
 function drawKnightEnemy(e) {
   const ox = Math.round(e.x);
   const oy = Math.round(e.y);
-  const p = clamp(e.r / 7.2, 1.65, 2.35);
+  const p = e.isCampaignBoss ? 3.3 : clamp(e.r / 7.2, 1.65, 2.35);
   const flipX = (e.facingX || (player.x < e.x ? -1 : 1)) < 0;
   const stride = Math.round(Math.sin(animTime * 9.5 + e.x * 0.04) * 1.1);
 
@@ -8580,7 +8832,7 @@ function drawKnightEnemy(e) {
 function drawDarkArcherEnemy(e) {
   const ox = Math.round(e.x);
   const oy = Math.round(e.y);
-  const p = clamp(e.r / 6.6, 1.55, 2.15);
+  const p = e.isCampaignBoss ? 3.2 : clamp(e.r / 6.6, 1.55, 2.15);
   const sign = (e.facingX || (player.x < e.x ? -1 : 1)) < 0 ? -1 : 1;
   const flipX = sign < 0;
   const stride = Math.round(Math.sin(animTime * 14 + (e.zigPhase || 0)) * 1.4);
@@ -8802,7 +9054,7 @@ function drawEnemies() {
     if (typeName === "orange") {
       drawDarkArcherEnemy(e);
     } else if (typeName === "purple") {
-      const isGhostMinion = Boolean(e.isSplitChild || e.canSplit === false);
+      const isGhostMinion = !e.isCampaignBoss && Boolean(e.isSplitChild || e.canSplit === false);
       if (isGhostMinion) {
         drawGhostMinionEnemy(e);
       } else {
@@ -9161,6 +9413,13 @@ function drawParticles() {
     const alpha = clamp(1 - (p.life / p.maxLife), 0, 1);
     if (alpha <= 0) continue;
     const radius = (p.size / 2) * (0.45 + 0.55 * alpha);
+    if (p.splinter) {
+      ctx.save(); ctx.globalAlpha = alpha; ctx.translate(p.x, p.y);
+      ctx.rotate(Math.atan2(p.vy, p.vx) + p.life * 9);
+      ctx.fillStyle = p.color; ctx.fillRect(-p.size, -1, p.size * 2, 2);
+      ctx.restore();
+      continue;
+    }
 
     ctx.fillStyle = p.color;
     ctx.globalAlpha = alpha * 0.24;
@@ -9186,8 +9445,12 @@ function draw() {
   ctx.save();
   if (shake.x !== 0 || shake.y !== 0) ctx.translate(shake.x, shake.y);
 
-  drawBackground();      // medieval stone battlefield + castle + moon + stars
+  drawBackground();      // layered screen-space scenery
+  drawWeatherBackground(); // atmospheric particles stay behind every actor
+  ctx.translate(-camera.x, -camera.y); // all actors and effects use world coordinates
   drawEnemyTrails();     // trails sit under everything else
+  drawStageObjects();
+  drawHealthPickups();
   drawGems();            // glowing emerald gems
   drawEnemies();
   drawExplosionRings();  // contact shockwaves on destroyed enemies
@@ -9196,29 +9459,38 @@ function draw() {
   drawBullets();         // player Blue Laser Blasts
   drawMuzzleFlash();     // directional laser muzzle flare
   drawPlayer();
-  drawBossHealthBars();  // crisp health bar above each active Boss
   drawParticles();       // explosion, laser, gem & death sparks
-  drawFloatingTexts();   // pickup bonuses, ability & tier callouts
-  drawAimReticle();      // subtle blue laser crosshair at mouse cursor
 
   ctx.restore();
-
-  // Brief full-screen flash when taking damage (losing a glowing blue orb).
-  if (damageFlashTimer > 0) {
-    const dmgProgress = clamp(damageFlashTimer / DAMAGE_FLASH_DURATION, 0, 1);
+  drawWeatherLightning(); // castle lightning briefly illuminates the entire scene
+  if (state === "boss_death") {
     ctx.save();
-    ctx.globalAlpha = dmgProgress * 0.42;
-    const dmgGrad = ctx.createRadialGradient(
-      W / 2, H / 2, Math.min(W, H) * 0.12,
-      W / 2, H / 2, Math.max(W, H) * 0.72
-    );
-    dmgGrad.addColorStop(0, "rgba(224, 242, 254, 0.55)");
-    dmgGrad.addColorStop(0.55, "rgba(248, 113, 113, 0.78)");
-    dmgGrad.addColorStop(1, "rgba(220, 38, 38, 0.95)");
-    ctx.fillStyle = dmgGrad;
+    ctx.fillStyle = "rgba(120,190,255,0.12)";
     ctx.fillRect(0, 0, W, H);
     ctx.restore();
-    ctx.globalAlpha = 1;
+  }
+
+  // Red edge pulse on damage, leaving the center clear at every aspect ratio.
+  if (damageFlashTimer > 0) {
+    const dmgProgress = clamp(damageFlashTimer / DAMAGE_FLASH_DURATION, 0, 1);
+    const edgeX = Math.max(1, W * 0.18), edgeY = Math.max(1, H * 0.18);
+    ctx.save();
+    ctx.globalAlpha = dmgProgress * 0.72;
+    const edges = [
+      { x: 0, y: 0, w: edgeX, h: H, x0: 0, y0: 0, x1: edgeX, y1: 0 },
+      { x: W - edgeX, y: 0, w: edgeX, h: H, x0: W, y0: 0, x1: W - edgeX, y1: 0 },
+      { x: 0, y: 0, w: W, h: edgeY, x0: 0, y0: 0, x1: 0, y1: edgeY },
+      { x: 0, y: H - edgeY, w: W, h: edgeY, x0: 0, y0: H, x1: 0, y1: H - edgeY }
+    ];
+    for (let i = 0; i < edges.length; i++) {
+      const edge = edges[i];
+      const gradient = ctx.createLinearGradient(edge.x0, edge.y0, edge.x1, edge.y1);
+      gradient.addColorStop(0, "rgba(185,28,28,0.95)");
+      gradient.addColorStop(1, "rgba(220,38,38,0)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(edge.x, edge.y, edge.w, edge.h);
+    }
+    ctx.restore();
   }
 
   // Brief luminous screen flash at the instant Future Bomb detonates.
