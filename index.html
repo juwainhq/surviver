@@ -138,15 +138,74 @@
     display: block; width: 100%; height: 100%; background: #8fe8ff;
     box-shadow: 0 0 8px rgba(56,189,248,.9); transition: width .06s linear;
   }
-  #bombSlot {
-    position: static; pointer-events: auto; cursor: pointer; color: #aebacb;
-    display: flex; align-items: center; justify-content: center; padding: 3px;
-    transition: color .2s, transform .15s;
+
+  /* ---------- Five Ability Buttons (Q / E / Shift / F / R) ---------- */
+  .ability-row {
+    display: flex; gap: 12px; align-items: center;
   }
-  #bombSlot svg { width: 25px; height: 25px; filter: drop-shadow(0 1px 3px rgba(0,0,0,.85)); }
-  #bombSlot.bomb-ready { color: #d9baff; filter: drop-shadow(0 0 6px rgba(192,132,252,.8)); }
-  #bombSlot:focus-visible { outline: 1px solid #c4b5fd; outline-offset: 4px; }
-  #bombSlot:active { transform: scale(.92); }
+  .ability-btn {
+    position: relative; pointer-events: auto; cursor: pointer;
+    width: 46px; height: 46px; border-radius: 12px;
+    background: rgba(15, 23, 42, 0.75); border: 1.5px solid rgba(255,255,255,0.18);
+    color: #e2e8f0; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-stats); font-weight: 800; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    transition: color .15s, border-color .15s, transform .1s, box-shadow .15s;
+    backdrop-filter: blur(4px);
+  }
+  .ability-btn svg { width: 20px; height: 20px; filter: drop-shadow(0 1px 3px rgba(0,0,0,.85)); }
+  .ability-btn.ready { color: #facc15; border-color: rgba(250,204,21,0.5);
+    box-shadow: 0 0 12px rgba(250,204,21,0.25); }
+  .ability-btn:not(.ready) { color: #94a3b8; }
+  .ability-btn:focus-visible { outline: 1px solid #c4b5fd; outline-offset: 3px; }
+  .ability-btn:active { transform: scale(.88); }
+  .ability-btn.active-state { border-color: rgba(56,189,248,0.6);
+    box-shadow: 0 0 14px rgba(56,189,248,0.35); }
+
+  .ability-cd-ring {
+    position: absolute; inset: 0; border-radius: 12px;
+    border: 2px solid transparent; pointer-events: none;
+  }
+  .ability-btn.ready .ability-cd-ring { border-color: rgba(255,255,255,0.12); }
+  .ability-btn:not(.ready) .ability-cd-ring { border-color: rgba(0,0,0,0.35); }
+
+  .ability-cd-fill {
+    position: absolute; inset: 2px; border-radius: 10px;
+    clip: rect(0px, 46px, 46px, 23px); pointer-events: none;
+  }
+  .ability-cd-fill::after {
+    content: ""; position: absolute; inset: 2px; border-radius: 10px;
+    border: 2px solid transparent; clip: rect(0px, 46px, 46px, 23px);
+  }
+
+  .ability-key {
+    position: absolute; top: 6px; left: 6px; right: 6px; bottom: 6px;
+    border-radius: 8px; border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none; z-index: 1;
+  }
+  .ability-key.k-q { border-color: rgba(255,255,255,0.2); color: #facc15; }
+  .ability-key.k-e { border-color: rgba(255,255,255,0.2); color: #67e8f9; }
+  .ability-key.k-shift { border-color: rgba(255,255,255,0.2); color: #a78bfa; }
+  .ability-key.k-f { border-color: rgba(255,255,255,0.2); color: #34d399; }
+  .ability-key.k-r { border-color: rgba(255,255,255,0.2); color: #f87171; }
+
+  .ability-icon { position: relative; z-index: 2; }
+  .ability-btn:not(.ready) .ability-icon { opacity: 0.45; }
+
+  .ability-btn.k-q.ready .ability-icon { color: #facc15; }
+  .ability-btn.k-e.ready .ability-icon { color: #67e8f9; }
+  .ability-btn.k-shift.ready .ability-icon { color: #a78bfa; }
+  .ability-btn.k-f.ready .ability-icon { color: #34d399; }
+  .ability-btn.k-r.ready .ability-icon { color: #f87171; }
+
+  .ability-label {
+    position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+    color: #94a3b8; white-space: nowrap;
+    pointer-events: none;
+  }
+  .ability-btn.ready .ability-label { color: #e2e8f0; }
   .sr-only {
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
     overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
@@ -163,6 +222,253 @@
     #objective { top: calc(max(14px, env(safe-area-inset-top)) + 58px); width: calc(100vw - 28px); font-size: 13px; }
     .hud-bottom { bottom: max(18px, env(safe-area-inset-bottom)); }
   }
+
+  /* ---------- Permanent Level Banner (top center) ---------- */
+#levelBanner {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -130%);
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px 12px;
+  border-radius: 0 0 14px 14px;
+  background: rgba(6, 8, 15, 0.82);
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.4s ease,
+    padding 0.3s ease,
+    gap 0.3s ease;
+}
+#levelBanner.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+#levelBanner.collapsed {
+  padding: 5px 14px 6px;
+  gap: 3px;
+  border-radius: 10px;
+}
+#levelBanner.collapsed #levelBannerName { display: none; }
+#levelBanner.collapsed #levelBannerNumber { font-size: 15px; }
+
+#levelBannerNumber {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: clamp(22px, 4.5vw, 36px);
+  color: #facc15;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 0 16px rgba(250, 204, 21, 0.7), 0 0 30px rgba(217, 179, 108, 0.45);
+}
+#levelBannerName {
+  font-family: var(--font-stats);
+  font-weight: 700;
+  font-size: clamp(13px, 2.2vw, 17px);
+  color: #e2e8f0;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+}
+
+#levelBannerProgress {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.22);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+.dot.active {
+  background: #facc15;
+  box-shadow: 0 0 11px rgba(250, 204, 21, 0.85);
+}
+
+/* ---------- Full-screen level border ---------- */
+#screenBorder {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border: 2.5px solid transparent;
+  box-sizing: border-box;
+  transition: border-color 0.4s ease;
+}
+
+/* ---------- Boss top health bar ---------- */
+#bossTopBar {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px 16px;
+  width: min(620px, 92vw);
+  border-radius: 0 0 20px 20px;
+  background: rgba(6, 8, 15, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 3px solid #facc15;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8),
+              0 0 20px rgba(250, 204, 21, 0.2);
+}
+#bossTopBar.visible {
+  display: flex;
+  animation: bossBarSlideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes bossBarSlideDown {
+  from { transform: translateX(-50%) translateY(-120%); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+#bossTopBar.fading-out {
+  animation: bossBarFadeOut 0.4s ease forwards;
+}
+@keyframes bossBarFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; transform: translateX(-50%) translateY(-100%); }
+}
+
+#bossTopName {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: clamp(20px, 4vw, 28px);
+  color: #fef08a;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(250, 204, 21, 0.6);
+  margin-bottom: 2px;
+}
+
+#bossTopPhase {
+  font-family: var(--font-stats);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #22d3ee;
+  text-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
+}
+
+#bossTopBarWrap {
+  width: 100%;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#bossTopBarFill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #f43f5e, #fb7185);
+  border-radius: 999px;
+  box-shadow: 0 0 16px rgba(244, 63, 94, 0.6);
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+  /* ---------- Main Menu screen (shown before the story intro) ---------- */
+  #mainMenu {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 25;
+    background: #02040a;
+    overflow-y: auto;
+    padding: 24px;
+    text-align: center;
+  }
+
+  #mainMenu.visible { display: flex; }
+
+  #starfield {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .star {
+    position: absolute;
+    background: #ffffff;
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    animation: twinkle var(--tw) ease-in-out infinite;
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.25; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  #menuPanel {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 30px 32px 26px;
+    margin: auto;
+  }
+
+  #menuTitle {
+    font-family: var(--font-heading);
+    font-weight: 900;
+    font-size: clamp(48px, 14vw, 110px);
+    line-height: 0.95;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #fde047;
+    text-shadow:
+      0 0 14px rgba(253, 224, 71, 0.8),
+      0 0 34px rgba(250, 204, 21, 0.6),
+      0 0 78px rgba(201, 168, 76, 0.45);
+    animation: menuTitleGlow 3s ease-in-out infinite alternate;
+  }
+
+  @keyframes menuTitleGlow {
+    from {
+      transform: scale(1);
+      text-shadow: 0 0 10px rgba(253,224,71,0.7), 0 0 28px rgba(250,204,21,0.5), 0 0 60px rgba(201,168,76,0.35);
+    }
+    to {
+      transform: scale(1.02);
+      text-shadow: 0 0 18px rgba(255,255,255,0.9), 0 0 40px rgba(250,204,21,0.7), 0 0 90px rgba(201,168,76,0.55);
+    }
+  }
+
+  #menuSubtitle {
+    font-family: var(--font-heading);
+    font-weight: 900;
+    font-size: clamp(15px, 3vw, 20px);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #c9a84c;
+    text-shadow: 0 0 14px rgba(201, 168, 76, 0.5);
+  }
+
+  #beginMissionBtn { margin-top: 6px; }
 
   /* ---------- Story Intro / Start screen ---------- */
   #startScreen {
@@ -270,38 +576,43 @@
     font-variant-numeric: tabular-nums;
   }
 
-  #beginFightBtn {
-    margin-top: 4px;
+  /* ---------- Shared menu / action button style ---------- */
+  .menu-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     font-family: var(--font-heading);
-    font-size: clamp(18px, 2.8vw, 23px);
     font-weight: 900;
-    letter-spacing: 0.12em;
+    font-size: clamp(16px, 2.5vw, 20px);
+    letter-spacing: 2px;
     text-transform: uppercase;
-    color: #090d16;
-    background: linear-gradient(180deg, #fde68a 0%, #eab308 55%, #ca8a04 100%);
-    border: 1.5px solid #fef08a;
-    border-radius: 10px;
-    padding: 14px 42px;
+    color: #fde047;
+    background: rgba(10, 10, 26, 0.85);
+    border: 1px solid #c9a84c;
+    border-radius: 4px;
+    padding: 12px 32px;
     cursor: pointer;
     box-shadow:
-      0 0 24px rgba(234, 179, 8, 0.45),
-      0 0 42px rgba(34, 211, 238, 0.22);
-    transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
+      0 0 20px rgba(201, 168, 76, 0.35),
+      inset 0 0 0 1px rgba(255, 238, 150, 0.2);
+    transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease, color 0.15s ease;
   }
 
-  #beginFightBtn:hover,
-  #beginFightBtn:focus-visible {
-    transform: translateY(-2px) scale(1.04);
-    filter: brightness(1.08);
+  .menu-btn:hover,
+  .menu-btn:focus-visible {
+    filter: brightness(1.25);
     box-shadow:
-      0 0 32px rgba(250, 204, 21, 0.72),
-      0 0 54px rgba(34, 211, 238, 0.38);
+      0 0 28px rgba(201, 168, 76, 0.55),
+      inset 0 0 0 1px rgba(255, 245, 170, 0.3);
     outline: none;
   }
 
-  #beginFightBtn:active {
-    transform: scale(0.97);
+  .menu-btn:active {
+    transform: scale(0.96);
   }
+
+  #beginFightBtn { margin-top: 4px; }
 
   #startInstructions {
     font-size: 13px;
@@ -568,19 +879,39 @@
     opacity: 0.72;
   }
 
-  .upgrade-cta {
-    margin-top: 2px;
+  /* Install Data Chip / Claim Free Data Chip buttons use the shared menu-btn look */
+  .upgrade-cta,
+  #levelUpgradeCta {
     font-family: var(--font-heading);
-    font-size: 11px;
     font-weight: 900;
-    letter-spacing: 1.5px;
+    font-size: clamp(14px, 2vw, 16px);
+    letter-spacing: 2px;
     text-transform: uppercase;
-    color: #04070f;
-    background: var(--card-accent);
+    color: #fde047;
+    background: rgba(10, 10, 26, 0.85);
+    border: 1px solid #c9a84c;
     border-radius: 4px;
-    padding: 7px 14px;
-    width: 100%;
-    box-shadow: 0 0 14px var(--card-glow);
+    padding: 12px 32px;
+    width: auto;
+    min-width: 220px;
+    box-shadow:
+      0 0 20px rgba(201, 168, 76, 0.35),
+      inset 0 0 0 1px rgba(255, 238, 150, 0.2);
+    transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  }
+  .upgrade-cta:hover,
+  .upgrade-cta:focus-visible,
+  #levelUpgradeCta:hover,
+  #levelUpgradeCta:focus-visible {
+    filter: brightness(1.25);
+    box-shadow:
+      0 0 28px rgba(201, 168, 76, 0.55),
+      inset 0 0 0 1px rgba(255, 245, 170, 0.3);
+    outline: none;
+  }
+  .upgrade-cta:active,
+  #levelUpgradeCta:active {
+    transform: scale(0.96);
   }
 
   /* ---------- Dramatic Full-Screen Level Transition Card ---------- */
@@ -877,11 +1208,6 @@
     line-height: 1.32;
   }
 
-  .upgrade-card.level-free-chip .upgrade-cta {
-    padding: 6px 12px;
-    font-size: 10.5px;
-  }
-
   .free-chip-badge {
     font-family: var(--font-stats);
     font-size: 10.5px;
@@ -914,111 +1240,9 @@
     box-shadow: 0 0 16px rgba(52, 211, 153, 0.55);
   }
 
-  /* “Continue” button styled as a glowing Year-3047 sci-fi panel */
-  #levelCardBtn {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    margin-top: 4px;
-    min-width: 248px;
-    padding: 13px 40px;
-    font-family: var(--font-heading);
-    font-size: 17px;
-    font-weight: 900;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: #e0f2fe;
-    text-shadow:
-      0 0 10px rgba(56, 189, 248, 0.92),
-      0 0 22px rgba(34, 211, 238, 0.55);
-    background:
-      repeating-linear-gradient(
-        0deg,
-        rgba(56, 189, 248, 0.07) 0px,
-        rgba(56, 189, 248, 0.07) 1px,
-        transparent 1px,
-        transparent 4px
-      ),
-      linear-gradient(180deg, rgba(14, 54, 92, 0.94) 0%, rgba(7, 24, 48, 0.97) 55%, rgba(11, 40, 76, 0.95) 100%);
-    border: 1.5px solid #38bdf8;
-    border-radius: 8px;
-    box-shadow:
-      0 0 20px rgba(34, 211, 238, 0.52),
-      0 0 44px rgba(56, 189, 248, 0.26),
-      0 10px 26px rgba(0, 0, 0, 0.72),
-      inset 0 0 20px rgba(34, 211, 238, 0.32),
-      inset 0 1px 0 rgba(224, 242, 254, 0.50);
-    cursor: pointer;
-    overflow: hidden;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
-  }
+  /* Continue button uses the shared .menu-btn style */
 
-  /* Illuminated sci-fi HUD bus strips at top and bottom of the Continue panel */
-  #levelCardBtn::before,
-  #levelCardBtn::after {
-    content: "";
-    position: absolute;
-    left: 22%;
-    right: 22%;
-    height: 2px;
-    background: #67e8f9;
-    box-shadow: 0 0 10px #22d3ee;
-    pointer-events: none;
-  }
-  #levelCardBtn::before { top: 0; border-radius: 0 0 2px 2px; }
-  #levelCardBtn::after  { bottom: 0; border-radius: 2px 2px 0 0; }
-
-  #levelCardBtn .scifi-btn-rail {
-    width: 14px;
-    height: 2px;
-    background: #67e8f9;
-    box-shadow: 0 0 8px #22d3ee;
-    border-radius: 2px;
-    opacity: 0.95;
-  }
-
-  #levelCardBtn:hover,
-  #levelCardBtn:focus-visible {
-    transform: translateY(-2px) scale(1.035);
-    color: #ffffff;
-    border-color: #67e8f9;
-    box-shadow:
-      0 0 28px rgba(56, 189, 248, 0.85),
-      0 0 60px rgba(34, 211, 238, 0.42),
-      0 14px 28px rgba(0, 0, 0, 0.8),
-      inset 0 0 28px rgba(56, 189, 248, 0.48),
-      inset 0 0 0 1px rgba(186, 230, 253, 0.55);
-  }
-
-  #levelCardBtn:active {
-    transform: translateY(0) scale(0.98);
-  }
-
-  #victoryPlayAgainBtn {
-    margin-top: 4px;
-    font-family: var(--font-heading);
-    font-size: 18px;
-    font-weight: 900;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #090d16;
-    background: linear-gradient(180deg, #fde68a 0%, #eab308 55%, #ca8a04 100%);
-    border: 1.5px solid #fef08a;
-    border-radius: 10px;
-    padding: 13px 38px;
-    cursor: pointer;
-    box-shadow: 0 0 24px rgba(234, 179, 8, 0.45);
-    transition: transform 0.14s ease, filter 0.14s ease, box-shadow 0.14s ease;
-  }
-
-  #victoryPlayAgainBtn:hover,
-  #victoryPlayAgainBtn:focus-visible {
-    transform: translateY(-2px) scale(1.04);
-    filter: brightness(1.08);
-    box-shadow: 0 0 34px rgba(250, 204, 21, 0.75);
-  }
+  /* Play Again button uses the shared .menu-btn style */
 
   #victoryStats {
     font-family: var(--font-stats);
@@ -1116,61 +1340,7 @@
     margin-top: 10px;
   }
 
-  #retryLevelBtn {
-    font-family: var(--font-heading);
-    font-size: 19px;
-    font-weight: 900;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #090d16;
-    background: linear-gradient(180deg, #fde68a 0%, #eab308 55%, #ca8a04 100%);
-    border: 1.5px solid #fef08a;
-    border-radius: 10px;
-    padding: 14px 36px;
-    cursor: pointer;
-    box-shadow: 0 0 24px rgba(234, 179, 8, 0.48);
-    transition: transform 0.12s ease, filter 0.12s ease, box-shadow 0.12s ease;
-  }
-
-  #retryLevelBtn:hover, #retryLevelBtn:focus-visible {
-    filter: brightness(1.08);
-    transform: translateY(-2px) scale(1.04);
-    box-shadow: 0 0 34px rgba(250, 204, 21, 0.78);
-    outline: none;
-  }
-
-  #retryLevelBtn:active { transform: scale(0.97); }
-
-  #restartGameBtn {
-    font-family: var(--font-heading);
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #e2e8f0;
-    background: linear-gradient(180deg, rgba(15, 28, 50, 0.92) 0%, rgba(8, 14, 28, 0.96) 100%);
-    border: 1.5px solid rgba(125, 211, 252, 0.48);
-    border-radius: 10px;
-    padding: 13px 28px;
-    cursor: pointer;
-    box-shadow:
-      0 0 18px rgba(56, 189, 248, 0.25),
-      inset 0 0 14px rgba(56, 189, 248, 0.14);
-    text-shadow: 0 0 10px rgba(56, 189, 248, 0.45);
-    transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
-  }
-
-  #restartGameBtn:hover, #restartGameBtn:focus-visible {
-    color: #ffffff;
-    border-color: #67e8f9;
-    transform: translateY(-2px) scale(1.03);
-    box-shadow:
-      0 0 26px rgba(56, 189, 248, 0.55),
-      inset 0 0 20px rgba(56, 189, 248, 0.25);
-    outline: none;
-  }
-
-  #restartGameBtn:active { transform: scale(0.97); }
+  /* Retry Level and Restart Game buttons use the shared .menu-btn style */
 
   #gameOver .sub {
     font-family: var(--font-stats);
@@ -1205,10 +1375,10 @@
       line-height: 1.55;
     }
 
-    #beginFightBtn {
+    .menu-btn {
       width: min(280px, 100%);
-      padding: 13px 24px;
-      font-size: 17px;
+      padding: 10px 24px;
+      font-size: 16px;
     }
 
     #startInstructions {
@@ -1239,12 +1409,7 @@
       gap: 10px;
     }
 
-    #retryLevelBtn,
-    #restartGameBtn {
-      width: min(280px, 100%);
-      padding: 13px 24px;
-      font-size: 17px;
-    }
+    /* covered by .menu-btn above */
 
     #upgradeScreen {
       justify-content: flex-start;
@@ -1287,7 +1452,7 @@
     #levelCardStory { font-size: 13.5px; line-height: 1.38; }
     .free-upgrade-header { font-size: 10.5px; letter-spacing: 0.1em; padding: 3px 10px; }
     .upgrade-card.level-free-chip { padding: 10px 12px 10px; gap: 4px; }
-    #levelCardBtn { width: min(260px, 100%); min-width: 0; padding: 12px 24px; font-size: 15.5px; }
+    /* Continue uses .menu-btn above */
   }
 
 </style>
@@ -1295,6 +1460,30 @@
 <body>
 
 <canvas id="game"></canvas>
+
+<!-- Permanent level banner: level number, name, and 5-dot campaign progress -->
+<div id="levelBanner">
+  <div id="levelBannerNumber">Level 1</div>
+  <div id="levelBannerName">The Village Raid</div>
+  <div id="levelBannerProgress">
+    <span class="dot" id="levelBannerDot0"></span>
+    <span class="dot" id="levelBannerDot1"></span>
+    <span class="dot" id="levelBannerDot2"></span>
+    <span class="dot" id="levelBannerDot3"></span>
+    <span class="dot" id="levelBannerDot4"></span>
+  </div>
+</div>
+<!-- Thin screen border tinted to the current level -->
+<div id="screenBorder"></div>
+
+<!-- Large boss health bar at top of screen (shown only during boss fights) -->
+<div id="bossTopBar" role="dialog" aria-modal="true" aria-labelledby="bossTopName">
+  <div id="bossTopName">Boss Name</div>
+  <div id="bossTopPhase">Phase 1</div>
+  <div id="bossTopBarWrap">
+    <div id="bossTopBarFill"></div>
+  </div>
+</div>
 
 <!-- Minimal gameplay HUD: only the requested floating elements. -->
 <div id="hud" aria-label="Player status">
@@ -1316,30 +1505,67 @@
       <span id="laserStatus" class="sr-only">Ready</span>
       <div class="weapon-track"><span id="laserCooldownFill"></span></div>
     </div>
-    <button type="button" id="bombSlot" aria-label="Future Bomb: 0 of 5 kills" title="Future Bomb · Space">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><defs><linearGradient id="bombChargeGradient" x1="0" y1="1" x2="0" y2="0"><stop id="bombChargeStop" offset="0%" stop-color="#c4a5fa" stop-opacity=".65"/><stop id="bombEmptyStop" offset="0%" stop-color="#c4a5fa" stop-opacity="0"/></linearGradient></defs><circle cx="11" cy="14" r="7" fill="url(#bombChargeGradient)"/><path d="M14.5 8.2l1.8-2.5 1.7 1.2M17.5 4l.5-1.7m2.1 2.6l1.6-.7M10 10l-2 2"/></svg>
-      <span id="bombStatus" class="sr-only">0/5</span>
-    </button>
+    <div class="ability-row">
+      <button type="button" id="abilityTimeFreeze" class="ability-btn k-q ready" aria-label="Time Freeze (Q) — Freeze all enemies for 3s" title="Time Freeze · Q">
+        <div class="ability-key k-q">Q</div>
+        <svg class="ability-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="4"/></svg>
+        <div class="ability-cd-ring"></div><div class="ability-cd-fill"></div>
+        <span class="ability-label">Time Freeze</span>
+      </button>
+      <button type="button" id="abilityNovaBlast" class="ability-btn k-e ready" aria-label="Nova Blast (E) — Ring of 12 bullets" title="Nova Blast · E">
+        <div class="ability-key k-e">E</div>
+        <svg class="ability-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h20M12 2v20M5.64 5.64l12.72 12.72M18.36 5.64l-12.72 12.72"/><circle cx="12" cy="12" r="1"/></svg>
+        <div class="ability-cd-ring"></div><div class="ability-cd-fill"></div>
+        <span class="ability-label">Nova Blast</span>
+      </button>
+      <button type="button" id="abilityDash" class="ability-btn k-shift ready" aria-label="Dash (Shift) — Invincible dash with energy trail" title="Dash · Shift">
+        <div class="ability-key k-shift">Shift</div>
+        <svg class="ability-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/><path d="M17 17l3 3M7 7l-3-3"/></svg>
+        <div class="ability-cd-ring"></div><div class="ability-cd-fill"></div>
+        <span class="ability-label">Dash</span>
+      </button>
+      <button type="button" id="abilityTurretDrop" class="ability-btn k-f ready" aria-label="Turret Drop (F) — Auto-firing turret for 10s" title="Turret Drop · F">
+        <div class="ability-key k-f">F</div>
+        <svg class="ability-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="6" width="8" height="12" rx="1"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="12" y1="6" x2="12" y2="4"/></svg>
+        <div class="ability-cd-ring"></div><div class="ability-cd-fill"></div>
+        <span class="ability-label">Turret</span>
+      </button>
+      <button type="button" id="abilityOvercharge" class="ability-btn k-r ready" aria-label="Overcharge (R) — Double fire rate for 8s" title="Overcharge · R">
+        <div class="ability-key k-r">R</div>
+        <svg class="ability-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12h20"/></svg>
+        <div class="ability-cd-ring"></div><div class="ability-cd-fill"></div>
+        <span class="ability-label">Overcharge</span>
+      </button>
+    </div>
   </div>
 </div>
 <!-- Retained off-screen state hooks; gameplay controls are keyboard, mouse and touch gestures. -->
 <div hidden>
   <span id="timer"></span><span id="bestTime"></span><span id="hint"></span>
-  <button id="shieldSlot" type="button"><span id="shieldStatus"></span><span id="shieldCooldownFill"></span></button>
   <span id="levelUp"></span><span id="bossAlert"></span><span id="storyEvent"></span>
   <div id="bossHud"><span id="bossName"></span><span id="bossHpText"></span><span id="bossHpFill"></span></div>
   <span id="runTitle"></span>
   <div id="touchControls"><button id="touchUp"></button><button id="touchDown"></button><button id="touchLeft"></button><button id="touchRight"></button></div>
 </div>
 
-<div id="startScreen" class="visible" role="dialog" aria-labelledby="introTitle">
+<!-- Main menu screen: shows before the story intro -->
+<div id="mainMenu" class="visible" role="dialog" aria-labelledby="menuTitle">
+  <div id="starfield" aria-hidden="true"></div>
+  <div id="menuPanel">
+    <h1 id="menuTitle">SURVIVE</h1>
+    <div id="menuSubtitle">1347 AD · Commander Rael</div>
+    <button id="beginMissionBtn" type="button" class="menu-btn">BEGIN MISSION</button>
+  </div>
+</div>
+
+<div id="startScreen" role="dialog" aria-labelledby="introTitle">
   <div id="introPanel">
     <div id="introCrest">Chrono-Log · 3047 AD ⇢ 1347 AD</div>
     <h1 id="introTitle">SURVIVE</h1>
     <div class="chronicle-divider" aria-hidden="true"></div>
     <p id="storyText">Year 3047. Commander Rael was crossing the galaxy when a wormhole dragged him to 1347 AD. Surrounded by dark forces, he must fight his way back to the future. Survive.</p>
     <div id="startBest">Best: 0s</div>
-    <button id="beginFightBtn" type="button">Begin Fight</button>
+    <button id="beginFightBtn" type="button" class="menu-btn">Begin Fight</button>
     <div id="startInstructions">WASD / Arrows Move · Left Click: Blue Laser · Right Click: 2s Energy Shield (30s CD) · Space: Future Bomb (every 5 kills)<br>Touch: drag on the left to move · tap on the right to fire · two fingers on the right for shield · tap the bomb icon when ready<br>Shoot barrels for splash damage and crates for supplies · Pillars crack after 3 hits and shatter on the next</div>
   </div>
 </div>
@@ -1420,10 +1646,8 @@
         <div class="upgrade-cta" id="levelUpgradeCta">Claim Free Data Chip</div>
       </button>
     </div>
-    <button id="levelCardBtn" type="button">
-      <span class="scifi-btn-rail scifi-btn-rail-left" aria-hidden="true"></span>
+    <button id="levelCardBtn" type="button" class="menu-btn">
       <span class="scifi-btn-label" id="levelCardBtnLabel">Continue</span>
-      <span class="scifi-btn-rail scifi-btn-rail-right" aria-hidden="true"></span>
     </button>
   </div>
 </div>
@@ -1435,7 +1659,7 @@
     <div class="chronicle-divider" aria-hidden="true"></div>
     <p id="victoryText">Commander Rael has returned to the future. Earth is safe.</p>
     <div id="victoryStats">Score: 0 · Multiplier x1 · Gems: 0</div>
-    <button id="victoryPlayAgainBtn" type="button">Play Again</button>
+    <button id="victoryPlayAgainBtn" type="button" class="menu-btn">Play Again</button>
   </div>
 </div>
 
@@ -1447,8 +1671,8 @@
   <div id="finalBest">Best: 0s</div>
   <div id="newBest">★ New Best! ★</div>
   <div class="gameover-actions">
-    <button id="retryLevelBtn" type="button">Retry Level</button>
-    <button id="restartGameBtn" type="button">Restart Game</button>
+    <button id="retryLevelBtn" type="button" class="menu-btn">Retry Level</button>
+    <button id="restartGameBtn" type="button" class="menu-btn">Restart Game</button>
   </div>
   <div class="sub">Press <kbd>Enter</kbd> / <kbd>Space</kbd> to Retry Level &nbsp;·&nbsp; <kbd>R</kbd> to Restart Game</div>
 </div>
@@ -1473,6 +1697,18 @@ const ctx = canvas.getContext("2d");
 
 const timerEl     = document.getElementById("timer");
 const levelEl     = document.getElementById("level");
+const levelBannerEl          = document.getElementById("levelBanner");
+const levelBannerNumberEl    = document.getElementById("levelBannerNumber");
+const levelBannerNameEl      = document.getElementById("levelBannerName");
+const levelBannerProgressEl  = document.getElementById("levelBannerProgress");
+const levelBannerDotEls = [0, 1, 2, 3, 4].map(function (i) {
+  return document.getElementById("levelBannerDot" + i);
+});
+const screenBorderEl = document.getElementById("screenBorder");
+const bossTopBarEl = document.getElementById("bossTopBar");
+const bossTopNameEl = document.getElementById("bossTopName");
+const bossTopPhaseEl = document.getElementById("bossTopPhase");
+const bossTopBarFillEl = document.getElementById("bossTopBarFill");
 const objectiveEl = document.getElementById("objective");
 const gemsEl      = document.getElementById("gems");
 const comboEl     = document.getElementById("combo");
@@ -1492,15 +1728,12 @@ const bossHpFillEl = document.getElementById("bossHpFill");
 const laserSlotEl = document.getElementById("laserSlot");
 const laserStatusEl = document.getElementById("laserStatus");
 const laserCooldownFillEl = document.getElementById("laserCooldownFill");
-const shieldSlotEl = document.getElementById("shieldSlot");
-const shieldStatusEl = document.getElementById("shieldStatus");
-const shieldCooldownFillEl = document.getElementById("shieldCooldownFill");
-const bombSlotEl = document.getElementById("bombSlot");
-const bombStatusEl = document.getElementById("bombStatus");
-const bombChargeStopEl = document.getElementById("bombChargeStop");
-const bombEmptyStopEl = document.getElementById("bombEmptyStop");
-const bombChargeFillEl = document.getElementById("bombChargeFill");
-const bombRingProgressEl = document.getElementById("bombRingProgress");
+/* ---------- Five Ability Button Element Refs ---------- */
+const abilityTimeFreezeEl = document.getElementById("abilityTimeFreeze");
+const abilityNovaBlastEl = document.getElementById("abilityNovaBlast");
+const abilityDashEl = document.getElementById("abilityDash");
+const abilityTurretDropEl = document.getElementById("abilityTurretDrop");
+const abilityOverchargeEl = document.getElementById("abilityOvercharge");
 const levelCardScreenEl = document.getElementById("levelCardScreen");
 const levelTransitionCardEl = document.getElementById("levelTransitionCard");
 const levelCardTitleEl = document.getElementById("levelCardTitle");
@@ -1544,6 +1777,9 @@ const startScreenEl = document.getElementById("startScreen");
 const storyTextEl = document.getElementById("storyText");
 const startBestEl = document.getElementById("startBest");
 const beginFightBtn = document.getElementById("beginFightBtn");
+const mainMenuEl    = document.getElementById("mainMenu");
+const beginMissionBtn = document.getElementById("beginMissionBtn");
+const starfieldEl   = document.getElementById("starfield");
 const gameOverEl  = document.getElementById("gameOver");
 const finalStageEl = document.getElementById("finalStage");
 const finalStatsEl = document.getElementById("finalStats");
@@ -1562,6 +1798,12 @@ const touchRightBtn = document.getElementById("touchRight");
 const WORLD_SCALE = 3; // open world is 3x the canvas size in both width & height
 let W = 0, H = 0;
 let worldW = 0, worldH = 0;
+
+// Camera follows the player smoothly with a lag so the world scrolls around a
+// player kept near the center, removing the hard snap.
+const CAMERA_LERP_SPEED = 5.0;   // lower = smoother / more lag (~60% follow feel)
+// Background parallax layers scroll at 20% of player movement speed.
+const PARALLAX_SPEED = 0.2;
 
 const camera = {
   x: 0,
@@ -1584,7 +1826,7 @@ function updateCamera(dt) {
   const maxCamY = Math.max(0, worldH - H);
   camera.targetX = clamp(player.x - W / 2, 0, maxCamX);
   camera.targetY = clamp(player.y - H / 2, 0, maxCamY);
-  const follow = dt > 0 ? (1 - Math.exp(-12 * dt)) : 1;
+  const follow = dt > 0 ? (1 - Math.exp(-CAMERA_LERP_SPEED * dt)) : 1;
   camera.x = clamp(camera.x + (camera.targetX - camera.x) * follow, 0, maxCamX);
   camera.y = clamp(camera.y + (camera.targetY - camera.y) * follow, 0, maxCamY);
 }
@@ -1869,13 +2111,41 @@ const LASER_RECOIL_SHAKE = 0.04;       // subtle tactile weapon kick
 const ENEMY_EXPLOSION_PARTICLES = 16;  // burst when a laser kills an enemy
 const ENEMY_EXPLOSION_RING_DURATION = 0.24;
 
-const ACTIVE_SHIELD_DURATION = 2;      // Right-click energy shield lasts 2s
-const ACTIVE_SHIELD_COOLDOWN = 30;     // 30-second cooldown
-const ACTIVE_SHIELD_RADIUS = 44;       // short-range energy dome radius (px)
+const ACTIVE_SHIELD_DURATION = 2;      // Right-click energy shield lasts 2s (retained)
+const ACTIVE_SHIELD_COOLDOWN = 30;     // 30-second cooldown (retained)
+const ACTIVE_SHIELD_RADIUS = 44;       // short-range energy dome radius (px) (retained)
 
-const FUTURE_BOMB_KILLS_REQUIRED = 5;  // every 5 kills charge Future Bomb
-const FUTURE_BOMB_WAVE_DURATION = 0.68; // full-screen shockwave duration (s)
-const FUTURE_BOMB_FLASH_DURATION = 0.30; // brief chrono-flash duration (s)
+const FUTURE_BOMB_KILLS_REQUIRED = 5;  // every 5 kills charge Future Bomb (retained)
+const FUTURE_BOMB_WAVE_DURATION = 0.68; // full-screen shockwave duration (s) (retained)
+const FUTURE_BOMB_FLASH_DURATION = 0.30; // brief chrono-flash duration (s) (retained)
+
+/* ---------- New Ability Constants ---------- */
+/* Ability 1: Time Freeze (Q) — freezes all enemies for 3s, player glows white */
+const TIME_FREEZE_COOLDOWN = 15;
+const TIME_FREEZE_DURATION = 3;
+
+/* Ability 2: Nova Blast (E) — ring of 12 bullets in all directions */
+const NOVA_BLAST_COOLDOWN = 20;
+const NOVA_BLAST_BULLET_COUNT = 12;
+const NOVA_BLAST_SPEED = 420;
+
+/* Ability 3: Dash (Shift) — invincible dash with energy trail */
+const DASH_COOLDOWN = 5;
+const DASH_DURATION = 0.35;
+const DASH_SPEED = 720;
+const DASH_INVULN_DURATION = 0.35;
+
+/* Ability 4: Turret Drop (F) — auto-firing turret for 10s then explodes */
+const TURRET_COOLDOWN = 25;
+const TURRET_DURATION = 10;
+const TURRET_FIRE_INTERVAL = 0.7;
+const TURRET_RANGE = 300;
+const TURRET_BULLET_SPEED = 320;
+const TURRET_RADIUS = 12;
+
+/* Ability 5: Overcharge (R) — double fire rate + bullet size for 8s, red tint */
+const OVERCHARGE_COOLDOWN = 30;
+const OVERCHARGE_DURATION = 8;
 
 /* ---------- 20-Second Upgrades ----------
    Every 20s survived, gameplay pauses and offers 3 random upgrades:
@@ -1991,6 +2261,15 @@ const ENEMY_BASE_SPEED = TYPE1_BASE_SPEED; // base speed reference on Level 1
 const BASE_SPAWN_INTERVAL = 0.85; // seconds between spawns on Level 1
 const MIN_SPAWN_INTERVAL  = 0.18; // safety floor so spawning never gets absurd
 
+/* ---------- Per-level difficulty behavior ---------- */
+/* Level 4: chance per frame that an enemy dodges an incoming bullet. */
+const LEVEL4_DODGE_CHANCE = 0.02;      // ~2% per frame per nearby bullet
+const LEVEL4_DODGE_DISTANCE = 180;     // px — bullets within this range trigger a dodge
+/* Level 4: formation spawn timer (seconds between formation waves). */
+const LEVEL4_FORMATION_INTERVAL = 8;   // seconds between formation spawns
+/* Level 5: flanking angle spread (radians) — enemies approach from around. */
+const LEVEL5_FLANK_SPREAD = Math.PI * 0.6; // ~34° either side of direct pursuit
+
 /* ---------- Difficulty levels ----------
    The level goes up every 10 seconds survived:
      Level 1 = 0–9s,  Level 2 = 10–19s,  Level 3 = 20–29s, ...
@@ -2042,6 +2321,7 @@ let currentUpgradeChoices = []; // the 3 upgrade definitions currently shown
 let nextBossTime = BOSS_INTERVAL_SECONDS; // 60s, 120s, 180s, ...
 let difficultyReliefLevels = 0; // slight difficulty setback earned by boss kills
 let bossAlertTimer = 0;      // seconds left to show the boss-arrival banner
+let nextFormationTime = LEVEL4_FORMATION_INTERVAL; // seconds until next Level 4 formation wave
 
 let enemies = [];        // { x, y, r, hp, maxHp, isBoss, speed, spawnFlash, trail }
 let bullets = [];        // player blue laser blasts
@@ -2060,7 +2340,7 @@ let futureBombWaves = []; // full-arena shockwaves from Future Bomb { x, y, maxR
 let floatingTexts = [];  // brief pickup/multiplier/ability callouts
 let keys = Object.create(null);
 
-/* Aiming, laser cooldown, Right-Click 2s shield (30s CD), & Future Bomb (5 kills) */
+/* Aiming, laser cooldown, Right-Click 2s shield (30s CD), & Future Bomb (5 kills) — retained */
 let mouseX = 0;
 let mouseY = 0;
 let mouseTracked = false;
@@ -2073,6 +2353,31 @@ let totalKills = 0;          // total enemies defeated this run
 let bombChargeKills = 0;     // 0..5 kills charging the next Future Bomb
 let futureBombReady = false; // true once 5 kills have charged Future Bomb
 let bombFlashTimer = 0;      // brief full-screen flash when Future Bomb detonates
+
+/* ---------- New Ability State ---------- */
+/* Ability 1: Time Freeze (Q) */
+let timeFreezeCooldown = 0;   // seconds until next use
+let timeFreezeActive = false; // whether freeze is currently active
+let timeFreezeTimer = 0;      // seconds remaining on active freeze
+
+/* Ability 2: Nova Blast (E) */
+let novaBlastCooldown = 0;    // seconds until next use
+
+/* Ability 3: Dash (Shift) */
+let dashCooldown = 0;         // seconds until next use
+let dashActive = false;       // whether currently dashing
+let dashTimer = 0;            // seconds remaining on dash
+let dashDirX = 0;             // dash direction X
+let dashDirY = 0;             // dash direction Y
+
+/* Ability 4: Turret Drop (F) */
+let turretCooldown = 0;       // seconds until next use
+let turrets = [];             // active turrets { x, y, life, maxLife, fireTimer }
+
+/* Ability 5: Overcharge (R) */
+let overchargeCooldown = 0;   // seconds until next use
+let overchargeActive = false; // whether overcharge is currently active
+let overchargeTimer = 0;      // seconds remaining on overcharge
 const touchDirections = { up: false, down: false, left: false, right: false };
 const activeTouchPointers = new Map(); // retained for legacy D-pad state
 let movementTouchId = null;
@@ -2425,6 +2730,181 @@ function playActiveShieldSound() {
       try { osc.disconnect(); gain.disconnect(); } catch (e) { /* already gone */ }
     };
   } catch (e) { /* keep the game silent rather than break it */ }
+}
+
+/* ---------- New Ability Sounds ---------- */
+
+/* Time Freeze (Q): deep cinematic whoosh + low chime */
+function playTimeFreezeSound() {
+  if (!audioIsRunning() || state !== "playing") return;
+  const now = audioCtx.currentTime;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(110, now);
+    osc.frequency.exponentialRampToValueAtTime(440, now + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(80, now + 0.4);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.1, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+    osc.connect(gain);
+    gain.connect(audioMasterGain);
+    osc.start(now);
+    osc.stop(now + 0.5);
+    osc.onended = function () {
+      try { osc.disconnect(); gain.disconnect(); } catch (e) { }
+    };
+    // High chime on top
+    const chime = audioCtx.createOscillator();
+    const chimeGain = audioCtx.createGain();
+    chime.type = "sine";
+    chime.frequency.setValueAtTime(1320, now + 0.15);
+    chimeGain.gain.setValueAtTime(0.0001, now + 0.15);
+    chimeGain.gain.exponentialRampToValueAtTime(0.06, now + 0.16);
+    chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+    chime.connect(chimeGain);
+    chimeGain.connect(audioMasterGain);
+    chime.start(now + 0.15);
+    chime.stop(now + 0.55);
+    chime.onended = function () {
+      try { chime.disconnect(); chimeGain.disconnect(); } catch (e) { }
+    };
+  } catch (e) { }
+}
+
+/* Nova Blast (E): rapid arpeggio + impact */
+function playNovaBlastSound() {
+  if (!audioIsRunning() || state !== "playing") return;
+  const now = audioCtx.currentTime;
+  try {
+    const notes = [330, 415, 523, 659, 784, 1047];
+    for (let i = 0; i < notes.length; i++) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "square";
+      osc.frequency.setValueAtTime(notes[i], now + i * 0.03);
+      gain.gain.setValueAtTime(0.0001, now + i * 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.04, now + i * 0.03 + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.03 + 0.12);
+      osc.connect(gain);
+      gain.connect(audioMasterGain);
+      osc.start(now + i * 0.03);
+      osc.stop(now + i * 0.03 + 0.14);
+      osc.onended = function () {
+        try { osc.disconnect(); gain.disconnect(); } catch (e) { }
+      };
+    }
+    // Impact thud
+    const thud = audioCtx.createOscillator();
+    const thudGain = audioCtx.createGain();
+    thud.type = "sawtooth";
+    thud.frequency.setValueAtTime(200, now + 0.18);
+    thud.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+    thudGain.gain.setValueAtTime(0.0001, now + 0.18);
+    thudGain.gain.exponentialRampToValueAtTime(0.08, now + 0.19);
+    thudGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+    thud.connect(thudGain);
+    thudGain.connect(audioMasterGain);
+    thud.start(now + 0.18);
+    thud.stop(now + 0.38);
+    thud.onended = function () {
+      try { thud.disconnect(); thudGain.disconnect(); } catch (e) { }
+    };
+  } catch (e) { }
+}
+
+/* Dash (Shift): quick whoosh + snap */
+function playDashSound() {
+  if (!audioIsRunning() || state !== "playing") return;
+  const now = audioCtx.currentTime;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(120, now + 0.12);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.07, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+    osc.connect(gain);
+    gain.connect(audioMasterGain);
+    osc.start(now);
+    osc.stop(now + 0.18);
+    osc.onended = function () {
+      try { osc.disconnect(); gain.disconnect(); } catch (e) { }
+    };
+  } catch (e) { }
+}
+
+/* Turret Drop (F): mechanical clank + deploy beep */
+function playTurretDropSound() {
+  if (!audioIsRunning() || state !== "playing") return;
+  const now = audioCtx.currentTime;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+    osc.frequency.exponentialRampToValueAtTime(120, now + 0.2);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.06, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+    osc.connect(gain);
+    gain.connect(audioMasterGain);
+    osc.start(now);
+    osc.stop(now + 0.28);
+    osc.onended = function () {
+      try { osc.disconnect(); gain.disconnect(); } catch (e) { }
+    };
+  } catch (e) { }
+}
+
+/* Overcharge (R): rising electric hum + crackle */
+function playOverchargeSound() {
+  if (!audioIsRunning() || state !== "playing") return;
+  const now = audioCtx.currentTime;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.exponentialRampToValueAtTime(1760, now + 0.4);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.05, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+    osc.connect(gain);
+    gain.connect(audioMasterGain);
+    osc.start(now);
+    osc.stop(now + 0.5);
+    osc.onended = function () {
+      try { osc.disconnect(); gain.disconnect(); } catch (e) { }
+    };
+  } catch (e) { }
+}
+
+/* Turret fire: tiny pew */
+function playTurretFireSound() {
+  if (!audioIsRunning() || state !== "playing") return;
+  const now = audioCtx.currentTime;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(900, now);
+    osc.frequency.exponentialRampToValueAtTime(1500, now + 0.06);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.03, now + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+    osc.connect(gain);
+    gain.connect(audioMasterGain);
+    osc.start(now);
+    osc.stop(now + 0.1);
+    osc.onended = function () {
+      try { osc.disconnect(); gain.disconnect(); } catch (e) { }
+    };
+  } catch (e) { }
 }
 
 /* Crisp power-charge chime when 5 kills finish charging Future Bomb. */
@@ -3131,8 +3611,8 @@ const CAMPAIGN_LEVELS = [
     theme: "village",
     goalType: "survive",
     goalTarget: 30,
-    spawnInterval: 0.85,
-    speedMult: 1.00,
+    spawnInterval: 1.10,      // very forgiving, slow spawns to teach movement
+    speedMult: 1.00,          // base speed — slow knights
     storyLines: [
       "Torn from Year 3047, Rael crashes onto smoking cobblestones.",
       "Iron-clad knights charge through the burning village mist."
@@ -3146,8 +3626,8 @@ const CAMPAIGN_LEVELS = [
     theme: "forest",
     goalType: "kill_archers",
     goalTarget: 20,
-    spawnInterval: 0.76,
-    speedMult: 1.08,
+    spawnInterval: 0.75,
+    speedMult: 1.30,          // enemies 30% faster than Level 1
     storyLines: [
       "Beyond the burning hamlet, twisted boughs swallow the moonlight.",
       "Twenty hooded archers wait in ambush beneath the dark canopy."
@@ -3161,8 +3641,8 @@ const CAMPAIGN_LEVELS = [
     theme: "castle_gates",
     goalType: "survive",
     goalTarget: 45,
-    spawnInterval: 0.72,
-    speedMult: 1.15,
+    spawnInterval: 0.60,
+    speedMult: 1.50,          // enemies 50% faster than Level 1
     storyLines: [
       "Dreadkeep’s iron portcullis groans open before the fortress walls.",
       "Hold the courtyard for forty-five seconds against the dark siege."
@@ -3176,8 +3656,8 @@ const CAMPAIGN_LEVELS = [
     theme: "tower",
     goalType: "kill_wizards",
     goalTarget: 20,
-    spawnInterval: 1.25,
-    speedMult: 1.18,
+    spawnInterval: 0.45,
+    speedMult: 1.75,
     storyLines: [
       "Arcane lightning crackles through the spire’s forbidden sanctum.",
       "Dark wizards channel stolen chrono-energy above."
@@ -3191,8 +3671,8 @@ const CAMPAIGN_LEVELS = [
     theme: "portal",
     goalType: "survive_final",
     goalTarget: 60,
-    spawnInterval: 0.60,
-    speedMult: 1.26,
+    spawnInterval: 0.30,      // relentless spawn rate
+    speedMult: 2.00,          // all enemies at double speed
     storyLines: [
       "At the summit, the unstable Time Portal roars open toward 3047 AD.",
       "Survive sixty seconds against all dark legions and their Warlord!"
@@ -3203,18 +3683,45 @@ const CAMPAIGN_LEVELS = [
 ];
 
 // Each stage has a distinct turning point, champion and attack pattern.
+// Bosses have very high HP (250-400) so each fight lasts 60-90 seconds.
+// Each boss has 3 attack phases triggered at 75%, 50%, and 25% health.
 const CAMPAIGN_DRAMA = [null,
-  { line: "The village bells ring as the Ashen Guard storms the flames.", boss: "Sir Garrick, the Ashen Blade", type: "red", hp: 14, pattern: "charge", tint: "rgba(147,35,19,0.34)" },
-  { line: "The forest darkens as the Thorn Court sends its hunters.", boss: "Morrigan, the Thorn Huntress", type: "orange", hp: 16, pattern: "arrows", tint: "rgba(21,112,63,0.34)" },
-  { line: "The gates thunder open and Dreadkeep unleashes its iron legion.", boss: "Marshal Voss, the Iron Siege", type: "boss", hp: 20, pattern: "ring", tint: "rgba(105,40,49,0.38)" },
-  { line: "The tower trembles as forbidden voices summon the coven.", boss: "Eldra, the Rift Sorceress", type: "purple", hp: 20, pattern: "spiral", tint: "rgba(110,30,150,0.38)" },
-  { line: "The sky fractures as the Warlord calls his last legion through time.", boss: "The Dread Warlord", type: "boss", hp: 30, pattern: "rift", tint: "rgba(25,70,180,0.38)" }
+  { line: "The village bells ring as the Black Knight emerges from the smoke.", boss: "The Black Knight", type: "red", hp: 250, pattern: "charge", tint: "rgba(147,35,19,0.34)", color: "#f97316" },
+  { line: "The forest darkens as the Witch of the Wood steps from the shadows.", boss: "The Witch of the Wood", type: "orange", hp: 280, pattern: "arrows", tint: "rgba(21,112,63,0.34)", color: "#4ade80" },
+  { line: "The gates thunder open as the Siege Commander rides forth on blackest horse.", boss: "The Siege Commander", type: "boss", hp: 320, pattern: "ring", tint: "rgba(105,40,49,0.38)", color: "#94a3b8" },
+  { line: "The tower trembles as Archon the Sorcerer weaves his deadly maze.", boss: "Archon the Sorcerer", type: "purple", hp: 350, pattern: "spiral", tint: "rgba(110,30,150,0.38)", color: "#a855f7" },
+  { line: "The sky fractures as the Time Tyrant claims dominion over all time.", boss: "The Time Tyrant", type: "boss", hp: 400, pattern: "rift", tint: "rgba(25,70,180,0.38)", color: "#22d3ee" }
 ];
-const BOSS_DEATH_DURATION = 1.6;
-let campaignPhase = 1; // 1: waves, 2: halfway event, 3: champion
-let campaignBoss = null;
-let storyEventTimer = 0;
-let bossDeathTimer = 0;
+const BOSS_DEATH_DURATION = 2.0;
+/* Boss attack phase thresholds: phase changes at 75%, 50%, 25% of max HP */
+const BOSS_PHASE_THRESHOLDS = [0.75, 0.50, 0.25];
+/* How long a boss stays invulnerable while teleporting / transitioning phases */
+const BOSS_PHASE_TRANSITION_TIME = 2.5;
+/* Black Knight shield knights */
+const SHIELD_KNIGHT_HP = 12;
+const SHIELD_KNIGHT_RADIUS = 16;
+/* Witch teleport */
+const WITCH_TELEPORT_INTERVAL = 6; // seconds between teleports
+/* Siege Commander cannon */
+const CANNON_DROP_INTERVAL = 1.5; // seconds between cannon drops
+/* Archon maze wall */
+const MAZE_WALL_LIFE = 12; // seconds a magic wall persists
+const MAZE_WALL_COUNT = 6; // walls per maze cast
+/* Time Tyrant reflective shield */
+const TIME_TYRANT_SHIELD_DURATION = 4; // seconds reflect shield lasts
+
+/* ---------- Permanent level banner state ---------- */
+let levelBannerNeedsEntrance = false; // set true when the level changes
+let levelBannerShowTimer = 0;         // seconds the expanded banner stays open
+
+/* Level -> border color map (thin border around the whole screen) */
+const LEVEL_BORDER_COLORS = [
+  "#f97316", // 1: orange
+  "#4ade80", // 2: green
+  "#94a3b8", // 3: grey
+  "#a855f7", // 4: purple
+  "#22d3ee"  // 5: electric blue
+];
 
 let campaignLevel = 1;       // 1..5
 let levelElapsed = 0;        // seconds survived inside the current level
@@ -3222,6 +3729,30 @@ let levelGoalProgress = 0;   // kill count toward the current wave objective
 let levelTransitionTimer = 0; // seconds spent on the dramatic transition card
 let levelCardFadingOut = false;
 let levelCardFadeOutTimer = 0;
+
+/* ---------- Boss phase & behavior state ---------- */
+/* Current attack phase (1, 2, or 3) of the active boss. */
+let bossPhase = 1;
+/* Timestamp when the boss last changed phase (for invulnerability). */
+let bossPhaseChangeTimer = 0;
+/* Whether the boss is currently in a phase-transition (invulnerable) state. */
+let bossIsTransitioning = false;
+/* Black Knight: direction of current charge, and shield knights summoned flag. */
+let bossChargeDirX = 0;
+let bossChargeDirY = 0;
+let bossChargeTimer = 0;
+let blackKnightShieldKnightsSummoned = false;
+/* Witch: teleport timer */
+let witchTeleportTimer = 0;
+/* Siege Commander: cannon drop timer and horse direction */
+let siegeCannonTimer = 0;
+let siegeHorseDirX = 0;
+let siegeHorseDirY = 0;
+/* Archon: magic maze walls */
+let mazeWalls = [];
+/* Time Tyrant: reflective shield state */
+let timeTyrantShieldTimer = 0;
+let timeTyrantShieldActive = false;
 let pendingTransitionUpgrade = null;
 let transitionUpgradeClaimed = false;
 
@@ -3309,6 +3840,33 @@ function refreshCampaignBossHud() {
   refreshObjectiveHud();
 }
 
+/* Update the large top-screen boss health bar with name, phase, and HP fill. */
+function updateBossTopBar() {
+  if (!bossTopBarEl || !campaignBoss) return;
+  bossTopNameEl.textContent = campaignBoss.name;
+  bossTopPhaseEl.textContent = "Phase " + bossPhase;
+  const hp = Math.max(0, campaignBoss.hp);
+  const ratio = clamp(hp / Math.max(1, campaignBoss.maxHp), 0, 1);
+  bossTopBarFillEl.style.width = (100 * ratio) + "%";
+  // Color the bar based on phase (phase 3 = more urgent)
+  if (bossPhase >= 3) {
+    bossTopBarFillEl.style.background = "linear-gradient(90deg, #f43f5e, #fb7185)";
+    bossTopBarFillEl.style.boxShadow = "0 0 20px rgba(244, 63, 94, 0.8)";
+  } else if (bossPhase >= 2) {
+    bossTopBarFillEl.style.background = "linear-gradient(90deg, #f97316, #fb923c)";
+    bossTopBarFillEl.style.boxShadow = "0 0 16px rgba(249, 115, 22, 0.7)";
+  } else {
+    bossTopBarFillEl.style.background = "linear-gradient(90deg, " + campaignBoss.color + ", #facc15)";
+    bossTopBarFillEl.style.boxShadow = "0 0 16px rgba(250, 204, 21, 0.5)";
+  }
+}
+
+function hideBossTopBar() {
+  if (!bossTopBarEl) return;
+  bossTopBarEl.classList.remove("visible");
+  bossTopBarEl.style.display = "none";
+}
+
 function triggerMidpointEvent() {
   if (campaignPhase !== 1) return;
   campaignPhase = 2;
@@ -3327,25 +3885,56 @@ function triggerMidpointEvent() {
 function spawnCampaignChampion() {
   if (campaignPhase >= 3) return;
   campaignPhase = 3;
+  bossPhase = 1;
+  bossIsTransitioning = false;
+  bossPhaseChangeTimer = 0;
+  blackKnightShieldKnightsSummoned = false;
+  bossChargeDirX = 0;
+  bossChargeDirY = 0;
+  bossChargeTimer = 0;
+  witchTeleportTimer = 0;
+  siegeCannonTimer = 0;
+  siegeHorseDirX = 0;
+  siegeHorseDirY = 0;
+  mazeWalls.length = 0;
+  timeTyrantShieldTimer = 0;
+  timeTyrantShieldActive = false;
+
   const cfg = CAMPAIGN_DRAMA[campaignLevel];
   const giant = cfg.type === "boss";
-  const radius = campaignLevel === 5 ? FINAL_BOSS_RADIUS : (giant ? 34 : 25);
+  const radius = campaignLevel === 5 ? FINAL_BOSS_RADIUS : (giant ? 34 : 28);
   const pos = chooseSpawnPosition(radius, radius + 8, null);
   campaignBoss = {
     x: pos.x, y: pos.y, prevX: pos.x, prevY: pos.y, vx: 0, vy: 0,
     r: radius, hp: cfg.hp, maxHp: cfg.hp, name: cfg.boss, pattern: cfg.pattern,
+    color: cfg.color || "#facc15",
     isCampaignBoss: true, isBoss: giant, isMiniBoss: true,
     isFinalBoss: campaignLevel === 5, type: cfg.type, canSplit: false,
     isSplitChild: false, facingX: pos.x <= player.x ? 1 : -1,
-    speed: giant ? 63 : 85, fireTimer: 1.8, volleyCount: 0,
-    hitFlash: 0, zigPhase: 0, zigRate: 9, spawnFlash: ENEMY_SPAWN_FLASH_DURATION,
-    trail: []
+    speed: giant ? 45 : 70,
+    fireTimer: 2.0, volleyCount: 0,
+    hitFlash: 0, zigPhase: 0, zigRate: 0, spawnFlash: ENEMY_SPAWN_FLASH_DURATION * 1.5,
+    trail: [],
+    // Boss-specific state
+    phase: 1,
+    phaseTimer: 0,
+    teleportTimer: WITCH_TELEPORT_INTERVAL,
+    cannonTimer: CANNON_DROP_INTERVAL,
+    chargeDirX: 0, chargeDirY: 0, chargeTimer: 0,
+    shieldKnightsSummoned: false,
+    reflectiveShieldTimer: 0,
+    reflectiveShieldActive: false,
+    horseDirX: 1, horseDirY: 0,
+    homingOrbTimer: 0
   };
   enemies.push(campaignBoss);
   showBossAlert(cfg.boss + " arrives!");
   playBossSpawnSound();
   refreshObjectiveHud();
   refreshCampaignBossHud();
+  updateBossTopBar();
+  bossTopBarEl.style.display = "";
+  bossTopBarEl.classList.add("visible");
 }
 
 function advanceCampaignPhases() {
@@ -3367,6 +3956,7 @@ function startChampionDeath(boss) {
   screenShakeTimer = Math.max(screenShakeTimer, 0.35);
   showBossAlert(boss.name + " defeated!");
   refreshCampaignBossHud();
+  hideBossTopBar();
 }
 
 function hideLevelUp() {
@@ -3403,6 +3993,54 @@ function refreshLevel() {
     levelEl.textContent = currentLevelConfig().name;
   }
   refreshObjectiveHud();
+}
+
+/* ---------- Permanent level banner ---------- */
+/* Apply the thin full-screen border color for the given campaign level. */
+function applyLevelBorder(lvl) {
+  if (!screenBorderEl) return;
+  const color = LEVEL_BORDER_COLORS[clamp(lvl, 1, 5) - 1] || "#facc15";
+  screenBorderEl.style.borderColor = color;
+}
+
+/* Refresh the banner's level number, name, and 5-dot progress tracker. */
+function refreshLevelBanner() {
+  const lvl = clamp(campaignLevel, 1, TOTAL_CAMPAIGN_LEVELS);
+  const cfg = currentLevelConfig();
+  if (levelBannerNumberEl) levelBannerNumberEl.textContent = "Level " + lvl;
+  if (levelBannerNameEl) levelBannerNameEl.textContent = cfg.name || "";
+  if (levelBannerDotEls) {
+    for (let i = 0; i < 5; i++) {
+      const dot = levelBannerDotEls[i];
+      if (!dot) continue;
+      dot.classList.toggle("active", i < lvl);
+    }
+  }
+  applyLevelBorder(lvl);
+}
+
+/* Show the banner with a dramatic slide-down entrance. */
+function enterLevelBanner() {
+  if (!levelBannerEl) return;
+  refreshLevelBanner();
+  levelBannerEl.classList.add("visible");
+  levelBannerEl.classList.remove("collapsed");
+  levelBannerShowTimer = 3.0;
+  levelBannerNeedsEntrance = false;
+}
+
+/* Shrink the expanded banner to a small persistent indicator. */
+function collapseLevelBanner() {
+  if (!levelBannerEl) return;
+  levelBannerEl.classList.add("collapsed");
+  levelBannerShowTimer = 0;
+}
+
+/* Hide the banner entirely (start / game over / victory screens). */
+function hideLevelBanner() {
+  if (!levelBannerEl) return;
+  levelBannerEl.classList.remove("visible");
+  levelBannerShowTimer = 0;
 }
 
 function applyBossDefeatRelief() {
@@ -3504,8 +4142,36 @@ function getShotDirections(aimAngle) {
   return dirs;
 }
 
-/* Update the Top-Right Future Bomb circular charge ring & Bottom-Right
-   Shield cooldown button with live timer readouts. */
+/* ---------- Five Ability HUD Refresh ---------- */
+/* Helper: render one ability button's cooldown ring and label. */
+function refreshAbilityButton(el, cooldown, duration, active, activeTimer, keyClass, labelKey) {
+  const ready = cooldown <= BULLET_FIRE_EPSILON;
+  const maxCd = keyClass === "k-q" ? TIME_FREEZE_COOLDOWN :
+                keyClass === "k-e" ? NOVA_BLAST_COOLDOWN :
+                keyClass === "k-shift" ? DASH_COOLDOWN :
+                keyClass === "k-f" ? TURRET_COOLDOWN :
+                OVERCHARGE_COOLDOWN;
+  if (active && activeTimer > 0) {
+    const activeRatio = clamp(activeTimer / Math.max(0.01, duration), 0, 1);
+    el.classList.remove("ready");
+    el.classList.add("active-state");
+    el.querySelector(".ability-cd-fill").style.width = Math.round((1 - activeRatio) * 100) + "%";
+    el.setAttribute("aria-valuenow", String(Math.round((1 - activeRatio) * 100)));
+  } else if (!ready) {
+    const ratio = clamp(1 - cooldown / Math.max(0.01, maxCd), 0, 1);
+    el.classList.remove("active-state");
+    el.classList.remove("ready");
+    el.querySelector(".ability-cd-fill").style.width = Math.round((1 - ratio) * 100) + "%";
+    el.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
+  } else {
+    el.classList.remove("active-state");
+    el.classList.add("ready");
+    el.querySelector(".ability-cd-fill").style.width = "100%";
+    el.setAttribute("aria-valuenow", "100");
+  }
+}
+
+/* Refresh the laser slot & 5 ability buttons with cooldown rings. */
 function refreshAbilityHud() {
   if (laserSlotEl && laserStatusEl && laserCooldownFillEl) {
     const maxCd = currentLaserCooldownMax();
@@ -3517,58 +4183,60 @@ function refreshAbilityHud() {
     laserSlotEl.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
   }
 
-  if (shieldSlotEl && shieldStatusEl) {
-    if (activeShieldTimer > 0) {
-      const activeRatio = clamp(activeShieldTimer / ACTIVE_SHIELD_DURATION, 0, 1);
-      shieldSlotEl.classList.remove("ready");
-      shieldSlotEl.classList.add("active-state");
-      shieldStatusEl.textContent = "Active " + activeShieldTimer.toFixed(1) + "s";
-      if (shieldCooldownFillEl) {
-        shieldCooldownFillEl.style.width = Math.round(activeRatio * 100) + "%";
-      }
-    } else if (activeShieldCooldown > 0) {
-      const cdRatio = clamp(1 - activeShieldCooldown / ACTIVE_SHIELD_COOLDOWN, 0, 1);
-      shieldSlotEl.classList.remove("ready");
-      shieldSlotEl.classList.remove("active-state");
-      shieldStatusEl.textContent = Math.ceil(activeShieldCooldown) + "s";
-      if (shieldCooldownFillEl) {
-        shieldCooldownFillEl.style.width = Math.round(cdRatio * 100) + "%";
-      }
-    } else {
-      shieldSlotEl.classList.remove("active-state");
-      shieldSlotEl.classList.add("ready");
-      shieldStatusEl.textContent = "Ready";
-      if (shieldCooldownFillEl) {
-        shieldCooldownFillEl.style.width = "100%";
-      }
-    }
+  // Ability 1: Time Freeze (Q)
+  if (abilityTimeFreezeEl) {
+    refreshAbilityButton(
+      abilityTimeFreezeEl, timeFreezeCooldown, TIME_FREEZE_DURATION,
+      timeFreezeActive, timeFreezeTimer, "k-q", "Time Freeze"
+    );
+    const cdText = timeFreezeActive
+      ? Math.ceil(timeFreezeTimer) + "s"
+      : (timeFreezeCooldown > 0 ? Math.ceil(timeFreezeCooldown) + "s" : "Ready");
+    abilityTimeFreezeEl.querySelector(".ability-label").textContent = cdText;
   }
 
-  if (bombSlotEl && bombStatusEl) {
-    const ratio = futureBombReady
-      ? 1
-      : clamp(bombChargeKills / FUTURE_BOMB_KILLS_REQUIRED, 0, 1);
-    bombSlotEl.classList.toggle("bomb-ready", futureBombReady);
-    if (bombChargeStopEl && bombEmptyStopEl) {
-      const offset = Math.round(ratio * 100) + "%";
-      bombChargeStopEl.setAttribute("offset", offset);
-      bombEmptyStopEl.setAttribute("offset", offset);
-    }
-    bombStatusEl.textContent = futureBombReady
-      ? "READY"
-      : (bombChargeKills + "/" + FUTURE_BOMB_KILLS_REQUIRED);
-    bombSlotEl.setAttribute("aria-label", futureBombReady ? "Future Bomb ready — activate" :
-      "Future Bomb: " + bombChargeKills + " of " + FUTURE_BOMB_KILLS_REQUIRED + " kills");
-    if (bombChargeFillEl) {
-      bombChargeFillEl.style.width = Math.round(ratio * 100) + "%";
-    }
-    if (bombRingProgressEl) {
-      const dashOffset = (BOMB_RING_CIRCUMFERENCE * (1 - ratio)).toFixed(2);
-      bombRingProgressEl.style.strokeDashoffset = dashOffset;
-      if (typeof bombRingProgressEl.setAttribute === "function") {
-        bombRingProgressEl.setAttribute("stroke-dashoffset", dashOffset);
-      }
-    }
+  // Ability 2: Nova Blast (E)
+  if (abilityNovaBlastEl) {
+    refreshAbilityButton(
+      abilityNovaBlastEl, novaBlastCooldown, NOVA_BLAST_COOLDOWN,
+      false, 0, "k-e", "Nova Blast"
+    );
+    const cdText = novaBlastCooldown > 0 ? Math.ceil(novaBlastCooldown) + "s" : "Ready";
+    abilityNovaBlastEl.querySelector(".ability-label").textContent = cdText;
+  }
+
+  // Ability 3: Dash (Shift)
+  if (abilityDashEl) {
+    refreshAbilityButton(
+      abilityDashEl, dashCooldown, DASH_DURATION,
+      dashActive, dashTimer, "k-shift", "Dash"
+    );
+    const cdText = dashActive
+      ? Math.ceil(dashTimer) + "s"
+      : (dashCooldown > 0 ? Math.ceil(dashCooldown) + "s" : "Ready");
+    abilityDashEl.querySelector(".ability-label").textContent = cdText;
+  }
+
+  // Ability 4: Turret Drop (F)
+  if (abilityTurretDropEl) {
+    refreshAbilityButton(
+      abilityTurretDropEl, turretCooldown, TURRET_DURATION,
+      false, 0, "k-f", "Turret"
+    );
+    const cdText = turretCooldown > 0 ? Math.ceil(turretCooldown) + "s" : "Ready";
+    abilityTurretDropEl.querySelector(".ability-label").textContent = cdText;
+  }
+
+  // Ability 5: Overcharge (R)
+  if (abilityOverchargeEl) {
+    refreshAbilityButton(
+      abilityOverchargeEl, overchargeCooldown, OVERCHARGE_DURATION,
+      overchargeActive, overchargeTimer, "k-r", "Overcharge"
+    );
+    const cdText = overchargeActive
+      ? Math.ceil(overchargeTimer) + "s"
+      : (overchargeCooldown > 0 ? Math.ceil(overchargeCooldown) + "s" : "Ready");
+    abilityOverchargeEl.querySelector(".ability-label").textContent = cdText;
   }
 }
 
@@ -3602,6 +4270,195 @@ function activateShortRangeShield() {
     maxLife: 0.85
   });
   playActiveShieldSound();
+  refreshAbilityHud();
+  return true;
+}
+
+/* ---------- New Ability: Time Freeze (Q) ---------- */
+/* Freezes all enemies for 3 seconds; player glows white during the freeze. */
+function activateTimeFreeze() {
+  if (state !== "playing") return false;
+  if (timeFreezeCooldown > BULLET_FIRE_EPSILON) return false;
+
+  initAudio();
+  timeFreezeActive = true;
+  timeFreezeTimer = TIME_FREEZE_DURATION;
+  timeFreezeCooldown = TIME_FREEZE_COOLDOWN;
+
+  // Freeze all enemies by storing their velocities and zeroing them.
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    e._frozenVx = e.vx;
+    e._frozenVy = e.vy;
+    e.vx = 0;
+    e.vy = 0;
+  }
+
+  floatingTexts.push({
+    x: player.x, y: player.y - player.r - 16, vy: -40,
+    text: "TIME FREEZE (3s)!", color: "#facc15", big: true,
+    life: 0, maxLife: 0.85
+  });
+  playTimeFreezeSound();
+  refreshAbilityHud();
+  return true;
+}
+
+/* ---------- New Ability: Nova Blast (E) ---------- */
+/* Releases a ring of 12 bullets in all directions instantly. */
+function activateNovaBlast() {
+  if (state !== "playing") return false;
+  if (novaBlastCooldown > BULLET_FIRE_EPSILON) return false;
+
+  initAudio();
+  novaBlastCooldown = NOVA_BLAST_COOLDOWN;
+
+  const bulletCount = NOVA_BLAST_BULLET_COUNT;
+  const speed = NOVA_BLAST_SPEED;
+  for (let i = 0; i < bulletCount; i++) {
+    const angle = (i / bulletCount) * Math.PI * 2;
+    const dx = Math.cos(angle);
+    const dy = Math.sin(angle);
+    const startX = player.x + dx * (player.r + 4);
+    const startY = player.y + dy * (player.r + 4);
+    const shot = {
+      x: startX, y: startY, prevX: startX, prevY: startY,
+      vx: dx * speed, vy: dy * speed,
+      dirX: dx, dirY: dy, r: 4,
+      damage: BULLET_DAMAGE, distanceTraveled: 0,
+      isNovaBlast: true
+    };
+    bullets.push(shot);
+  }
+
+  // Visual burst
+  for (let i = 0; i < 24; i++) {
+    const angle = (i / 24) * Math.PI * 2;
+    const speed = rand(120, 400);
+    particles.push({
+      x: player.x, y: player.y,
+      vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+      life: 0, maxLife: rand(0.3, 0.7), size: rand(2, 5),
+      color: "#67e8f9"
+    });
+  }
+
+  floatingTexts.push({
+    x: player.x, y: player.y - player.r - 16, vy: -40,
+    text: "NOVA BLAST!", color: "#67e8f9", big: true,
+    life: 0, maxLife: 0.85
+  });
+  playNovaBlastSound();
+  refreshAbilityHud();
+  return true;
+}
+
+/* ---------- New Ability: Dash (Shift) ---------- */
+/* Dash in movement direction, invincible during dash, leaves energy trail. */
+function activateDash() {
+  if (state !== "playing") return false;
+  if (dashCooldown > BULLET_FIRE_EPSILON) return false;
+
+  initAudio();
+  dashCooldown = DASH_COOLDOWN;
+  dashActive = true;
+  dashTimer = DASH_DURATION;
+
+  // Determine dash direction from movement keys or facing angle
+  let dx = 0, dy = 0;
+  if (keys["ArrowLeft"] || keys["a"] || touchDirections.left) dx -= 1;
+  if (keys["ArrowRight"] || keys["d"] || touchDirections.right) dx += 1;
+  if (keys["ArrowUp"] || keys["w"] || touchDirections.up) dy -= 1;
+  if (keys["ArrowDown"] || keys["s"] || touchDirections.down) dy += 1;
+
+  if (dx === 0 && dy === 0) {
+    // Use facing direction if no movement keys held
+    dx = Math.cos(player.facingAngle || 0);
+    dy = Math.sin(player.facingAngle || 0);
+  }
+  const len = Math.hypot(dx, dy) || 1;
+  dx /= len; dy /= len;
+
+  dashDirX = dx;
+  dashDirY = dy;
+
+  // Instant position shift
+  const dashDist = DASH_SPEED * DASH_DURATION;
+  player.x += dx * dashDist * 0.5;
+  player.y += dy * dashDist * 0.5;
+  player.prevX = player.x;
+  player.prevY = player.y;
+
+  // Clamp to world bounds
+  const pad = player.r + 6;
+  player.x = clamp(player.x, pad, Math.max(pad, worldW - pad));
+  player.y = clamp(player.y, pad, Math.max(pad, worldH - pad));
+
+  floatingTexts.push({
+    x: player.x, y: player.y - player.r - 16, vy: -40,
+    text: "DASH!", color: "#a78bfa", big: true,
+    life: 0, maxLife: 0.6
+  });
+  playDashSound();
+  refreshAbilityHud();
+  return true;
+}
+
+/* ---------- New Ability: Turret Drop (F) ---------- */
+/* Places a turret that auto-fires at nearest enemy for 10s then explodes. */
+function activateTurretDrop() {
+  if (state !== "playing") return false;
+  if (turretCooldown > BULLET_FIRE_EPSILON) return false;
+
+  initAudio();
+  turretCooldown = TURRET_COOLDOWN;
+
+  const turret = {
+    x: player.x, y: player.y,
+    life: 0, maxLife: TURRET_DURATION,
+    fireTimer: 0,
+    r: TURRET_RADIUS
+  };
+  turrets.push(turret);
+
+  // Visual drop effect
+  for (let i = 0; i < 12; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    particles.push({
+      x: player.x, y: player.y,
+      vx: Math.cos(angle) * rand(40, 120), vy: Math.sin(angle) * rand(40, 120),
+      life: 0, maxLife: rand(0.4, 0.8), size: rand(3, 6),
+      color: "#34d399"
+    });
+  }
+
+  floatingTexts.push({
+    x: player.x, y: player.y - player.r - 16, vy: -40,
+    text: "TURRET DEPLOYED!", color: "#34d399", big: true,
+    life: 0, maxLife: 0.85
+  });
+  playTurretDropSound();
+  refreshAbilityHud();
+  return true;
+}
+
+/* ---------- New Ability: Overcharge (R) ---------- */
+/* Doubles fire rate and bullet size for 8 seconds; screen tints red. */
+function activateOvercharge() {
+  if (state !== "playing") return false;
+  if (overchargeCooldown > BULLET_FIRE_EPSILON) return false;
+
+  initAudio();
+  overchargeActive = true;
+  overchargeTimer = OVERCHARGE_DURATION;
+  overchargeCooldown = OVERCHARGE_COOLDOWN;
+
+  floatingTexts.push({
+    x: player.x, y: player.y - player.r - 16, vy: -40,
+    text: "OVERCHARGE!", color: "#f87171", big: true,
+    life: 0, maxLife: 0.85
+  });
+  playOverchargeSound();
   refreshAbilityHud();
   return true;
 }
@@ -4032,11 +4889,26 @@ function setupCampaignLevel(levelNum, isInitialStart) {
   levelGoalProgress = 0;
   campaignPhase = 1;
   campaignBoss = null;
+  bossPhase = 1;
+  bossIsTransitioning = false;
+  bossPhaseChangeTimer = 0;
+  blackKnightShieldKnightsSummoned = false;
+  bossChargeDirX = 0;
+  bossChargeDirY = 0;
+  bossChargeTimer = 0;
+  witchTeleportTimer = 0;
+  siegeCannonTimer = 0;
+  siegeHorseDirX = 0;
+  siegeHorseDirY = 0;
+  mazeWalls.length = 0;
+  timeTyrantShieldTimer = 0;
+  timeTyrantShieldActive = false;
   storyEventTimer = 0;
   bossDeathTimer = 0;
   if (storyEventEl) storyEventEl.classList.remove("visible");
   objectiveEl.classList.remove("story-flash");
   if (bossHudEl) bossHudEl.classList.remove("visible");
+  hideBossTopBar();
   difficultyReliefLevels = 0;
   stoneFloorCache = null;
   levelStartSurvivalTime = survivalTime;
@@ -4061,6 +4933,8 @@ function setupCampaignLevel(levelNum, isInitialStart) {
   displayedLevel = 0;
   refreshLevel();
   refreshObjectiveHud();
+  refreshLevelBanner();      // banner reflects the new level immediately
+  levelBannerNeedsEntrance = true; // dramatic slide-down on level change
   spawnTimer = 0.65;
 
   initializeStageObjects();
@@ -4310,6 +5184,21 @@ function resetGame() {
   player.walkPhase = 0;
   resetUpgrades();
   nextBossTime = BOSS_INTERVAL_SECONDS;
+  nextFormationTime = LEVEL4_FORMATION_INTERVAL;
+  bossPhase = 1;
+  bossIsTransitioning = false;
+  bossPhaseChangeTimer = 0;
+  blackKnightShieldKnightsSummoned = false;
+  bossChargeDirX = 0;
+  bossChargeDirY = 0;
+  bossChargeTimer = 0;
+  witchTeleportTimer = 0;
+  siegeCannonTimer = 0;
+  siegeHorseDirX = 0;
+  siegeHorseDirY = 0;
+  mazeWalls.length = 0;
+  timeTyrantShieldTimer = 0;
+  timeTyrantShieldActive = false;
   difficultyReliefLevels = 0;
   enemies.length = 0;
   bullets.length = 0;
@@ -4324,6 +5213,26 @@ function resetGame() {
   muzzleAngle = 0;
   activeShieldTimer = 0;
   activeShieldCooldown = 0;
+  // New ability state resets
+  timeFreezeCooldown = 0;
+  timeFreezeActive = false;
+  timeFreezeTimer = 0;
+  novaBlastCooldown = 0;
+  dashCooldown = 0;
+  dashActive = false;
+  dashTimer = 0;
+  dashDirX = 0;
+  dashDirY = 0;
+  turretCooldown = 0;
+  turrets.length = 0;
+  overchargeCooldown = 0;
+  overchargeActive = false;
+  overchargeTimer = 0;
+  // Unfreeze any remaining frozen enemies
+  for (let i = 0; i < enemies.length; i++) {
+    delete enemies[i]._frozenVx;
+    delete enemies[i]._frozenVy;
+  }
   totalKills = 0;
   bombChargeKills = 0;
   futureBombReady = false;
@@ -4380,6 +5289,44 @@ function resetGame() {
   if (victoryScreenEl) victoryScreenEl.classList.remove("visible");
   gameOverEl.classList.remove("visible");
   hintEl.style.opacity = "1";
+}
+
+/* Show the main menu (animated starfield + title) before the story intro. */
+function showMainMenu() {
+  state = "start";
+  stopBackgroundHum();
+  mainMenuEl.classList.add("visible");
+  startScreenEl.classList.remove("visible");
+  gameOverEl.classList.remove("visible");
+  victoryScreenEl.classList.remove("visible");
+  if (upgradeScreenEl) upgradeScreenEl.classList.remove("visible");
+  if (levelCardScreenEl) {
+    levelCardScreenEl.classList.remove("visible");
+    levelCardScreenEl.classList.remove("fading-out");
+  }
+}
+
+/* Build the animated starfield behind the main menu. */
+function buildStarfield() {
+  if (!starfieldEl) return;
+  starfieldEl.innerHTML = "";
+  const count = 60;
+  for (let i = 0; i < count; i++) {
+    const star = document.createElement("div");
+    star.className = "star";
+    const x = Math.floor(Math.random() * 100);
+    const y = Math.floor(Math.random() * 100);
+    const r = Math.random() * 1.6 + 0.4;
+    const tw = (Math.random() * 3 + 2).toFixed(2) + "s";
+    const del = (Math.random() * 5).toFixed(2) + "s";
+    star.style.left = x + "%";
+    star.style.top = y + "%";
+    star.style.width = r + "px";
+    star.style.height = r + "px";
+    star.style.setProperty("--tw", tw);
+    star.style.animationDelay = del;
+    starfieldEl.appendChild(star);
+  }
 }
 
 /* Prepare a clean run, then hold it on the start screen. Gameplay
@@ -4577,11 +5524,27 @@ function chooseSpawnPosition(r, margin, ignoredEnemy) {
 }
 
 function chooseRandomEnemyType() {
-  if (campaignLevel === 1) return "red";     // Level 1: basic knights
-  if (campaignLevel === 2) return "orange";  // Level 2: dark archers
-  if (campaignLevel === 4) {
-    return Math.random() < 0.75 ? "purple" : "red";
+  // Level 1: slow knights only — teaches basic movement, very forgiving.
+  if (campaignLevel === 1) return "red";
+  // Level 2: archers introduced — mostly dark archers with a few knights.
+  if (campaignLevel === 2) {
+    return Math.random() < 0.75 ? "orange" : "red";
   }
+  // Level 3: mixed enemies — knights, archers, and wizards all appear.
+  if (campaignLevel === 3) {
+    const roll = Math.random();
+    if (roll < 0.40) return "red";
+    if (roll < 0.75) return "orange";
+    return "purple";
+  }
+  // Level 4: all enemy types, plus dodging and formation spawns.
+  if (campaignLevel === 4) {
+    const roll = Math.random();
+    if (roll < 0.40) return "purple";
+    if (roll < 0.70) return "orange";
+    return "red";
+  }
+  // Level 5: all enemy types at double speed.
   return ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)];
 }
 
@@ -4714,6 +5677,129 @@ function spawnEnemy(requestedType) {
   return true;
 }
 
+/* ---------- Level 4: formation spawns ---------- */
+/* Instead of random edge spawns, Level 4 enemies arrive in deliberate
+   formations: a circle surrounding the player, a line across the arena,
+   or an ambush from behind. Each formation spawns 3–5 enemies at once. */
+function spawnFormation() {
+  if (campaignLevel !== 4) return;
+  const count = 3 + Math.floor(Math.random() * 3); // 3–5 enemies
+  const pattern = Math.floor(Math.random() * 3); // 0: circle, 1: line, 2: ambush
+
+  if (pattern === 0) {
+    // Circle: enemies spawn in a ring around the player.
+    for (let k = 0; k < count; k++) {
+      const a = (k / count) * Math.PI * 2;
+      const dist = 260 + rand(-20, 20);
+      const x = player.x + Math.cos(a) * dist;
+      const y = player.y + Math.sin(a) * dist;
+      spawnEnemyAt(x, y);
+    }
+  } else if (pattern === 1) {
+    // Line: enemies spawn in a horizontal line across the arena.
+    const startX = camera.x + W * 0.15;
+    const endX = camera.x + W * 0.85;
+    const y = camera.y + H * 0.25 + rand(-40, 40);
+    for (let k = 0; k < count; k++) {
+      const t = k / Math.max(1, count - 1);
+      const x = startX + (endX - startX) * t;
+      spawnEnemyAt(x, y);
+    }
+  } else {
+    // Ambush: enemies spawn behind the player (opposite facing direction).
+    const backX = player.x - player.facingX * 220;
+    const backY = player.y - player.facingY * 220;
+    for (let k = 0; k < count; k++) {
+      const x = backX + rand(-60, 60);
+      const y = backY + rand(-60, 60);
+      spawnEnemyAt(x, y);
+    }
+  }
+}
+
+/* Spawn a single enemy at a specific world position (used by formations). */
+function spawnEnemyAt(x, y) {
+  const r = 12;
+  const margin = r + 8;
+  const clampedX = clamp(x, margin, Math.max(margin, worldW - margin));
+  const clampedY = clamp(y, margin, Math.max(margin, worldH - margin));
+  const chosenType = chooseRandomEnemyType();
+  const spec = createEnemySpec(chosenType);
+  const initialFacingX = clampedX <= player.x ? 1 : -1;
+
+  let enemyToRecycle = null;
+  if (enemies.length >= MAX_ACTIVE_ENEMIES) {
+    let farthestDistanceSq = -1;
+    for (let i = 0; i < enemies.length; i++) {
+      const candidate = enemies[i];
+      if (candidate.isBoss || candidate.isMiniBoss) continue;
+      const dx = candidate.x - player.x;
+      const dy = candidate.y - player.y;
+      const distanceSq = dx * dx + dy * dy;
+      if (distanceSq > farthestDistanceSq) {
+        farthestDistanceSq = distanceSq;
+        enemyToRecycle = candidate;
+      }
+    }
+  }
+
+  if (enemyToRecycle) {
+    enemyToRecycle.x = clampedX;
+    enemyToRecycle.y = clampedY;
+    enemyToRecycle.prevX = clampedX;
+    enemyToRecycle.prevY = clampedY;
+    enemyToRecycle.vx = 0;
+    enemyToRecycle.vy = 0;
+    enemyToRecycle.r = spec.r;
+    enemyToRecycle.hp = ENEMY_MAX_HP;
+    enemyToRecycle.maxHp = ENEMY_MAX_HP;
+    enemyToRecycle.type = spec.type;
+    enemyToRecycle.typeId = spec.typeId;
+    enemyToRecycle.isBoss = false;
+    enemyToRecycle.isMiniBoss = false;
+    enemyToRecycle.isFinalBoss = false;
+    enemyToRecycle.canSplit = spec.canSplit;
+    enemyToRecycle.isSplitChild = spec.isSplitChild;
+    enemyToRecycle.facingX = initialFacingX;
+    enemyToRecycle.speed = spec.speed;
+    enemyToRecycle.fireTimer = 0;
+    enemyToRecycle.archerFireTimer = spec.archerFireTimer;
+    enemyToRecycle.hitFlash = 0;
+    enemyToRecycle.zigPhase = spec.zigPhase;
+    enemyToRecycle.zigRate = spec.zigRate;
+    enemyToRecycle.splitBurstVx = 0;
+    enemyToRecycle.splitBurstVy = 0;
+    enemyToRecycle.spawnFlash = ENEMY_SPAWN_FLASH_DURATION;
+    enemyToRecycle.trail.length = 0;
+  } else {
+    enemies.push({
+      x: clampedX, y: clampedY,
+      prevX: clampedX, prevY: clampedY,
+      vx: 0, vy: 0,
+      r: spec.r,
+      hp: ENEMY_MAX_HP,
+      maxHp: ENEMY_MAX_HP,
+      type: spec.type,
+      typeId: spec.typeId,
+      isBoss: false,
+      canSplit: spec.canSplit,
+      isSplitChild: spec.isSplitChild,
+      facingX: initialFacingX,
+      speed: spec.speed,
+      fireTimer: 0,
+      archerFireTimer: spec.archerFireTimer,
+      hitFlash: 0,
+      zigPhase: spec.zigPhase,
+      zigRate: spec.zigRate,
+      splitBurstVx: 0,
+      splitBurstVy: 0,
+      spawnFlash: ENEMY_SPAWN_FLASH_DURATION,
+      trail: []
+    });
+  }
+  playSpawnBeep();
+}
+
 /* Spawn one of Level 4's 3 Dark Wizard Mini-Bosses (8 HP, arcane
    3-orb volleys, overhead health bar, splits into 2 Ghost Minions). */
 function spawnWizardMiniBoss(slotIndex) {
@@ -4818,7 +5904,8 @@ function spawnBoss(isFinalBoss) {
 /* ---------- Input ---------- */
 const GAME_KEYS = [
   "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
-  "w", "a", "s", "d", "W", "A", "S", "D", " "
+  "w", "a", "s", "d", "W", "A", "S", "D", " ",
+  "q", "Q", "e", "E", "f", "F", "r", "R", "Shift"
 ];
 
 /* Prime Web Audio on pointer-down, a beat before the click that
@@ -4845,6 +5932,15 @@ window.addEventListener("keydown", function (e) {
     e.preventDefault();
     triggerFutureBomb();
     return;
+  }
+
+  // Ability key handlers (Q / E / Shift / F / R) — only when playing.
+  if (state === "playing" && !e.repeat) {
+    if (e.key === "q" || e.key === "Q") { e.preventDefault(); activateTimeFreeze(); return; }
+    if (e.key === "e" || e.key === "E") { e.preventDefault(); activateNovaBlast(); return; }
+    if (e.key === "Shift") { e.preventDefault(); activateDash(); return; }
+    if (e.key === "f" || e.key === "F") { e.preventDefault(); activateTurretDrop(); return; }
+    if (e.key === "r" || e.key === "R") { e.preventDefault(); activateOvercharge(); return; }
   }
 
   if (state === "start" && e.key === "Enter") {
@@ -5005,10 +6101,22 @@ upgradeCardSlots.forEach(function (slot, index) {
   });
 });
 
+/* Clicking "BEGIN MISSION" opens the story intro screen. */
+if (beginMissionBtn) {
+  beginMissionBtn.addEventListener("click", function (e) {
+    if (e && typeof e.stopPropagation === "function") e.stopPropagation();
+    mainMenuEl.classList.remove("visible");
+    showStartScreen();
+  });
+}
+
 /* Clicking "Begin Fight" (or pressing Enter) launches the battle. */
 if (beginFightBtn) {
   beginFightBtn.addEventListener("click", function (e) {
     if (e && typeof e.stopPropagation === "function") e.stopPropagation();
+    if (state !== "start") {
+      state = "start";
+    }
     startGame();
   });
 }
@@ -5134,16 +6242,35 @@ if (laserSlotEl) {
     }
   });
 }
-if (shieldSlotEl) {
-  shieldSlotEl.addEventListener("click", function (e) {
+/* ---------- New Ability Button Click Handlers ---------- */
+if (abilityTimeFreezeEl) {
+  abilityTimeFreezeEl.addEventListener("click", function (e) {
     if (e && e.stopPropagation) e.stopPropagation();
-    activateShortRangeShield();
+    activateTimeFreeze();
   });
 }
-if (bombSlotEl) {
-  bombSlotEl.addEventListener("click", function (e) {
+if (abilityNovaBlastEl) {
+  abilityNovaBlastEl.addEventListener("click", function (e) {
     if (e && e.stopPropagation) e.stopPropagation();
-    triggerFutureBomb();
+    activateNovaBlast();
+  });
+}
+if (abilityDashEl) {
+  abilityDashEl.addEventListener("click", function (e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    activateDash();
+  });
+}
+if (abilityTurretDropEl) {
+  abilityTurretDropEl.addEventListener("click", function (e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    activateTurretDrop();
+  });
+}
+if (abilityOverchargeEl) {
+  abilityOverchargeEl.addEventListener("click", function (e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    activateOvercharge();
   });
 }
 
@@ -5188,6 +6315,49 @@ function initializeStageObjects() {
           x: 0, y: 0, hits: 0, alive: false };
         stageObjects.push(o);
         placeStageObject(o, ax, ay);
+      }
+    }
+  }
+
+  /* ---------- Level 3: pillar chokepoints ---------- */
+  /* Castle Gates: place extra pillars in wall formations across the arena,
+     forcing Commander Rael to navigate through gaps and aim carefully. */
+  if (campaignLevel === 3) {
+    const pillarR = 20;
+    const wallCount = 3;
+    for (let w = 0; w < wallCount; w++) {
+      const vertical = Math.random() < 0.5;
+      const pillarCount = 5 + Math.floor(Math.random() * 3); // 5–7 pillars per wall
+      for (let p = 0; p < pillarCount; p++) {
+        const o = { type: "pillar", r: pillarR, x: 0, y: 0, hits: 0, alive: false };
+        stageObjects.push(o);
+        let placed = false;
+        for (let attempt = 0; attempt < 40 && !placed; attempt++) {
+          let x, y;
+          if (vertical) {
+            // Vertical pillar wall: fixed x, pillars spread along y.
+            x = clamp(rand(0, worldW), pillarR + 8, Math.max(pillarR + 8, worldW - pillarR - 8));
+            const t = p / Math.max(1, pillarCount - 1);
+            const span = Math.min(worldH, H * 1.5);
+            const startY = clamp(player.y - span / 2, pillarR + 8, Math.max(pillarR + 8, worldH - pillarR - span));
+            y = clamp(startY + t * span, pillarR + 8, Math.max(pillarR + 8, worldH - pillarR - 8));
+          } else {
+            // Horizontal pillar wall: fixed y, pillars spread along x.
+            const t = p / Math.max(1, pillarCount - 1);
+            const span = Math.min(worldW, W * 1.5);
+            const startX = clamp(player.x - span / 2, pillarR + 8, Math.max(pillarR + 8, worldW - pillarR - span));
+            x = clamp(startX + t * span, pillarR + 8, Math.max(pillarR + 8, worldW - pillarR - 8));
+            y = clamp(rand(0, worldH), pillarR + 8, Math.max(pillarR + 8, worldH - pillarR - 8));
+          }
+          // Never on player, enemies, or existing objects.
+          if (Math.hypot(x - player.x, y - player.y) < pillarR + player.r + 140) continue;
+          if (enemies.some(function (e) { return Math.hypot(x - e.x, y - e.y) < pillarR + e.r + 40; })) continue;
+          if (stageObjects.some(function (o2) {
+            return o2 !== o && o2.alive && Math.hypot(x - o2.x, y - o2.y) < pillarR + o2.r + 35;
+          })) continue;
+          o.x = x; o.y = y; o.hits = 0; o.alive = true;
+          placed = true;
+        }
       }
     }
   }
@@ -5244,6 +6414,23 @@ function moveActorWithPillars(actor, targetX, targetY) {
     dy = remainingY - inward * ny;
     if (Math.hypot(dx, dy) < 0.001) break;
   }
+
+  // Maze walls (Archon) also block movement.
+  if (isInMazeWall(x, y)) {
+    for (let i = 0; i < mazeWalls.length; i++) {
+      const w = mazeWalls[i];
+      const dist = Math.hypot(x - w.x, y - w.y);
+      const minDist = actor.r + w.r + 0.05;
+      if (dist < minDist) {
+        if (dist < 0.0001) { x = w.x + minDist; y = w.y; break; }
+        const nx = (x - w.x) / dist;
+        const ny = (y - w.y) / dist;
+        x = w.x + nx * minDist;
+        y = w.y + ny * minDist;
+      }
+    }
+  }
+
   actor.x = x; actor.y = y;
 }
 
@@ -5803,13 +6990,107 @@ function damageEnemyAt(enemyIndex, damage, impactX, impactY, bullet) {
   if (!e) return false;
   const dmg = typeof damage === "number" ? damage : BULLET_DAMAGE;
   const maxHp = typeof e.maxHp === "number" ? e.maxHp : (e.isBoss ? BOSS_MAX_HP : ENEMY_MAX_HP);
+
+  // ---------- Shield knights protect the Black Knight ----------
+  // If the Black Knight (Level 1 boss) is in phase 2+ and shield knights are
+  // alive, bullets hitting the boss are blocked; redirect to nearest shield knight.
+  if (campaignLevel === 1 && e.isCampaignBoss && bossPhase >= 2) {
+    const skCount = shieldKnightCount();
+    if (skCount > 0) {
+      // Find nearest shield knight and redirect damage to it.
+      let nearestSk = -1;
+      let nearestDist = Infinity;
+      for (let i = 0; i < enemies.length; i++) {
+        const sk = enemies[i];
+        if (!sk.isShieldKnight) continue;
+        const dist = Math.hypot(sk.x - e.x, sk.y - e.y);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestSk = i;
+        }
+      }
+      if (nearestSk !== -1) {
+        const sk = enemies[nearestSk];
+        sk.hp = Math.max(0, sk.hp - dmg);
+        sk.hitFlash = BOSS_HIT_FLASH_DURATION;
+        // Visual hit on shield knight
+        for (let s = 0; s < 4; s++) {
+          const a = Math.random() * Math.PI * 2;
+          particles.push({
+            x: sk.x, y: sk.y, vx: Math.cos(a) * 50, vy: Math.sin(a) * 50,
+            life: 0, maxLife: 0.25, size: rand(2, 4), color: "#f97316"
+          });
+        }
+        playBossHitSound();
+        if (sk.hp <= 0) {
+          spawnEnemyExplosion(sk, sk.x, sk.y, null);
+          enemies.splice(nearestSk, 1);
+          floatingTexts.push({
+            x: sk.x, y: sk.y, vy: -30,
+            text: "SHIELD BROKEN!", color: "#facc15", big: true, life: 0, maxLife: 0.8
+          });
+        }
+        return false; // boss not damaged
+      }
+    }
+  }
+
   e.hp = (typeof e.hp === "number" ? e.hp : maxHp) - dmg;
 
   const cx = typeof impactX === "number" ? impactX : e.x;
   const cy = typeof impactY === "number" ? impactY : e.y;
 
+  // ---------- Time Tyrant reflective shield: bullets bounce back ----------
+  if (e.isCampaignBoss && e.isFinalBoss && timeTyrantShieldActive && bullet) {
+    const reflectSpeed = Math.hypot(bullet.vx, bullet.vy) || BULLET_SPEED;
+    const reflectDirX = -bullet.dirX || -(bullet.vx / reflectSpeed);
+    const reflectDirY = -bullet.dirY || -(bullet.vy / reflectSpeed);
+    // Spawn a reflected bolt heading back at the player
+    const reflected = {
+      x: cx, y: cy, prevX: cx, prevY: cy,
+      dirX: reflectDirX, dirY: reflectDirY,
+      vx: reflectDirX * BULLET_SPEED * 0.7,
+      vy: reflectDirY * BULLET_SPEED * 0.7,
+      r: BULLET_RADIUS, damage: BULLET_DAMAGE,
+      distanceTraveled: 0, isReflected: true
+    };
+    enemyBullets.push(reflected);
+    // Visual spark at reflection point
+    for (let s = 0; s < 6; s++) {
+      const a = Math.random() * Math.PI * 2;
+      particles.push({
+        x: cx, y: cy, vx: Math.cos(a) * 60, vy: Math.sin(a) * 60,
+        life: 0, maxLife: rand(0.2, 0.4), size: rand(2, 4),
+        color: "#22d3ee"
+      });
+    }
+    playBossHitSound();
+    return false; // bullet consumed by shield
+  }
+
   if (e.hp > 0) {
-    if (e.isCampaignBoss) refreshCampaignBossHud();
+    if (e.isCampaignBoss) {
+      refreshCampaignBossHud();
+      updateBossTopBar();
+      // ---------- Boss phase transitions at 75%, 50%, 25% ----------
+      const hpRatio = e.hp / Math.max(1, e.maxHp);
+      let newPhase = bossPhase;
+      for (let t = 0; t < BOSS_PHASE_THRESHOLDS.length; t++) {
+        if (hpRatio <= BOSS_PHASE_THRESHOLDS[t] && bossPhase === t + 1) {
+          newPhase = t + 2; // advance to next phase
+        }
+      }
+      if (newPhase > bossPhase && newPhase <= 3) {
+        bossPhase = newPhase;
+        bossIsTransitioning = true;
+        bossPhaseChangeTimer = BOSS_PHASE_TRANSITION_TIME;
+        e.hitFlash = 0;
+        screenShakeTimer = Math.max(screenShakeTimer, 0.3);
+        showBossAlert("PHASE " + bossPhase + "!");
+        playBossSpawnSound();
+        updateBossTopBar();
+      }
+    }
     e.hitFlash = BOSS_HIT_FLASH_DURATION;
     const hitColors = ["#ffffff", "#fda4af", "#67e8f9"];
     for (let i = 0; i < 6; i++) {
@@ -6009,7 +7290,7 @@ function fireLaserTowards(targetX, targetY) {
       dirY: dir.y,
       vx: dir.x * shotSpeed,
       vy: dir.y * shotSpeed,
-      r: BULLET_RADIUS,
+      r: overchargeActive ? BULLET_RADIUS * 2 : BULLET_RADIUS,
       damage: BULLET_DAMAGE,
       distanceTraveled: 0
     };
@@ -6036,8 +7317,10 @@ function fireBullets() {
 /* Weapon cycle: tick down laser cooldown and continue firing toward the
    cursor if the player holds down the Left Mouse Button. */
 function updateShooting(dt) {
+  // Overcharge doubles fire rate: tick laser cooldown down twice as fast.
+  const effectiveDt = overchargeActive ? dt * 2 : dt;
   if (laserCooldown > 0) {
-    laserCooldown = Math.max(0, laserCooldown - dt);
+    laserCooldown = Math.max(0, laserCooldown - effectiveDt);
   }
   if (mouseLeftHeld && laserCooldown <= BULLET_FIRE_EPSILON) {
     fireLaserTowards(mouseWorldX(), mouseWorldY());
@@ -6248,29 +7531,63 @@ function fireArcherArrow(archer, postFireDt) {
    rotating arcane spiral, and alternating final-rift volleys. */
 function fireChampionPattern(boss, postFireDt) {
   const aim = Math.atan2(player.y - boss.y, player.x - boss.x);
-  const phase = boss.volleyCount++;
+  const volleyPhase = boss.volleyCount++;
+  const bossPhase = campaignBossPhase();
   const angles = [];
   let kind = "boss_orb", speed = 235;
-  if (boss.pattern === "charge") {
-    for (let i = -1; i <= 1; i++) angles.push(aim + i * 0.24);
-    boss.splitBurstVx = Math.cos(aim) * 230;
-    boss.splitBurstVy = Math.sin(aim) * 230;
-  } else if (boss.pattern === "arrows") {
-    kind = "arrow"; speed = 280;
-    for (let i = -2; i <= 2; i++) angles.push(aim + i * 0.14);
-  } else if (boss.pattern === "ring") {
-    for (let i = 0; i < 8; i++) angles.push(phase * 0.25 + i * Math.PI * 2 / 8);
-  } else if (boss.pattern === "spiral") {
-    kind = "arcane_orb"; speed = 210;
-    for (let i = 0; i < 7; i++) angles.push(phase * 0.53 + i * Math.PI * 2 / 7);
-  } else {
-    kind = "arcane_orb";
-    if (phase % 2 === 0) {
-      for (let i = -3; i <= 3; i++) angles.push(aim + i * 0.14);
-    } else {
-      for (let i = 0; i < 10; i++) angles.push(phase * 0.2 + i * Math.PI * 2 / 10);
+
+  // === Level 1: The Black Knight ===
+  if (campaignLevel === 1) {
+    kind = "boss_orb";
+    speed = 210 + bossPhase * 20;
+    // 3-bullet aimed spread, wider in later phases.
+    const spread = 0.2 + bossPhase * 0.1;
+    for (let i = -1; i <= 1; i++) angles.push(aim + i * spread);
+    // Phase 3: also charge forward
+    if (bossPhase >= 3) {
+      boss.splitBurstVx = Math.cos(aim) * 260;
+      boss.splitBurstVy = Math.sin(aim) * 260;
     }
   }
+  // === Level 2: The Witch of the Wood ===
+  else if (campaignLevel === 2) {
+    kind = "arrow"; speed = 260 + bossPhase * 20;
+    // Poison arrow spiral: arrows spiral outward from the boss.
+    const arrowCount = 5 + bossPhase * 2;
+    for (let i = 0; i < arrowCount; i++) {
+      const a = volleyPhase * 0.4 + (i / arrowCount) * Math.PI * 2;
+      angles.push(a);
+    }
+  }
+  // === Level 3: The Siege Commander ===
+  else if (campaignLevel === 3) {
+    kind = "cannonball"; speed = 190 + bossPhase * 25;
+    // Ring of cannonballs around the boss.
+    const ringCount = 6 + bossPhase * 2;
+    for (let i = 0; i < ringCount; i++) {
+      angles.push(volleyPhase * 0.3 + (i / ringCount) * Math.PI * 2);
+    }
+  }
+  // === Level 4: Archon the Sorcerer ===
+  else if (campaignLevel === 4) {
+    kind = "arcane_orb"; speed = 180 + bossPhase * 15;
+    // Spiral of homing-capable arcane orbs.
+    const orbCount = 7 + bossPhase * 3;
+    for (let i = 0; i < orbCount; i++) {
+      angles.push(volleyPhase * 0.5 + (i / orbCount) * Math.PI * 2);
+    }
+  }
+  // === Level 5: The Time Tyrant ===
+  else {
+    kind = "arcane_orb"; speed = 200 + bossPhase * 20;
+    // Combined pattern: alternating aimed fan and full ring.
+    if (volleyPhase % 2 === 0) {
+      for (let i = -3; i <= 3; i++) angles.push(aim + i * 0.14);
+    } else {
+      for (let i = 0; i < 12; i++) angles.push(volleyPhase * 0.2 + i * Math.PI * 2 / 12);
+    }
+  }
+
   playBossShootSound();
   for (let i = 0; i < angles.length && state === "playing"; i++) {
     const dx = Math.cos(angles[i]), dy = Math.sin(angles[i]);
@@ -6284,11 +7601,16 @@ function fireChampionPattern(boss, postFireDt) {
     if (enemyBulletHitsPlayer(shot)) {
       if (activeShieldTimer > 0) continue;
       if (shieldCharges > 0) { consumeShieldOnHit(-1); continue; }
-      damagePlayer(PLAYER_HIT_DAMAGE, -1);
+      damagePlayer(campaignLevel === 5 ? PLAYER_BOSS_HIT_DAMAGE : PLAYER_HIT_DAMAGE, -1);
     } else if (!bulletIsOffscreen(shot)) {
       enemyBullets.push(shot);
     }
   }
+}
+
+/* Return the current boss phase (1, 2, or 3). */
+function campaignBossPhase() {
+  return bossPhase;
 }
 
 /* Bosses fire aimed 5-bullet spreads every 3s; Type 2 Dark Archers
@@ -6299,7 +7621,18 @@ function updateBossShooting(dt) {
     const e = enemies[i];
 
     if (e.isCampaignBoss) {
-      const interval = e.pattern === "charge" ? 2.8 : e.pattern === "rift" ? 2.2 : 2.7;
+      // Bosses do not fire while transitioning between phases.
+      if (bossIsTransitioning) {
+        e.fireTimer = Math.max(0.9, BOSS_FIRE_INTERVAL - bossPhase * 0.4);
+        continue;
+      }
+      // Per-boss fire interval: faster in later phases.
+      const baseInterval = campaignLevel === 1 ? 3.0 :
+        campaignLevel === 2 ? 2.4 :
+        campaignLevel === 3 ? 2.6 :
+        campaignLevel === 4 ? 2.2 :
+        1.8;
+      const interval = Math.max(0.8, baseInterval - bossPhase * 0.3);
       e.fireTimer -= dt;
       while (e.fireTimer <= BOSS_FIRE_EPSILON && state === "playing") {
         fireChampionPattern(e, Math.max(0, -e.fireTimer));
@@ -6389,6 +7722,12 @@ function updateEnemyBullets(dt) {
       continue;
     }
 
+    // Bullets hitting a magic maze wall are destroyed.
+    if (isInMazeWall(b.x, b.y)) {
+      enemyBullets.splice(i, 1);
+      continue;
+    }
+
     if (bulletIsOffscreen(b)) {
       enemyBullets.splice(i, 1);
     }
@@ -6432,6 +7771,127 @@ function updateActiveShield(dt) {
   }
   if (activeShieldCooldown > 0) {
     activeShieldCooldown = Math.max(0, activeShieldCooldown - dt);
+  }
+}
+
+/* ---------- Ability Update Functions ---------- */
+
+/* Time Freeze (Q): tick down cooldown & active timer; unfreeze enemies when done. */
+function updateTimeFreeze(dt) {
+  if (timeFreezeCooldown > 0) {
+    timeFreezeCooldown = Math.max(0, timeFreezeCooldown - dt);
+  }
+  if (timeFreezeActive) {
+    timeFreezeTimer = Math.max(0, timeFreezeTimer - dt);
+    if (timeFreezeTimer <= 0) {
+      timeFreezeActive = false;
+      // Restore enemy velocities
+      for (let i = 0; i < enemies.length; i++) {
+        const e = enemies[i];
+        if (typeof e._frozenVx === "number") {
+          e.vx = e._frozenVx;
+          e.vy = e._frozenVy;
+          delete e._frozenVx;
+          delete e._frozenVy;
+        }
+      }
+    }
+  }
+}
+
+/* Nova Blast (E): tick down cooldown. */
+function updateNovaBlast(dt) {
+  if (novaBlastCooldown > 0) {
+    novaBlastCooldown = Math.max(0, novaBlastCooldown - dt);
+  }
+}
+
+/* Dash (Shift): tick down cooldown & active timer. */
+function updateDash(dt) {
+  if (dashCooldown > 0) {
+    dashCooldown = Math.max(0, dashCooldown - dt);
+  }
+  if (dashActive) {
+    dashTimer = Math.max(0, dashTimer - dt);
+    if (dashTimer <= 0) {
+      dashActive = false;
+    }
+  }
+}
+
+/* Turret Drop (F): tick down cooldown; update turret life & firing. */
+function updateTurrets(dt) {
+  if (turretCooldown > 0) {
+    turretCooldown = Math.max(0, turretCooldown - dt);
+  }
+
+  for (let i = turrets.length - 1; i >= 0; i--) {
+    const t = turrets[i];
+    t.life += dt;
+    t.fireTimer = Math.max(0, t.fireTimer - dt);
+
+    if (t.life >= t.maxLife) {
+      // Turret expires: explode it
+      for (let k = 0; k < 10; k++) {
+        const angle = Math.random() * Math.PI * 2;
+        particles.push({
+          x: t.x, y: t.y,
+          vx: Math.cos(angle) * rand(60, 160), vy: Math.sin(angle) * rand(60, 160),
+          life: 0, maxLife: rand(0.4, 0.9), size: rand(3, 6),
+          color: "#f87171"
+        });
+      }
+      floatingTexts.push({
+        x: t.x, y: t.y, vy: -35,
+        text: "TURRET EXPIRED", color: "#f87171", big: false,
+        life: 0, maxLife: 0.8
+      });
+      turrets.splice(i, 1);
+      continue;
+    }
+
+    // Auto-fire at nearest enemy in range
+    if (t.fireTimer <= 0 && state === "playing") {
+      let nearest = -1;
+      let nearestDist = TURRET_RANGE;
+      for (let j = 0; j < enemies.length; j++) {
+        const e = enemies[j];
+        const dist = Math.hypot(e.x - t.x, e.y - t.y);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearest = j;
+        }
+      }
+      if (nearest !== -1) {
+        const e = enemies[nearest];
+        const aim = Math.atan2(e.y - t.y, e.x - t.x);
+        const dx = Math.cos(aim);
+        const dy = Math.sin(aim);
+        const shot = {
+          x: t.x, y: t.y, prevX: t.x, prevY: t.y,
+          vx: dx * TURRET_BULLET_SPEED, vy: dy * TURRET_BULLET_SPEED,
+          dirX: dx, dirY: dy, r: 3,
+          damage: BULLET_DAMAGE, distanceTraveled: 0,
+          isTurretShot: true
+        };
+        bullets.push(shot);
+        t.fireTimer = TURRET_FIRE_INTERVAL;
+        playTurretFireSound();
+      }
+    }
+  }
+}
+
+/* Overcharge (R): tick down cooldown & active timer. */
+function updateOvercharge(dt) {
+  if (overchargeCooldown > 0) {
+    overchargeCooldown = Math.max(0, overchargeCooldown - dt);
+  }
+  if (overchargeActive) {
+    overchargeTimer = Math.max(0, overchargeTimer - dt);
+    if (overchargeTimer <= 0) {
+      overchargeActive = false;
+    }
   }
 }
 
@@ -6491,6 +7951,44 @@ function updateEnemies(dt) {
       // direct vector toward player.
       vx = dirX * e.speed;
       vy = dirY * e.speed;
+    }
+
+    // ---------- Level 4: enemies dodge incoming bullets ----------
+    if (campaignLevel === 4 && !e.isBoss && !e.isMiniBoss) {
+      for (let b = 0; b < bullets.length; b++) {
+        const bullet = bullets[b];
+        const dx = bullet.x - e.x;
+        const dy = bullet.y - e.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > LEVEL4_DODGE_DISTANCE) continue;
+        // Is the bullet moving toward this enemy?
+        const bSpeed = Math.hypot(bullet.vx, bullet.vy) || 1;
+        const toward = (dx * bullet.vx + dy * bullet.vy) / (dist * bSpeed);
+        if (toward < 0.3) continue; // not heading at us
+        if (Math.random() > LEVEL4_DODGE_CHANCE) continue;
+        // Sidestep perpendicular to the bullet's travel.
+        const perpX = -bullet.vy / bSpeed;
+        const perpY = bullet.vx / bSpeed;
+        const dodgeSpeed = e.speed * 1.6;
+        vx += perpX * dodgeSpeed;
+        vy += perpY * dodgeSpeed;
+      }
+    }
+
+    // ---------- Level 5: enemies actively flank the player ----------
+    if (campaignLevel === 5 && !e.isBoss && !e.isMiniBoss) {
+      // Offset each enemy's aim so they surround rather than converge.
+      const flankIndex = i % 8;
+      const flankAngle = (flankIndex / 8) * Math.PI * 2;
+      const flankDirX = Math.cos(flankAngle);
+      const flankDirY = Math.sin(flankAngle);
+      // Blend direct pursuit with a flanking arc: enemies circle while closing.
+      const flankStrength = 0.45;
+      const aimX = dirX * (1 - flankStrength) + flankDirX * flankStrength;
+      const aimY = dirY * (1 - flankStrength) + flankDirY * flankStrength;
+      const aimLen = Math.hypot(aimX, aimY) || 1;
+      vx = (aimX / aimLen) * e.speed;
+      vy = (aimY / aimLen) * e.speed;
     }
 
     if (e.splitBurstVx || e.splitBurstVy) {
@@ -6563,8 +8061,14 @@ function updateEnemies(dt) {
 
     // Reuse scratch fields instead of allocating a velocity object
     // for every enemy on every frame.
-    e.vx = vx;
-    e.vy = vy;
+    // Time Freeze (Q): enemies keep their stored velocity but don't move.
+    if (timeFreezeActive) {
+      e.vx = 0;
+      e.vy = 0;
+    } else {
+      e.vx = vx;
+      e.vy = vy;
+    }
   }
 
   // Second pass: apply movement and remember the swept segment's
@@ -6604,6 +8108,510 @@ function updateEnemies(dt) {
       e.trail.splice(0, e.trail.length - ENEMY_TRAIL_MAX_POINTS);
     }
   }
+
+  // ---------- Boss behavior (phases, movement, special attacks) ----------
+  updateBossBehavior(playDt);
+}
+
+/* ---------- Boss behavior system ---------- */
+/* Handles per-boss movement and special attacks based on campaign level
+   and current phase (1, 2, or 3). Called once per frame during boss fights. */
+function updateBossBehavior(dt) {
+  if (!campaignBoss || campaignPhase !== 3 || state !== "playing") return;
+
+  const b = campaignBoss;
+
+  // Phase transition: brief invulnerability while the boss reconfigures.
+  if (bossIsTransitioning) {
+    bossPhaseChangeTimer = Math.max(0, bossPhaseChangeTimer - dt);
+    if (bossPhaseChangeTimer <= 0) {
+      bossIsTransitioning = false;
+      screenShakeTimer = Math.max(screenShakeTimer, 0.2);
+    }
+    return; // boss does nothing while transitioning
+  }
+
+  const cfg = CAMPAIGN_DRAMA[campaignLevel];
+
+  // === Level 1: The Black Knight ===
+  if (campaignLevel === 1) {
+    updateBlackKnight(b, dt, cfg);
+  }
+  // === Level 2: The Witch of the Wood ===
+  else if (campaignLevel === 2) {
+    updateWitch(b, dt, cfg);
+  }
+  // === Level 3: The Siege Commander ===
+  else if (campaignLevel === 3) {
+    updateSiegeCommander(b, dt, cfg);
+  }
+  // === Level 4: Archon the Sorcerer ===
+  else if (campaignLevel === 4) {
+    updateArchon(b, dt, cfg);
+  }
+  // === Level 5: The Time Tyrant ===
+  else if (campaignLevel === 5) {
+    updateTimeTyrant(b, dt, cfg);
+  }
+}
+
+/* --- Level 1: Black Knight --- */
+/* Charges at the player in a straight line. At 50% HP, summons 4 shield
+   knights that must be killed before the knight can be damaged again. */
+function updateBlackKnight(b, dt, cfg) {
+  const phase = bossPhase;
+
+  // At phase 2 (50% HP), summon 4 shield knights around the boss.
+  if (phase >= 2 && !b.shieldKnightsSummoned) {
+    b.shieldKnightsSummoned = true;
+    const angles = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2];
+    for (let k = 0; k < 4; k++) {
+      const sx = b.x + Math.cos(angles[k]) * 70;
+      const sy = b.y + Math.sin(angles[k]) * 70;
+      spawnShieldKnight(sx, sy);
+    }
+    floatingTexts.push({
+      x: b.x, y: b.y - b.r - 20, vy: -40,
+      text: "SHIELD KNIGHTS SUMMONED!", color: "#f97316", big: true,
+      life: 0, maxLife: 1.5
+    });
+    screenShakeTimer = Math.max(screenShakeTimer, 0.25);
+  }
+
+  // Movement: charge toward player in bursts, then pause.
+  if (bossChargeTimer <= 0) {
+    // Start a new charge.
+    const dx = player.x - b.x;
+    const dy = player.y - b.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    b.chargeDirX = dx / dist;
+    b.chargeDirY = dy / dist;
+    // Charge speed scales with phase.
+    const chargeSpeed = (150 + phase * 40) * Math.pow(enemySpeedMultiplier(), 0.3);
+    b.vx = b.chargeDirX * chargeSpeed;
+    b.vy = b.chargeDirY * chargeSpeed;
+    bossChargeTimer = 1.2 + phase * 0.4; // charge duration
+  } else {
+    bossChargeTimer = Math.max(0, bossChargeTimer - dt);
+    // Continue current charge.
+    const chargeSpeed = (150 + phase * 40) * Math.pow(enemySpeedMultiplier(), 0.3);
+    b.vx = b.chargeDirX * chargeSpeed;
+    b.vy = b.chargeDirY * chargeSpeed;
+    if (bossChargeTimer <= 0) {
+      b.vx = 0; b.vy = 0;
+      bossChargeTimer = 1.5; // pause between charges
+    }
+  }
+
+  // Shield knights pursue the player and body-block for the Black Knight.
+  for (let i = 0; i < enemies.length; i++) {
+    const sk = enemies[i];
+    if (!sk.isShieldKnight) continue;
+    const skdx = player.x - sk.x;
+    const skdy = player.y - sk.y;
+    const skdist = Math.hypot(skdx, skdy) || 1;
+    const skSpeed = 75 + bossPhase * 15;
+    sk.vx = (skdx / skdist) * skSpeed;
+    sk.vy = (skdy / skdist) * skSpeed;
+    sk.facingX = skdx >= 0 ? 1 : -1;
+    // Shield knights also gently orbit the Black Knight.
+    const bdx = b.x - sk.x;
+    const bdy = b.y - sk.y;
+    const bdist = Math.hypot(bdx, bdy) || 1;
+    if (bdist < 40) {
+      sk.vx += (bdx / bdist) * 30;
+      sk.vy += (bdy / bdist) * 30;
+    }
+  }
+
+  b.vx *= 0.98; // slight friction
+  b.vy *= 0.98;
+}
+
+/* Spawn a shield knight that guards the Black Knight. */
+function spawnShieldKnight(x, y) {
+  const r = SHIELD_KNIGHT_RADIUS;
+  const margin = r + 8;
+  const cx = clamp(x, margin, Math.max(margin, worldW - margin));
+  const cy = clamp(y, margin, Math.max(margin, worldH - margin));
+  const knight = {
+    x: cx, y: cy, prevX: cx, prevY: cy, vx: 0, vy: 0,
+    r: r, hp: SHIELD_KNIGHT_HP, maxHp: SHIELD_KNIGHT_HP,
+    type: "red", typeId: 1,
+    isBoss: false, isMiniBoss: true, isShieldKnight: true,
+    canSplit: false, isSplitChild: false,
+    facingX: cx <= player.x ? 1 : -1,
+    speed: 90,
+    fireTimer: 0, hitFlash: 0, zigPhase: 0, zigRate: 0,
+    splitBurstVx: 0, splitBurstVy: 0, spawnFlash: ENEMY_SPAWN_FLASH_DURATION,
+    trail: []
+  };
+  enemies.push(knight);
+}
+
+/* --- Level 2: The Witch of the Wood --- */
+/* Teleports randomly every few seconds. Fires poison arrow spirals. */
+function updateWitch(b, dt, cfg) {
+  const phase = bossPhase;
+
+  // Teleport timer.
+  b.teleportTimer = Math.max(0, b.teleportTimer - dt);
+  if (b.teleportTimer <= 0) {
+    // Teleport to a random position away from the player.
+    const dist = 300 + Math.random() * 200;
+    const angle = Math.random() * Math.PI * 2;
+    const tx = clamp(player.x + Math.cos(angle) * dist, 60, Math.max(60, worldW - 60));
+    const ty = clamp(player.y + Math.sin(angle) * dist, 60, Math.max(60, worldH - 60));
+    b.x = tx; b.y = ty; b.prevX = tx; b.prevY = ty;
+    b.vx = 0; b.vy = 0;
+    b.teleportTimer = WITCH_TELEPORT_INTERVAL - phase * 0.8; // faster teleports in later phases
+    screenShakeTimer = Math.max(screenShakeTimer, 0.15);
+    // Visual teleport flash
+    for (let s = 0; s < 12; s++) {
+      const a = (s / 12) * Math.PI * 2;
+      particles.push({
+        x: tx, y: ty, vx: Math.cos(a) * 80, vy: Math.sin(a) * 80,
+        life: 0, maxLife: 0.4, size: rand(2, 5), color: "#4ade80"
+      });
+    }
+    floatingTexts.push({
+      x: b.x, y: b.y - b.r - 20, vy: -35,
+      text: "TELEPORT!", color: "#4ade80", big: true, life: 0, maxLife: 0.8
+    });
+  }
+
+  // Witch doesn't move much between teleports - slight drift.
+  b.vx = (b.vx || 0) * 0.95;
+  b.vy = (b.vy || 0) * 0.95;
+}
+
+/* --- Level 3: The Siege Commander --- */
+/* Rides across the screen on horseback, dropping cannon fire in the player's path. */
+function updateSiegeCommander(b, dt, cfg) {
+  const phase = bossPhase;
+
+  // Horseback movement: ride back and forth across the screen.
+  if (!b.horseDirX) {
+    b.horseDirX = 1;
+    b.horseDirY = 0;
+  }
+  const horseSpeed = (110 + phase * 30) * Math.pow(enemySpeedMultiplier(), 0.3);
+  b.vx = b.horseDirX * horseSpeed;
+  b.vy = b.horseDirY * horseSpeed;
+
+  // Bounce off world edges.
+  const pad = b.r + 10;
+  if (b.x <= pad || b.x >= worldW - pad) {
+    b.horseDirX = -b.horseDirX;
+    b.x = clamp(b.x, pad, Math.max(pad, worldW - pad));
+  }
+  if (b.y <= pad || b.y >= worldH - pad) {
+    b.horseDirY = -b.horseDirY;
+    b.y = clamp(b.y, pad, Math.max(pad, worldH - pad));
+  }
+
+  // Cannon drops: fire cannonballs toward player's position.
+  b.cannonTimer = Math.max(0, b.cannonTimer - dt);
+  if (b.cannonTimer <= 0) {
+    const aimAngle = Math.atan2(player.y - b.y, player.x - b.x);
+    const cannonSpeed = 180 + phase * 25;
+    // Drop 1-3 cannonballs in a small spread.
+    const count = 1 + (phase >= 2 ? 1 : 0) + (phase >= 3 ? 1 : 0);
+    for (let k = 0; k < count; k++) {
+      const offset = (k - (count - 1) / 2) * 0.15;
+      const angle = aimAngle + offset;
+      const dx = Math.cos(angle);
+      const dy = Math.sin(angle);
+      const startX = b.x + dx * (b.r + 10);
+      const startY = b.y + dy * (b.r + 10);
+      const shot = {
+        kind: "cannonball",
+        x: startX, y: startY, prevX: startX, prevY: startY,
+        dirX: dx, dirY: dy,
+        vx: dx * cannonSpeed, vy: dy * cannonSpeed,
+        r: 6, damage: 2, distanceTraveled: 0,
+        isCannonball: true
+      };
+      enemyBullets.push(shot);
+    }
+    b.cannonTimer = CANNON_DROP_INTERVAL - phase * 0.3;
+    playBossShootSound();
+    // Visual muzzle flash
+    for (let s = 0; s < 5; s++) {
+      const a = aimAngle + rand(-0.5, 0.5);
+      particles.push({
+        x: b.x, y: b.y, vx: Math.cos(a) * 100, vy: Math.sin(a) * 100,
+        life: 0, maxLife: 0.3, size: rand(3, 6), color: "#fbbf24"
+      });
+    }
+  }
+}
+
+/* --- Level 4: Archon the Sorcerer --- */
+/* Creates a magic maze of walls, fires homing orbs. */
+function updateArchon(b, dt, cfg) {
+  const phase = bossPhase;
+
+  // Archon hovers slowly toward player.
+  const dx = player.x - b.x;
+  const dy = player.y - b.y;
+  const dist = Math.hypot(dx, dy) || 1;
+  const hoverSpeed = (55 + phase * 15) * Math.pow(enemySpeedMultiplier(), 0.3);
+  b.vx = (dx / dist) * hoverSpeed * 0.6;
+  b.vy = (dy / dist) * hoverSpeed * 0.6;
+
+  // Maze walls: periodically spawn magic walls that block movement.
+  if (!b.mazeTimer) b.mazeTimer = 0;
+  b.mazeTimer = Math.max(0, b.mazeTimer - dt);
+  if (b.mazeTimer <= 0) {
+    spawnMazeWalls(b);
+    b.mazeTimer = 10 - phase * 2; // more frequent in later phases
+    screenShakeTimer = Math.max(screenShakeTimer, 0.12);
+  }
+
+  // Homing orbs: Archon fires slow but accurate homing orbs.
+  if (!b.homingOrbTimer) b.homingOrbTimer = 0;
+  b.homingOrbTimer = Math.max(0, b.homingOrbTimer - dt);
+  if (b.homingOrbTimer <= 0) {
+    fireHomingOrb(b);
+    b.homingOrbTimer = 3 - phase * 0.6;
+  }
+}
+
+/* Spawn magic maze walls around the Archon. */
+function spawnMazeWalls(boss) {
+  const count = MAZE_WALL_COUNT;
+  const wallR = 26;
+  const wallLife = MAZE_WALL_LIFE;
+  for (let k = 0; k < count; k++) {
+    const angle = (k / count) * Math.PI * 2;
+    const dist = 140 + Math.random() * 80;
+    const wx = clamp(boss.x + Math.cos(angle) * dist, wallR, Math.max(wallR, worldW - wallR));
+    const wy = clamp(boss.y + Math.sin(angle) * dist, wallR, Math.max(wallR, worldH - wallR));
+    mazeWalls.push({
+      x: wx, y: wy, r: wallR, life: 0, maxLife: wallLife,
+      color: "#a855f7", isMazeWall: true
+    });
+  }
+  floatingTexts.push({
+    x: boss.x, y: boss.y - boss.r - 20, vy: -35,
+    text: "MAGIC MAZE!", color: "#a855f7", big: true, life: 0, maxLife: 1.2
+  });
+}
+
+/* Fire a homing orb from the Archon. */
+function fireHomingOrb(boss) {
+  const aimAngle = Math.atan2(player.y - boss.y, player.x - boss.x);
+  const dx = Math.cos(aimAngle);
+  const dy = Math.sin(aimAngle);
+  const startX = boss.x + dx * (boss.r + 10);
+  const startY = boss.y + dy * (boss.r + 10);
+  const shot = {
+    kind: "homing_orb",
+    x: startX, y: startY, prevX: startX, prevY: startY,
+    dirX: dx, dirY: dy,
+    vx: dx * 120, vy: dy * 120,
+    r: 7, damage: 1, distanceTraveled: 0,
+    isHoming: true, homingTarget: { x: player.x, y: player.y },
+    homingTurnRate: 2.5
+  };
+  enemyBullets.push(shot);
+  playBossShootSound();
+}
+
+/* --- Level 5: The Time Tyrant --- */
+/* Combines all previous boss attacks. Has a reflective shield that must
+   be timed to break (shield reflects bullets back at the player). */
+function updateTimeTyrant(b, dt, cfg) {
+  const phase = bossPhase;
+
+  // Reflective shield: cycles on and off.
+  if (timeTyrantShieldActive) {
+    timeTyrantShieldTimer = Math.max(0, timeTyrantShieldTimer - dt);
+    if (timeTyrantShieldTimer <= 0) {
+      timeTyrantShieldActive = false;
+      screenShakeTimer = Math.max(screenShakeTimer, 0.15);
+    }
+  } else {
+    // Shield comes up periodically.
+    if (!timeTyrantShieldTimer || timeTyrantShieldTimer <= 0) {
+      timeTyrantShieldActive = true;
+      timeTyrantShieldTimer = TIME_TYRANT_SHIELD_DURATION;
+    } else {
+      timeTyrantShieldTimer = Math.max(0, timeTyrantShieldTimer - dt);
+    }
+  }
+
+  // --- Combined: Black Knight charge (phase 2+) ---
+  if (phase >= 2 && (!b.chargeTimer || b.chargeTimer <= 0)) {
+    const chargeRoll = Math.random();
+    if (chargeRoll < 0.015 * dt * 60) { // ~1.5% per second chance
+      const dx = player.x - b.x;
+      const dy = player.y - b.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      b.chargeDirX = dx / dist;
+      b.chargeDirY = dy / dist;
+      b.chargeTimer = 1.0;
+      b.vx = b.chargeDirX * (200 + phase * 30);
+      b.vy = b.chargeDirY * (200 + phase * 30);
+    }
+  } else if (b.chargeTimer > 0) {
+    b.chargeTimer = Math.max(0, b.chargeTimer - dt);
+    if (b.chargeTimer <= 0) {
+      b.vx = 0; b.vy = 0;
+    }
+  }
+
+  // --- Combined: Witch teleport (phase 3) ---
+  if (phase >= 3) {
+    if (!b.tyrantTeleportTimer) b.tyrantTeleportTimer = 0;
+    b.tyrantTeleportTimer = Math.max(0, b.tyrantTeleportTimer - dt);
+    if (b.tyrantTeleportTimer <= 0) {
+      const dist = 250 + Math.random() * 150;
+      const angle = Math.random() * Math.PI * 2;
+      const tx = clamp(player.x + Math.cos(angle) * dist, 60, Math.max(60, worldW - 60));
+      const ty = clamp(player.y + Math.sin(angle) * dist, 60, Math.max(60, worldH - 60));
+      b.x = tx; b.y = ty; b.prevX = tx; b.prevY = ty;
+      b.vx = 0; b.vy = 0;
+      b.tyrantTeleportTimer = 8 - phase;
+      screenShakeTimer = Math.max(screenShakeTimer, 0.15);
+      for (let s = 0; s < 10; s++) {
+        const a = (s / 10) * Math.PI * 2;
+        particles.push({ x: tx, y: ty, vx: Math.cos(a) * 70, vy: Math.sin(a) * 70, life: 0, maxLife: 0.35, size: rand(2, 5), color: "#22d3ee" });
+      }
+    }
+  }
+
+  // --- Combined: Siege Commander cannon drops (all phases) ---
+  if (!b.tyrantCannonTimer) b.tyrantCannonTimer = 0;
+  b.tyrantCannonTimer = Math.max(0, b.tyrantCannonTimer - dt);
+  if (b.tyrantCannonTimer <= 0) {
+    const aimAngle = Math.atan2(player.y - b.y, player.x - b.x);
+    const cannonSpeed = 170 + phase * 20;
+    const count = 1 + (phase >= 2 ? 1 : 0);
+    for (let k = 0; k < count; k++) {
+      const offset = (k - (count - 1) / 2) * 0.2;
+      const angle = aimAngle + offset;
+      const dx = Math.cos(angle);
+      const dy = Math.sin(angle);
+      const startX = b.x + dx * (b.r + 10);
+      const startY = b.y + dy * (b.r + 10);
+      const shot = {
+        kind: "cannonball", x: startX, y: startY, prevX: startX, prevY: startY,
+        dirX: dx, dirY: dy, vx: dx * cannonSpeed, vy: dy * cannonSpeed,
+        r: 6, damage: 2, distanceTraveled: 0, isCannonball: true
+      };
+      enemyBullets.push(shot);
+    }
+    b.tyrantCannonTimer = 2.5 - phase * 0.5;
+  }
+
+  // --- Combined: Archon maze walls (phase 3) ---
+  if (phase >= 3) {
+    if (!b.tyrantMazeTimer) b.tyrantMazeTimer = 0;
+    b.tyrantMazeTimer = Math.max(0, b.tyrantMazeTimer - dt);
+    if (b.tyrantMazeTimer <= 0) {
+      spawnMazeWalls(b);
+      b.tyrantMazeTimer = 14 - phase * 3;
+    }
+  }
+
+  // Slow hover toward player (when not charging).
+  if (!b.chargeTimer || b.chargeTimer <= 0) {
+    const dx = player.x - b.x;
+    const dy = player.y - b.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const hoverSpeed = (40 + phase * 10) * Math.pow(enemySpeedMultiplier(), 0.3);
+    b.vx = (dx / dist) * hoverSpeed * 0.5;
+    b.vy = (dy / dist) * hoverSpeed * 0.5;
+  }
+
+  // Time Tyrant uses combined patterns - delegate to fireChampionPattern
+  // which handles phase-based patterns.
+}
+
+/* Update homing orbs (curve toward player). */
+function updateHomingOrbs(dt) {
+  for (let i = enemyBullets.length - 1; i >= 0; i--) {
+    const b = enemyBullets[i];
+    if (b.kind !== "homing_orb") continue;
+    const dx = player.x - b.x;
+    const dy = player.y - b.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const turnRate = b.homingTurnRate || 2.5;
+    const targetDirX = dx / dist;
+    const targetDirY = dy / dist;
+    // Smoothly turn toward player.
+    b.dirX = clamp(b.dirX + (targetDirX - b.dirX) * turnRate * dt, -1, 1);
+    b.dirY = clamp(b.dirY + (targetDirY - b.dirY) * turnRate * dt, -1, 1);
+    const speed = Math.hypot(b.vx, b.vy) || 120;
+    b.vx = b.dirX * speed;
+    b.vy = b.dirY * speed;
+  }
+}
+
+/* Update magic maze walls (countdown and remove). */
+function updateMazeWalls(dt) {
+  for (let i = mazeWalls.length - 1; i >= 0; i--) {
+    const w = mazeWalls[i];
+    w.life += dt;
+    if (w.life >= w.maxLife) {
+      mazeWalls.splice(i, 1);
+    }
+  }
+}
+
+/* Check if a position collides with any active maze wall. */
+function isInMazeWall(x, y) {
+  for (let i = 0; i < mazeWalls.length; i++) {
+    const w = mazeWalls[i];
+    if (Math.hypot(x - w.x, y - w.y) < w.r + 12) return true;
+  }
+  return false;
+}
+
+/* Get the count of active shield knights (protecting the Black Knight). */
+function shieldKnightCount() {
+  let n = 0;
+  for (let i = 0; i < enemies.length; i++) {
+    if (enemies[i].isShieldKnight) n++;
+  }
+  return n;
+}
+
+/* Draw Archon's magic maze walls. */
+function drawMazeWalls() {
+  if (mazeWalls.length === 0) return;
+  ctx.save();
+  for (let i = 0; i < mazeWalls.length; i++) {
+    const w = mazeWalls[i];
+    const progress = clamp(w.life / Math.max(0.001, w.maxLife), 0, 1);
+    const fade = 1 - progress;
+    const lifeR = w.r * (0.5 + 0.5 * fade);
+
+    // Wall glow.
+    ctx.fillStyle = "rgba(168, 85, 247, " + (0.35 * fade) + ")";
+    ctx.beginPath();
+    ctx.arc(w.x, w.y, lifeR * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Wall body.
+    ctx.fillStyle = "#a855f7";
+    ctx.beginPath();
+    ctx.arc(w.x, w.y, lifeR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Rune pattern on wall.
+    ctx.strokeStyle = "rgba(255, 255, 255, " + (0.8 * fade) + ")";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(w.x - lifeR * 0.4, w.y);
+    ctx.lineTo(w.x + lifeR * 0.4, w.y);
+    ctx.moveTo(w.x, w.y - lifeR * 0.4);
+    ctx.lineTo(w.x, w.y + lifeR * 0.4);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 /* Swept circle collision: distance from the player to the enemy's
@@ -6818,8 +8826,21 @@ function update(dt) {
   // Spawn logic per level.
   spawnTimer -= playDt;
   if (spawnTimer <= 0) {
-    spawnEnemy();
+    if (campaignLevel === 4 && Math.random() < 0.5) {
+      // Level 4: half the time, spawn a formation wave instead of a lone enemy.
+      spawnFormation();
+    } else {
+      spawnEnemy();
+    }
     spawnTimer = currentSpawnInterval() * rand(0.78, 1.22);
+  }
+  // Level 4 formation timer: periodic formation waves on top of normal spawns.
+  if (campaignLevel === 4) {
+    nextFormationTime -= playDt;
+    if (nextFormationTime <= 0) {
+      spawnFormation();
+      nextFormationTime = LEVEL4_FORMATION_INTERVAL * rand(0.7, 1.4);
+    }
   }
 
   updatePlayer(playDt);
@@ -6833,7 +8854,14 @@ function update(dt) {
   updateShooting(playDt);
   if (state !== "playing") return;
   updateActiveShield(playDt);
+  updateTimeFreeze(playDt);
+  updateNovaBlast(playDt);
+  updateDash(playDt);
+  updateTurrets(playDt);
+  updateOvercharge(playDt);
   updateEnemyBullets(playDt);
+  updateHomingOrbs(playDt);
+  updateMazeWalls(playDt);
   if (state !== "playing") return;
   updateBossShooting(playDt);
   if (state !== "playing") return;
@@ -6848,8 +8876,21 @@ function update(dt) {
   refreshAbilityHud();
   refreshObjectiveHud();
 
+  // ---------- Permanent level banner: entrance, 3s stay, then collapse ----------
+  const bannerWantsVisible = (state === "playing" || state === "upgrading");
+  if (bannerWantsVisible) {
+    if (levelBannerNeedsEntrance) enterLevelBanner();
+    if (levelBannerShowTimer > 0) {
+      levelBannerShowTimer = Math.max(0, levelBannerShowTimer - playDt);
+      if (levelBannerShowTimer <= 0) collapseLevelBanner();
+    }
+  } else {
+    hideLevelBanner();
+  }
+
   // Collision: 2s Active Shield or 1-hit Temporal Shield blocks; else drain HP.
-  if (activeShieldTimer <= 0 && playerHitInvulnTimer <= 0) {
+  // Dash (Shift): invincible during dash — skip enemy collision.
+  if (activeShieldTimer <= 0 && playerHitInvulnTimer <= 0 && !dashActive) {
     for (let i = enemies.length - 1; i >= 0; i--) {
       if (enemyHitsPlayer(enemies[i])) {
         if (shieldCharges > 0) {
@@ -7528,8 +9569,8 @@ function drawParallaxDetails(theme, horizon) {
     ctx.save();
     ctx.beginPath(); ctx.rect(0, horizon, W, Math.max(0, H - horizon)); ctx.clip();
     const stepX = 34, stepY = 44;
-    const ox = layerOffset(camera.x * 0.83, stepX);
-    const oy = layerOffset(camera.y * 0.83, stepY);
+    const ox = layerOffset(camera.x * 0.83 * PARALLAX_SPEED, stepX);
+    const oy = layerOffset(camera.y * 0.83 * PARALLAX_SPEED, stepY);
     ctx.lineWidth = 1.3;
     for (let y = horizon - oy; y < H + stepY; y += stepY) {
       for (let x = -ox; x < W + stepX; x += stepX) {
@@ -7543,7 +9584,7 @@ function drawParallaxDetails(theme, horizon) {
     ctx.restore();
     // More distant flaming cottages scroll independently of the wheat.
     for (let i = 0; i < 6; i++) {
-      const x = layerOffset(i * 270 - camera.x * 0.22, span) - 90;
+      const x = layerOffset(i * 270 - camera.x * 0.22 * PARALLAX_SPEED, span) - 90;
       const y = horizon - 4 + Math.sin(i * 2) * 3;
       ctx.fillStyle = "#15111a"; ctx.fillRect(x - 16, y - 22, 32, 22);
       ctx.beginPath(); ctx.moveTo(x - 20, y - 22); ctx.lineTo(x, y - 38); ctx.lineTo(x + 20, y - 22); ctx.fill();
@@ -7554,8 +9595,8 @@ function drawParallaxDetails(theme, horizon) {
     }
     // Tiny fleeing peasants, with independent stride animation.
     for (let i = 0; i < 5; i++) {
-      const x = layerOffset(i * 240 + t * (28 + i * 3) - camera.x * 0.48, span) - 90;
-      const y = horizon + 20 + i % 3 * 12 - layerOffset(camera.y * 0.12, 18);
+      const x = layerOffset(i * 240 + t * (28 + i * 3) - camera.x * 0.48 * PARALLAX_SPEED, span) - 90;
+      const y = horizon + 20 + i % 3 * 12 - layerOffset(camera.y * 0.12 * PARALLAX_SPEED, 18);
       const stride = Math.sin(t * 12 + i) * 5;
       ctx.strokeStyle = "rgba(184,171,150,0.8)"; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(x, y - 9); ctx.lineTo(x + 2, y - 3);
@@ -7566,7 +9607,7 @@ function drawParallaxDetails(theme, horizon) {
   } else if (theme === "forest") {
     // Near trees move faster than the existing distant treeline.
     for (let i = 0; i < Math.ceil(W / 150) + 3; i++) {
-      const x = i * 150 - layerOffset(camera.x * 0.65, 150) - 90;
+      const x = i * 150 - layerOffset(camera.x * 0.65 * PARALLAX_SPEED, 150) - 90;
       const sway = Math.sin(t * 0.8 + i) * 4;
       ctx.strokeStyle = "rgba(6,14,11,0.88)"; ctx.lineWidth = 9;
       ctx.beginPath(); ctx.moveTo(x, horizon + 8); ctx.lineTo(x + sway, horizon - 42); ctx.lineTo(x - 12 + sway, horizon - 68); ctx.stroke();
@@ -7574,7 +9615,7 @@ function drawParallaxDetails(theme, horizon) {
     }
     // Bats cross the sky with flapping wings.
     for (let i = 0; i < 8; i++) {
-      const x = layerOffset(i * 170 + t * (35 + i * 2) - camera.x * 0.25, span) - 90;
+      const x = layerOffset(i * 170 + t * (35 + i * 2) - camera.x * 0.25 * PARALLAX_SPEED, span) - 90;
       const y = 30 + (i * 31) % Math.max(35, horizon - 35) + Math.sin(t * 2 + i) * 8;
       const flap = Math.sin(t * 13 + i * 2) * 6;
       ctx.strokeStyle = "#080a12"; ctx.lineWidth = 2.5;
@@ -7583,8 +9624,8 @@ function drawParallaxDetails(theme, horizon) {
     // Translucent fog drifts across the ground at a slower depth.
     ctx.save(); ctx.beginPath(); ctx.rect(0, horizon, W, Math.max(0, H - horizon)); ctx.clip();
     for (let i = 0; i < 7; i++) {
-      const x = layerOffset(i * 240 + t * 13 - camera.x * 0.28, W + 360) - 180;
-      const y = horizon + layerOffset(i * 91 - camera.y * 0.20 + Math.sin(t * 0.4 + i) * 12, Math.max(1, H - horizon));
+      const x = layerOffset(i * 240 + t * 13 - camera.x * 0.28 * PARALLAX_SPEED, W + 360) - 180;
+      const y = horizon + layerOffset(i * 91 - camera.y * 0.20 * PARALLAX_SPEED + Math.sin(t * 0.4 + i) * 12, Math.max(1, H - horizon));
       const fog = ctx.createRadialGradient(x, y, 2, x, y, 120);
       fog.addColorStop(0, "rgba(161,201,185,0.14)"); fog.addColorStop(1, "rgba(161,201,185,0)");
       ctx.fillStyle = fog; ctx.beginPath(); ctx.ellipse(x, y, 120, 32, 0, 0, Math.PI * 2); ctx.fill();
@@ -7593,7 +9634,7 @@ function drawParallaxDetails(theme, horizon) {
   } else if (theme === "castle_gates") {
     // Rank of soldiers marches along the battlements.
     for (let i = 0; i < Math.ceil(W / 48) + 4; i++) {
-      const x = i * 48 - layerOffset(camera.x * 0.35 - t * 16, 48) - 40;
+      const x = i * 48 - layerOffset(camera.x * 0.35 * PARALLAX_SPEED - t * 16, 48) - 40;
       const y = horizon - 10;
       const stride = Math.sin(t * 9 + i) * 4;
       ctx.strokeStyle = "#748095"; ctx.lineWidth = 2;
@@ -7605,7 +9646,7 @@ function drawParallaxDetails(theme, horizon) {
     // Catapult projectiles trace glowing parabolic arcs across the sky.
     for (let i = 0; i < 3; i++) {
       const phase = layerOffset(t * 0.10 + i / 3, 1);
-      const x = phase * (W + 120) - 60 - (camera.x - W) * 0.12;
+      const x = phase * (W + 120) - 60 - (camera.x - W) * 0.12 * PARALLAX_SPEED;
       const y = horizon - 5 - Math.sin(phase * Math.PI) * (horizon * 0.75);
       ctx.strokeStyle = "rgba(251,146,60,0.45)"; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.moveTo(x - 24, y + 8); ctx.lineTo(x, y); ctx.stroke();
@@ -7614,7 +9655,7 @@ function drawParallaxDetails(theme, horizon) {
     }
   } else if (theme === "tower") {
     // Pillars and intermittent jagged electrical arcs between them.
-    const spacing = 180, offset = layerOffset(camera.x * 0.43, spacing);
+    const spacing = 180, offset = layerOffset(camera.x * 0.43 * PARALLAX_SPEED, spacing);
     for (let x = -offset - spacing; x < W + spacing; x += spacing) {
       ctx.fillStyle = "rgba(40,29,61,0.82)"; ctx.fillRect(x - 9, horizon - 110, 18, 110);
       ctx.fillStyle = "rgba(154,113,192,0.32)"; ctx.fillRect(x - 11, horizon - 110, 22, 5);
@@ -7626,16 +9667,16 @@ function drawParallaxDetails(theme, horizon) {
       }
     }
     for (let i = 0; i < 9; i++) {
-      const x = layerOffset(i * 173 - camera.x * 0.3, span) - 90;
-      const y = horizon + 20 + layerOffset(i * 79 - camera.y * 0.3, Math.max(1, H - horizon)) + Math.sin(t * 2 + i) * 12;
+      const x = layerOffset(i * 173 - camera.x * 0.3 * PARALLAX_SPEED, span) - 90;
+      const y = horizon + 20 + layerOffset(i * 79 - camera.y * 0.3 * PARALLAX_SPEED, Math.max(1, H - horizon)) + Math.sin(t * 2 + i) * 12;
       const r = 3 + i % 3;
       ctx.shadowColor = "#a855f7"; ctx.shadowBlur = 16; ctx.fillStyle = i % 2 ? "#e9d5ff" : "#a78bfa";
       ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
     }
   } else if (theme === "portal") {
     // A rotating galaxy spiral around the existing portal.
-    const px = W * 0.5 - (camera.x - W) * 0.15;
-    const py = horizon * 0.62 - (camera.y - H) * 0.025;
+    const px = W * 0.5 - (camera.x - W) * 0.15 * PARALLAX_SPEED;
+    const py = horizon * 0.62 - (camera.y - H) * 0.025 * PARALLAX_SPEED;
     ctx.save(); ctx.translate(px, py); ctx.rotate(t * 0.27);
     for (let arm = 0; arm < 3; arm++) {
       ctx.strokeStyle = arm === 0 ? "rgba(103,232,249,0.6)" : "rgba(192,132,252,0.48)";
@@ -7650,8 +9691,8 @@ function drawParallaxDetails(theme, horizon) {
     ctx.restore();
     // Temporal rifts open and close at different phases and depths.
     for (let i = 0; i < 7; i++) {
-      const x = layerOffset(i * 260 - camera.x * 0.38, W + 180) - 90;
-      const y = horizon + 15 + layerOffset(i * 107 - camera.y * 0.32, Math.max(1, H - horizon));
+      const x = layerOffset(i * 260 - camera.x * 0.38 * PARALLAX_SPEED, W + 180) - 90;
+      const y = horizon + 15 + layerOffset(i * 107 - camera.y * 0.32 * PARALLAX_SPEED, Math.max(1, H - horizon));
       const open = Math.max(0, Math.sin(t * 0.8 + i * 1.9));
       if (open < 0.06) continue;
       ctx.shadowColor = "#22d3ee"; ctx.shadowBlur = 18; ctx.strokeStyle = "rgba(103,232,249," + (0.25 + open * 0.65) + ")"; ctx.lineWidth = 2;
@@ -7730,8 +9771,8 @@ function drawWeatherBackground() {
     // Gold sparks rise from the burning village, drifting in the warm air.
     for (let i = 0; i < weatherParticles.length; i++) {
       const p = weatherParticles[i];
-      const x = weatherWrap(p.u * W + Math.sin(t * 1.5 + p.phase) * 18 - camera.x * 0.18, W);
-      const y = weatherWrap(p.v * H - t * 45 * p.speed - camera.y * 0.12, H);
+      const x = weatherWrap(p.u * W + Math.sin(t * 1.5 + p.phase) * 18 - camera.x * 0.18 * PARALLAX_SPEED, W);
+      const y = weatherWrap(p.v * H - t * 45 * p.speed - camera.y * 0.12 * PARALLAX_SPEED, H);
       const flicker = 0.4 + 0.6 * Math.abs(Math.sin(t * 5 + p.phase));
       ctx.globalAlpha = 0.35 + flicker * 0.55;
       ctx.fillStyle = i % 4 === 0 ? "#fff0a3" : (i % 3 === 0 ? "#fb923c" : "#fbbf24");
@@ -7745,8 +9786,8 @@ function drawWeatherBackground() {
     ctx.beginPath();
     for (let i = 0; i < weatherParticles.length; i++) {
       const p = weatherParticles[i];
-      const x = weatherWrap(p.u * W - t * 14 - camera.x * 0.16, W);
-      const y = weatherWrap(p.v * H + t * 185 * p.speed - camera.y * 0.12, H);
+      const x = weatherWrap(p.u * W - t * 14 - camera.x * 0.16 * PARALLAX_SPEED, W);
+      const y = weatherWrap(p.v * H + t * 185 * p.speed - camera.y * 0.12 * PARALLAX_SPEED, H);
       ctx.moveTo(x, y); ctx.lineTo(x - 2.5, y + 7 + p.size * 2);
     }
     ctx.stroke();
@@ -7757,8 +9798,8 @@ function drawWeatherBackground() {
     ctx.beginPath();
     for (let i = 0; i < weatherParticles.length; i++) {
       const p = weatherParticles[i];
-      const x = weatherWrap(p.u * W - t * 55 - camera.x * 0.2, W);
-      const y = weatherWrap(p.v * H + t * 360 * p.speed - camera.y * 0.17, H);
+      const x = weatherWrap(p.u * W - t * 55 - camera.x * 0.2 * PARALLAX_SPEED, W);
+      const y = weatherWrap(p.v * H + t * 360 * p.speed - camera.y * 0.17 * PARALLAX_SPEED, H);
       ctx.moveTo(x, y); ctx.lineTo(x - 5, y + 13 + p.size * 4);
     }
     ctx.stroke();
@@ -7767,8 +9808,8 @@ function drawWeatherBackground() {
     // Glowing purple magic sparks rain down through the tower.
     for (let i = 0; i < weatherParticles.length; i++) {
       const p = weatherParticles[i];
-      const x = weatherWrap(p.u * W + Math.sin(t * 2 + p.phase) * 9 - camera.x * 0.16, W);
-      const y = weatherWrap(p.v * H + t * 100 * p.speed - camera.y * 0.12, H);
+      const x = weatherWrap(p.u * W + Math.sin(t * 2 + p.phase) * 9 - camera.x * 0.16 * PARALLAX_SPEED, W);
+      const y = weatherWrap(p.v * H + t * 100 * p.speed - camera.y * 0.12 * PARALLAX_SPEED, H);
       ctx.globalAlpha = 0.45 + 0.45 * Math.abs(Math.sin(t * 4 + p.phase));
       ctx.fillStyle = i % 3 === 0 ? "#f5d0fe" : "#c084fc";
       ctx.fillRect(x, y, Math.max(1, p.size), 3 + p.size * 2);
@@ -7777,8 +9818,8 @@ function drawWeatherBackground() {
     // Every particle starts at one of the four edges and spirals inward
     // toward the same parallax-adjusted center as the visible time portal.
     const horizon = battlefieldHorizonY();
-    const cx = W * 0.5 - (camera.x - W) * 0.42 * 0.35;
-    const cy = horizon * 0.62 - (camera.y - H) * 0.12 * 0.18;
+    const cx = W * 0.5 - (camera.x - W) * 0.42 * PARALLAX_SPEED * 0.35;
+    const cy = horizon * 0.62 - (camera.y - H) * 0.12 * PARALLAX_SPEED * 0.18;
     for (let i = 0; i < weatherParticles.length; i++) {
       const p = weatherParticles[i];
       const progress = weatherWrap(p.v + t * 0.12 * p.speed, 1);
@@ -7819,8 +9860,9 @@ function drawWeatherLightning() {
 function drawBackground() {
   const horizonY = battlefieldHorizonY();
   // Distant layers move more slowly than the world-space ground.
-  const parX = -(camera.x - W) * 0.42;
-  const parY = -(camera.y - H) * 0.12;
+  // Background parallax scrolls at 20% of player movement speed.
+  const parX = -(camera.x - W) * 0.42 * PARALLAX_SPEED;
+  const parY = -(camera.y - H) * 0.12 * PARALLAX_SPEED;
   const theme = currentLevelConfig().theme || "village";
 
   // 1. Stage sky palette.
@@ -8438,6 +10480,40 @@ function drawPlayer() {
     ctx.restore();
     ctx.globalAlpha = 1;
   }
+
+  // Dash (Shift): energy trail behind the player while dashing.
+  if (dashActive) {
+    ctx.save();
+    ctx.shadowColor = "#a78bfa";
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = "#a78bfa";
+    for (let k = 0; k < 5; k++) {
+      const backX = player.x - dashDirX * (player.r + 4 + k * 6);
+      const backY = player.y - dashDirY * (player.r + 4 + k * 6);
+      const alpha = 1 - k / 6;
+      ctx.globalAlpha = alpha * 0.6;
+      ctx.beginPath();
+      ctx.arc(backX, backY, player.r * (0.6 + 0.4 * (1 - k / 5)), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  // Time Freeze (Q): bright white glow around player while freeze is active.
+  if (timeFreezeActive) {
+    const tfRatio = clamp(timeFreezeTimer / TIME_FREEZE_DURATION, 0, 1);
+    const glowR = player.r * (2 + Math.sin(animTime * 12) * 0.3);
+    ctx.save();
+    ctx.shadowColor = "#fef08a";
+    ctx.shadowBlur = 20 * tfRatio;
+    ctx.fillStyle = "rgba(255, 255, 255, " + (0.35 * tfRatio) + ")";
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, glowR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
 }
 
 /* Faint color-matched "comet tail" behind each enemy: its recent
@@ -8510,17 +10586,7 @@ function drawBosses() {
     const p = clamp(r / 15, 2.0, 2.8);
     const stride = Math.round(Math.sin(animTime * 4.5 + (b.zigPhase || 0)) * 1.0);
 
-    // Wide crimson-rose corona aura.
-    const corona = ctx.createRadialGradient(b.x, b.y, r * 0.2, b.x, b.y, r * 2.35);
-    corona.addColorStop(0, "rgba(244, 63, 94, 0.30)");
-    corona.addColorStop(0.5, "rgba(225, 29, 72, 0.11)");
-    corona.addColorStop(1, "rgba(225, 29, 72, 0)");
-    ctx.fillStyle = corona;
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, r * 2.35, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Subtle pre-shot telegraph arc during the final 0.55s before firing.
+    // Common: pre-shot telegraph arc before firing.
     if (typeof b.fireTimer === "number" && b.fireTimer < 0.55 && state !== "gameover") {
       const charge = clamp(1 - b.fireTimer / 0.55, 0, 1);
       const aimAngle = Math.atan2(player.y - b.y, player.x - b.x);
@@ -8535,67 +10601,6 @@ function drawBosses() {
       ctx.restore();
     }
 
-    // Towering Dread Warlord Boss figure drawn with Canvas shapes.
-    ctx.save();
-    ctx.shadowColor = "#f43f5e";
-    ctx.shadowBlur = 18;
-
-    // Flowing tattered royal-crimson war cape.
-    ctx.fillStyle = "#881337";
-    drawPixel(ox, oy, p, -9, -4, 15, 13, flipX);
-    ctx.fillStyle = "#be123c";
-    drawPixel(ox, oy, p, -8, -3, 12, 10, flipX);
-    drawPixel(ox, oy, p, -9, 8, 3, 3, flipX);
-    drawPixel(ox, oy, p, -4, 8, 3, 4, flipX);
-    drawPixel(ox, oy, p, 1, 8, 3, 2, flipX);
-
-    // Heavy armored greaves.
-    ctx.fillStyle = "#0f172a";
-    drawPixel(ox, oy, p, -5 - stride * 0.5, 8, 4, 5, flipX);
-    drawPixel(ox, oy, p, 2 + stride * 0.5, 8, 4, 5, flipX);
-    ctx.fillStyle = "#475569";
-    drawPixel(ox, oy, p, -5 - stride * 0.5, 12, 5, 2, flipX);
-    drawPixel(ox, oy, p, 2 + stride * 0.5, 12, 5, 2, flipX);
-
-    // Massive dark-iron breastplate & crimson blood-rune core.
-    ctx.fillStyle = "#1e293b";
-    drawPixel(ox, oy, p, -6, -5, 12, 13, flipX);
-    ctx.fillStyle = "#334155";
-    drawPixel(ox, oy, p, -5, -4, 10, 6, flipX);
-    ctx.fillStyle = "#facc15";
-    drawPixel(ox, oy, p, -6, 4, 12, 1.5, flipX); // gilded war-belt
-    ctx.fillStyle = "#fb7185";
-    drawPixel(ox, oy, p, -1.5, -2, 3, 4, flipX); // glowing rune heart
-
-    // Spiked dread pauldrons.
-    ctx.fillStyle = "#334155";
-    drawPixel(ox, oy, p, -10, -5, 5, 5, flipX);
-    drawPixel(ox, oy, p, 5, -5, 5, 5, flipX);
-    ctx.fillStyle = "#cbd5e1";
-    drawPixel(ox, oy, p, -9, -8, 2, 3, flipX); // shoulder spikes
-    drawPixel(ox, oy, p, 7, -8, 2, 3, flipX);
-
-    // Horned dread-helm & blazing eyes.
-    ctx.fillStyle = "#0f172a";
-    drawPixel(ox, oy, p, -4, -11, 8, 6, flipX);
-    ctx.fillStyle = "#475569";
-    drawPixel(ox, oy, p, -3, -11, 6, 2, flipX);
-    ctx.fillStyle = "#e2e8f0";
-    drawPixel(ox, oy, p, -6, -14, 2, 4, flipX); // left horn
-    drawPixel(ox, oy, p, 4, -14, 2, 4, flipX);  // right horn
-    ctx.fillStyle = "#fef08a";
-    drawPixel(ox, oy, p, -2.5, -8.5, 2, 1.4, flipX);
-    drawPixel(ox, oy, p, 1, -8.5, 2, 1.4, flipX);
-
-    // Colossal glowing crimson Rune-Greatsword held forward.
-    ctx.fillStyle = "#facc15";
-    drawPixel(ox, oy, p, 7, -2, 5, 1.6, flipX); // crossguard
-    ctx.fillStyle = "#f43f5e";
-    drawPixel(ox, oy, p, 8.5, -13, 2.4, 11, flipX);
-    ctx.fillStyle = "#fff1f2";
-    drawPixel(ox, oy, p, 9, -12, 1.2, 9, flipX);
-    ctx.restore();
-
     // Brief white damage flash when struck by a player bullet.
     if (b.hitFlash > 0) {
       const hitAlpha = clamp(b.hitFlash / BOSS_HIT_FLASH_DURATION, 0, 1) * 0.65;
@@ -8607,8 +10612,385 @@ function drawBosses() {
       ctx.fill();
       ctx.restore();
     }
+
+    // Per-boss figure.
+    if (campaignLevel === 1) drawBlackKnight(b, r, ox, oy, flipX, p, stride);
+    else if (campaignLevel === 2) drawWitchOfTheWood(b, r, ox, oy, flipX, p, stride);
+    else if (campaignLevel === 3) drawSiegeCommander(b, r, ox, oy, flipX, p, stride);
+    else if (campaignLevel === 4) drawArchon(b, r, ox, oy, flipX, p, stride);
+    else if (campaignLevel === 5) drawTimeTyrant(b, r, ox, oy, flipX, p, stride);
   }
   ctx.globalAlpha = 1;
+}
+
+/* ---------- Level 1: The Black Knight ---------- */
+function drawBlackKnight(b, r, ox, oy, flipX, p, stride) {
+  ctx.save();
+  ctx.shadowColor = "#f97316";
+  ctx.shadowBlur = 16;
+
+  // Orange-gold corona aura.
+  const corona = ctx.createRadialGradient(b.x, b.y, r * 0.2, b.x, b.y, r * 2.2);
+  corona.addColorStop(0, "rgba(249, 115, 22, 0.30)");
+  corona.addColorStop(0.5, "rgba(251, 146, 60, 0.10)");
+  corona.addColorStop(1, "rgba(251, 146, 60, 0)");
+  ctx.fillStyle = corona;
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, r * 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cape - dark iron with orange trim.
+  ctx.fillStyle = "#1e293b";
+  drawPixel(ox, oy, p, -9, -4, 14, 14, flipX);
+  ctx.fillStyle = "#f97316";
+  drawPixel(ox, oy, p, -7, -4, 2, 14, flipX);
+  drawPixel(ox, oy, p, 7, -4, 2, 14, flipX);
+
+  // Greaves / boots.
+  ctx.fillStyle = "#0f172a";
+  drawPixel(ox, oy, p, -5 - stride * 0.5, 8, 4, 5, flipX);
+  drawPixel(ox, oy, p, 2 + stride * 0.5, 8, 4, 5, flipX);
+  ctx.fillStyle = "#f97316";
+  drawPixel(ox, oy, p, -5 - stride * 0.5, 12, 5, 2, flipX);
+  drawPixel(ox, oy, p, 2 + stride * 0.5, 12, 5, 2, flipX);
+
+  // Breastplate.
+  ctx.fillStyle = "#334155";
+  drawPixel(ox, oy, p, -6, -5, 12, 12, flipX);
+  ctx.fillStyle = "#f97316";
+  drawPixel(ox, oy, p, -6, 2, 12, 2, flipX); // belt
+  ctx.fillStyle = "#fef08a";
+  drawPixel(ox, oy, p, -1.5, -2, 3, 4, flipX); // chest gem
+
+  // Pauldrons.
+  ctx.fillStyle = "#475569";
+  drawPixel(ox, oy, p, -10, -5, 5, 6, flipX);
+  drawPixel(ox, oy, p, 5, -5, 5, 6, flipX);
+  ctx.fillStyle = "#fef08a";
+  drawPixel(ox, oy, p, -9, -9, 2, 3, flipX);
+  drawPixel(ox, oy, p, 7, -9, 2, 3, flipX);
+
+  // Horned helm + fierce eyes.
+  ctx.fillStyle = "#0f172a";
+  drawPixel(ox, oy, p, -4, -11, 8, 6, flipX);
+  ctx.fillStyle = "#f97316";
+  drawPixel(ox, oy, p, -3, -11, 6, 2, flipX);
+  ctx.fillStyle = "#e2e8f0";
+  drawPixel(ox, oy, p, -6, -14, 2, 4, flipX);
+  drawPixel(ox, oy, p, 4, -14, 2, 4, flipX);
+  ctx.fillStyle = "#ff0000";
+  drawPixel(ox, oy, p, -2.5, -8.5, 2, 1.4, flipX);
+  drawPixel(ox, oy, p, 1, -8.5, 2, 1.4, flipX);
+
+  // Greatsword.
+  ctx.fillStyle = "#f97316";
+  drawPixel(ox, oy, p, 7, -2, 5, 1.6, flipX);
+  ctx.fillStyle = "#334155";
+  drawPixel(ox, oy, p, 8.5, -13, 2.4, 11, flipX);
+  ctx.fillStyle = "#fff1f2";
+  drawPixel(ox, oy, p, 9, -12, 1.2, 9, flipX);
+
+  // Charge trail when charging.
+  if (b.chargeTimer > 0 && Math.abs(b.vx) + Math.abs(b.vy) > 10) {
+    ctx.strokeStyle = "rgba(249, 115, 22, 0.5)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(b.x - b.chargeDirX * 30, b.y - b.chargeDirY * 30);
+    ctx.lineTo(b.x - b.chargeDirX * 60, b.y - b.chargeDirY * 60);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/* ---------- Level 2: The Witch of the Wood ---------- */
+function drawWitchOfTheWood(b, r, ox, oy, flipX, p, stride) {
+  ctx.save();
+  ctx.shadowColor = "#4ade80";
+  ctx.shadowBlur = 16;
+
+  // Green corona aura.
+  const corona = ctx.createRadialGradient(b.x, b.y, r * 0.2, b.x, b.y, r * 2.2);
+  corona.addColorStop(0, "rgba(74, 222, 128, 0.30)");
+  corona.addColorStop(0.5, "rgba(74, 222, 128, 0.10)");
+  corona.addColorStop(1, "rgba(74, 222, 128, 0)");
+  ctx.fillStyle = corona;
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, r * 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Flowing robes.
+  ctx.fillStyle = "#064e3b";
+  drawPixel(ox, oy, p, -8, -4, 16, 16, flipX);
+  ctx.fillStyle = "#10b981";
+  drawPixel(ox, oy, p, -6, -4, 4, 16, flipX);
+  drawPixel(ox, oy, p, 4, -4, 4, 16, flipX);
+
+  // Boots.
+  ctx.fillStyle = "#14532d";
+  drawPixel(ox, oy, p, -4, 8, 4, 4, flipX);
+  drawPixel(ox, oy, p, 2, 8, 4, 4, flipX);
+
+  // Bodice.
+  ctx.fillStyle = "#065f46";
+  drawPixel(ox, oy, p, -5, -5, 10, 8, flipX);
+  ctx.fillStyle = "#4ade80";
+  drawPixel(ox, oy, p, -1, -3, 2, 3, flipX); // chest brooch
+
+  // Sleeves.
+  ctx.fillStyle = "#064e3b";
+  drawPixel(ox, oy, p, -9, -4, 4, 8, flipX);
+  drawPixel(ox, oy, p, 5, -4, 4, 8, flipX);
+  ctx.fillStyle = "#4ade80";
+  drawPixel(ox, oy, p, -9, 0, 2, 4, flipX);
+  drawPixel(ox, oy, p, 7, 0, 2, 4, flipX);
+
+  // Hood + glowing eyes.
+  ctx.fillStyle = "#0f172a";
+  drawPixel(ox, oy, p, -5, -11, 10, 6, flipX);
+  ctx.fillStyle = "#4ade80";
+  drawPixel(ox, oy, p, -4, -10, 2, 2, flipX);
+  drawPixel(ox, oy, p, 2, -10, 2, 2, flipX);
+  ctx.fillStyle = "#e2e8f0";
+  drawPixel(ox, oy, p, -7, -13, 2, 4, flipX); // hood edge left
+  drawPixel(ox, oy, p, 5, -13, 2, 4, flipX);  // hood edge right
+
+  // Staff.
+  ctx.fillStyle = "#475569";
+  drawPixel(ox, oy, p, 8, -6, 2, 12, flipX);
+  ctx.fillStyle = "#22d3ee";
+  drawPixel(ox, oy, p, 8, -12, 4, 4, flipX); // crystal top
+
+  // Teleport shimmer when teleporting soon.
+  if (b.teleportTimer < 0.6) {
+    ctx.fillStyle = "rgba(74, 222, 128, 0.5)";
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, r * (1.2 + Math.sin(animTime * 12) * 0.2), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+/* ---------- Level 3: The Siege Commander ---------- */
+function drawSiegeCommander(b, r, ox, oy, flipX, p, stride) {
+  ctx.save();
+  ctx.shadowColor = "#f97316";
+  ctx.shadowBlur = 16;
+
+  // Orange corona aura.
+  const corona = ctx.createRadialGradient(b.x, b.y, r * 0.2, b.x, b.y, r * 2.2);
+  corona.addColorStop(0, "rgba(249, 115, 22, 0.30)");
+  corona.addColorStop(0.5, "rgba(251, 146, 60, 0.10)");
+  corona.addColorStop(1, "rgba(251, 146, 60, 0)");
+  ctx.fillStyle = corona;
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, r * 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Rider on horseback: horse body.
+  ctx.fillStyle = "#3b1f13";
+  drawPixel(ox, oy, p, -10, 2, 20, 10, flipX); // horse body
+  ctx.fillStyle = "#5d4037";
+  drawPixel(ox, oy, p, -8, 4, 4, 4, flipX);   // front leg
+  drawPixel(ox, oy, p, 4, 4, 4, 4, flipX);    // back leg
+  ctx.fillStyle = "#f97316";
+  drawPixel(ox, oy, p, -8, 7, 5, 2, flipX);   // hoof highlights
+  drawPixel(ox, oy, p, 4, 7, 5, 2, flipX);
+
+  // Horse head.
+  ctx.fillStyle = "#3b1f13";
+  drawPixel(ox, oy, p, -12, -2, 6, 5, flipX);
+  ctx.fillStyle = "#fef08a";
+  drawPixel(ox, oy, p, -11, -4, 2, 2, flipX); // eye
+
+  // Rider cape.
+  ctx.fillStyle = "#1e293b";
+  drawPixel(ox, oy, p, -7, -4, 14, 10, flipX);
+  ctx.fillStyle = "#f97316";
+  drawPixel(ox, oy, p, -6, -4, 2, 10, flipX);
+  drawPixel(ox, oy, p, 6, -4, 2, 10, flipX);
+
+  // Rider torso.
+  ctx.fillStyle = "#334155";
+  drawPixel(ox, oy, p, -5, -5, 10, 6, flipX);
+  ctx.fillStyle = "#f97316";
+  drawPixel(ox, oy, p, -5, 0, 10, 2, flipX);
+  ctx.fillStyle = "#fef08a";
+  drawPixel(ox, oy, p, -1, -3, 2, 2, flipX);
+
+  // Rider helm.
+  ctx.fillStyle = "#0f172a";
+  drawPixel(ox, oy, p, -4, -11, 8, 5, flipX);
+  ctx.fillStyle = "#fef08a";
+  drawPixel(ox, oy, p, -2, -10, 2, 1.5, flipX);
+  drawPixel(ox, oy, p, 1, -10, 2, 1.5, flipX);
+  ctx.fillStyle = "#e2e8f0";
+  drawPixel(ox, oy, p, -6, -14, 2, 4, flipX);
+  drawPixel(ox, oy, p, 4, -14, 2, 4, flipX);
+
+  // Cannon.
+  ctx.fillStyle = "#475569";
+  drawPixel(ox, oy, p, 7, -4, 6, 3, flipX);
+  ctx.fillStyle = "#fbbf24";
+  drawPixel(ox, oy, p, 10, -5, 3, 4, flipX); // fuse
+
+  ctx.restore();
+}
+
+/* ---------- Level 4: Archon the Sorcerer ---------- */
+function drawArchon(b, r, ox, oy, flipX, p, stride) {
+  ctx.save();
+  ctx.shadowColor = "#a855f7";
+  ctx.shadowBlur = 16;
+
+  // Purple corona aura.
+  const corona = ctx.createRadialGradient(b.x, b.y, r * 0.2, b.x, b.y, r * 2.2);
+  corona.addColorStop(0, "rgba(168, 85, 247, 0.30)");
+  corona.addColorStop(0.5, "rgba(168, 85, 247, 0.10)");
+  corona.addColorStop(1, "rgba(168, 85, 247, 0)");
+  ctx.fillStyle = corona;
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, r * 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Floating robes.
+  ctx.fillStyle = "#3b0764";
+  drawPixel(ox, oy, p, -8, -4, 16, 16, flipX);
+  ctx.fillStyle = "#a855f7";
+  drawPixel(ox, oy, p, -6, -4, 4, 16, flipX);
+  drawPixel(ox, oy, p, 4, -4, 4, 16, flipX);
+
+  // Floating (no feet visible).
+  ctx.fillStyle = "#4c1d95";
+  drawPixel(ox, oy, p, -5, 8, 6, 2, flipX);
+  drawPixel(ox, oy, p, 1, 8, 6, 2, flipX);
+
+  // Bodice.
+  ctx.fillStyle = "#581c87";
+  drawPixel(ox, oy, p, -5, -5, 10, 8, flipX);
+  ctx.fillStyle = "#e879f9";
+  drawPixel(ox, oy, p, -1, -3, 2, 3, flipX); // chest crystal
+
+  // Sleeves.
+  ctx.fillStyle = "#3b0764";
+  drawPixel(ox, oy, p, -9, -4, 4, 8, flipX);
+  drawPixel(ox, oy, p, 5, -4, 4, 8, flipX);
+  ctx.fillStyle = "#a855f7";
+  drawPixel(ox, oy, p, -9, 0, 2, 4, flipX);
+  drawPixel(ox, oy, p, 7, 0, 2, 4, flipX);
+
+  // Hood + arcane eyes.
+  ctx.fillStyle = "#1e1b4b";
+  drawPixel(ox, oy, p, -5, -11, 10, 6, flipX);
+  ctx.fillStyle = "#a855f7";
+  drawPixel(ox, oy, p, -4, -10, 2, 2, flipX);
+  drawPixel(ox, oy, p, 2, -10, 2, 2, flipX);
+  ctx.fillStyle = "#e2e8f0";
+  drawPixel(ox, oy, p, -7, -13, 2, 4, flipX);
+  drawPixel(ox, oy, p, 5, -13, 2, 4, flipX);
+
+  // Orb staff.
+  ctx.fillStyle = "#475569";
+  drawPixel(ox, oy, p, 8, -6, 2, 12, flipX);
+  ctx.fillStyle = "#e879f9";
+  drawPixel(ox, oy, p, 8, -12, 4, 4, flipX);
+
+  ctx.restore();
+}
+
+/* ---------- Level 5: The Time Tyrant ---------- */
+function drawTimeTyrant(b, r, ox, oy, flipX, p, stride) {
+  ctx.save();
+  ctx.shadowColor = "#22d3ee";
+  ctx.shadowBlur = 18;
+
+  // Electric blue corona aura.
+  const corona = ctx.createRadialGradient(b.x, b.y, r * 0.2, b.x, b.y, r * 2.3);
+  corona.addColorStop(0, "rgba(34, 211, 238, 0.35)");
+  corona.addColorStop(0.5, "rgba(34, 211, 238, 0.12)");
+  corona.addColorStop(1, "rgba(34, 211, 238, 0)");
+  ctx.fillStyle = corona;
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, r * 2.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Reflective shield ring (pulses when active).
+  if (timeTyrantShieldActive) {
+    const shieldR = r * (1.7 + Math.sin(animTime * 6) * 0.1);
+    const shieldAlpha = 0.35 + Math.sin(animTime * 8) * 0.15;
+    ctx.strokeStyle = "rgba(34, 211, 238, " + shieldAlpha + ")";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, shieldR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Shield segments.
+    ctx.save();
+    ctx.lineWidth = 2;
+    for (let s = 0; s < 8; s++) {
+      const a0 = animTime * 2 + (s / 8) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, shieldR, a0, a0 + 0.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Time-worn regal robes.
+  ctx.fillStyle = "#0f172a";
+  drawPixel(ox, oy, p, -8, -4, 16, 16, flipX);
+  ctx.fillStyle = "#22d3ee";
+  drawPixel(ox, oy, p, -6, -4, 4, 16, flipX);
+  drawPixel(ox, oy, p, 4, -4, 4, 16, flipX);
+
+  // Floating.
+  ctx.fillStyle = "#1e293b";
+  drawPixel(ox, oy, p, -5, 8, 6, 2, flipX);
+  drawPixel(ox, oy, p, 1, 8, 6, 2, flipX);
+
+  // Bodice with clock motif.
+  ctx.fillStyle = "#334155";
+  drawPixel(ox, oy, p, -5, -5, 10, 8, flipX);
+  ctx.fillStyle = "#fef08a";
+  drawPixel(ox, oy, p, -2, -4, 4, 4, flipX); // clock face
+  ctx.strokeStyle = "#fbbf24";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(b.x, b.y - 2, 1.5, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Sleeves.
+  ctx.fillStyle = "#0f172a";
+  drawPixel(ox, oy, p, -9, -4, 4, 8, flipX);
+  drawPixel(ox, oy, p, 5, -4, 4, 8, flipX);
+  ctx.fillStyle = "#22d3ee";
+  drawPixel(ox, oy, p, -9, 0, 2, 4, flipX);
+  drawPixel(ox, oy, p, 7, 0, 2, 4, flipX);
+
+  // Crown + glowing eyes.
+  ctx.fillStyle = "#1e1b4b";
+  drawPixel(ox, oy, p, -5, -11, 10, 6, flipX);
+  ctx.fillStyle = "#fef08a";
+  drawPixel(ox, oy, p, -4, -13, 2, 2, flipX); // crown jewel left
+  drawPixel(ox, oy, p, 0, -13, 2, 2, flipX);  // crown jewel center
+  drawPixel(ox, oy, p, 4, -13, 2, 2, flipX);  // crown jewel right
+  ctx.fillStyle = "#22d3ee";
+  drawPixel(ox, oy, p, -3, -10, 2, 2, flipX);
+  drawPixel(ox, oy, p, 1, -10, 2, 2, flipX);
+  ctx.fillStyle = "#e2e8f0";
+  drawPixel(ox, oy, p, -7, -14, 2, 4, flipX);
+  drawPixel(ox, oy, p, 5, -14, 2, 4, flipX);
+
+  // Orb of time.
+  ctx.fillStyle = "#475569";
+  drawPixel(ox, oy, p, 8, -6, 2, 12, flipX);
+  ctx.fillStyle = "#22d3ee";
+  drawPixel(ox, oy, p, 8, -12, 4, 4, flipX);
+  ctx.fillStyle = "#fef08a";
+  drawPixel(ox, oy, p, 9, -11, 2, 2, flipX);
+
+  ctx.restore();
 }
 
 /* Health bar rendered directly above each active Boss and Level 4
@@ -8733,6 +11115,57 @@ function drawEnemyBullets() {
       ctx.fillStyle = "#fef08a";
       ctx.beginPath();
       ctx.arc(b.x + dirX * 1.2, b.y + dirY * 1.2, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      continue;
+    }
+
+    // Cannonball from the Siege Commander.
+    if (b.kind === "cannonball") {
+      ctx.fillStyle = "#451a03";
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#fbbf24";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r - 1, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = "#fef08a";
+      ctx.beginPath();
+      ctx.arc(b.x - dirX * 2, b.y - dirY * 2, b.r * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      continue;
+    }
+
+    // Homing orb from Archon / Time Tyrant.
+    if (b.kind === "homing_orb") {
+      const pulse = 1 + Math.sin(animTime * 10) * 0.2;
+      ctx.fillStyle = "rgba(168, 85, 247, 0.25)";
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r * pulse * 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#a855f7";
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r * pulse, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fef08a";
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+      continue;
+    }
+
+    // Reflected bolt from Time Tyrant shield.
+    if (b.isReflected) {
+      ctx.strokeStyle = "rgba(34, 211, 238, 0.4)";
+      ctx.lineWidth = b.r * 1.6;
+      ctx.beginPath();
+      ctx.moveTo(b.x - dirX * 8, b.y - dirY * 8);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+      ctx.fillStyle = "#22d3ee";
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
       ctx.fill();
       continue;
     }
@@ -9151,6 +11584,65 @@ function drawFutureBombWaves() {
   ctx.globalAlpha = 1;
 }
 
+/* ---------- Turret Drawing ---------- */
+/* Auto-firing turrets deployed by Turret Drop (F). */
+function drawTurrets() {
+  if (turrets.length === 0) return;
+  ctx.save();
+  for (let i = 0; i < turrets.length; i++) {
+    const t = turrets[i];
+    const lifeRatio = clamp(1 - t.life / t.maxLife, 0, 1);
+    const pulse = 1 + Math.sin(animTime * 6) * 0.15;
+    const r = t.r * pulse;
+
+    // Turret base glow
+    ctx.fillStyle = "rgba(52, 211, 153, " + (0.3 * lifeRatio) + ")";
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, r * 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Turret body
+    ctx.fillStyle = "#34d399";
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Turret core
+    ctx.fillStyle = "#fef08a";
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, r * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Aiming line toward nearest enemy (visual only)
+    if (state === "playing") {
+      let nearest = -1;
+      let nearestDist = TURRET_RANGE;
+      for (let j = 0; j < enemies.length; j++) {
+        const e = enemies[j];
+        const dist = Math.hypot(e.x - t.x, e.y - t.y);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearest = j;
+        }
+      }
+      if (nearest !== -1) {
+        const e = enemies[nearest];
+        const aim = Math.atan2(e.y - t.y, e.x - t.x);
+        const lx = t.x + Math.cos(aim) * (r + 6);
+        const ly = t.y + Math.sin(aim) * (r + 6);
+        ctx.strokeStyle = "rgba(52, 211, 153, 0.6)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(t.x, t.y);
+        ctx.lineTo(lx, ly);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
 /* Directional Blue Laser muzzle flare aimed toward the mouse cursor. */
 function drawMuzzleFlash() {
   if (state !== "playing" || muzzleFlashTimer <= 0) return;
@@ -9435,6 +11927,37 @@ function drawParticles() {
   ctx.globalAlpha = 1;
 }
 
+/* Fixed screen-space hexagon grid: a faint static reference pattern that
+   never moves with the camera or shake, giving the eye a stable anchor at
+   all times while the world scrolls around the centered player. */
+function drawFixedHexGrid() {
+  const size = 22;
+  const rowH = size * 2 * 0.75;
+  const w = Math.sqrt(3) * size;
+  const cols = Math.ceil(W / w) + 2;
+  const rows = Math.ceil(H / rowH) + 2;
+  ctx.save();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let r = 0; r < rows; r++) {
+    const y = r * rowH;
+    const xOff = (r & 1) * (w * 0.5);
+    for (let c = 0; c < cols; c++) {
+      const x = c * w + xOff;
+      for (let s = 0; s <= 6; s++) {
+        const a = (s / 6) * Math.PI * 2;
+        const px = x + Math.cos(a) * size;
+        const py = y + Math.sin(a) * size;
+        if (s === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+    }
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
 function draw() {
   // Fill the unshaken frame black first, so a shake offset can never
   // reveal a stale strip along one edge of the canvas.
@@ -9450,9 +11973,11 @@ function draw() {
   ctx.translate(-camera.x, -camera.y); // all actors and effects use world coordinates
   drawEnemyTrails();     // trails sit under everything else
   drawStageObjects();
+  drawMazeWalls();       // Archon's magic maze walls
   drawHealthPickups();
   drawGems();            // glowing emerald gems
   drawEnemies();
+  drawTurrets();         // auto-firing turrets from Turret Drop (F)
   drawExplosionRings();  // contact shockwaves on destroyed enemies
   drawFutureBombWaves(); // full-screen Future Bomb shockwave rings
   drawEnemyBullets();    // boss spread orbs & dark archer arrows
@@ -9462,6 +11987,7 @@ function draw() {
   drawParticles();       // explosion, laser, gem & death sparks
 
   ctx.restore();
+  drawFixedHexGrid();     // fixed screen-space reference grid (never moves)
   drawWeatherLightning(); // castle lightning briefly illuminates the entire scene
   if (state === "boss_death") {
     ctx.save();
@@ -9503,6 +12029,29 @@ function draw() {
     ctx.restore();
     ctx.globalAlpha = 1;
   }
+
+  // Overcharge (R): red screen tint while active.
+  if (overchargeActive) {
+    const ocRatio = clamp(overchargeTimer / OVERCHARGE_DURATION, 0, 1);
+    const pulse = 0.12 + Math.sin(animTime * 8) * 0.04;
+    ctx.save();
+    ctx.globalAlpha = pulse * ocRatio;
+    ctx.fillStyle = "#f87171";
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  // Time Freeze (Q): blue-white tint over the whole screen while active.
+  if (timeFreezeActive) {
+    const tfRatio = clamp(timeFreezeTimer / TIME_FREEZE_DURATION, 0, 1);
+    ctx.save();
+    ctx.globalAlpha = 0.10 * tfRatio;
+    ctx.fillStyle = "#fef08a";
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
 }
 
 /* ---------- Main loop ---------- */
@@ -9522,7 +12071,8 @@ function loop(timestamp) {
 /* ---------- Boot ---------- */
 resize();
 initStars();
-showStartScreen();   // prepare a fresh run, then wait for click/Enter
+buildStarfield();
+showMainMenu();      // main menu first, then story intro on BEGIN MISSION
 requestAnimationFrame(loop);
 </script>
 </body>
