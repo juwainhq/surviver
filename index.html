@@ -539,11 +539,14 @@
     text-transform:uppercase; color:var(--gold);
   }
   #settingsPanel .sp-row{
-    display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
     font-family:var(--font-stat); font-size:11.5px; letter-spacing:1.5px;
     text-transform:uppercase; color:rgba(203,213,225,.66);
   }
-  #settingsPanel .sp-row b{ color:#ffe7b8; font-weight:600; letter-spacing:1px; }
+  #settingsPanel .sp-row b{
+    color:#ffe7b8; font-weight:600; letter-spacing:1px;
+    text-align:right; line-height:1.45; text-transform:none;
+  }
   #settingsPanel .sp-rule{ height:1px; background:linear-gradient(90deg, rgba(232,200,116,.4), rgba(232,200,116,0)); }
   #btnResetSave{
     font-family:var(--font-head); font-size:10.5px; font-weight:700; letter-spacing:2.2px;
@@ -2481,6 +2484,8 @@ function revealScreenElement(el, display) {
    or null for an unknown name (in which case everything stays hidden).
    ------------------------------------------------------------------------- */
 function showScreen(name, state) {
+  /* nothing may be waiting in the save queue when the curtain moves */
+  try { flushSaveGame(true); } catch (e) { /* storage is optional */ }
   /* 1. every screen off — unconditionally, before anything is turned on */
   const all = screenElements();
   for (let i = 0; i < all.length; i++) hideScreenElement(all[i]);
@@ -2873,6 +2878,9 @@ const UNIVERSES = UNIVERSE_BLUEPRINTS.map(function (blueprint, index) {
   const uni = Object.assign({}, blueprint);
   uni.index = index;
   uni.number = index + 1;
+  /* the chain, written down once: 1 -> 2 -> ... -> 6 -> the true ending.
+     The card, the intro and the victory screen all read this pointer. */
+  uni.nextUniverse = index + 1 < UNIVERSE_BLUEPRINTS.length ? index + 1 : null;
   uni.levels = blueprint.levels ? blueprint.levels.slice() : [0, 1, 2, 3, 4].map((k) => makeUniverseLevel(uni, k));
   uni.levels.forEach(function (z, k) {
     z.universe = index;
@@ -6214,8 +6222,8 @@ function damageEnemy(e, dmg, silent, noChain) {
   if (idx >= 0) game.enemies.splice(idx, 1);
 
   const def = ENEMY_DEFS[e.type] || ENEMY_DEFS.knight;
-  /* 10 points a kill, lifted by the gem multiplier */
-  addScore(KILL_SCORE * gemMultiplier());
+  /* 10 points x the gem multiplier, plus the floating +N above the body */
+  awardKill(e);
   game.kills += 1;
   game.killsThisZone += 1;
   petOnKill();
@@ -6817,7 +6825,7 @@ function killBoss() {
   game.portal = { x: bx, y: by, r: 76, t: 0, open: 0 };
   setTimeout(() => { if (game.screen === 'playing') Sound.portal(); }, 700);
   updateObjective();
-  SaveSystem.save('boss');
+  saveGame('boss');
 }
 
 function hideBossBar() {
@@ -6891,6 +6899,7 @@ function updateGems(dt) {
 function collectGem(g) {
   addGems(1);
   addScore(8);
+  saveGame('gem');
   Sound.gem();
   for (let k = 0; k < 6; k++) {
     const a = rand(0, TAU);
@@ -6907,8 +6916,12 @@ function spawnParticle(x, y, vx, vy, life, size, color, drag) {
   });
 }
 
-function addText(x, y, text, color) {
-  game.texts.push({ x, y, text, color: color || '#fff', life: 0, maxLife: 1.1 });
+function addText(x, y, text, color, size, rise) {
+  game.texts.push({
+    x, y, text, color: color || '#fff', life: 0, maxLife: 1.1,
+    size: size || 15,                 /* score pops are a touch bigger */
+    rise: typeof rise === 'number' ? rise : 26   /* and climb further */
+  });
 }
 
 function updateParticles(dt) {
@@ -6935,7 +6948,7 @@ function updateParticles(dt) {
   for (let i = game.texts.length - 1; i >= 0; i--) {
     const t = game.texts[i];
     t.life += dt;
-    t.y -= 26 * dt;
+    t.y -= (t.rise || 26) * dt;         /* it keeps fading upward as it goes */
     if (t.life >= t.maxLife) game.texts.splice(i, 1);
   }
 }
@@ -7178,7 +7191,7 @@ function clearArena(arena, index) {
   }
   game.particles.push({ ring: true, x: arena.x, y: arena.y, r: arena.r * 0.3, maxR: arena.r * 1.4, life: 0, maxLife: 0.7, color: '#fde68a' });
   updateObjective();
-  SaveSystem.save('arena');
+  saveGame('level');
 
   const allCleared = game.arenas.every((x) => x.cleared);
   if (allCleared && !game.bossUnlocked && !game.boss) {
@@ -7235,7 +7248,7 @@ function completeZone() {
 
   game.pendingZone = game.zoneIndex + 1;
   noteZoneReached(game.pendingZone);
-  SaveSystem.save('zone');
+  saveGame('level');
   const next = ZONES[game.pendingZone];
   UI.transEyebrow.textContent = 'Universe ' + uni.number + ' · Level ' + (lvl + 1);
   UI.transTitle.textContent = next.name;
@@ -7254,11 +7267,16 @@ function completeZone() {
    ------------------------------------------------------------------------- */
 const LAST_UNIVERSE = UNIVERSES.length - 1;
 
-/* the universe after `index`, or -1 when the timeline is finished */
+/* the universe after `index`, or -1 when the timeline is finished.
+   It reads the explicit nextUniverse pointer, so the chain can never drift. */
 function nextUniverseIndex(index) {
   const n = Math.floor(Number(index));
   if (!isFinite(n) || n < 0) return 0;
-  return n >= LAST_UNIVERSE ? -1 : n + 1;
+  const uni = UNIVERSES[n];
+  if (!uni) return -1;
+  const next = uni.nextUniverse;
+  if (typeof next !== 'number' || next < 0 || next >= UNIVERSES.length) return -1;
+  return next;
 }
 
 /* the universe at an index, clamped — never undefined */
@@ -7313,7 +7331,7 @@ function showUniverseComplete(uni, nextIndex) {
   setUniversePanel('complete');
   showScreen('universeTransition');
   Sound.levelClear();
-  SaveSystem.save('universe');
+  saveGame('level');
 }
 
 /* the doors of the universe you are about to walk into */
@@ -7815,6 +7833,23 @@ function addScore(points) {
   return game.score;
 }
 
+/* what one kill is worth: ten points, lifted by the gem multiplier */
+function killScore() {
+  return KILL_SCORE * gemMultiplier();
+}
+
+/* THE payout for an enemy death — the one place a kill becomes score.
+   Every enemy dies inside damageEnemy (it is the only code that removes a body
+   from game.enemies), so every death lands here: the score, the +N that pops
+   above the corpse and climbs away, and the save that keeps it. */
+function awardKill(e) {
+  const points = killScore();
+  addScore(points);
+  if (e) addText(e.x, e.y - 22, '+' + points, '#ffe9a8', 17, 34);
+  saveGame('kill');
+  return points;
+}
+
 function syncGemMultHud() {
   game.gemMult = gemMultiplier();
   if (!UI.gemMult) return game.gemMult;
@@ -7841,6 +7876,66 @@ function addGems(n) {
   syncGemMultHud();
 }
 
+/* --------------------------- saveGame / loadGame ---------------------------
+   saveGame(reason) is the one door into storage: every kill, every gem, every
+   cleared arena, every dead boss and every screen change asks through it. The
+   write itself is coalesced (at most one every SAVE_GATE ms) so a room full of
+   gems cannot thrash localStorage — but a requested save always lands within
+   the same frame, and a forced flush lands it immediately.
+   ------------------------------------------------------------------------- */
+let saveWanted = null;          /* the reason waiting to be written */
+let saveGateAt = -1e9;          /* when the last write landed */
+const SAVE_GATE = 100;          /* ms between unforced writes */
+
+function flushSaveGame(force) {
+  if (!saveWanted) return false;
+  const t = nowMs();
+  /* still inside the gate: leave the queued write (and its timer) alone */
+  if (!force && t - saveGateAt < SAVE_GATE) return false;
+  if (saveTimer) { try { clearTimeout(saveTimer); } catch (e) {} saveTimer = 0; }
+  const reason = saveWanted;
+  saveWanted = null;
+  saveGateAt = t;
+  return SaveSystem.save(reason);
+}
+
+let saveTimer = 0;
+
+function saveGame(reason) {
+  saveWanted = reason || 'run';
+  flushSaveGame(false);         /* writes now unless one landed a moment ago */
+  /* a coalesced write must still land even if the game loop is parked (a menu,
+     a paused tab): the timer is the backstop, the frame flush the fast path */
+  if (saveWanted && !saveTimer && typeof setTimeout === 'function') {
+    saveTimer = setTimeout(function () {
+      saveTimer = 0;
+      flushSaveGame(true);
+    }, SAVE_GATE);
+  }
+  return true;
+}
+
+/* loadGame(): the boot read. Pulls the saved run, banks what it carries (best
+   score, lifetime gems, frontier, abilities, boss record) and repaints the menu
+   line with the zone and universe the run was left in. */
+function loadGame() {
+  const slot = SaveSystem.load();
+  if (slot) {
+    game.best = Math.max(game.best | 0, slot.best | 0);
+    game.lifetimeGems = Math.max(game.lifetimeGems | 0, slot.gemsTotal | 0);
+    game.maxZone = Math.max(game.maxZone | 0, slot.maxZone | 0);
+    if (!game.abilities) game.abilities = {};
+    for (let i = 0; i < ABILITY_IDS.length; i++) {
+      if (slot.abilities[ABILITY_IDS[i]]) game.abilities[ABILITY_IDS[i]] = true;
+    }
+    if (Array.isArray(slot.bosses) && slot.bosses.length) {
+      game.bossesDefeated = slot.bosses.slice(0, ZONES.length);
+    }
+  }
+  refreshSaveUi();
+  return slot;
+}
+
 /* ------------------------- save slot UI (menu) ----------------------------- */
 function refreshSaveUi() {
   const slot = SaveSystem.load();
@@ -7854,7 +7949,17 @@ function refreshSaveUi() {
   if (UI.continueMeta && slot) UI.continueMeta.textContent = SaveSystem.summary(slot);
   if (UI.spBest) UI.spBest.textContent = String(best);
   if (UI.spGems) UI.spGems.textContent = String(gems);
-  if (UI.spRun) UI.spRun.textContent = slot ? ('ZONE ' + (slot.zone + 1)) : 'NONE';
+  if (UI.spRun) {
+    if (!slot) {
+      UI.spRun.textContent = 'None';
+    } else {
+      /* where he was left: the universe, the level in it, and the zone itself */
+      const uni = universeOf(slot.zone);
+      const zone = ZONES[slot.zone] || ZONES[0];
+      UI.spRun.textContent = 'Universe ' + uni.number + ' · Level ' +
+        levelInUniverse(slot.zone) + ' — ' + zone.name;
+    }
+  }
 }
 
 /* the "Progress Saved" line only appears when the write really landed */
@@ -9715,6 +9820,7 @@ function onResetSaveClick() {
   /* two taps: the first arms the button, the second wipes the slot */
   const t = nowMs();
   if (resetArmedAt && (t - resetArmedAt) < 5000) {
+    saveWanted = null;              /* nothing queued may resurrect the slot */
     SaveSystem.clear();
     game.best = 0;
     game.lifetimeGems = 0;
@@ -10245,11 +10351,22 @@ function setRing(el, readiness) {
   el.classList.toggle('cooling', r < 0.999);
 }
 
+/* the HUD writer. Every element is optional: one missing node must never be
+   able to abort the frame half-way and leave the score frozen on screen. */
+function hudSet(el, value) {
+  if (el && el.textContent !== value) el.textContent = value;
+}
+
+function hudCd(el, seconds) {
+  const cd = el && el.querySelector ? el.querySelector('.cd') : null;
+  if (cd) hudSet(cd, seconds > 0.05 ? String(Math.ceil(seconds)) : '');
+}
+
 function updateHud() {
   const p = game.player;
   if (!p) return;
-  UI.scoreVal.textContent = String(Math.floor(game.score));
-  UI.gemVal.textContent = String(game.gems);
+  hudSet(UI.scoreVal, String(Math.floor(game.score)));
+  hudSet(UI.gemVal, String(game.gems));
 
   setRing(UI.abilities.q, 1 - game.qCd / qCdMax());
   if (hasAbility('nova')) setRing(UI.abilities.nova, 1 - game.novaCd / (20 * cdScale()));
@@ -10263,19 +10380,18 @@ function updateHud() {
   }
 
   /* seconds left on the long cooldowns, ticking on the icon */
-  UI.abilities.q.querySelector('.cd').textContent =
-    game.qCd > 0.05 ? String(Math.ceil(game.qCd)) : '';
-  UI.abilities.overcharge.querySelector('.cd').textContent =
-    game.overchargeCd > 0.05 ? String(Math.ceil(game.overchargeCd)) : '';
-  UI.abilities.bomb.querySelector('.cd').textContent =
-    game.bombCd > 0.05 ? String(Math.ceil(game.bombCd)) : '';
+  hudCd(UI.abilities.q, game.qCd);
+  hudCd(UI.abilities.overcharge, game.overchargeCd);
+  hudCd(UI.abilities.bomb, game.bombCd);
 
   /* speedrun clock and gem multiplier, top-right */
   RunClock.paint();
   syncGemMultHud();
 
   /* screen effect */
-  UI.overchargeGlow.classList.toggle('on', game.overchargeTimer > 0);
+  if (UI.overchargeGlow && UI.overchargeGlow.classList) {
+    UI.overchargeGlow.classList.toggle('on', game.overchargeTimer > 0);
+  }
 }
 
 /* ------------------------------ buttons ------------------------------------ */
@@ -17598,7 +17714,7 @@ function drawParticles() {
     const a = clamp(1 - t.life / t.maxLife, 0, 1);
     ctx.globalAlpha = a;
     ctx.fillStyle = t.color;
-    ctx.font = '700 15px Rajdhani, sans-serif';
+    ctx.font = '700 ' + (t.size || 15) + 'px Rajdhani, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(t.text, t.x, t.y);
   }
@@ -19017,6 +19133,7 @@ function update(dt) {
   updateParticles(sdt);
   updateFog();
   updateHud();
+  flushSaveGame(false);         /* a kill or a gem asked for this frame */
   SaveSystem.tick(dt);
 
   if (game.shake > 0) game.shake = Math.max(0, game.shake - dt * 1.7);
@@ -19112,26 +19229,23 @@ if (window.visualViewport && window.visualViewport.addEventListener) {
    pending; a live run always reclaims its loop on return */
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && game.screen === 'playing') startLoop();
+  /* leaving the tab must never cost the last kill or gem */
+  if (document.hidden) flushSaveGame(true);
 });
+window.addEventListener('pagehide', () => flushSaveGame(true));
+window.addEventListener('beforeunload', () => flushSaveGame(true));
 
 (function boot() {
-  /* best score + lifetime gems come from the save slot (the old bare keys are
-     still read so an existing install keeps its record) */
+  /* the saved run is read BEFORE the title screen paints, so the menu line
+     already knows the universe, the level and the zone he was left in */
   game.best = SaveSystem.best();
   game.lifetimeGems = SaveSystem.lifetimeGems();
   game.maxZone = SaveSystem.maxZone();
-  const bootSlot = SaveSystem.load();
-  if (bootSlot) {
-    for (let i = 0; i < ABILITY_IDS.length; i++) {
-      game.abilities[ABILITY_IDS[i]] = !!bootSlot.abilities[ABILITY_IDS[i]];
-    }
-    game.bossesDefeated = bootSlot.bosses.slice(0, ZONES.length);
-  }
+  loadGame();                    /* slot + abilities + bosses + the menu line */
   syncAbilityUnlocks(true);      /* silent: replay anything the frontier implies */
   syncAbilityHud();
   Shop.load();                   /* the depot reads its levels and satchel first */
   syncConsumableHud();
-  refreshSaveUi();
   for (let i = 0; i < UI.classIcons.length; i++) {
     paintClassIcon(UI.classIcons[i], CLASSES[i].id);   /* markup, painted once */
   }
