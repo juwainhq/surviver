@@ -18,17 +18,30 @@
   }
   *{ box-sizing:border-box; }
   html,body{
-    margin:0; padding:0; height:100%; width:100%;
+    margin:0; padding:0; width:100%; height:100%;
     background:#04050a; overflow:hidden;
     font-family:var(--font-stat); color:#eaf0fa;
     user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent;
   }
+  /* the stage IS the window: nothing anywhere is given a fixed pixel size */
   #stage{
-    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
-    overflow:hidden; background:#05060a;
-    box-shadow:0 0 90px rgba(0,0,0,.9);
+    position:fixed; inset:0; width:100%; height:100%;
+    overflow:hidden; background:#04050a;
   }
-  #game{ display:block; width:100%; height:100%; }
+  #game{
+    display:block; position:absolute; inset:0;
+    width:100%; height:100%; background:#04050a;
+  }
+  /* the HUD and every screen-space effect ride in one layer that is laid out
+     in the 1280x720 base space and then scaled to the window, so the HUD sits
+     exactly where it always did — just bigger or smaller */
+  #uiLayer{
+    position:absolute; left:0; top:0;
+    width:1280px; height:720px;
+    transform-origin:0 0;
+    pointer-events:none;
+    z-index:10;
+  }
   .cicon-art{ display:block; width:100%; height:100%; }
 
   /* ---------------- overlay screens ----------------
@@ -199,10 +212,6 @@
     font-family:var(--font-head); font-size:13px; font-weight:700;
     letter-spacing:2.8px; text-transform:uppercase; color:#ffe0a4;
     text-shadow:0 0 16px rgba(232,200,116,.5), 0 2px 9px rgba(0,0,0,.9);
-  }
-  @media (max-width:820px){
-    #classBadge{ left:12px; bottom:12px; gap:6px; }
-    #className{ font-size:11px; letter-spacing:1.8px; }
   }
 
   /* ability screen effect */
@@ -1294,20 +1303,21 @@
   #transition h1{ font-size:clamp(26px,4.4vw,46px); color:#ffe4ae; letter-spacing:5px; text-shadow:0 0 30px rgba(255,200,110,.45); }
   #transition .story{ font-size:16.5px; line-height:1.7; color:#c8d6e8; max-width:660px; }
 
-  /* small screens */
-  @media (max-width:900px){
-    #objective{ font-size:13px; top:14px; }
-    #zoneName{ font-size:15px; }
-    #abilities{ gap:16px; bottom:16px; }
-    .ability{ width:50px; height:50px; }
-    #minimap{ width:110px; height:110px; right:12px; bottom:12px; }
-    .stat{ font-size:15px; }
-  }
+  /* the HUD is drawn inside #uiLayer in the 1280x720 base space and scaled to
+     the window, so it is deliberately NOT given any width-based tweaks: it
+     looks identical on every screen, just bigger or smaller. */
 </style>
 </head>
 <body>
 <div id="stage">
-  <canvas id="game" width="1280" height="720"></canvas>
+  <!-- the render target: it fills the window and its buffer follows the window's
+       pixels. Every game coordinate (world, camera, player, enemies, HUD) is
+       written in the 1280x720 base space and scaled to fit the window, so the
+       game looks the same on every screen — only bigger or smaller. -->
+  <canvas id="game"></canvas>
+
+  <!-- the HUD and all in-stage effects live in one scaled layer -->
+  <div id="uiLayer">
 
   <!-- ==================== HUD ==================== -->
   <div id="overchargeGlow"></div>
@@ -1417,8 +1427,7 @@
     <div class="b-rule"></div>
     <div class="b-objective" id="briefObjective">Clear <b>3 arenas</b> to unlock the boss</div>
   </div>
-
-
+  </div><!-- /#uiLayer -->
 </div>
 
 <!-- ==================== OVERLAY SCREENS ====================
@@ -1727,6 +1736,16 @@ const H = 720;               // logical render height
 const SKY_H = 120;           // fixed decorative sky band (screen space)
 const VIEW_H = H - SKY_H;    // playfield height
 const WORLD = 3000;          // every zone map is 3000 x 3000
+/* THE BASE RESOLUTION. The canvas itself is as big as the browser window, but
+   every coordinate in the game — world, camera, player, enemies, HUD — is
+   written in this 1280x720 space and drawn through one scale factor, so the
+   picture is identical on every screen: only bigger or smaller. */
+const BASE_W = W;
+const BASE_H = H;
+let viewScale = 1;           // device pixels per base pixel
+let viewOffX = 0;            // letterbox offset of the base box, device pixels
+let viewOffY = 0;
+let viewDpr = 1;             // backing-store pixels per CSS pixel
 const TAU = Math.PI * 2;
 const ARENA_R = 170;
 const BOSS_ARENA_R = 430;   /* the ring the boss fight is locked inside */
@@ -2138,6 +2157,7 @@ const BossMusic = (function () {
 /* ------------------------------ DOM --------------------------------------- */
 const UI = {
   stage: document.getElementById('stage'),
+  uiLayer: document.getElementById('uiLayer'),
   canvas: document.getElementById('game'),
   orbs: Array.from(document.querySelectorAll('#orbs .orb')),
   zoneBadge: document.getElementById('zoneBadge'),
@@ -3549,8 +3569,12 @@ function revealFog() {
 /* ------------------------------ input -------------------------------------- */
 function pointerToWorldScreen(e) {
   const r = UI.canvas.getBoundingClientRect();
-  const sx = ((e.clientX - r.left) / r.width) * W;
-  const sy = ((e.clientY - r.top) / r.height) * H;
+  /* page pixels -> backing-store pixels -> the 1280x720 base space, so the
+     cursor lands on the same world point at any window size */
+  const kx = r.width > 0 ? UI.canvas.width / r.width : 1;
+  const ky = r.height > 0 ? UI.canvas.height / r.height : 1;
+  const sx = ((e.clientX - r.left) * kx - viewOffX) / viewScale;
+  const sy = ((e.clientY - r.top) * ky - viewOffY) / viewScale;
   return { x: sx, y: sy };
 }
 
@@ -18739,7 +18763,7 @@ function drawMinimapPath(k) {
 
 /* ------------------------------ main render -------------------------------- */
 function render() {
-  ctx.clearRect(0, 0, W, H);
+  paintBackdrop();
 
   /* menu, class and zone screens are opaque HTML layers — the loop is paused
      while one of them is open, so this is only a safety net */
@@ -18927,17 +18951,63 @@ function frame(t) {
   rafId = loopPaused ? 0 : requestAnimationFrame(frame);
 }
 
-/* ------------------------------ resize + boot ------------------------------ */
+/* ------------------------------ resize + boot ------------------------------
+   The canvas is the browser window. Its backing store is built from
+   innerWidth x innerHeight (times the device pixel ratio) and one uniform
+   scale factor maps the 1280x720 base space onto it — never a fixed pixel
+   size for the canvas, and never a different picture on a different screen.
+   ------------------------------------------------------------------------- */
+function viewportSize() {
+  const de = document.documentElement || {};
+  const vw = window.innerWidth || de.clientWidth || BASE_W;
+  const vh = window.innerHeight || de.clientHeight || BASE_H;
+  return { w: Math.max(1, vw), h: Math.max(1, vh) };
+}
+
+/* the whole window repainted dark, with the base-space transform left set */
+function paintBackdrop() {
+  const cv = UI.canvas;
+  if (!cv || !ctx) return;
+  /* the letterbox strips, and the base box they frame */
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#04050a';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(viewScale, 0, 0, viewScale, viewOffX, viewOffY);
+}
+
 function resize() {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const scale = Math.min(vw / W, vh / H);
-  UI.stage.style.width = Math.max(320, Math.round(W * scale)) + 'px';
-  UI.stage.style.height = Math.max(180, Math.round(H * scale)) + 'px';
+  const v = viewportSize();
+  const dpr = clamp(window.devicePixelRatio || 1, 1, 2);
+  viewDpr = dpr;
+  const bw = Math.max(1, Math.round(v.w * dpr));
+  const bh = Math.max(1, Math.round(v.h * dpr));
+  const cv = UI.canvas;
+  if (cv) {
+    /* only touch the buffer when it really changes: assigning width clears it */
+    if (cv.width !== bw) cv.width = bw;
+    if (cv.height !== bh) cv.height = bh;
+  }
+  const cw = cv ? cv.width : bw;
+  const ch = cv ? cv.height : bh;
+  /* THE scale factor: 1280x720 base space -> this window, aspect preserved */
+  viewScale = Math.min(cw / BASE_W, ch / BASE_H) || 1;
+  viewOffX = (cw - BASE_W * viewScale) / 2;
+  viewOffY = (ch - BASE_H * viewScale) / 2;
+  /* the HUD sits in a 1280x720 CSS-pixel box scaled by exactly the same factor */
+  if (UI.uiLayer) {
+    const cssScale = viewScale / dpr;
+    UI.uiLayer.style.transform =
+      'translate(' + (viewOffX / dpr) + 'px,' + (viewOffY / dpr) + 'px) scale(' + cssScale + ')';
+  }
+  paintBackdrop();
   updateClassHint();
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', resize);
+window.addEventListener('fullscreenchange', resize);
+if (window.visualViewport && window.visualViewport.addEventListener) {
+  window.visualViewport.addEventListener('resize', resize);
+}
 /* a tab that was hidden can come back with a throttled (or dropped) frame
    pending; a live run always reclaims its loop on return */
 document.addEventListener('visibilitychange', () => {
