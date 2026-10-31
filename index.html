@@ -1215,6 +1215,18 @@ const Sound = (function () {
       [784, 988, 1319].forEach((f, i) => tone({ freq: f, dur: 0.2, type: 'triangle', vol: 0.05, delay: i * 0.06 }));
       noise({ freq: 2400, dur: 0.18, vol: 0.028 });
     },
+    /* short, dry, upward pop — the lid flying off */
+    chestPop() {
+      tone({ freq: 300, to: 980, dur: 0.11, type: 'triangle', vol: 0.06 });
+      tone({ freq: 900, to: 1560, dur: 0.07, type: 'sine', vol: 0.035, delay: 0.05 });
+      noise({ freq: 2600, dur: 0.09, vol: 0.03 });
+    },
+    /* hollow wooden crack */
+    barrelPop() {
+      noise({ freq: 900, dur: 0.16, vol: 0.07 });
+      tone({ freq: 220, to: 96, dur: 0.16, type: 'square', vol: 0.05 });
+      tone({ freq: 1320, to: 520, dur: 0.09, type: 'triangle', vol: 0.03, delay: 0.02 });
+    },
     /* ---- one voice per class weapon ---- */
     pistol() {
       tone({ freq: 1240, to: 720, dur: 0.055, type: 'square', vol: 0.02 });
@@ -1990,6 +2002,8 @@ function buildObstacles(zoneIndex) {
     if (list.some((o) => dist(x, y, o.x, o.y) < reach + (o.ext || o.r) + 96)) continue;
 
     const o = { x, y, kind: def.kind, r: def.r, rot, variant: rng(), ext: reach };
+    /* barrels are the one prop you can smash open */
+    if (def.kind === 'barrel') { o.hp = 1; o.maxHp = 1; o.broken = false; }
     if (def.len) {
       o.len = def.len;
       o.parts = buildObstacleParts(o);
@@ -2020,7 +2034,7 @@ function buildDestructibles(zoneIndex) {
   });
 
   game.chests = cfg.chests.map(function (c, i) {
-    return { x: c[0], y: c[1], opened: false, hitFlash: 0, t: i * 1.3 };
+    return { x: c[0], y: c[1], opened: false, hp: 1, maxHp: 1, hitFlash: 0, t: i * 1.3 };
   });
 
   game.pickups = [];
@@ -2666,6 +2680,17 @@ function swingSword() {
     hits++;
   }
 
+  /* the blade itself: every sample along the sweep uses the same 40px rule,
+     and the `already` set means one swing can never hit a prop twice */
+  const swung = new Set();
+  const bladeSteps = 7;
+  for (let s2 = 0; s2 <= bladeSteps; s2++) {
+    const a = p.swingFrom + (p.swingTo - p.swingFrom) * (s2 / bladeSteps);
+    for (let r = 0; r <= SWORD_RANGE; r += 24) {
+      hits += hitBreakablesAt(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 'sword', swung);
+    }
+  }
+
   game.swings.push({
     x: p.x, y: p.y, a0: p.swingFrom, a1: p.swingTo,
     life: 0, maxLife: SWORD_SWING_TIME, tier: swordTier()
@@ -2778,13 +2803,8 @@ function fireSniper(charged) {
       segHitsCircle(x1, y1, x2, y2, game.boss.x, game.boss.y, game.boss.r + pad)) {
     damageBoss(p.damage * (charged ? 1.35 : 1));
   }
-  for (let i = 0; i < game.breakables.length; i++) {
-    const w = game.breakables[i];
-    if (w.broken) continue;
-    if (segAabbT(x1, y1, x2, y2, w.x - w.w / 2, w.y - w.h / 2, w.x + w.w / 2, w.y + w.h / 2) !== null) {
-      damageBreakable(w);
-    }
-  }
+  /* one hit per prop, all from the same 40px distance rule */
+  hitBreakablesAlong(x1, y1, x2, y2, 'sniper');
   Sound.sniperShot();
   game.shake = Math.max(game.shake, 0.3);
   for (let i = 0; i < 10; i++) {
@@ -2982,15 +3002,7 @@ function railgun() {
       segHitsCircle(x1, y1, x2, y2, game.boss.x, game.boss.y, game.boss.r + pad)) {
     damageBoss(20);
   }
-  for (let i = 0; i < game.breakables.length; i++) {
-    const w = game.breakables[i];
-    if (w.broken) continue;
-    if (segAabbT(x1, y1, x2, y2, w.x - w.w / 2, w.y - w.h / 2, w.x + w.w / 2, w.y + w.h / 2) !== null) {
-      damageBreakable(w);
-      damageBreakable(w);
-      damageBreakable(w);
-    }
-  }
+  hitBreakablesAlong(x1, y1, x2, y2, 'railgun');
   Sound.railgun();
   game.shake = Math.max(game.shake, 1.15);
   game.flashTimer = Math.max(game.flashTimer, 0.24);
@@ -3269,9 +3281,10 @@ function explodeBomb(b) {
   if (game.boss && dist(b.x, b.y, game.boss.x, game.boss.y) <= R + game.boss.r) {
     damageBoss(10);
   }
-  for (let i = 0; i < game.breakables.length; i++) {
-    const w = game.breakables[i];
-    if (!w.broken && dist(b.x, b.y, w.x, w.y) <= R + 52) damageBreakable(w);
+  /* the blast origin is one point: everything within 40px of it takes a hit */
+  hitBreakablesAt(b.x, b.y, 'bomb');
+  if (typeof console !== 'undefined' && console.log) {
+    console.log('[BLAST] bomb at (' + Math.round(b.x) + ', ' + Math.round(b.y) + ') — breakables checked');
   }
   for (let i = 0; i < 34; i++) {
     const a = rand(0, TAU);
@@ -3517,37 +3530,6 @@ function segHitsCircle(x1, y1, x2, y2, cx, cy, rad) {
   return dist2(px, py, cx, cy) <= rad * rad;
 }
 
-/* nearest hit along a segment, used so a bolt can never pass through a wall */
-function segCircleT(x1, y1, x2, y2, cx, cy, rad) {
-  const dx = x2 - x1, dy = y2 - y1;
-  const len2 = dx * dx + dy * dy;
-  let t = len2 > 0.000001 ? ((cx - x1) * dx + (cy - y1) * dy) / len2 : 0;
-  t = clamp(t, 0, 1);
-  const px = x1 + dx * t, py = y1 + dy * t;
-  return dist2(px, py, cx, cy) <= rad * rad ? t : null;
-}
-
-function segAabbT(x1, y1, x2, y2, minx, miny, maxx, maxy) {
-  let t0 = 0, t1 = 1;
-  const dx = x2 - x1, dy = y2 - y1;
-  if (Math.abs(dx) < 0.000001) {
-    if (x1 < minx || x1 > maxx) return null;
-  } else {
-    let ta = (minx - x1) / dx, tb = (maxx - x1) / dx;
-    if (ta > tb) { const tmp = ta; ta = tb; tb = tmp; }
-    t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
-    if (t0 > t1) return null;
-  }
-  if (Math.abs(dy) < 0.000001) {
-    if (y1 < miny || y1 > maxy) return null;
-  } else {
-    let ta = (miny - y1) / dy, tb = (maxy - y1) / dy;
-    if (ta > tb) { const tmp = ta; ta = tb; tb = tmp; }
-    t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
-    if (t0 > t1) return null;
-  }
-  return t0;
-}
 
 function updateBullets(dt) {
   for (let i = game.bullets.length - 1; i >= 0; i--) {
@@ -3583,6 +3565,7 @@ function updateBullets(dt) {
     let bestT = 2;
     let hitKind = null;
     let hitObj = null;
+    let hitBreakKind = null;
 
     for (let j = 0; j < game.enemies.length; j++) {
       const e = game.enemies[j];
@@ -3594,22 +3577,10 @@ function updateBullets(dt) {
       const t = segCircleT(px, py, b.x, b.y, game.boss.x, game.boss.y, b.r + game.boss.r);
       if (t !== null && t < bestT) { bestT = t; hitKind = 'boss'; hitObj = game.boss; }
     }
-    /* brick walls stop laser fire — three hits bring them down */
-    for (let j = 0; j < game.breakables.length; j++) {
-      const w = game.breakables[j];
-      if (w.broken) continue;
-      const t = segAabbT(px, py, b.x, b.y,
-        w.x - w.w / 2 - b.r, w.y - w.h / 2 - b.r,
-        w.x + w.w / 2 + b.r, w.y + w.h / 2 + b.r);
-      if (t !== null && t < bestT) { bestT = t; hitKind = 'wall'; hitObj = w; }
-    }
-    for (let j = 0; j < game.chests.length; j++) {
-      const c = game.chests[j];
-      if (c.opened) continue;
-      const t = segAabbT(px, py, b.x, b.y,
-        c.x - 24 - b.r, c.y - 20 - b.r, c.x + 24 + b.r, c.y + 20 + b.r);
-      if (t !== null && t < bestT) { bestT = t; hitKind = 'chest'; hitObj = c; }
-    }
+    /* chests, barrels and walls: the same 40px-from-centre rule, sampled along
+       the bolt's flight so a fast shot cannot skip past a prop */
+    const brk = nearestBreakableOnPath(px, py, b.x, b.y, b.hits);
+    if (brk && brk.t < bestT) { bestT = brk.t; hitKind = 'break'; hitObj = brk.obj; hitBreakKind = brk.kind; }
 
     if (hitKind === 'enemy') {
       damageEnemy(hitObj, b.dmg, false);
@@ -3632,8 +3603,17 @@ function updateBullets(dt) {
       }
     }
     else if (hitKind === 'boss') { damageBoss(b.dmg); hit = true; }
-    else if (hitKind === 'wall') { damageBreakable(hitObj); hit = true; }
-    else if (hitKind === 'chest') { openChest(hitObj); hit = true; }
+    else if (hitKind === 'break') {
+      damageBreakableObject(hitObj, hitBreakKind, b.kind || 'bullet', b.x, b.y);
+      hit = true;
+      if (b.pierce > 0) {
+        /* piercing bolts carry on through the prop, but only hit it once */
+        b.pierce -= 1;
+        b.hits = b.hits || [];
+        b.hits.push(hitObj);
+        hit = false;
+      }
+    }
 
     if (hit) {
       const tint = b.kind === 'orb' ? '#c4b5fd' : (b.kind === 'storm' ? '#a5f3fc' : '#8fe8ff');
@@ -3654,6 +3634,16 @@ function solidWallAt(x, y, r) {
         y > w.y - w.h / 2 - r && y < w.y + w.h / 2 + r) return w;
   }
   return null;
+}
+
+/* nearest hit along a segment, used so a bolt can never pass through a crowd */
+function segCircleT(x1, y1, x2, y2, cx, cy, rad) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 > 0.000001 ? ((cx - x1) * dx + (cy - y1) * dy) / len2 : 0;
+  t = clamp(t, 0, 1);
+  const px = x1 + dx * t, py = y1 + dy * t;
+  return dist2(px, py, cx, cy) <= rad * rad ? t : null;
 }
 
 function fireEnemyBullet(x, y, angle, speed, kind, r, dmg) {
@@ -4288,6 +4278,10 @@ function updateGems(dt) {
     g.y += g.vy * dt;
     g.vx *= Math.exp(-3 * dt);
     g.vy *= Math.exp(-3 * dt);
+    /* a freshly popped chest bursts its gems outward for a moment before they
+       become collectable, so the reward is actually visible */
+    if (g.delay > 0) { g.delay -= dt; g.life -= dt * 0.5; }
+    if (g.delay > 0) continue;
 
     const d = dist(g.x, g.y, p.x, p.y);
     if (d < p.magnet + 40) {
@@ -9384,8 +9378,131 @@ function drawMinimap() {
    DESTRUCTIBLE ENVIRONMENT  (breakable walls + golden chests)
    ============================================================================= */
 
+/* =============================================================================
+   BREAKABLE HIT REGISTRATION — one plain distance rule for every object
+   -----------------------------------------------------------------------------
+   If a bullet path, a sword sweep or an explosion origin comes within
+   BREAK_HIT_RADIUS of a chest / barrel / wall centre, that object takes exactly
+   one damage. There is no polygon test, no path test and no canvas query in the
+   hitting code any more: it is Math.hypot and a comparison.
+   ============================================================================= */
+const BREAK_HIT_RADIUS = 40;
+
+/* every breakable still standing, snapshotted so removing one mid-sweep is safe */
+function eachBreakable(fn) {
+  const walls = game.breakables.slice();
+  for (let i = 0; i < walls.length; i++) {
+    if (!walls[i].broken) fn(walls[i], 'wall');
+  }
+  const chests = game.chests.slice();
+  for (let i = 0; i < chests.length; i++) {
+    if (!chests[i].opened && (chests[i].hp === undefined || chests[i].hp > 0)) fn(chests[i], 'chest');
+  }
+  const props = game.obstacles.slice();
+  for (let i = 0; i < props.length; i++) {
+    const o = props[i];
+    if (o.kind === 'barrel' && !o.broken) fn(o, 'barrel');
+  }
+}
+
+/* one point against everything: the whole hit test */
+function hitBreakablesAt(x, y, source, already) {
+  let count = 0;
+  eachBreakable(function (obj, kind) {
+    if (already && already.has(obj)) return;
+    if (dist(x, y, obj.x, obj.y) > BREAK_HIT_RADIUS) return;
+    if (already) already.add(obj);
+    damageBreakableObject(obj, kind, source, x, y);
+    count++;
+  });
+  return count;
+}
+
+/* a moving path is sampled and each sample uses the same 40px rule, which is
+   how fast bolts and instant beams avoid tunnelling between two frames */
+function hitBreakablesAlong(x1, y1, x2, y2, source) {
+  const steps = Math.max(1, Math.ceil(dist(x1, y1, x2, y2) / 24));
+  const already = new Set();
+  let count = 0;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    count += hitBreakablesAt(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, source, already);
+  }
+  return count;
+}
+
+/* the closest breakable along a moving path (bullets, beams), distance only */
+function nearestBreakableOnPath(x1, y1, x2, y2, skip) {
+  const steps = Math.max(1, Math.ceil(dist(x1, y1, x2, y2) / 24));
+  let best = null;
+  eachBreakable(function (obj, kind) {
+    if (skip && skip.indexOf(obj) >= 0) return;
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      if (dist(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, obj.x, obj.y) <= BREAK_HIT_RADIUS) {
+        if (!best || t < best.t) best = { obj: obj, kind: kind, t: t };
+        break;
+      }
+    }
+  });
+  return best;
+}
+
+/* the single place a breakable loses health, so every hit is logged */
+function damageBreakableObject(obj, kind, source, fromX, fromY) {
+  if (!obj) return;
+  if (kind === 'chest' && obj.opened) return;
+  if (kind === 'barrel' && obj.broken) return;
+  if (kind === 'wall' && obj.broken) return;
+
+  const before = obj.hp === undefined ? 1 : obj.hp;
+  const from = source || 'unknown';
+  if (typeof console !== 'undefined' && console.log) {
+    console.log('[BREAKABLE HIT] ' + kind.toUpperCase() + ' at (' + Math.round(obj.x) + ', ' + Math.round(obj.y) +
+      ') from ' + from + ' at (' + Math.round(fromX) + ', ' + Math.round(fromY) +
+      ') — hp ' + before + ' → ' + Math.max(0, before - 1));
+  }
+
+  if (kind === 'chest') {
+    obj.hp = 0;
+    obj.hitFlash = 0.2;
+    openChest(obj, from);
+    return;
+  }
+  if (kind === 'barrel') {
+    obj.hp = 0;
+    explodeBarrel(obj, from);
+    return;
+  }
+  damageBreakable(obj, from);
+}
+
+/* a barrel takes one hit and goes to pieces */
+function explodeBarrel(o, source) {
+  if (o.broken) return;
+  o.broken = true;
+  o.hp = 0;
+  Sound.barrelPop();
+  game.shake = Math.max(game.shake, 0.22);
+  game.score += 25;
+
+  const wood = ['#9a6633', '#7a4f26', '#5c3b1b', '#3f2811', '#b07b40'];
+  for (let i = 0; i < 22; i++) {
+    const a = rand(0, TAU);
+    const sp = rand(70, 300);
+    spawnParticle(o.x + rand(-o.r * 0.5, o.r * 0.5), o.y + rand(-o.r * 0.5, o.r * 0.5),
+      Math.cos(a) * sp, Math.sin(a) * sp, rand(0.35, 0.8), rand(3, 7), wood[i % wood.length], 2.8);
+  }
+  game.particles.push({ ring: true, x: o.x, y: o.y, r: 6, maxR: o.r * 2.6, life: 0, maxLife: 0.36, color: '#d6a465' });
+  addText(o.x, o.y - 26, 'BARREL SMASHED', '#fbbf24');
+
+  /* the prop stops being solid the moment it bursts */
+  const idx = game.obstacles.indexOf(o);
+  if (idx >= 0) game.obstacles.splice(idx, 1);
+}
+
 /* ------------------------------ breakable walls ---------------------------- */
-function damageBreakable(w) {
+function damageBreakable(w, source) {
   if (!w || w.broken) return;
   w.hp -= 1;
   w.hitFlash = 0.16;
@@ -9452,11 +9569,12 @@ function breakWall(w) {
 }
 
 /* ------------------------------ golden chests ------------------------------ */
-function openChest(c) {
+function openChest(c, source) {
   if (!c || c.opened) return;
   c.opened = true;
+  c.hp = 0;
   c.hitFlash = 0.2;
-  Sound.chest();
+  Sound.chestPop();
   game.shake = Math.max(game.shake, 0.22);
   game.score += 120;
 
@@ -9470,29 +9588,35 @@ function openChest(c) {
   }
   game.particles.push({ ring: true, x: c.x, y: c.y, r: 6, maxR: 88, life: 0, maxLife: 0.5, color: '#ffd772' });
 
-  /* equal chance: gems / upgrade chip card / health orb */
-  const roll = Math.random();
-  if (roll < 1 / 3) {
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * TAU + rand(-0.2, 0.2);
-      const g = spawnGem(c.x + Math.cos(a) * 14, c.y + Math.sin(a) * 14);
-      g.vx = Math.cos(a) * rand(70, 150);
-      g.vy = Math.sin(a) * rand(70, 150);
-    }
-    addText(c.x, c.y - 34, 'GEMS', '#6ee7b7');
-  } else if (roll < 2 / 3) {
-    game.pickups.push({
-      kind: 'chip', x: c.x, y: c.y - 10,
-      vx: rand(-30, 30), vy: -70, life: 0, t: 0
-    });
-    addText(c.x, c.y - 34, 'UPGRADE CHIP', '#fde68a');
-  } else {
-    game.pickups.push({
-      kind: 'health', x: c.x, y: c.y - 10,
-      vx: rand(-26, 26), vy: -60, life: 0, t: 0
-    });
-    addText(c.x, c.y - 34, 'HEALTH ORB', '#7dd3fc');
+  /* ALWAYS 3–5 gems, flung out from the chest ... */
+  const gemCount = 3 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < gemCount; i++) {
+    const a = (i / gemCount) * TAU + rand(-0.35, 0.35);
+    const spread = rand(6, 20);
+    const g = spawnGem(c.x + Math.cos(a) * spread, c.y + Math.sin(a) * spread);
+    g.vx = Math.cos(a) * rand(120, 230);
+    g.vy = Math.sin(a) * rand(120, 230) - 40;
+    g.delay = 0.45;
   }
+  addText(c.x, c.y - 36, gemCount + ' GEMS', '#6ee7b7');
+
+  /* ... plus exactly one bonus: a health orb or an upgrade chip */
+  const bonusKind = Math.random() < 0.5 ? 'health' : 'chip';
+  game.pickups.push({
+    kind: bonusKind, x: c.x, y: c.y - 10,
+    vx: rand(-30, 30), vy: bonusKind === 'health' ? -70 : -60, life: 0, t: 0
+  });
+  addText(c.x, c.y - 58, bonusKind === 'health' ? 'HEALTH ORB' : 'UPGRADE CHIP', bonusKind === 'health' ? '#7dd3fc' : '#fde68a');
+  Sound.gem();
+
+  if (typeof console !== 'undefined' && console.log) {
+    console.log('[CHEST OPENED] (' + Math.round(c.x) + ', ' + Math.round(c.y) + ') from ' + (source || 'unknown') +
+      ' — ' + gemCount + ' gems + 1 ' + bonusKind);
+  }
+
+  /* the chest itself is gone for good */
+  const idx = game.chests.indexOf(c);
+  if (idx >= 0) game.chests.splice(idx, 1);
 }
 
 /* ------------------------------ pickups ------------------------------------ */
@@ -9600,6 +9724,33 @@ function drawWallRubble(w) {
   ctx.beginPath();
   ctx.ellipse(0, 0, hw * 0.86, hh * 0.7, 0, 0, TAU);
   ctx.fill();
+  ctx.restore();
+}
+
+/* ---- DEBUG: the collision box of every chest, barrel and breakable wall ---- */
+function drawBreakableHitboxes(zoom) {
+  const scale = zoom || 1;
+  ctx.save();
+  ctx.setLineDash([]);
+  ctx.lineWidth = 1 / scale;
+  ctx.strokeStyle = '#ff0000';
+  ctx.shadowBlur = 0;
+
+  for (let i = 0; i < game.breakables.length; i++) {
+    const w = game.breakables[i];
+    if (w.broken) continue;
+    ctx.strokeRect(w.x - w.w / 2, w.y - w.h / 2, w.w, w.h);
+  }
+  for (let i = 0; i < game.chests.length; i++) {
+    const c = game.chests[i];
+    if (c.opened) continue;
+    ctx.strokeRect(c.x - 24, c.y - 20, 48, 40);
+  }
+  for (let i = 0; i < game.obstacles.length; i++) {
+    const o = game.obstacles[i];
+    if (o.kind !== 'barrel' || o.broken) continue;
+    ctx.strokeRect(o.x - o.r * 0.9, o.y - o.r * 1.15, o.r * 1.8, o.r * 2.3);
+  }
   ctx.restore();
 }
 
@@ -10223,6 +10374,9 @@ function render() {
   drawBeams();
   drawParticles();
   drawPlayer();
+
+  /* collision boxes on top of everything in the world, still in world space */
+  drawBreakableHitboxes(zoom);
 
   ctx.restore();
 
