@@ -23,6 +23,71 @@
     user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent;
   }
   canvas { display:block; width:100vw; height:100vh; }
+  /* --- MOBILE TOUCH CONTROLS --- */
+  #touchControls {
+    position:fixed; inset:0; pointer-events:none; z-index:2000;
+    display:none; /* shown only on touch devices */
+  }
+  #touchControls.show { display:block; }
+  #joyStick {
+    position:absolute; bottom:safe-area-inset-bottom; left:safe-area-inset-left;
+    width:120px; height:120px; margin:16px;
+    border-radius:50%; background:rgba(0,0,0,.6);
+    pointer-events:auto; touch-action:none;
+    box-sizing:border-box; border:2px solid rgba(255,255,255,.2);
+  }
+  #joyDot {
+    position:absolute; left:50%; top:50%; width:40px; height:40px;
+    margin:-20px 0 0 -20px; border-radius:50%; background:#fff;
+    pointer-events:none; box-shadow:0 0 10px #fff;
+    transition:transform .05s ease;
+  }
+  #fireBtn {
+    position:absolute; bottom:safe-area-inset-bottom; right:safe-area-inset-right;
+    width:80px; height:80px; margin:16px;
+    border-radius:50%; background:rgba(255,50,50,.6);
+    border:2px solid #ff8888; box-shadow:0 0 20px rgba(255,50,50,.5);
+    pointer-events:auto; touch-action:none;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #fireBtn::after {
+    content:''; width:40px; height:40px; border-radius:50%;
+    background:#fff; box-shadow:0 0 15px #fff;
+  }
+  .touch-ability {
+    position:absolute; bottom:calc(80px + safe-area-inset-bottom); right:safe-area-inset-right;
+    width:48px; height:48px; margin:4px;
+    border-radius:8px; background:rgba(50,150,255,.6);
+    border:1px solid #88ccff; box-shadow:0 0 10px rgba(50,150,255,.3);
+    pointer-events:auto; touch-action:none;
+    display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff;
+  }
+  #abilityQ { bottom:calc(160px + safe-area-inset-bottom); }
+  #abilityE { bottom:calc(120px + safe-area-inset-bottom); }
+  #abilityShift { bottom:calc(80px + safe-area-inset-bottom); }
+
+  /* --- CLASS SELECT MOBILE --- */
+  @media (max-width: 767px) {
+    #classGrid {
+      grid-template-columns: 1fr !important;
+      max-width: 100% !important;
+      gap: 16px !important;
+    }
+    .class-card {
+      width: 100% !important; max-width: 100% !important;
+      margin-bottom: 12px;
+    }
+    #classScreen .cs-inner {
+      overflow-y: auto !important;
+      justify-content: flex-start !important;
+    }
+    #classScreen .cs-inner > * { flex: 0 0 auto !important; }
+  }
+
+  /* --- MINIMUM 48PX BUTTON HEIGHT --- */
+  .btn, .ability .ab-btn, #btnResetSave, #btnContinueSave, #btnBegin, #btnShop, #btnHowTo, #btnHowToBack, #btnContinue, #btnVisitShop, #btnNextUniverse, #btnShopClose, #btnClassSkip {
+    min-height: 48px !important;
+  }
   /* the stage IS the window: nothing anywhere is given a fixed pixel size */
   #stage{
     position:fixed; inset:0; width:100%; height:100%;
@@ -1373,6 +1438,15 @@
 
   <!-- the HUD and all in-stage effects live in one scaled layer -->
   <div id="uiLayer">
+
+  <!-- ==================== MOBILE TOUCH CONTROLS ==================== -->
+  <div id="touchControls">
+    <div id="joyStick"><div id="joyDot"></div></div>
+    <div id="fireBtn"></div>
+    <div id="abilityQ" class="touch-ability">Q</div>
+    <div id="abilityE" class="touch-ability">E</div>
+    <div id="abilityShift" class="touch-ability">SHIFT</div>
+  </div>
 
   <!-- ==================== HUD ==================== -->
   <div id="overchargeGlow"></div>
@@ -19221,6 +19295,96 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('pagehide', () => flushSaveGame(true));
 window.addEventListener('beforeunload', () => flushSaveGame(true));
+
+/* --- TOUCH CONTROLS INITIALIZATION --- */
+function initTouchControls() {
+  const isTouch = 'ontouchstart' in window || (window.navigator.maxTouchPoints || 0) > 0;
+  const controls = document.getElementById('touchControls');
+  if (controls) controls.classList.toggle('show', isTouch);
+  if (!isTouch) return;
+
+  const joy = document.getElementById('joyStick');
+  const dot = document.getElementById('joyDot');
+  const fire = document.getElementById('fireBtn');
+  const abQ = document.getElementById('abilityQ');
+  const abE = document.getElementById('abilityE');
+  const abShift = document.getElementById('abilityShift');
+
+  let joyActive = false, joyX = 0, joyY = 0;
+  let lastFire = 0;
+
+  function getTouchPos(e) {
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX, y: t.clientY };
+  }
+
+  function handleJoyStart(e) {
+    const pos = getTouchPos(e);
+    const rect = joy.getBoundingClientRect();
+    joyActive = true;
+    updateJoy(pos.x - (rect.left + rect.width/2), pos.y - (rect.top + rect.height/2));
+    e.preventDefault();
+  }
+  function handleJoyMove(e) {
+    if (!joyActive) return;
+    const pos = getTouchPos(e);
+    const rect = joy.getBoundingClientRect();
+    const dx = pos.x - (rect.left + rect.width/2);
+    const dy = pos.y - (rect.top + rect.height/2);
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const max = 60;
+    if (dist > max) {
+      joyX = (dx / dist) * max;
+      joyY = (dy / dist) * max;
+    } else {
+      joyX = dx; joyY = dy;
+    }
+    updateJoy(joyX, joyY);
+    e.preventDefault();
+  }
+  function handleJoyEnd() {
+    joyActive = false;
+    updateJoy(0, 0);
+  }
+  function updateJoy(x, y) {
+    dot.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+    if (game) {
+      const dist = Math.sqrt(x*x + y*y);
+      game.joyX = dist > 10 ? x / 60 : 0;
+      game.joyY = dist > 10 ? y / 60 : 0;
+    }
+  }
+
+  joy.addEventListener('touchstart', handleJoyStart, { passive: false });
+  joy.addEventListener('touchmove', handleJoyMove, { passive: false });
+  joy.addEventListener('touchend', handleJoyEnd, { passive: false });
+  joy.addEventListener('touchcancel', handleJoyEnd, { passive: false });
+
+  function fireWeapon() {
+    if (!game || game.screen !== 'playing') return;
+    const now = nowMs();
+    if (now - lastFire < 100) return; // debounce
+    lastFire = now;
+    const cls = game.classId || 'knight';
+    if (cls === 'knight') { game.qCd = 0; }
+    else if (cls === 'gunslinger') { game.novaCd = 0; }
+    else if (cls === 'berserker') { game.dashCd = 0; }
+    game.keys.Space = true;
+  }
+  fire.addEventListener('touchstart', (e) => { fireWeapon(); e.preventDefault(); }, { passive: false });
+  fire.addEventListener('touchend', (e) => { e.preventDefault(); }, { passive: false });
+
+  function triggerAbility(id) {
+    if (!game || game.screen !== 'playing') return;
+    if (id === 'Q') game.qCd = 0;
+    else if (id === 'E') game.novaCd = 0;
+    else if (id === 'Shift') game.dashCd = 0;
+  }
+  abQ.addEventListener('touchstart', (e) => { triggerAbility('Q'); e.preventDefault(); }, { passive: false });
+  abE.addEventListener('touchstart', (e) => { triggerAbility('E'); e.preventDefault(); }, { passive: false });
+  abShift.addEventListener('touchstart', (e) => { triggerAbility('Shift'); e.preventDefault(); }, { passive: false });
+}
+window.addEventListener('load', initTouchControls);
 
 (function boot() {
   /* the saved run is read BEFORE the title screen paints, so the menu line
