@@ -1991,7 +1991,7 @@ function buildObstacles(zoneIndex) {
   avoid.push([z.bossPos[0], z.bossPos[1], 260]);
 
   let guard = 0;
-  while (list.length < 32 && guard++ < 2200) {
+  while (list.length < 56 && guard++ < 4200) {
     const x = 150 + rng() * (WORLD - 300);
     const y = 150 + rng() * (WORLD - 300);
     if (avoid.some((a) => dist(x, y, a[0], a[1]) < a[2])) continue;
@@ -5504,6 +5504,84 @@ function stoneBlob(g, cx, cy, rx, ry, rot, rng, wob) {
   g.closePath();
 }
 
+/* rounded variant of stoneBlob: the control points are joined through their
+   midpoints, so cut flagstones read as worn slabs instead of flat octagons */
+function slabPoints(cx, cy, rx, ry, rot, rng, wob) {
+  const n = 7 + Math.floor(rng() * 3);
+  const c = Math.cos(rot), s = Math.sin(rot);
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * TAU;
+    const k = 1 - wob + rng() * wob * 2;
+    const lx = Math.cos(a) * rx * k;
+    const ly = Math.sin(a) * ry * k;
+    pts.push([cx + lx * c - ly * s, cy + lx * s + ly * c]);
+  }
+  return pts;
+}
+
+function slabPath(g, pts, dx, dy) {
+  const n = pts.length;
+  dx = dx || 0; dy = dy || 0;
+  const mid = (a, b) => [(a[0] + b[0]) / 2 + dx, (a[1] + b[1]) / 2 + dy];
+  g.beginPath();
+  const m0 = mid(pts[n - 1], pts[0]);
+  g.moveTo(m0[0], m0[1]);
+  for (let i = 0; i < n; i++) {
+    const cur = pts[i];
+    const m = mid(cur, pts[(i + 1) % n]);
+    g.quadraticCurveTo(cur[0] + dx, cur[1] + dy, m[0], m[1]);
+  }
+  g.closePath();
+}
+
+/* stroke a slab, repeated across the tile border like fillSlab */
+function strokeSlab(g, pts, S) {
+  let minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9;
+  for (let i = 0; i < pts.length; i++) {
+    if (pts[i][0] < minx) minx = pts[i][0];
+    if (pts[i][0] > maxx) maxx = pts[i][0];
+    if (pts[i][1] < miny) miny = pts[i][1];
+    if (pts[i][1] > maxy) maxy = pts[i][1];
+  }
+  const xs = [0];
+  if (minx < 0) xs.push(S);
+  if (maxx > S) xs.push(-S);
+  const ys = [0];
+  if (miny < 0) ys.push(S);
+  if (maxy > S) ys.push(-S);
+  for (let i = 0; i < xs.length; i++) {
+    for (let k = 0; k < ys.length; k++) {
+      slabPath(g, pts, xs[i], ys[k]);
+      g.stroke();
+    }
+  }
+}
+
+/* fill a slab, repeating it across the tile border so the 256px texture is
+   seamless when the floor pattern repeats */
+function fillSlab(g, pts, S) {
+  let minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9;
+  for (let i = 0; i < pts.length; i++) {
+    if (pts[i][0] < minx) minx = pts[i][0];
+    if (pts[i][0] > maxx) maxx = pts[i][0];
+    if (pts[i][1] < miny) miny = pts[i][1];
+    if (pts[i][1] > maxy) maxy = pts[i][1];
+  }
+  const xs = [0];
+  if (minx < 0) xs.push(S);
+  if (maxx > S) xs.push(-S);
+  const ys = [0];
+  if (miny < 0) ys.push(S);
+  if (maxy > S) ys.push(-S);
+  for (let i = 0; i < xs.length; i++) {
+    for (let k = 0; k < ys.length; k++) {
+      slabPath(g, pts, xs[i], ys[k]);
+      g.fill();
+    }
+  }
+}
+
 function groundTileFor(zoneIndex) {
   const z = ZONES[zoneIndex];
   const S = 256;
@@ -5584,84 +5662,117 @@ function groundTileFor(zoneIndex) {
     }
   } else if (z.tile === 'stone') {
     /* ---- Zone 3 · The Castle Gates: rain-wet flagstones, water in the seams ---- */
-    g.fillStyle = '#0f1216';
+    g.fillStyle = '#1b2027';
     g.fillRect(0, 0, S, S);
-    const cols = 4, rows = 6;
+    const cols = 5, rows = 7;
     const sw = S / cols, sh = S / rows;
-    for (let row = -1; row <= rows; row++) {
-      for (let col = -1; col <= cols; col++) {
-        const bx = col * sw + sw / 2 + (row % 2 ? sw * 0.22 : 0) + (rng() - 0.5) * 4;
-        const by = row * sh + sh / 2 + (rng() - 0.5) * 3;
-        const rx = sw * (0.46 + rng() * 0.08);
-        const ry = sh * (0.45 + rng() * 0.07);
-        const rot = (rng() - 0.5) * 0.05;
-        g.fillStyle = 'rgba(0,0,0,0.5)';
-        stoneBlob(g, bx + 1, by + 2, rx, ry, rot, rng, 0.05);
-        g.fill();
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const bx = col * sw + sw / 2 + (row % 2 ? sw * 0.5 : 0) + (rng() - 0.5) * 3;
+        const by = row * sh + sh / 2 + (rng() - 0.5) * 2.4;
+        const rx = sw * (0.505 + rng() * 0.03);
+        const ry = sh * (0.5 + rng() * 0.03);
+        const rot = (rng() - 0.5) * 0.06;
+        const pts = slabPoints(bx, by, rx, ry, rot, rng, 0.045);
         const t = rng();
-        g.fillStyle = t > 0.76 ? '#3c424b' : (t > 0.5 ? '#333941'
-          : (t > 0.24 ? '#2c3139' : '#272c33'));
-        stoneBlob(g, bx, by, rx, ry, rot, rng, 0.05);
-        g.fill();
-        /* rain sheen across the slab */
-        g.fillStyle = 'rgba(206,224,248,' + (0.015 + t * 0.03).toFixed(3) + ')';
-        stoneBlob(g, bx, by - ry * 0.2, rx * 0.9, ry * 0.62, rot, rng, 0.05);
-        g.fill();
-        if (t > 0.84) {
-          g.strokeStyle = 'rgba(9,11,15,0.5)';
+
+        /* mortar shadow, tight enough that the slabs almost meet */
+        g.fillStyle = 'rgba(0,0,0,0.42)';
+        const shPts = pts.map((q) => [q[0] + 1, q[1] + 1.6]);
+        fillSlab(g, shPts, S);
+        g.fillStyle = t > 0.78 ? '#565f6b' : (t > 0.52 ? '#4b545f'
+          : (t > 0.26 ? '#434b55' : '#3a414a'));
+        fillSlab(g, pts, S);
+
+        /* rain sheen pooling on the crown of the slab */
+        g.fillStyle = 'rgba(214,232,252,' + (0.02 + t * 0.035).toFixed(3) + ')';
+        fillSlab(g, slabPoints(bx, by - ry * 0.22, rx * 0.86, ry * 0.58, rot, rng, 0.05), S);
+
+        /* hairline crack in the oldest slabs */
+        if (t > 0.86) {
+          g.strokeStyle = 'rgba(11,14,19,0.55)';
           g.lineWidth = 1;
           g.beginPath();
-          g.moveTo(bx - rx * 0.4, by - ry * 0.7);
-          g.lineTo(bx + rx * 0.1, by + ry * 0.1);
-          g.lineTo(bx - rx * 0.2, by + ry * 0.8);
+          g.moveTo(bx - rx * 0.45, by - ry * 0.6);
+          g.lineTo(bx + rx * 0.08, by + ry * 0.05);
+          g.lineTo(bx - rx * 0.18, by + ry * 0.72);
+          g.stroke();
+        }
+        /* wet seam: a thin blue film where the rain has collected */
+        if (t > 0.55) {
+          g.strokeStyle = 'rgba(126,164,206,' + (0.05 + (t - 0.55) * 0.13).toFixed(3) + ')';
+          g.lineWidth = 1;
+          g.beginPath();
+          g.ellipse(bx + rx * 0.1, by + ry * 0.62, rx * 0.55, ry * 0.16, rot, 0, TAU);
           g.stroke();
         }
       }
     }
-    /* mud and standing water pooled over the stones — the darker patches */
-    for (let i = 0; i < 7; i++) {
-      const px = rng() * S, py = rng() * S;
-      const rx = 16 + rng() * 26, ry = 9 + rng() * 13;
+    /* mud and standing water pooled over the stones — the darker patches.
+       kept clear of the tile border so the repeating texture has no cut edges */
+    for (let i = 0; i < 5; i++) {
+      const rx = 18 + rng() * 30, ry = 10 + rng() * 15;
+      const px = rx + 3 + rng() * (S - rx * 2 - 6);
+      const py = ry + 3 + rng() * (S - ry * 2 - 6);
       const rot = rng() * TAU;
-      g.fillStyle = 'rgba(12,18,25,0.5)';
+      /* muddy silt at the bottom of the hollow */
+      g.fillStyle = 'rgba(24,30,38,0.36)';
       g.beginPath(); g.ellipse(px, py, rx, ry, rot, 0, TAU); g.fill();
-      g.fillStyle = 'rgba(30,28,22,0.28)';
-      g.beginPath(); g.ellipse(px + rx * 0.18, py + ry * 0.16, rx * 0.66, ry * 0.62, rot, 0, TAU); g.fill();
-      g.strokeStyle = 'rgba(160,182,208,0.09)';
+      /* thin film of rain water sitting in it */
+      g.fillStyle = 'rgba(86,112,144,0.20)';
+      g.beginPath(); g.ellipse(px - rx * 0.06, py - ry * 0.12, rx * 0.7, ry * 0.6, rot, 0, TAU); g.fill();
+      g.strokeStyle = 'rgba(186,212,242,0.13)';
       g.lineWidth = 1;
-      g.beginPath(); g.ellipse(px, py, rx * 0.84, ry * 0.84, rot, 0, TAU); g.stroke();
+      g.beginPath(); g.ellipse(px, py, rx * 0.9, ry * 0.88, rot, 0.25, Math.PI - 0.25); g.stroke();
     }
   } else if (z.tile === 'crack') {
     /* ---- Zone 4 · The Sorcerer's Tower: cracked violet marble with veins ---- */
-    g.fillStyle = '#120c1e';
+    g.fillStyle = '#0f0a1b';
     g.fillRect(0, 0, S, S);
     const cols = 3, rows = 4;
     const mw = S / cols, mh = S / rows;
-    for (let row = -1; row <= rows; row++) {
-      for (let col = -1; col <= cols; col++) {
-        const bx = col * mw + mw / 2 + (row % 2 ? mw * 0.18 : 0);
-        const by = row * mh + mh / 2;
-        const rx = mw * 0.5, ry = mh * 0.5;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const bx = col * mw + mw / 2 + (row % 2 ? mw * 0.34 : 0) + (rng() - 0.5) * 3;
+        const by = row * mh + mh / 2 + (rng() - 0.5) * 2.5;
+        const rx = mw * (0.5 + rng() * 0.03), ry = mh * (0.5 + rng() * 0.03);
         const t = rng();
-        g.fillStyle = t > 0.7 ? '#20163a' : (t > 0.4 ? '#1b1231' : (t > 0.18 ? '#170f29' : '#130d21'));
-        stoneBlob(g, bx, by, rx - 1.5, ry - 1.5, 0, rng, 0.035);
-        g.fill();
+        const pts = slabPoints(bx, by, rx, ry, 0.02, rng, 0.05);
+
+        g.fillStyle = 'rgba(0,0,0,0.4)';
+        fillSlab(g, pts.map((q) => [q[0] + 1, q[1] + 1.5]), S);
+        g.fillStyle = t > 0.7 ? '#332552' : (t > 0.4 ? '#2b1e46' : (t > 0.18 ? '#241a3b' : '#1d1530'));
+        fillSlab(g, pts, S);
+
         /* marble veining, faintly lit by the tower's own magic */
-        g.strokeStyle = 'rgba(142,100,220,' + (0.05 + rng() * 0.09).toFixed(3) + ')';
+        g.strokeStyle = 'rgba(168,124,246,' + (0.07 + rng() * 0.11).toFixed(3) + ')';
         g.lineWidth = 1 + rng() * 1.8;
         const vy = by - ry * 0.5 + rng() * ry;
         g.beginPath();
-        g.moveTo(bx - rx + 3, vy);
+        g.moveTo(bx - rx + 4, vy);
         g.bezierCurveTo(
-          bx - rx * 0.4, vy + (rng() - 0.5) * 30,
-          bx + rx * 0.4, vy + (rng() - 0.5) * 30,
-          bx + rx - 3, vy + (rng() - 0.5) * 16
+          bx - rx * 0.4, vy + (rng() - 0.5) * 26,
+          bx + rx * 0.4, vy + (rng() - 0.5) * 26,
+          bx + rx - 4, vy + (rng() - 0.5) * 14
         );
         g.stroke();
+        /* polished highlight along the top edge */
+        g.strokeStyle = 'rgba(206,178,255,' + (0.03 + t * 0.04).toFixed(3) + ')';
+        g.lineWidth = 1.4;
+        g.beginPath();
+        g.ellipse(bx, by - ry * 0.42, rx * 0.66, ry * 0.2, 0, Math.PI, TAU);
+        g.stroke();
+        /* a thread of rune light caught in the joints between the slabs */
+        g.strokeStyle = 'rgba(9,5,18,0.85)';
+        g.lineWidth = 2.4;
+        strokeSlab(g, pts, S);
+        g.strokeStyle = 'rgba(178,126,255,' + (0.06 + t * 0.11).toFixed(3) + ')';
+        g.lineWidth = 0.9;
+        strokeSlab(g, pts, S);
       }
     }
     /* fracture seams with a thread of rune light caught inside */
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 12; i++) {
       let x = rng() * S, y = rng() * S;
       const a0 = rng() * TAU;
       const pts = [[x, y]];
@@ -5670,13 +5781,13 @@ function groundTileFor(zoneIndex) {
         y += Math.sin(a0 + (rng() - 0.5) * 1.2) * (10 + rng() * 18);
         pts.push([x, y]);
       }
-      g.strokeStyle = 'rgba(12,7,22,0.75)';
+      g.strokeStyle = 'rgba(10,6,20,0.7)';
       g.lineWidth = 1.4 + rng();
       g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
       for (let k = 1; k < pts.length; k++) g.lineTo(pts[k][0], pts[k][1]);
       g.stroke();
-      g.strokeStyle = 'rgba(186,132,252,0.14)';
-      g.lineWidth = 0.8;
+      g.strokeStyle = 'rgba(196,146,255,0.16)';
+      g.lineWidth = 0.9;
       g.stroke();
     }
     for (let i = 0; i < 40; i++) {
@@ -5778,10 +5889,10 @@ function buildFloorArt(zoneIndex) {
       if (s) art.mushrooms.push({ x: s.x, y: s.y, s: 0.65 + rng() * 0.85, ph: rng() * TAU, n: 2 + Math.floor(rng() * 3) });
     }
   } else if (art.kind === 'stone') {
-    for (let i = 0; i < 58; i++) {
-      const rx = 22 + rng() * 34;
+    for (let i = 0; i < 22; i++) {
+      const rx = 40 + rng() * 46;
       art.puddles.push({
-        x: px(), y: py(), rx: rx, ry: rx * (0.46 + rng() * 0.24),
+        x: px(), y: py(), rx: rx, ry: rx * (0.42 + rng() * 0.2),
         rot: rng() * TAU, ph: rng()
       });
     }
@@ -5953,29 +6064,31 @@ function artRootVein(v) {
   ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  const trace = () => {
+  const trace = (dy) => {
     ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
+    ctx.moveTo(pts[0].x, pts[0].y + (dy || 0));
     for (let i = 1; i < pts.length - 1; i++) {
       const mx = (pts[i].x + pts[i + 1].x) / 2;
-      const my = (pts[i].y + pts[i + 1].y) / 2;
-      ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+      const my = (pts[i].y + pts[i + 1].y) / 2 + (dy || 0);
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y + (dy || 0), mx, my);
     }
-    ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+    ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y + (dy || 0));
   };
-  ctx.strokeStyle = 'rgba(30,20,11,0.92)';
-  ctx.lineWidth = v.w + 2.2;
+  /* the hollow the root has pressed into the earth */
+  ctx.strokeStyle = 'rgba(10,7,4,0.85)';
+  ctx.lineWidth = v.w + 3.4;
   trace(); ctx.stroke();
-  ctx.strokeStyle = 'rgba(96,74,48,0.26)';
-  ctx.lineWidth = Math.max(1, v.w * 0.34);
+  /* the root itself — bark catching what little light reaches the floor */
+  ctx.strokeStyle = 'rgba(84,62,40,0.7)';
+  ctx.lineWidth = v.w * 0.72;
   trace(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(138,108,68,0.34)';
+  ctx.lineWidth = Math.max(1, v.w * 0.3);
+  trace(-v.w * 0.16); ctx.stroke();
   /* moss creeping along one flank */
-  ctx.strokeStyle = 'rgba(52,104,62,0.28)';
-  ctx.lineWidth = Math.max(1, v.w * 0.46);
-  ctx.beginPath();
-  ctx.moveTo(pts[0].x, pts[0].y - 2);
-  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y - 2.4);
-  ctx.stroke();
+  ctx.strokeStyle = 'rgba(58,98,60,0.42)';
+  ctx.lineWidth = Math.max(1, v.w * 0.34);
+  trace(-v.w * 0.44); ctx.stroke();
   ctx.restore();
 }
 
@@ -6012,39 +6125,42 @@ function artMudPuddle(pd, t) {
   ctx.translate(pd.x, pd.y);
   ctx.rotate(pd.rot);
 
-  const halo = ctx.createRadialGradient(0, 0, pd.rx * 0.2, 0, 0, pd.rx * 1.35);
-  halo.addColorStop(0, 'rgba(10,14,20,0.45)');
-  halo.addColorStop(1, 'rgba(10,14,20,0)');
+  /* damp stone soaking outward from the pool */
+  const halo = ctx.createRadialGradient(0, 0, pd.rx * 0.6, 0, 0, pd.rx * 1.45);
+  halo.addColorStop(0, 'rgba(7,10,15,0.3)');
+  halo.addColorStop(1, 'rgba(7,10,15,0)');
   ctx.fillStyle = halo;
-  ctx.beginPath(); ctx.ellipse(0, 0, pd.rx * 1.35, pd.ry * 1.5, 0, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0, 0, pd.rx * 1.45, pd.ry * 1.55, 0, 0, TAU); ctx.fill();
 
+  /* the pool: dark mud at the rim, the night sky caught in the middle */
   const wet = ctx.createLinearGradient(0, -pd.ry, 0, pd.ry);
-  wet.addColorStop(0, 'rgba(38,36,30,0.72)');
-  wet.addColorStop(0.45, 'rgba(22,23,22,0.78)');
-  wet.addColorStop(0.75, 'rgba(30,33,36,0.7)');
-  wet.addColorStop(1, 'rgba(41,39,32,0.62)');
+  wet.addColorStop(0, 'rgba(116,148,184,0.78)');
+  wet.addColorStop(0.38, 'rgba(62,84,110,0.86)');
+  wet.addColorStop(0.78, 'rgba(28,39,53,0.92)');
+  wet.addColorStop(1, 'rgba(17,23,31,0.94)');
   ctx.fillStyle = wet;
   ctx.beginPath(); ctx.ellipse(0, 0, pd.rx, pd.ry, 0, 0, TAU); ctx.fill();
 
-  /* far edge catches the sky, near edge keeps the skyline's reflection */
-  ctx.fillStyle = 'rgba(132,158,192,0.10)';
-  ctx.beginPath(); ctx.ellipse(0, -pd.ry * 0.32, pd.rx * 0.72, pd.ry * 0.34, 0, 0, TAU); ctx.fill();
-  ctx.fillStyle = 'rgba(196,214,236,0.07)';
-  ctx.beginPath(); ctx.ellipse(pd.rx * 0.18, -pd.ry * 0.1, pd.rx * 0.3, pd.ry * 0.18, 0, 0, TAU); ctx.fill();
-  ctx.strokeStyle = 'rgba(178,198,224,0.2)';
-  ctx.lineWidth = 1.2;
+  /* moon and skyline shimmer riding on the surface */
+  ctx.fillStyle = 'rgba(206,226,250,0.20)';
+  ctx.beginPath(); ctx.ellipse(0, -pd.ry * 0.34, pd.rx * 0.68, pd.ry * 0.3, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = 'rgba(236,246,255,0.16)';
+  ctx.beginPath(); ctx.ellipse(pd.rx * 0.16, -pd.ry * 0.16, pd.rx * 0.26, pd.ry * 0.14, 0, 0, TAU); ctx.fill();
+
+  /* bright wet rim where the waterline cuts the stone */
+  ctx.strokeStyle = 'rgba(212,232,255,0.34)';
+  ctx.lineWidth = 1.4;
   ctx.beginPath(); ctx.ellipse(0, 0, pd.rx, pd.ry, 0, 0, TAU); ctx.stroke();
 
-  /* rain finding its way across the surface */
-  const k = (t * 0.3 + pd.ph) % 1;
-  ctx.strokeStyle = 'rgba(190,212,240,' + (0.11 * (1 - k)).toFixed(3) + ')';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, pd.rx * (0.28 + k * 0.68), pd.ry * (0.28 + k * 0.68), 0, 0, TAU);
-  ctx.stroke();
-
-  ctx.fillStyle = 'rgba(150,178,214,0.06)';
-  ctx.beginPath(); ctx.ellipse(-pd.rx * 0.28, -pd.ry * 0.3, pd.rx * 0.34, pd.ry * 0.24, 0, 0, TAU); ctx.fill();
+  /* rain rings drifting across the surface */
+  for (let r = 0; r < 2; r++) {
+    const k = (t * 0.3 + pd.ph + r * 0.5) % 1;
+    ctx.strokeStyle = 'rgba(214,234,255,' + (0.24 * (1 - k)).toFixed(3) + ')';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, pd.rx * (0.24 + k * 0.7), pd.ry * (0.24 + k * 0.7), 0, 0, TAU);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
