@@ -332,6 +332,85 @@
   .btn.ghost:hover{ color:#fff; border-color:rgba(214,226,244,.6); box-shadow:0 0 20px rgba(180,200,230,.2); }
   .btn-row{ display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
 
+  /* ---------------- save slot, continue, settings ---------------- */
+  #continueWrap{ display:none; flex-direction:column; align-items:center; gap:7px; margin-top:4px; }
+  #continueWrap.show{ display:flex; }
+  #btnContinueSave{ min-width:280px; }
+  #continueMeta{
+    font-family:var(--font-stat); font-size:11px; letter-spacing:2.4px;
+    text-transform:uppercase; color:rgba(203,213,225,.62);
+    text-shadow:0 2px 8px rgba(0,0,0,.9);
+  }
+  #continueMeta b{ color:#ffe0a4; font-weight:600; }
+
+  /* "Progress Saved" confirmation on the end screens */
+  .save-line{
+    display:none; align-items:center; justify-content:center; gap:8px;
+    margin-top:2px; font-family:var(--font-stat); font-size:12px;
+    letter-spacing:2.8px; text-transform:uppercase;
+    color:rgba(134,239,172,.9);
+    text-shadow:0 0 16px rgba(52,211,153,.4), 0 2px 8px rgba(0,0,0,.9);
+  }
+  .save-line.show{ display:flex; }
+  .save-line i{
+    font-style:normal; display:inline-flex; align-items:center; justify-content:center;
+    width:15px; height:15px; border-radius:50%; font-size:9px;
+    border:1px solid rgba(134,239,172,.55); color:#bbf7d0;
+  }
+
+  /* settings gear on the main menu */
+  #settingsBtn{
+    position:absolute; top:18px; right:18px; width:40px; height:40px;
+    display:flex; align-items:center; justify-content:center;
+    line-height:1; cursor:pointer;
+    color:rgba(232,200,116,.78); background:rgba(8,10,16,.55);
+    border:1px solid rgba(232,200,116,.28); border-radius:50%;
+    transition:color .2s ease, border-color .2s ease, box-shadow .25s ease, transform .3s ease;
+    -webkit-appearance:none; appearance:none; outline:none;
+  }
+  #settingsBtn:hover, #settingsBtn:focus-visible{
+    color:#fff3d0; border-color:var(--gold-bright);
+    box-shadow:0 0 20px rgba(232,200,116,.35);
+  }
+  #settingsBtn svg{ width:19px; height:19px; display:block; }
+  #settingsBtn.on{ transform:rotate(60deg); border-color:var(--gold-bright); color:#fff3d0; }
+  #settingsPanel{
+    position:absolute; top:66px; right:18px; width:250px; display:none;
+    flex-direction:column; gap:9px; padding:14px 15px 15px; text-align:left; z-index:41;
+    background:linear-gradient(180deg, rgba(11,14,21,.97), rgba(4,6,11,.99));
+    border:1px solid rgba(232,200,116,.38); border-radius:3px;
+    box-shadow:0 18px 46px rgba(0,0,0,.72), inset 0 0 26px rgba(232,200,116,.05);
+  }
+  #settingsPanel.show{ display:flex; }
+  #settingsPanel .sp-title{
+    font-family:var(--font-head); font-size:11px; letter-spacing:3.4px;
+    text-transform:uppercase; color:var(--gold);
+  }
+  #settingsPanel .sp-row{
+    display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    font-family:var(--font-stat); font-size:11.5px; letter-spacing:1.5px;
+    text-transform:uppercase; color:rgba(203,213,225,.66);
+  }
+  #settingsPanel .sp-row b{ color:#ffe7b8; font-weight:600; letter-spacing:1px; }
+  #settingsPanel .sp-rule{ height:1px; background:linear-gradient(90deg, rgba(232,200,116,.4), rgba(232,200,116,0)); }
+  #btnResetSave{
+    font-family:var(--font-head); font-size:10.5px; font-weight:700; letter-spacing:2.2px;
+    text-transform:uppercase; color:#fca5a5; background:rgba(60,12,12,.5);
+    border:1px solid rgba(248,113,113,.4); border-radius:2px; padding:9px 10px;
+    cursor:pointer; -webkit-appearance:none; appearance:none; outline:none;
+    transition:background .2s ease, border-color .2s ease, color .2s ease;
+  }
+  #btnResetSave:hover, #btnResetSave:focus-visible{ color:#fee2e2; border-color:#f87171; background:rgba(90,18,18,.62); }
+  #btnResetSave.armed{ color:#fff; background:rgba(150,26,26,.85); border-color:#fca5a5; animation:armedPulse .9s ease-in-out infinite; }
+  @keyframes armedPulse{ 0%,100%{ opacity:.82 } 50%{ opacity:1 } }
+  #spNote{
+    font-family:var(--font-stat); font-size:10.5px; line-height:1.45; letter-spacing:.4px;
+    color:rgba(159,179,200,.8);
+  }
+  @media (max-height:640px){
+    #settingsBtn{ top:10px; right:10px; width:34px; height:34px; font-size:16px; }
+  }
+
   /* ---------------- main menu ---------------- */
   #menu{
     position:absolute; inset:0; display:flex; flex-direction:column;
@@ -597,6 +676,25 @@
   <div id="menu">
     <h1 id="menuTitle">SURVIVE</h1>
     <div id="menuSub">1347 AD · Commander Rael</div>
+
+    <button id="settingsBtn" type="button" aria-label="Settings" aria-expanded="false" title="Settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19.14 12.94c.03-.31.05-.62.05-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.62l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.1 7.1 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.24-1.12.55-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.62 8.86a.5.5 0 0 0 .12.62l2.03 1.58c-.03.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.62l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.39 1.04.7 1.62.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.58-.24 1.12-.55 1.62-.94l2.39.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.62l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>
+    </button>
+    <div id="settingsPanel" role="dialog" aria-label="Settings">
+      <div class="sp-title">Settings</div>
+      <div class="sp-row"><span>Best score</span><b id="spBest">0</b></div>
+      <div class="sp-row"><span>Lifetime gems</span><b id="spGems">0</b></div>
+      <div class="sp-row"><span>Saved run</span><b id="spRun">None</b></div>
+      <div class="sp-rule"></div>
+      <button id="btnResetSave" type="button">Reset save</button>
+      <div id="spNote">Clears the saved run, the best score and lifetime gems.</div>
+    </div>
+
+    <div id="continueWrap">
+      <button class="btn" id="btnContinueSave">Continue</button>
+      <div id="continueMeta">Zone 1 · Vanguard Knight · 0 pts</div>
+    </div>
+
     <div class="btn-row" style="margin-top:12px">
       <button class="btn" id="btnBegin">Begin Mission</button>
       <button class="btn ghost" id="btnHowTo">How To Play</button>
@@ -694,6 +792,7 @@
     <div class="statline" id="goZone">Zone 1 · The Village</div>
     <div class="statline">Score <b id="goScore">0</b> · Gems <b id="goGems">0</b></div>
     <div class="statline" id="goBest">Best score 0</div>
+    <div class="save-line" id="goSaved"><i>✓</i><span>Progress Saved</span></div>
     <div class="btn-row" style="margin-top:10px">
       <button class="btn" id="btnRetry">Retry Zone</button>
       <button class="btn ghost" id="btnRestart">Restart</button>
@@ -706,6 +805,7 @@
     <h1>Commander Rael has returned to the future.</h1>
     <div class="statline">Final Score <b id="vicScore">0</b> · Gems <b id="vicGems">0</b></div>
     <div class="statline" id="vicBest">Best score 0</div>
+    <div class="save-line" id="vicSaved"><i>✓</i><span>Progress Saved</span></div>
     <div class="btn-row" style="margin-top:10px">
       <button class="btn" id="btnAgain">Play Again</button>
     </div>
@@ -1094,6 +1194,18 @@ const UI = {
   menu: document.getElementById('menu'),
   menuBest: document.getElementById('menuBest'),
   howto: document.getElementById('howto'),
+  continueWrap: document.getElementById('continueWrap'),
+  btnContinueSave: document.getElementById('btnContinueSave'),
+  continueMeta: document.getElementById('continueMeta'),
+  settingsBtn: document.getElementById('settingsBtn'),
+  settingsPanel: document.getElementById('settingsPanel'),
+  btnResetSave: document.getElementById('btnResetSave'),
+  spBest: document.getElementById('spBest'),
+  spGems: document.getElementById('spGems'),
+  spRun: document.getElementById('spRun'),
+  spNote: document.getElementById('spNote'),
+  goSaved: document.getElementById('goSaved'),
+  vicSaved: document.getElementById('vicSaved'),
   upgradeScreen: document.getElementById('upgradeScreen'),
   upgradeCards: document.getElementById('upgradeCards'),
   transition: document.getElementById('transition'),
@@ -1289,6 +1401,7 @@ const game = {
   pendingWave: null,
   upgradeLevels: {},
   classId: 'knight',   /* picked on the class screen; knight is the fallback */
+  lifetimeGems: 0,     /* every gem ever collected, across every run */
   qCd: 0,              /* the class ability's own cooldown */
   novaCd: 0,
   turretCd: 0,
@@ -3599,6 +3712,7 @@ function killBoss() {
   game.portal = { x: bx, y: by, r: 76, t: 0, open: 0 };
   setTimeout(() => { if (game.screen === 'playing') Sound.portal(); }, 700);
   updateObjective();
+  SaveSystem.save('boss');
 }
 
 function hideBossBar() {
@@ -3640,7 +3754,7 @@ function updateGems(dt) {
       g.y += Math.sin(a) * pull * dt;
     }
     if (d < p.r + 12) {
-      game.gems += 1;
+      addGems(1);
       game.score += 8;
       Sound.gem();
       for (let k = 0; k < 6; k++) {
@@ -3795,6 +3909,7 @@ function clearArena(arena, index) {
   }
   game.particles.push({ ring: true, x: arena.x, y: arena.y, r: arena.r * 0.3, maxR: arena.r * 1.4, life: 0, maxLife: 0.7, color: '#fde68a' });
   updateObjective();
+  SaveSystem.save('arena');
 
   const allCleared = game.arenas.every((x) => x.cleared);
   if (allCleared && !game.bossUnlocked && !game.boss) {
@@ -3832,6 +3947,7 @@ function completeZone() {
     return;
   }
   game.pendingZone = game.zoneIndex + 1;
+  SaveSystem.save('zone');
   const next = ZONES[game.pendingZone];
   UI.transEyebrow.textContent = 'Zone ' + next.id;
   UI.transTitle.textContent = next.name;
@@ -3902,6 +4018,378 @@ function chooseUpgrade(up) {
   if (game.screen === 'upgrade') game.screen = 'playing';
   addText(game.player.x, game.player.y - 44, up.name.toUpperCase(), '#fde68a');
   Sound.gem();
+  SaveSystem.save('upgrade');
+}
+
+/* =============================================================================
+   SAVE SYSTEM  (localStorage)
+   =============================================================================
+   One slot holds the run in progress: zone, arena progress, class, upgrades,
+   score and the best score / lifetime gem totals. It is written after every
+   major event (run start, zone change, arena cleared, upgrade taken, boss
+   down, game over, victory) and again every few seconds while playing, so a
+   closed tab never costs more than a moment of progress. Storage access is
+   wrapped: a blocked localStorage simply turns saving off instead of breaking
+   the game. */
+
+const SAVE_KEY = 'survive_save_v1';
+const SAVE_BEST_KEY = 'survive_best_score';
+const SAVE_GEMS_KEY = 'survive_gems_total';
+const SAVE_VERSION = 1;
+const AUTOSAVE_EVERY = 4;          /* seconds between background writes */
+
+const SaveSystem = (function () {
+  let probeDone = false;
+  let storageOk = true;
+  let autoTimer = 0;
+  let lastWriteAt = 0;
+  let lastWriteOk = false;
+  let writeTotal = 0;
+
+  function safeStore() {
+    try { return window.localStorage || null; } catch (e) { storageOk = false; return null; }
+  }
+
+  /* probe once: private mode and sandboxed frames throw on access */
+  function store() {
+    if (probeDone) return storageOk ? safeStore() : null;
+    probeDone = true;
+    try {
+      const ls = window.localStorage;
+      if (!ls) { storageOk = false; return null; }
+      const probe = '__survive_probe__';
+      ls.setItem(probe, '1');
+      ls.removeItem(probe);
+      storageOk = true;
+    } catch (e) {
+      storageOk = false;
+    }
+    return storageOk ? safeStore() : null;
+  }
+
+  function readJSON(key) {
+    const s = store();
+    if (!s) return null;
+    try {
+      const raw = s.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function writeJSON(key, value) {
+    const s = store();
+    if (!s) return false;
+    try { s.setItem(key, JSON.stringify(value)); return true; } catch (e) { return false; }
+  }
+
+  function readCount(key) {
+    const s = store();
+    if (!s) return 0;
+    try {
+      const v = parseInt(s.getItem(key) || '0', 10);
+      return (isFinite(v) && v > 0) ? v : 0;
+    } catch (e) { return 0; }
+  }
+
+  function writeCount(key, value) {
+    const s = store();
+    if (!s) return false;
+    try { s.setItem(key, String(Math.max(0, Math.floor(value || 0)))); return true; } catch (e) { return false; }
+  }
+
+  /* ---------------------------- what gets written --------------------------- */
+  function snapshot() {
+    const p = game.player || makePlayer();
+    const zone = clamp(game.zoneIndex | 0, 0, ZONES.length - 1);
+    const waves = ZONES[zone].waves.length;
+    return {
+      v: SAVE_VERSION,
+      zone: zone,
+      classId: getClass().id,
+      upgrades: Object.assign({}, game.upgradeLevels || {}),
+      arenas: (game.arenas || []).map((a) => ({
+        cleared: !!a.cleared,
+        wave: clamp(Math.round(a.wave || 0), 0, waves)
+      })),
+      score: Math.max(0, Math.floor(game.score || 0)),
+      gems: Math.max(0, game.gems | 0),
+      hp: Math.max(0, Math.round(p.hp)),
+      maxHp: Math.max(1, Math.round(p.maxHp)),
+      bossDefeated: !!game.portal,
+      portal: game.portal ? { x: Math.round(game.portal.x), y: Math.round(game.portal.y) } : null,
+      best: Math.max(game.best | 0, Math.floor(game.score || 0)),
+      gemsTotal: Math.max(0, game.lifetimeGems | 0),
+      savedAt: Date.now()
+    };
+  }
+
+  /* ------------------------------- writing ---------------------------------- */
+  function save(reason, opts) {
+    const o = opts || {};
+    const snap = snapshot();
+    if (typeof o.hp === 'number') snap.hp = Math.max(0, Math.round(o.hp));
+    const ok = writeJSON(SAVE_KEY, snap);
+    lastWriteOk = ok;
+    lastWriteAt = nowMs();
+    if (ok) writeTotal++;
+    autoTimer = 0;
+    if (ok) {
+      if (snap.best > readCount(SAVE_BEST_KEY)) writeCount(SAVE_BEST_KEY, snap.best);
+      if (snap.gemsTotal > readCount(SAVE_GEMS_KEY)) writeCount(SAVE_GEMS_KEY, snap.gemsTotal);
+      game.best = Math.max(game.best | 0, snap.best);
+      if (typeof refreshSaveUi === 'function') refreshSaveUi();
+    }
+    return ok;
+  }
+
+  /* ------------------------------- reading ---------------------------------- */
+  function load() {
+    const raw = readJSON(SAVE_KEY);
+    if (!raw || typeof raw !== 'object') return null;
+    if (raw.v !== SAVE_VERSION) return null;
+    const zone = Math.round(Number(raw.zone));
+    if (!isFinite(zone) || zone < 0 || zone >= ZONES.length) return null;
+
+    const out = {
+      v: SAVE_VERSION,
+      zone: zone,
+      classId: CLASSES.some((c) => c.id === raw.classId) ? raw.classId : 'knight',
+      upgrades: {},
+      arenas: [],
+      score: Math.max(0, Math.floor(Number(raw.score) || 0)),
+      gems: Math.max(0, Math.floor(Number(raw.gems) || 0)),
+      hp: Math.max(0, Math.round(Number(raw.hp) || 0)),
+      maxHp: Math.max(1, Math.round(Number(raw.maxHp) || 1)),
+      bossDefeated: !!raw.bossDefeated,
+      portal: null,
+      best: Math.max(0, Math.floor(Number(raw.best) || 0)),
+      gemsTotal: Math.max(0, Math.floor(Number(raw.gemsTotal) || 0)),
+      savedAt: Number(raw.savedAt) || 0
+    };
+    if (raw.portal && isFinite(Number(raw.portal.x)) && isFinite(Number(raw.portal.y))) {
+      out.portal = { x: clamp(Number(raw.portal.x), 60, WORLD - 60), y: clamp(Number(raw.portal.y), 60, WORLD - 60) };
+    }
+
+    const ups = (raw.upgrades && typeof raw.upgrades === 'object') ? raw.upgrades : {};
+    for (let i = 0; i < UPGRADE_POOL.length; i++) {
+      const up = UPGRADE_POOL[i];
+      const lvl = Math.round(Number(ups[up.id]) || 0);
+      if (lvl > 0) out.upgrades[up.id] = clamp(lvl, 0, up.max);
+    }
+
+    if (Array.isArray(raw.arenas)) {
+      const waves = ZONES[zone].waves.length;
+      for (let i = 0; i < Math.min(raw.arenas.length, 3); i++) {
+        const a = raw.arenas[i] || {};
+        out.arenas.push({
+          cleared: !!a.cleared,
+          wave: clamp(Math.round(Number(a.wave) || 0), 0, waves)
+        });
+      }
+    }
+    return out;
+  }
+
+  function hasSave() { return !!load(); }
+
+  function clear() {
+    const s = store();
+    if (s) {
+      try {
+        s.removeItem(SAVE_KEY);
+        s.removeItem(SAVE_BEST_KEY);
+        s.removeItem(SAVE_GEMS_KEY);
+      } catch (e) { /* ignore */ }
+    }
+    lastWriteOk = false;
+    return true;
+  }
+
+  /* --------------------------- restore into the game ------------------------ */
+  /* Rebuilds the saved run: class first (so the player is made correctly),
+     then upgrades replayed in pool order, then the zone, then the arena flags
+     and any fight that was running. */
+  function apply(slot) {
+    if (!slot) return false;
+
+    resetRun();                                  /* clean slate, timers cleared */
+    game.classId = slot.classId;
+    game.player = makePlayer();
+
+    game.upgradeLevels = {};
+    for (let i = 0; i < UPGRADE_POOL.length; i++) {
+      const up = UPGRADE_POOL[i];
+      const lvl = clamp(Math.round(slot.upgrades[up.id] || 0), 0, up.max);
+      for (let k = 0; k < lvl; k++) {
+        game.upgradeLevels[up.id] = (game.upgradeLevels[up.id] || 0) + 1;
+        up.apply();
+      }
+    }
+
+    game.score = slot.score;
+    game.gems = slot.gems;
+
+    loadZone(slot.zone, { freshPlayer: false });
+
+    const maxHp = game.player.maxHp;
+    game.player.hp = (slot.hp >= 1 && slot.hp <= maxHp) ? slot.hp : maxHp;
+
+    const waves = ZONES[game.zoneIndex].waves.length;
+    for (let i = 0; i < game.arenas.length; i++) {
+      const a = game.arenas[i];
+      const rec = slot.arenas[i];
+      if (!rec) continue;
+      if (rec.cleared) {
+        a.cleared = true;
+        a.active = false;
+        a.wave = waves;
+        continue;
+      }
+      const live = clamp(rec.wave, 0, waves);
+      if (live > 0) {
+        /* walk back into an arena that was mid-fight: the same wave resumes */
+        a.cleared = false;
+        a.active = true;
+        spawnWave(a, i, Math.min(live - 1, waves - 1));
+      }
+    }
+
+    if (slot.bossDefeated && slot.portal) {
+      game.portal = { x: slot.portal.x, y: slot.portal.y, r: 76, t: 0, open: 1 };
+      game.bossUnlocked = true;
+      game.boss = null;
+      game.bossZone = null;
+    } else if (game.arenas.length && game.arenas.every((a) => a.cleared)) {
+      armBossZone();
+    }
+
+    UI.menu.classList.add('hidden');
+    UI.classScreen.classList.remove('show');
+    UI.hud.classList.remove('hidden');
+    game.screen = 'playing';
+    game.menuTime = 0;
+    syncClassHud();
+    updateObjective();
+    updateHealthOrbs();
+    showBanner('RUN RESTORED');
+    save('continue');
+    refreshSaveUi();
+    return true;
+  }
+
+  function summary(save) {
+    if (!save) return '';
+    const cls = CLASSES.find((c) => c.id === save.classId) || CLASSES[0];
+    const cleared = save.arenas.filter((a) => a.cleared).length;
+    return 'Zone ' + (save.zone + 1) + ' · ' + cls.name + ' · ' +
+      cleared + '/3 arenas · ' + Math.floor(save.score).toLocaleString('en-US') + ' pts';
+  }
+
+  /* background autosave while a run is live */
+  function tick(dt) {
+    if (game.screen !== 'playing') { autoTimer = 0; return; }
+    autoTimer += dt;
+    if (autoTimer >= AUTOSAVE_EVERY) save('auto');
+  }
+
+  return {
+    save: save,
+    load: load,
+    hasSave: hasSave,
+    clear: clear,
+    apply: apply,
+    summary: summary,
+    tick: tick,
+    best: function () { return readCount(SAVE_BEST_KEY); },
+    lifetimeGems: function () { return readCount(SAVE_GEMS_KEY); },
+    isAvailable: function () { return !!store(); },
+    lastWriteOk: function () { return lastWriteOk; },
+    lastWriteAt: function () { return lastWriteAt; },
+    writes: function () { return writeTotal; }
+  };
+}());
+
+/* gems are counted twice: in the run and for the lifetime total */
+function addGems(n) {
+  const amount = Math.max(0, Math.floor(n || 0));
+  if (!amount) return;
+  game.gems += amount;
+  game.lifetimeGems = Math.max(0, game.lifetimeGems | 0) + amount;
+}
+
+/* ------------------------- save slot UI (menu) ----------------------------- */
+function refreshSaveUi() {
+  const slot = SaveSystem.load();
+  const best = Math.max(game.best | 0, slot ? slot.best | 0 : 0);
+  const gems = Math.max(game.lifetimeGems | 0, slot ? slot.gemsTotal | 0 : 0);
+  game.best = best;
+  game.lifetimeGems = gems;
+
+  if (UI.menuBest) UI.menuBest.textContent = 'BEST SCORE ' + best;
+  if (UI.continueWrap) UI.continueWrap.classList.toggle('show', !!slot);
+  if (UI.continueMeta && slot) UI.continueMeta.textContent = SaveSystem.summary(slot);
+  if (UI.spBest) UI.spBest.textContent = String(best);
+  if (UI.spGems) UI.spGems.textContent = String(gems);
+  if (UI.spRun) UI.spRun.textContent = slot ? ('ZONE ' + (slot.zone + 1)) : 'NONE';
+}
+
+/* the "Progress Saved" line only appears when the write really landed */
+function markProgressSaved(el, ok) {
+  if (!el || !el.classList) return;
+  el.classList.toggle('show', !!ok);
+}
+
+/* --------------------------- continue / settings --------------------------- */
+function continueSavedRun() {
+  const slot = SaveSystem.load();
+  if (!slot) { refreshSaveUi(); return false; }
+  Sound.ensure();
+  toggleSettings(false);
+  return SaveSystem.apply(slot);
+}
+
+let resetArmedAt = 0;
+
+function disarmResetSave() {
+  resetArmedAt = 0;
+  if (!UI.btnResetSave) return;
+  UI.btnResetSave.classList.remove('armed');
+  UI.btnResetSave.textContent = 'Reset save';
+  if (UI.spNote) UI.spNote.textContent = 'Clears the saved run, the best score and lifetime gems.';
+}
+
+function toggleSettings(force) {
+  if (!UI.settingsPanel) return;
+  const open = (typeof force === 'boolean') ? force : !UI.settingsPanel.classList.contains('show');
+  UI.settingsPanel.classList.toggle('show', open);
+  if (UI.settingsBtn) {
+    UI.settingsBtn.classList.toggle('on', open);
+    UI.settingsBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  if (open) refreshSaveUi();
+  else disarmResetSave();
+}
+
+function onResetSaveClick() {
+  /* two taps: the first arms the button, the second wipes the slot */
+  const t = nowMs();
+  if (resetArmedAt && (t - resetArmedAt) < 5000) {
+    SaveSystem.clear();
+    game.best = 0;
+    game.lifetimeGems = 0;
+    game.score = 0;
+    game.gems = 0;
+    disarmResetSave();
+    if (UI.spNote) UI.spNote.textContent = 'Save data cleared. A new run starts from Zone 1.';
+    refreshSaveUi();
+    return;
+  }
+  resetArmedAt = t;
+  if (UI.btnResetSave) {
+    UI.btnResetSave.classList.add('armed');
+    UI.btnResetSave.textContent = 'Confirm reset?';
+  }
+  if (UI.spNote) UI.spNote.textContent = 'This wipes the saved run, best score and lifetime gems. Tap again to confirm.';
 }
 
 /* ------------------------------ run lifecycle ------------------------------ */
@@ -3909,6 +4397,7 @@ function chooseUpgrade(up) {
    comes first, and the run starts on the card you pick. */
 function beginMission() {
   Sound.ensure();
+  toggleSettings(false);
   resetRun();   /* the class screen is the start of a fresh run, nothing carries over */
   UI.menu.classList.add('hidden');
   UI.hud.classList.add('hidden');
@@ -3957,6 +4446,7 @@ function startRun(classId) {
   updateObjective();
   updateHealthOrbs();
   showBanner(getClass().name.toUpperCase());
+  SaveSystem.save('start');   /* a new run replaces the old slot */
 }
 
 function endRun() {
@@ -3965,10 +4455,10 @@ function endRun() {
   game.screen = 'gameover';
   game.mouse.down = false;
   hideBossBar();
-  if (game.score > game.best) {
-    game.best = Math.floor(game.score);
-    try { localStorage.setItem('survive_best_score', String(game.best)); } catch (e) { /* storage may be blocked */ }
-  }
+  if (game.score > game.best) game.best = Math.floor(game.score);
+  /* the run is over: keep the progress but hand the zone back at full health */
+  const savedOnDeath = SaveSystem.save('gameover', { hp: game.player.maxHp });
+  markProgressSaved(UI.goSaved, savedOnDeath);
   UI.goZone.textContent = 'Zone ' + ZONES[game.zoneIndex].id + ' · ' + ZONES[game.zoneIndex].name;
   UI.goScore.textContent = String(Math.floor(game.score));
   UI.goGems.textContent = String(game.gems);
@@ -3981,10 +4471,9 @@ function showVictory() {
   game.screen = 'victory';
   game.mouse.down = false;
   hideBossBar();
-  if (game.score > game.best) {
-    game.best = Math.floor(game.score);
-    try { localStorage.setItem('survive_best_score', String(game.best)); } catch (e) { /* ignore */ }
-  }
+  if (game.score > game.best) game.best = Math.floor(game.score);
+  const savedOnWin = SaveSystem.save('victory');
+  markProgressSaved(UI.vicSaved, savedOnWin);
   UI.vicScore.textContent = String(Math.floor(game.score));
   UI.vicGems.textContent = String(game.gems);
   UI.vicBest.textContent = 'Best score ' + Math.max(game.best, Math.floor(game.score));
@@ -3996,6 +4485,7 @@ function retryZone() {
   UI.gameOver.classList.remove('show');
   game.screen = 'playing';
   loadZone(game.zoneIndex);
+  SaveSystem.save('retry');
 }
 
 function restartRun() {
@@ -4064,6 +4554,7 @@ document.getElementById('btnContinue').addEventListener('click', () => {
   UI.transition.classList.remove('show');
   loadZone(game.pendingZone);
   game.screen = 'playing';
+  SaveSystem.save('zone');
 });
 for (let i = 0; i < UI.classCards.length; i++) {
   const card = UI.classCards[i];
@@ -4076,6 +4567,42 @@ for (let i = 0; i < UI.classCards.length; i++) {
 document.getElementById('btnRetry').addEventListener('click', retryZone);
 document.getElementById('btnRestart').addEventListener('click', restartRun);
 document.getElementById('btnAgain').addEventListener('click', restartRun);
+
+/* save slot: continue button, settings gear and the reset control */
+UI.btnContinueSave.addEventListener('click', continueSavedRun);
+UI.settingsBtn.addEventListener('click', (e) => {
+  if (e && e.stopPropagation) e.stopPropagation();
+  toggleSettings();
+});
+UI.btnResetSave.addEventListener('click', (e) => {
+  if (e && e.stopPropagation) e.stopPropagation();
+  onResetSaveClick();
+});
+document.addEventListener('click', (e) => {
+  if (!UI.settingsPanel || !UI.settingsPanel.classList.contains('show')) return;
+  const t = e ? e.target : null;
+  if (!t) return;
+  if (t === UI.settingsBtn) return;
+  if (UI.settingsBtn && UI.settingsBtn.contains && UI.settingsBtn.contains(t)) return;
+  if (UI.settingsPanel.contains && UI.settingsPanel.contains(t)) return;
+  toggleSettings(false);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') toggleSettings(false);
+});
+
+/* never lose the last few seconds of a run to a closed tab */
+window.addEventListener('beforeunload', () => {
+  if (game.screen === 'playing' || game.screen === 'upgrade' || game.screen === 'transition') {
+    SaveSystem.save('exit');
+  }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' &&
+      (game.screen === 'playing' || game.screen === 'upgrade')) {
+    SaveSystem.save('hidden');
+  }
+});
 const groundCache = {};
 
 function groundTileFor(zoneIndex) {
@@ -6739,10 +7266,11 @@ function grantRandomUpgrade() {
   const p = game.player;
   const pool = availableUpgrades();
   if (!pool.length) {
-    game.gems += 6;
+    addGems(6);
     game.score += 150;
     addText(p.x, p.y - 46, 'CHIP SALVAGED · +6 GEMS', '#fde68a');
     Sound.gem();
+    SaveSystem.save('pickup');
     return;
   }
   const up = pick(pool);
@@ -6750,6 +7278,7 @@ function grantRandomUpgrade() {
   up.apply();
   addText(p.x, p.y - 46, up.name.toUpperCase(), '#fde68a');
   Sound.ability();
+  SaveSystem.save('pickup');
   for (let i = 0; i < 18; i++) {
     const a = rand(0, TAU);
     spawnParticle(p.x, p.y, Math.cos(a) * rand(40, 170), Math.sin(a) * rand(40, 170), 0.45, 6, '#fde68a', 3);
@@ -7514,6 +8043,7 @@ function update(dt) {
   updateParticles(sdt);
   updateFog();
   updateHud();
+  SaveSystem.tick(dt);
 
   if (game.shake > 0) game.shake = Math.max(0, game.shake - dt * 1.7);
   if (game.flashTimer > 0) game.flashTimer = Math.max(0, game.flashTimer - dt);
@@ -7547,10 +8077,11 @@ window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', resize);
 
 (function boot() {
-  try {
-    game.best = parseInt(localStorage.getItem('survive_best_score') || '0', 10) || 0;
-  } catch (e) { game.best = 0; }
-  UI.menuBest.textContent = 'BEST SCORE ' + game.best;
+  /* best score + lifetime gems come from the save slot (the old bare keys are
+     still read so an existing install keeps its record) */
+  game.best = SaveSystem.best();
+  game.lifetimeGems = SaveSystem.lifetimeGems();
+  refreshSaveUi();
   UI.hud.classList.add('hidden');
 
   game.player = makePlayer();
