@@ -937,7 +937,7 @@
       <button class="btn ghost" id="btnHowTo">How To Play</button>
     </div>
     <div id="howto">
-      <div class="row"><b>WASD</b> move · <b>MOUSE</b> aim · <b>LEFT CLICK</b> fire your class weapon</div>
+      <div class="row"><b>WASD</b> move · <b>MOUSE</b> aim · <b>LEFT CLICK</b> swing the longsword / fire your class weapon</div>
       <div class="row"><b>Q</b> class ability · always available: Shield Bash, Bullet Storm, Railgun or Temporal Rift</div>
       <div class="row">The other five are rewards — each zone boss you beat unlocks one:</div>
       <div class="row"><b>ZONE 1</b> Dash <b>SHIFT</b> · ZONE 2 Nova Blast <b>E</b> · ZONE 3 Turret Drop <b>F</b></div>
@@ -956,7 +956,7 @@
       <div class="class-card" id="cardKnight" data-class="knight" role="button" tabindex="0">
         <canvas class="cicon" id="iconKnight" width="184" height="184"></canvas>
         <div class="cname">Vanguard Knight</div>
-        <div class="cdesc">A spinning energy blade carves anything that comes close.</div>
+        <div class="cdesc">A long silver longsword carves a wide arc through everything in front of him.</div>
         <div class="cstats">
           <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i style="width:40%"></i></span></div>
           <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i style="width:92%"></i></span></div>
@@ -1257,13 +1257,51 @@ const Sound = (function () {
     classPick() {
       [392, 523, 659, 784].forEach((f, i) => tone({ freq: f, dur: 0.24, type: 'triangle', vol: 0.045, delay: i * 0.07 }));
     },
-    arcHum() {
-      tone({ freq: 620, to: 840, dur: 0.2, type: 'triangle', vol: 0.018 });
-      tone({ freq: 1180, to: 1520, dur: 0.16, type: 'sine', vol: 0.012, delay: 0.015 });
+    /* the knight's longsword: a filtered noise whoosh swept up and back down,
+       plus an airy glint on the blade. Tiers change the pitch of the glint. */
+    swordSwing(tier) {
+      const c = ensure();
+      if (!c) return;
+      const t2 = tier | 0;
+      const dur = 0.28;
+      const len = Math.max(1, Math.floor(c.sampleRate * dur));
+      const buffer = c.createBuffer(1, len, c.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < len; i++) {
+        const k = i / len;
+        /* fast swell, long tail — the shape of air being cut */
+        const env = Math.pow(Math.sin(Math.PI * Math.min(1, k * 1.25)), 1.6) * Math.pow(1 - k, 1.3);
+        data[i] = (Math.random() * 2 - 1) * env;
+      }
+      const src = c.createBufferSource();
+      src.buffer = buffer;
+
+      const band = c.createBiquadFilter();
+      band.type = 'bandpass';
+      band.Q.value = 1.1;
+      const f0 = t2 >= 2 ? 620 : (t2 === 1 ? 780 : 900);
+      band.frequency.setValueAtTime(f0, c.currentTime);
+      band.frequency.exponentialRampToValueAtTime(f0 * 5.2, c.currentTime + 0.075);
+      band.frequency.exponentialRampToValueAtTime(f0 * 1.1, c.currentTime + dur);
+
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(0.0001, c.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.16, c.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dur);
+
+      src.connect(band); band.connect(gain); gain.connect(master);
+      src.start();
+
+      /* metallic glint riding on top of the whoosh */
+      tone({ freq: t2 >= 2 ? 520 : 660, to: t2 === 1 ? 1180 : 210, dur: 0.22, type: 'sine', vol: 0.028 });
+      if (t2 > 0) {
+        tone({ freq: t2 >= 2 ? 1560 : 1240, dur: 0.16, type: 'triangle', vol: 0.018, delay: 0.02 });
+      }
     },
-    arcHit() {
-      noise({ freq: 2800, dur: 0.08, vol: 0.026 });
-      tone({ freq: 1320, to: 720, dur: 0.07, type: 'square', vol: 0.018 });
+    swordHit(tier) {
+      noise({ freq: tier >= 2 ? 1500 : 2600, dur: 0.09, vol: 0.03 });
+      tone({ freq: tier >= 2 ? 300 : 520, to: 140, dur: 0.1, type: 'square', vol: 0.026 });
+      if (tier >= 2) tone({ freq: 90, to: 48, dur: 0.2, type: 'sine', vol: 0.03, delay: 0.01 });
     }
   };
 })();
@@ -1628,7 +1666,14 @@ const UPGRADE_POOL = [
     apply() { game.player.magnet += 70; } },
   { id: 'reactor', name: 'Reactor Coils', glyph: '⚡', max: 2,
     desc: 'Ability capacitors recharge 15% faster.',
-    apply() { game.abilityCdScale = Math.max(0.7, 1 - 0.15 * (game.upgradeLevels.reactor || 0)); } }
+    apply() { game.abilityCdScale = Math.max(0.7, 1 - 0.15 * (game.upgradeLevels.reactor || 0)); } },
+  /* the Vanguard Knight's longsword, forged up one tier at a time */
+  { id: 'swordPlasma', name: 'Plasma Edge', glyph: '⚔', max: 1, classOnly: 'knight',
+    desc: 'A sheath of blue plasma. The longsword hits 1 harder and glows at the edge.',
+    apply() { game.player.swordTier = Math.max(1, game.player.swordTier | 0); } },
+  { id: 'swordNova', name: 'Nova Sword', glyph: '✷', max: 1, classOnly: 'knight', requires: 'swordPlasma',
+    desc: 'Star-forged edge. 2 more damage a swing, a red glow, and the swing arc doubles in width.',
+    apply() { game.player.swordTier = 2; } }
 ];
 
 /* ------------------------------ game state --------------------------------- */
@@ -1691,6 +1736,7 @@ const game = {
   stormFire: 0,
   rift: null,          /* mage Temporal Rift */
   beams: [],           /* instant sniper / railgun beams */
+  swings: [],          /* live sword swooshes, drawn for 0.2s each */
   turrets: [],
   bombs: [],
   pendingZone: 0,
@@ -1722,9 +1768,12 @@ function makePlayer() {
     zoom: cls.zoom,
     invuln: 0,
     hitFlash: 0,        /* brief red flash when damage lands */
-    bladeSpin: 0,
-    bladeCd: 0,
-    bladeHum: 0,
+    swingCd: 0,         /* knight: 0.4s between sword swings */
+    swingT: 0,          /* the live swing, counts down over 0.2s */
+    swingSign: 1,       /* alternates which way each slash sweeps */
+    swingFrom: 0,
+    swingTo: 0,
+    swordTier: 0,       /* 0 silver · 1 plasma edge · 2 nova sword */
     bashTimer: 0,
     bashDir: { x: 1, y: 0 },
     dashTimer: 0,
@@ -1834,7 +1883,9 @@ function loadZone(zoneIndex, opts) {
   p.dashCd = 0;
   p.fireTimer = 0;
   /* the ward persists across zones, but it is never handed out for free */
-  p.bladeCd = 0;
+  p.swingCd = 0;
+  p.swingT = 0;
+  game.swings.length = 0;
 
   game.obstacles = buildObstacles(game.zoneIndex);
   buildDestructibles(game.zoneIndex);
@@ -2264,7 +2315,7 @@ const CLASSES = [
     id: 'knight',
     name: 'Vanguard Knight',
     weapon: 'blade',
-    blurb: 'Spinning energy blade arc',
+    blurb: 'Longsword that carves a wide arc',
     hp: 7,
     speed: 202,
     damage: 1.28,
@@ -2334,7 +2385,32 @@ function qCdMax(c) {
   return cls.q.cd * (cls.q.cdScale || 1) * cdScale();
 }
 
-const BLADE_RANGE = 84;
+/* ------------------------------ knight sword -------------------------------
+   The Vanguard Knight carries a real longsword. The blade is always in hand
+   and tracks the cursor; a left click sweeps a wide arc through everything in
+   front of him. Forged upgrades widen and colour the blade.
+   ------------------------------------------------------------------------- */
+const SWORD_RANGE = 96;                       /* reach of the steel, in world px */
+const SWORD_ARC = (Math.PI * 2) / 3;          /* 120 degrees per swing */
+const SWORD_SWING_TIME = 0.2;                 /* how long the swoosh lives */
+const SWORD_COOLDOWN = 0.4;                   /* minimum gap between swings */
+
+/* tier 0 is the sword he starts with; the other two are upgrade chips */
+const SWORD_TIERS = [
+  { id: 'silver', name: 'Silver Longsword', glow: null,      edge: '#eef4ff', dmg: 0, arc: SWORD_ARC },
+  { id: 'plasma', name: 'Plasma Edge',      glow: '#38bdf8', edge: '#bfe9ff', dmg: 1, arc: SWORD_ARC },
+  { id: 'nova',   name: 'Nova Sword',       glow: '#f43f5e', edge: '#ffd6dc', dmg: 3, arc: SWORD_ARC * 2 }
+];
+
+function swordTier() {
+  return clamp(game.player ? (game.player.swordTier | 0) : 0, 0, SWORD_TIERS.length - 1);
+}
+function swordDef() { return SWORD_TIERS[swordTier()]; }
+function swordArc() { return swordDef().arc; }
+function swordDamage() {
+  const base = game.player ? game.player.damage : 1;
+  return base * 1.65 + swordDef().dmg;
+}
 
 function syncClassHud() {
   const c = getClass();
@@ -2359,25 +2435,6 @@ function drawClassIcon(canvas, id, size) {
   g.lineCap = 'round';
   g.lineJoin = 'round';
   if (id === 'knight') {
-    /* a spinning blade arc sweeping around a kite shield */
-    g.save();
-    g.shadowColor = 'rgba(125,211,252,0.9)';
-    g.shadowBlur = 14;
-    g.lineWidth = 5.5;
-    const arcGrad = g.createLinearGradient(-38, -38, 38, 38);
-    arcGrad.addColorStop(0, 'rgba(125,211,252,0)');
-    arcGrad.addColorStop(0.45, 'rgba(147,224,255,0.95)');
-    arcGrad.addColorStop(1, 'rgba(232,200,116,0.95)');
-    g.strokeStyle = arcGrad;
-    g.beginPath(); g.arc(0, 0, 36, -2.45, -0.55); g.stroke();
-    g.beginPath(); g.arc(0, 0, 36, 0.75, 2.05); g.stroke();
-    /* the blade tips */
-    g.lineWidth = 3;
-    g.strokeStyle = 'rgba(255,255,255,0.9)';
-    g.beginPath(); g.arc(0, 0, 42, -1.95, -1.35); g.stroke();
-    g.beginPath(); g.arc(0, 0, 42, 1.25, 1.85); g.stroke();
-    g.restore();
-
     /* kite shield */
     const face = g.createLinearGradient(-18, -26, 18, 30);
     face.addColorStop(0, '#2c3f58');
@@ -2401,6 +2458,51 @@ function drawClassIcon(canvas, id, size) {
     g.strokeStyle = 'rgba(147,224,255,0.8)';
     g.lineWidth = 2;
     g.beginPath(); g.moveTo(-18, 2); g.lineTo(0, 29); g.lineTo(18, 2); g.stroke();
+
+    /* the longsword, laid point-up across the shield */
+    g.save();
+    g.rotate(0.5);
+    g.translate(0, 8);
+    g.shadowColor = 'rgba(232,242,255,0.9)';
+    g.shadowBlur = 12;
+    const steel = g.createLinearGradient(-7, 0, 7, 0);
+    steel.addColorStop(0, '#8fa0b6');
+    steel.addColorStop(0.45, '#ffffff');
+    steel.addColorStop(1, '#93a5bb');
+    g.fillStyle = steel;
+    g.beginPath();
+    g.moveTo(0, -49);
+    g.lineTo(7, -35);
+    g.lineTo(7, 2);
+    g.lineTo(-7, 2);
+    g.lineTo(-7, -35);
+    g.closePath();
+    g.fill();
+    /* fuller */
+    g.strokeStyle = 'rgba(255,255,255,0.75)';
+    g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(0, -38); g.lineTo(0, -2); g.stroke();
+    /* gold crossguard */
+    const guard = g.createLinearGradient(0, 2, 0, 11);
+    guard.addColorStop(0, '#ffe9b0');
+    guard.addColorStop(1, '#b8862f');
+    g.fillStyle = guard;
+    g.beginPath();
+    g.moveTo(-21, 1); g.lineTo(21, 1); g.lineTo(17, 10); g.lineTo(-17, 10);
+    g.closePath(); g.fill();
+    g.shadowBlur = 0;
+    /* grip */
+    g.fillStyle = '#3a2414';
+    g.fillRect(-5, 10, 10, 20);
+    g.strokeStyle = 'rgba(255,214,150,0.4)';
+    g.lineWidth = 1.4;
+    for (let i = 0; i < 4; i++) {
+      g.beginPath(); g.moveTo(-5, 13 + i * 4); g.lineTo(5, 16 + i * 4); g.stroke();
+    }
+    /* pommel */
+    g.fillStyle = '#e0b455';
+    g.beginPath(); g.arc(0, 33, 5, 0, TAU); g.fill();
+    g.restore();
   } else if (id === 'gunslinger') {
     /* twin pistols, crossed like a duellist's crest */
     const pistol = function () {
@@ -2512,43 +2614,100 @@ function drawClassIcon(canvas, id, size) {
   g.restore();
 }
 
-/* ------------------------------ arc blade ---------------------------------- */
-/* A spinning ring of energy blades: damages everything inside 80px on a short
-   tick, no aiming and no clicking. */
-function updateArcBlade(dt) {
-  const p = game.player;
-  p.bladeSpin += dt * 7.2;
-  p.bladeCd -= dt;
-  p.bladeHum -= dt;
-  if (p.bladeHum <= 0) {
-    Sound.arcHum();
-    p.bladeHum = 0.44;
-  }
-  if (p.bladeCd > 0) return;
-  p.bladeCd = 0.16;
+/* ------------------------------ knight sword -------------------------------
+   Left click sweeps the longsword through a wide arc. Everything caught in
+   that arc (and within reach) takes the hit the instant the swing begins.
+   ------------------------------------------------------------------------- */
+function inSwordArc(px, py, aim, x, y, r, arc, reach) {
+  const dx = x - px;
+  const dy = y - py;
+  const d = Math.hypot(dx, dy);
+  if (d > reach + r) return false;
+  if (d < 1) return true;
+  let diff = Math.atan2(dy, dx) - aim;
+  while (diff > Math.PI) diff -= TAU;
+  while (diff < -Math.PI) diff += TAU;
+  /* the target's own radius widens the wedge it can be caught by */
+  return Math.abs(diff) <= arc / 2 + Math.atan2(r, Math.max(1, d));
+}
 
-  let struck = false;
+function swingSword() {
+  const p = game.player;
+  const arc = swordArc();
+  const dir = p.swingSign > 0 ? 1 : -1;
+  p.swingSign = -dir;
+
+  const half = arc / 2;
+  p.swingT = SWORD_SWING_TIME;
+  p.swingCd = SWORD_COOLDOWN;
+  p.swingFrom = p.angle - half * dir;
+  p.swingTo = p.angle + half * dir;
+
+  const dmg = swordDamage();
+  let hits = 0;
+
   for (let i = game.enemies.length - 1; i >= 0; i--) {
     const e = game.enemies[i];
-    if (dist(p.x, p.y, e.x, e.y) > BLADE_RANGE + e.r) continue;
+    if (!inSwordArc(p.x, p.y, p.angle, e.x, e.y, e.r, arc, SWORD_RANGE)) continue;
     const a = Math.atan2(e.y - p.y, e.x - p.x);
-    damageEnemy(e, p.damage * 0.52, true);
-    e.x = clamp(e.x + Math.cos(a) * 5, 40, WORLD - 40);
-    e.y = clamp(e.y + Math.sin(a) * 5, 40, WORLD - 40);
-    struck = true;
-  }
-  if (game.boss && dist(p.x, p.y, game.boss.x, game.boss.y) <= BLADE_RANGE + game.boss.r) {
-    damageBoss(p.damage * 0.5);
-    struck = true;
-  }
-  if (struck) {
-    Sound.arcHit();
-    for (let i = 0; i < 4; i++) {
-      const a = rand(0, TAU);
-      spawnParticle(p.x + Math.cos(a) * BLADE_RANGE * 0.78, p.y + Math.sin(a) * BLADE_RANGE * 0.78,
-        Math.cos(a) * rand(40, 150), Math.sin(a) * rand(40, 150), 0.22, 5, '#c4b5fd', 3);
+    damageEnemy(e, dmg, true);
+    /* the flat of the blade shoves whatever survives */
+    e.x = clamp(e.x + Math.cos(a) * 9, 40, WORLD - 40);
+    e.y = clamp(e.y + Math.sin(a) * 9, 40, WORLD - 40);
+    for (let k = 0; k < 3; k++) {
+      spawnParticle(e.x, e.y, Math.cos(a + rand(-0.7, 0.7)) * rand(80, 220),
+        Math.sin(a + rand(-0.7, 0.7)) * rand(80, 220), 0.26, 4, swordDef().edge, 3);
     }
+    hits++;
   }
+  if (game.boss && !game.boss.entering &&
+      inSwordArc(p.x, p.y, p.angle, game.boss.x, game.boss.y, game.boss.r, arc, SWORD_RANGE)) {
+    damageBoss(dmg * 0.8);
+    hits++;
+  }
+
+  game.swings.push({
+    x: p.x, y: p.y, a0: p.swingFrom, a1: p.swingTo,
+    life: 0, maxLife: SWORD_SWING_TIME, tier: swordTier()
+  });
+
+  Sound.swordSwing(swordTier());
+  if (hits) {
+    Sound.swordHit(swordTier());
+    game.shake = Math.max(game.shake, 0.14);
+  }
+  return hits;
+}
+
+function updateSword(dt) {
+  const p = game.player;
+
+  /* swooshes fade out on their own clock */
+  for (let i = game.swings.length - 1; i >= 0; i--) {
+    const sw = game.swings[i];
+    sw.life += dt;
+    if (sw.life >= sw.maxLife - 1e-6) game.swings.splice(i, 1);
+  }
+
+  if (p.swingT > 0) {
+    p.swingT = Math.max(0, p.swingT - dt);
+    if (p.swingT < 1e-6) p.swingT = 0;      /* float drift never leaves a live swing */
+  }
+  if (p.swingCd > 0) p.swingCd = Math.max(0, p.swingCd - dt);
+
+  /* sparks peeling off the edge while the blade travels */
+  if (p.swingT > 0) {
+    const k = 1 - p.swingT / SWORD_SWING_TIME;
+    const a = lerp(p.swingFrom, p.swingTo, k);
+    const rr = SWORD_RANGE * 0.74;
+    const tangent = a + (p.swingTo > p.swingFrom ? Math.PI / 2 : -Math.PI / 2);
+    spawnParticle(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr,
+      Math.cos(tangent) * rand(90, 200), Math.sin(tangent) * rand(90, 200),
+      0.22, 3.2, swordDef().edge, 4);
+  }
+
+  /* hold the button to keep swinging; the cooldown paces it */
+  if (game.mouse.down && p.swingCd <= 0 && p.swingT <= 0) swingSword();
 }
 
 /* ------------------------------ class weapons ------------------------------
@@ -2667,8 +2826,8 @@ function fireClassWeapon(dt) {
   const cls = getClass();
 
   if (cls.weapon === 'blade') {
-    /* the arc swings on its own — no aiming and no clicking */
-    updateArcBlade(dt);
+    /* the longsword answers the left mouse button, paced by its own cooldown */
+    updateSword(dt);
     return;
   }
   if (game.mouse.down && p.fireTimer <= 0) {
@@ -4486,7 +4645,12 @@ function updateObjective() {
 
 /* ------------------------------ upgrades ----------------------------------- */
 function availableUpgrades() {
-  return UPGRADE_POOL.filter((u) => (game.upgradeLevels[u.id] || 0) < u.max);
+  return UPGRADE_POOL.filter((u) => {
+    if ((game.upgradeLevels[u.id] || 0) >= u.max) return false;
+    if (u.classOnly && u.classOnly !== game.classId) return false;
+    if (u.requires && !(game.upgradeLevels[u.requires] > 0)) return false;
+    return true;
+  });
 }
 
 function rollUpgrades(n) {
@@ -7082,45 +7246,216 @@ function drawSoldierFlash(dir, stride, alpha, gunAng) {
   ctx.restore();
 }
 
-/* spinning energy blades, drawn around the trooper while the arc blade is out */
-function drawArcBlade(p) {
-  const t = p.bladeSpin;
+/* the longsword itself: always in his hand, always pointed at the cursor */
+function drawKnightSword(p, bob) {
+  const tier = swordTier();
+  const def = SWORD_TIERS[tier];
+
+  /* mid-swing the blade rides the arc; the arm pivots with it */
+  let ang = p.angle;
+  if (p.swingT > 0) {
+    const k = 1 - p.swingT / SWORD_SWING_TIME;
+    ang = lerp(p.swingFrom, p.swingTo, 1 - Math.pow(1 - k, 2.2));
+  }
+
+  /* the blade is held out on the leading hand, not across the chest */
+  const side = Math.cos(p.angle) >= 0 ? 1 : -1;
+  const hx = p.x + Math.cos(ang) * 7 + Math.cos(ang + Math.PI / 2) * side * 6;
+  const hy = p.y + (bob || 0) + Math.sin(ang) * 7 + Math.sin(ang + Math.PI / 2) * side * 6 - 3;
+
   ctx.save();
-  ctx.translate(p.x, p.y + 2);
+  ctx.translate(hx, hy);
+  ctx.rotate(ang);
 
-  /* range ring */
-  ctx.globalAlpha = 0.18 + 0.07 * Math.sin(game.time * 4);
-  ctx.strokeStyle = '#a78bfa';
-  ctx.lineWidth = 1.4;
-  ctx.setLineDash([10, 10]);
-  ctx.lineDashOffset = -game.time * 34;
-  ctx.beginPath(); ctx.arc(0, 0, BLADE_RANGE, 0, TAU); ctx.stroke();
-  ctx.setLineDash([]);
-
-  /* three sweeping blades */
+  /* --- pommel + grip --- */
+  ctx.fillStyle = '#c9a23c';
+  ctx.beginPath(); ctx.arc(-19.5, 0, 3, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#3a2414';
+  roundRect(ctx, -17.5, -2.1, 12, 4.2, 1.8);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,214,150,0.35)';
+  ctx.lineWidth = 0.9;
   for (let i = 0; i < 3; i++) {
-    const a0 = t + i * (TAU / 3);
-    const hot = i % 2 === 0;
-    ctx.globalAlpha = 0.85;
-    ctx.strokeStyle = hot ? '#8be9ff' : '#c4b5fd';
-    ctx.lineWidth = 5;
-    ctx.lineCap = 'round';
-    ctx.shadowColor = hot ? '#22d3ee' : '#8b5cf6';
-    ctx.shadowBlur = 16;
     ctx.beginPath();
-    ctx.arc(0, 0, 58, a0, a0 + 0.9);
-    ctx.stroke();
-
-    /* bright leading edge */
-    ctx.globalAlpha = 0.95;
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.8;
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    ctx.arc(0, 0, 58, a0 + 0.55, a0 + 0.9);
+    ctx.moveTo(-16 + i * 3.4, -2);
+    ctx.lineTo(-14.4 + i * 3.4, 2);
     ctx.stroke();
   }
+
+  /* --- gold crossguard --- */
+  const gold = ctx.createLinearGradient(0, -11, 0, 11);
+  gold.addColorStop(0, '#ffe9b0');
+  gold.addColorStop(0.45, '#d9a94b');
+  gold.addColorStop(1, '#8a6320');
+  ctx.fillStyle = gold;
+  roundRect(ctx, -7, -10.5, 4, 21, 2);
+  ctx.fill();
+  ctx.beginPath(); ctx.arc(-5, -10.5, 2.3, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(-5, 10.5, 2.3, 0, TAU); ctx.fill();
+  /* gold collar where the blade meets the guard */
+  ctx.fillStyle = '#f3d99a';
+  roundRect(ctx, -3.4, -4.2, 3.4, 8.4, 1.4);
+  ctx.fill();
+
+  /* --- the blade --- */
+  const bladePath = function () {
+    ctx.beginPath();
+    ctx.moveTo(-2, -3.6);
+    ctx.lineTo(42, -2.8);
+    ctx.lineTo(57, 0);
+    ctx.lineTo(42, 2.8);
+    ctx.lineTo(-2, 3.6);
+    ctx.closePath();
+  };
+
+  if (def.glow) {
+    ctx.save();
+    ctx.shadowColor = def.glow;
+    ctx.shadowBlur = tier === 2 ? 22 : 15;
+    ctx.fillStyle = def.glow;
+    ctx.globalAlpha = 0.55;
+    bladePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  const steel = ctx.createLinearGradient(0, -3.4, 0, 3.4);
+  steel.addColorStop(0, '#8d9db2');
+  steel.addColorStop(0.32, '#e6f0ff');
+  steel.addColorStop(0.52, '#ffffff');
+  steel.addColorStop(0.78, '#c3d2e6');
+  steel.addColorStop(1, '#7f8fa6');
+  ctx.fillStyle = steel;
+  bladePath();
+  ctx.fill();
+
+  /* tier tint washing over the steel */
+  if (def.glow) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = tier === 2 ? 0.34 : 0.28;
+    ctx.fillStyle = def.glow;
+    bladePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /* fuller + cutting edge */
+  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(2, 0); ctx.lineTo(43, 0); ctx.stroke();
+  ctx.strokeStyle = 'rgba(72,88,110,0.65)';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(-1, -3.3); ctx.lineTo(42, -2.6); ctx.lineTo(56.4, 0); ctx.stroke();
+
+  /* a hint of magic along the edge at higher tiers */
+  if (def.glow) {
+    ctx.strokeStyle = def.edge;
+    ctx.lineWidth = 1.4;
+    ctx.shadowColor = def.glow;
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.moveTo(0, -3.6);
+    ctx.lineTo(42, -2.8);
+    ctx.lineTo(57, 0);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
   ctx.restore();
+}
+
+/* the bright silver swoosh left behind by a swing: a tapered crescent that
+   sweeps with the blade and dissolves over 0.2 seconds */
+function drawSwordSwoosh() {
+  const R = SWORD_RANGE * 0.95;
+
+  for (let i = 0; i < game.swings.length; i++) {
+    const sw = game.swings[i];
+    const k = sw.life / sw.maxLife;
+    /* hold the blade white-hot, then let it go quickly at the end */
+    const fade = Math.min(1, (1 - k) * 1.9);
+    if (fade <= 0.01) continue;
+
+    /* the blade is at the head of the ribbon; the tail follows it around */
+    const reveal = Math.min(1, k / 0.42);
+    const head = sw.a0 + (sw.a1 - sw.a0) * reveal;
+    const span = head - sw.a0;
+    if (Math.abs(span) < 0.01) continue;
+
+    const def = SWORD_TIERS[sw.tier] || SWORD_TIERS[0];
+    const dir = span > 0 ? 1 : -1;
+    const steps = 18;
+    const thickness = (t) => 2 + 27 * Math.pow(t, 1.4);    /* tail → head */
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = fade;
+
+    /* --- the crescent body --- */
+    ctx.beginPath();
+    for (let j = 0; j <= steps; j++) {
+      const t = j / steps;
+      const a = sw.a0 + span * t;
+      const ro = R + thickness(t) * 0.5;
+      const px = sw.x + Math.cos(a) * ro;
+      const py = sw.y + Math.sin(a) * ro;
+      if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    for (let j = steps; j >= 0; j--) {
+      const t = j / steps;
+      const a = sw.a0 + span * t;
+      const ri = R - thickness(t) * 0.5;
+      ctx.lineTo(sw.x + Math.cos(a) * ri, sw.y + Math.sin(a) * ri);
+    }
+    ctx.closePath();
+
+    const grad = ctx.createRadialGradient(sw.x, sw.y, Math.max(1, R - 18), sw.x, sw.y, R + 20);
+    grad.addColorStop(0, 'rgba(150,180,215,0)');
+    grad.addColorStop(0.32, 'rgba(214,232,255,0.72)');
+    grad.addColorStop(0.5, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.68, 'rgba(226,240,255,0.62)');
+    grad.addColorStop(1, 'rgba(150,185,225,0)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    /* bloom around the cut so it lights the floor instead of just tinting it */
+    ctx.save();
+    ctx.globalAlpha = fade * 0.55;
+    ctx.shadowColor = def.glow || '#dbe9ff';
+    ctx.shadowBlur = 22;
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head), Math.max(sw.a0, head));
+    ctx.stroke();
+    ctx.restore();
+
+    /* tier bloom: a soft coloured halo wrapped around the same sweep */
+    if (def.glow) {
+      ctx.globalAlpha = fade * 0.42;
+      ctx.strokeStyle = def.glow;
+      ctx.lineWidth = 26;
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head), Math.max(sw.a0, head));
+      ctx.stroke();
+      ctx.globalAlpha = fade;
+    }
+
+    /* hard white line along the cutting edge, plus the hot leading tip */
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(sw.x, sw.y, R + 8, Math.min(sw.a0, head), Math.max(sw.a0, head));
+    ctx.stroke();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(sw.x, sw.y, R, head - 0.22 * dir, head);
+    ctx.stroke();
+
+    ctx.restore();
+  }
 }
 
 function drawPlayer() {
@@ -7300,7 +7635,10 @@ function drawPlayer() {
     }
   }
 
-  if (getClass().weapon === 'blade') drawArcBlade(p);
+  if (getClass().weapon === 'blade') {
+    drawKnightSword(p, bob);
+    drawSwordSwoosh();
+  }
 }
 
 /* =============================================================================
