@@ -2130,6 +2130,8 @@ const UI = {
   ucScore: document.getElementById('ucScore'),
   ucUps: document.getElementById('ucUps'),
   ucNext: document.getElementById('ucNext'),
+  btnNextUniverse: document.getElementById('btnNextUniverse'),
+  btnEnterUniverse: document.getElementById('btnEnterUniverse'),
   uiKicker: document.getElementById('uiKicker'),
   uiName: document.getElementById('uiName'),
   uiEra: document.getElementById('uiEra'),
@@ -2279,7 +2281,10 @@ const Screens = {
    'upgrade'     #upgradeScreen   showUpgrades()
    'transition'  #transition      completeZone()
    'gameover'    #gameOver        endRun()
-   'victory'     #victory         showVictory()
+   'universe'    #universeComplete  beginUniverseTransition() — level 5 of a universe
+   'universeIntro' #universeIntro  showUniverseIntro() — its ENTER NEXT UNIVERSE button
+   'playing'     #hud             loadUniverseStart() — ENTER UNIVERSE, level 1 of the next
+   'victory'     #victory         showVictory() — universe 6 is the end of the chain
    ---------------------------------------------------------------------------
    Every one of those calls Screens.show(name), which clears the other seven
    layers first. No other statement in this file writes a screen layer's
@@ -6878,7 +6883,8 @@ function updatePortal(dt) {
   const p = game.player;
   if (game.portal.open >= 1 &&
       dist(p.x, p.y, game.portal.x, game.portal.y) < game.portal.r * 0.8) {
-    completeZone();
+    enterPortal();
+    return;                 /* the portal is spent: nothing left to animate */
   }
   if (Math.random() < 0.7) {
     const a = rand(0, TAU);
@@ -6886,6 +6892,17 @@ function updatePortal(dt) {
     spawnParticle(game.portal.x + Math.cos(a) * rr, game.portal.y + Math.sin(a) * rr,
       Math.cos(a + 1.6) * 40, Math.sin(a + 1.6) * 40, 0.8, 7, '#38bdf8', 1);
   }
+}
+
+/* The portal entry event. Rael steps into the lit portal and this fires exactly
+   once: the portal is cleared first (so the event cannot re-enter itself while
+   the world is being handed over to the next card), then the level is closed. */
+function enterPortal() {
+  if (game.screen !== 'playing' || !game.portal) return;
+  game.portal = null;
+  game.mouse.down = false;
+  game.keys = {};
+  completeZone();
 }
 
 function completeZone() {
@@ -6899,11 +6916,7 @@ function completeZone() {
 
   /* the fifth level ends a universe — one card to bank it, one to open the next */
   if (lvl >= LEVELS_PER_UNIVERSE) {
-    if (uni.index >= UNIVERSES.length - 1) {
-      showVictory();      /* the Architect is down: the true ending */
-      return;
-    }
-    showUniverseComplete(uni);
+    beginUniverseTransition();
     return;
   }
 
@@ -6918,40 +6931,87 @@ function completeZone() {
   game.screen = 'transition';
 }
 
-/* --------------------------- universe transitions -------------------------- */
-/* Finishing level five of a universe: bank the run, show the card, and only
-   move on when the player presses the button. Nothing is lost — the score,
-   upgrades, abilities and class all travel into the next universe. */
+/* --------------------------- universe transitions --------------------------
+   Six universes, five levels each, one chain:
+       Universe 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> the true ending.
+   Every step is derived from `nextUniverseIndex()` — there is no second place
+   that does universe arithmetic, so the pointer can never drift or go stale.
+   Finishing level five of a universe banks the run and shows the card; only
+   the player's button moves the world on. Nothing is lost on the way: score,
+   gems, upgrades, abilities, class, health and satchel all travel with Rael.
+   ------------------------------------------------------------------------- */
+const LAST_UNIVERSE = UNIVERSES.length - 1;
+
+/* the universe after `index`, or -1 when the timeline is finished */
+function nextUniverseIndex(index) {
+  const n = Math.floor(Number(index));
+  if (!isFinite(n) || n < 0) return 0;
+  return n >= LAST_UNIVERSE ? -1 : n + 1;
+}
+
+/* the universe at an index, clamped — never undefined */
+function universeAt(index) {
+  return UNIVERSES[clamp(Math.floor(Number(index)) || 0, 0, LAST_UNIVERSE)];
+}
+
+/* text writes go through here so one missing element can never abort a
+   transition half-way and leave the world frozen behind no card at all */
+function writeText(el, value) {
+  if (!el) return false;
+  el.textContent = value === null || value === undefined ? '' : String(value);
+  return true;
+}
+
 let pendingUniverse = 0;
 
-function showUniverseComplete(uni) {
+/* level five of a universe was cleared: victory if that was the last one,
+   otherwise the completion card that names the universe after it */
+function beginUniverseTransition() {
+  const uni = universeOf(game.zoneIndex);
+  const nextIndex = nextUniverseIndex(uni.index);
+  if (nextIndex < 0) {
+    showVictory();          /* Universe 6 is done: the true ending, nothing else */
+    return;
+  }
+  showUniverseComplete(uni, nextIndex);
+}
+
+function showUniverseComplete(uni, nextIndex) {
+  const from = uni || universeOf(game.zoneIndex);
+  const target = nextIndex === undefined ? nextUniverseIndex(from.index) : nextIndex;
+  const next = target >= 0 ? UNIVERSES[target] : null;
+  pendingUniverse = target >= 0 ? next.index : LAST_UNIVERSE;
   game.screen = 'universe';
   game.mouse.down = false;
-  pendingUniverse = Math.min(UNIVERSES.length - 1, uni.index + 1);
-  const next = UNIVERSES[pendingUniverse];
+  game.keys = {};
+
   let ups = 0;
   for (const k in game.upgradeLevels) ups += game.upgradeLevels[k] || 0;
-  UI.ucKicker.textContent = 'Universe ' + uni.number + ' complete';
-  UI.ucName.textContent = uni.name;
-  UI.ucEra.textContent = uni.era;
-  UI.ucTime.textContent = RunClock.format(RunClock.tick());
-  UI.ucScore.textContent = String(Math.floor(game.score));
-  UI.ucUps.textContent = String(ups);
-  UI.ucNext.textContent = next.name;
+  writeText(UI.ucKicker, 'Universe ' + from.number + ' complete');
+  writeText(UI.ucName, from.name);
+  writeText(UI.ucEra, from.era);
+  writeText(UI.ucTime, RunClock.format(RunClock.tick()));
+  writeText(UI.ucScore, Math.floor(game.score));
+  writeText(UI.ucUps, ups);
+  /* the next universe, by name — never a dash, never a stale pointer */
+  writeText(UI.ucNext, next ? next.name : 'True Ending');
+  if (UI.btnNextUniverse) {
+    UI.btnNextUniverse.textContent = next ? 'Enter Next Universe' : 'See the True Ending';
+  }
   Screens.show('universeComplete');
   Sound.levelClear();
   SaveSystem.save('universe');
 }
 
+/* the doors of the universe you are about to walk into */
 function showUniverseIntro(index) {
-  const u = UNIVERSES[clamp(index, 0, UNIVERSES.length - 1)];
+  const u = universeAt(index === undefined ? pendingUniverse : index);
   pendingUniverse = u.index;
   game.screen = 'universeIntro';
-  UI.uiKicker.textContent = 'Universe ' + u.number;
-  UI.uiName.textContent = u.name;
-  UI.uiEra.textContent = u.era;
-  UI.uiStory.textContent = u.story;
-  /* the roster of the universe you are about to walk into */
+  writeText(UI.uiKicker, 'Universe ' + u.number);
+  writeText(UI.uiName, u.name);
+  writeText(UI.uiEra, u.era);
+  writeText(UI.uiStory, u.story);
   if (UI.uiRoster) {
     UI.uiRoster.innerHTML = u.enemies.map(function (id) {
       const label = ENEMY_LABELS[id] || id;
@@ -6962,17 +7022,27 @@ function showUniverseIntro(index) {
   Sound.portal();
 }
 
-/* step through the door: same run, same Rael, five fresh levels */
 function enterUniverse() {
-  const u = UNIVERSES[clamp(pendingUniverse, 0, UNIVERSES.length - 1)];
+  return loadUniverseStart(pendingUniverse);
+}
+
+/* Level 1 of a universe as a live run: same Rael, same score, same upgrades,
+   five fresh levels and that universe's own enemies. This is the single place
+   that opens a universe, so both the button and any future caller behave. */
+function loadUniverseStart(index) {
+  const u = universeAt(index);
   const first = u.index * LEVELS_PER_UNIVERSE;
+  pendingUniverse = u.index;
   game.pendingZone = first;
-  noteZoneReached(first);
-  loadZone(first, { freshPlayer: false });
   game.screen = 'playing';
-  Screens.show('hud');
+  loadZone(first, { freshPlayer: false });
+  noteZoneReached(first);
+  Screens.show('hud');      /* reveals the HUD and unpauses the loop */
+  startLoop();              /* belt and braces: the world is awake again */
   showBanner(u.name.toUpperCase());
+  updateObjective();
   SaveSystem.save('universe');
+  return u.index;
 }
 
 function updateObjective() {
@@ -8794,10 +8864,10 @@ if (UI.shopGrid) {
     if (shopCosmeticOwned(id)) shopBuy('cosmetics', id);
   });
 }
-document.getElementById('btnNextUniverse').addEventListener('click', () => {
+UI.btnNextUniverse.addEventListener('click', () => {
   showUniverseIntro(pendingUniverse);
 });
-document.getElementById('btnEnterUniverse').addEventListener('click', enterUniverse);
+UI.btnEnterUniverse.addEventListener('click', enterUniverse);
 document.getElementById('btnHowTo').addEventListener('click', () => {
   UI.howto.classList.toggle('show');
 });
@@ -17082,9 +17152,11 @@ let rafId = 0;
 let loopPaused = true;          /* the title screen owns the screen at boot */
 
 function startLoop() {
-  if (rafId) return;
+  /* lift the flag FIRST: a frame left queued by a pause must never be able to
+     swallow the resume and park the world for good */
   loopPaused = false;
   lastT = 0;                    /* no dt spike when the world wakes up */
+  if (rafId) return;            /* one queued frame is enough */
   rafId = requestAnimationFrame(frame);
 }
 
@@ -17173,9 +17245,21 @@ function frame(t) {
   lastT = t;
   if (dt > 0.05) dt = 0.05;
   if (dt < 0) dt = 0;
-  update(dt);
-  render();
-  rafId = requestAnimationFrame(frame);
+  /* one bad frame must never take the game down with it: the loop keeps its
+     next frame queued no matter what happens inside this one */
+  try {
+    update(dt);
+    render();
+  } catch (err) {
+    game.frameErrors = (game.frameErrors || 0) + 1;
+    game.lastFrameError = String((err && err.stack) || err);
+    if (game.frameErrors <= 5 && typeof console !== 'undefined' && console.error) {
+      console.error('[SURVIVE] frame error', err);
+    }
+  }
+  /* a screen that opened during update() has paused the loop; never re-arm
+     behind the curtain — the resume path owns the next frame */
+  rafId = loopPaused ? 0 : requestAnimationFrame(frame);
 }
 
 /* ------------------------------ resize + boot ------------------------------ */
@@ -17189,6 +17273,11 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', resize);
+/* a tab that was hidden can come back with a throttled (or dropped) frame
+   pending; a live run always reclaims its loop on return */
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && game.screen === 'playing') startLoop();
+});
 
 (function boot() {
   /* best score + lifetime gems come from the save slot (the old bare keys are
