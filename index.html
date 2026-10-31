@@ -266,42 +266,102 @@
   }
   .ability.cooling .ab-sweep{ opacity:1; }
   /* the icon, dead centre */
-  .ability .icon{
-    position:absolute; left:0; right:0; top:11px; height:20px;
-    display:block; text-align:center; line-height:20px;
-    font-family:var(--font-head); font-size:17px; font-weight:700;
-    color:#f7e9c3; text-shadow:0 0 10px rgba(232,200,116,.45);
+    .ability .icon{
+    position:absolute; left:0; right:0; top:0; bottom:0;
+    display:block; text-align:center; line-height:52px;
+    font-family:Rajdhani, sans-serif; font-size:12px; font-weight:700;
     transition:opacity .15s ease;
+    background-size: 32px 32px; background-position: center; background-repeat: no-repeat;
   }
-  .ability.ready .icon{ color:#dff6ff; text-shadow:0 0 12px rgba(143,232,255,.6); }
-  /* the key label, tiny, pinned to the top-left corner */
+  /* Q — Class Ability */
+  #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M26 10 L38 22 L26 34 L14 22 Z' fill='%23fcd34d' stroke='%23f0b45a' stroke-width='2'/></svg>"); }
+  .knight #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M26 10 L38 22 L26 34 L14 22 Z' fill='%23fcd34d' stroke='%23f0b45a' stroke-width='2'/></svg>"); }
+  .gunslinger #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M16 26 L40 26' stroke='%23a5f3fc' stroke-width='4' stroke-linecap='round'/><circle cx='40' cy='26' r='4' fill='%23a5f3fc'/></svg>"); }
+  .sniper #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><line x1='12' y1='26' x2='40' y2='26' stroke='%23c7d2fe' stroke-width='3'/><line x1='35' y1='20' x2='45' y2='26' stroke='%23c7d2fe' stroke-width='3'/><line x1='35' y1='32' x2='45' y2='26' stroke='%23c7d2fe' stroke-width='3'/></svg>"); }
+  .mage #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><circle cx='26' cy='26' r='16' fill='none' stroke='%23a78bfa' stroke-width='3'/><circle cx='26' cy='26' r='8' fill='%23a78bfa'/></svg>"); }
+  .berserker #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M16 16 L36 16 L26 36 Z' fill='%23ff7a45'/><path d='M26 16 L36 36 L16 36 Z' fill='%23ff7a45'/></svg>"); }
+  .shadow #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><circle cx='26' cy='26' r='16' stroke='%23c4b5fd' stroke-width='3' fill='none'/><circle cx='26' cy='26' r='6' fill='%23c4b5fd'/></svg>"); }
+  .tech #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><rect x='18' y='18' width='16' height='16' rx='2' fill='%236ee7b7'/><circle cx='26' cy='26' r='4' fill='%2334d399'/></svg>"); }
+
+  /* E — Nova Blast */
+  #abNova .icon {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M26 6 L26 16 M26 36 L26 46 M6 26 L16 26 M36 26 L46 26 M12 12 L19 19 M33 33 L40 40 M12 40 L19 33 M33 19 L40 12' stroke='%23ffffff' stroke-width='3' stroke-linecap='round'/><circle cx='26' cy='26' r='6' fill='%23ffffff'/></svg>");
+    filter: drop-shadow(0 0 4px #fff);
+  }
+  .ability.ready #abNova .icon { filter: drop-shadow(0 0 8px #fff); }
+  .ability.cooling #abNova .icon { filter: none; opacity: .3; }
+
+  /* Shift — Dash */
+  #abDash .icon {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M18 26 L38 26' stroke='%2306b6d4' stroke-width='4' stroke-linecap='round'/><path d='M38 26 L30 18' stroke='%2306b6d4' stroke-width='3' stroke-linecap='round'/><path d='M38 26 L30 34' stroke='%2306b6d4' stroke-width='3' stroke-linecap='round'/><path d='M30 26 L22 18' stroke='%2306b6d4' stroke-width='2' stroke-linecap='round'/><path d='M30 26 L22 34' stroke='%2306b6d4' stroke-width='2' stroke-linecap='round'/><path d='M22 26 L14 18' stroke='%2306b6d4' stroke-width='1' stroke-linecap='round'/><path d='M22 26 L14 34' stroke='%2306b6d4' stroke-width='1' stroke-linecap='round'/></svg>");
+    filter: drop-shadow(0 0 4px #06b6d4);
+  }
+  .ability.ready #abDash .icon { filter: drop-shadow(0 0 8px #06b6d4); }
+  .ability.cooling #abDash .icon { filter: none; opacity: .3; }
+
+  /* F — Turret Drop */
+  #abTurret .icon {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><rect x='18' y='30' width='16' height='12' rx='2' fill='%234b5563'/><rect x='22' y='22' width='8' height='8' rx='1' fill='%234b5563'/><line x1='26' y1='22' x2='26' y2='10' stroke='%234b5563' stroke-width='2'/><circle cx='26' cy='8' r='2' fill='%2322c55e'/></svg>");
+    filter: drop-shadow(0 0 4px #4b5563);
+  }
+  .ability.ready #abTurret .icon { filter: drop-shadow(0 0 8px #4b5563); }
+  .ability.cooling #abTurret .icon { filter: none; opacity: .3; }
+
+  /* R — Overcharge */
+  #abOvercharge .icon {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M20 10 L32 26 L20 42' stroke='%23f97316' stroke-width='5' stroke-linecap='round'/><path d='M24 14 L30 22' stroke='%23f97316' stroke-width='2'/><path d='M22 30 L28 38' stroke='%23f97316' stroke-width='2'/></svg>");
+    filter: drop-shadow(0 0 4px #f97316);
+  }
+  .ability.ready #abOvercharge .icon { filter: drop-shadow(0 0 8px #f97316); }
+  .ability.cooling #abOvercharge .icon { filter: none; opacity: .3; }
+
+  /* X — Time Bomb */
+  #abBomb .icon {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><circle cx='26' cy='26' r='20' fill='%237f1d1d' stroke='%23991b1b' stroke-width='2'/><line x1='26' y1='16' x2='26' y2='30' stroke='%23ffffff' stroke-width='1'/><line x1='20' y1='22' x2='32' y2='30' stroke='%23ffffff' stroke-width='1'/><path d='M26 6 L26 10' stroke='%23f59e0b' stroke-width='2'/><path d='M25 8 L27 6' stroke='%23f59e0b' stroke-width='1'/><path d='M27 8 L25 6' stroke='%23f59e0b' stroke-width='1'/></svg>");
+    filter: drop-shadow(0 0 4px #7f1d1d);
+  }
+  .ability.ready #abBomb .icon { filter: drop-shadow(0 0 8px #7f1d1d); }
+  .ability.cooling #abBomb .icon { filter: none; opacity: .3; }
+
+  /* Overdrive (Z) — optional 7th slot */
+  #abOverdrive .icon {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M16 26 L36 26' stroke='%23a855f7' stroke-width='4'/><path d='M36 26 L30 20' stroke='%23a855f7' stroke-width='3'/><path d='M36 26 L30 32' stroke='%23a855f7' stroke-width='3'/></svg>");
+    filter: drop-shadow(0 0 4px #a855f7);
+  }
+  .ability.ready #abOverdrive .icon { filter: drop-shadow(0 0 8px #a855f7); }
+  .ability.cooling #abOverdrive .icon { filter: none; opacity: .3; }
+
+  /* Cooldown sweep overlay: clean white arc */
+  .ability .ab-sweep{
+    position:absolute; inset:0; border-radius:50%;
+    background:conic-gradient(rgba(255,255,255,.86) calc(var(--cd, 1) * 360deg), rgba(255,255,255,0) 0);
+    opacity:0; transition:opacity .12s linear;
+    pointer-events:none;
+  }
+
+  /* Key label: tiny gold text in top-left */
   .ability .key{
     position:absolute; top:3px; left:4px;
-    font-family:var(--font-head); font-size:8px; font-weight:700; line-height:1;
-    letter-spacing:.4px; color:rgba(255,223,155,.92);
+    font-family:Rajdhani, sans-serif; font-size:7px; font-weight:700; line-height:1;
+    letter-spacing:.4px; color:#ffd98a;
     text-shadow:0 1px 3px rgba(0,0,0,.9);
     white-space:nowrap;
   }
-  /* the ability name, tiny, under the icon */
+
+  /* Ability name: 8px Rajdhani font below icon */
   .ability .label{
-    position:absolute; left:1px; right:1px; bottom:3px;
+    position:absolute; left:1px; right:1px; bottom:4px;
     display:block; text-align:center;
-    font-size:7px; line-height:1; letter-spacing:.2px;
-    color:rgba(232,200,116,.82);
+    font-family:Rajdhani, sans-serif; font-size:8px; line-height:1; letter-spacing:.2px;
+    color:#e8c874;
     white-space:nowrap; overflow:hidden;
   }
-  /* seconds still on the clock, right over the icon */
-  .ability .cd{
-    position:absolute; inset:0;
-    display:flex; align-items:center; justify-content:center;
-    font-family:var(--font-head); font-size:14px; font-weight:700;
-    color:#e8f4ff; text-shadow:0 0 5px #000, 0 0 12px rgba(0,0,0,.95);
-  }
-  .ability.ready .cd{ display:none; }
-  .ability.cooling .icon{ opacity:.3; }
-  .ability.cooling .label{ color:rgba(232,200,116,.45); }
-  /* a locked slot is a dark grey padlock and nothing else */
-  .ability .lock{
+
+  /* Cooldown text overlay: dark grey when cooling */
+  .ability.cooling .icon { opacity: .3; }
+  .ability.cooling .label { color: #4b5563; }
+  .ability.cooling .key { color: #4b5563; }
+.ability .lock{
     position:absolute; inset:0; display:none;
     align-items:center; justify-content:center;
     color:#4b5563;
@@ -1475,7 +1535,7 @@
         <div class="ab-btn">
           <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" id="qIcon" aria-hidden="true">⚔</span>
+          <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">Q</span>
           <span class="label" id="qLabel">BASH</span>
@@ -1486,7 +1546,7 @@
         <div class="ab-btn">
           <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">✦</span>
+          <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">E</span>
           <span class="label">NOVA</span>
@@ -1497,7 +1557,7 @@
         <div class="ab-btn">
           <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">⇉</span>
+          <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">Z</span>
           <span class="label">OVERDRIVE</span>
@@ -1508,7 +1568,7 @@
         <div class="ab-btn">
           <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">➤</span>
+          <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">SHIFT</span>
           <span class="label">DASH</span>
@@ -1519,7 +1579,7 @@
         <div class="ab-btn">
           <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">⌖</span>
+          <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">F</span>
           <span class="label">TURRET</span>
@@ -1530,7 +1590,7 @@
         <div class="ab-btn">
           <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">⚡</span>
+          <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">R</span>
           <span class="label">OVERCHARGE</span>
@@ -1541,7 +1601,7 @@
         <div class="ab-btn">
           <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">◉</span>
+          <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">X</span>
           <span class="label">TIME BOMB</span>
@@ -4203,10 +4263,15 @@ function swordDamage() {
 function syncClassHud() {
   const c = getClass();
   UI.className.textContent = c.name;
-  UI.qIcon.textContent = c.q.glyph;
+  // UI.qIcon.textContent = c.q.glyph;  <-- removed, icon is CSS background
   UI.qLabel.textContent = c.q.label;
-  UI.abilities.q.style.color = c.q.colour;
+  // UI.abilities.q.style.color = c.q.colour; <-- removed, color is CSS background
   paintClassIcon(UI.badgeIcon, c.id);
+  // Apply class ID to HUD for CSS selectors (.knight #abQ .icon, etc.)
+  const hud = document.getElementById('hud');
+  if (hud) {
+    hud.className = 'screen ' + c.id;
+  }
 }
 
 /* =============================================================================
