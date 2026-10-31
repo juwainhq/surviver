@@ -364,68 +364,98 @@
   #howto .row{ display:flex; gap:10px; align-items:baseline; justify-content:center; flex-wrap:wrap; }
 
   /* ---------------- class selection ---------------- */
+  /* the whole screen lives inside the stage: it fits the viewport, no scrolling */
   #classScreen{
-    position:absolute; inset:0; display:none; flex-direction:column;
-    align-items:center; justify-content:center; gap:24px; padding:26px;
-    z-index:45; text-align:center;
+    position:absolute; inset:0; width:100%; height:100%; max-height:100%;
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    padding:10px; z-index:45; text-align:center;
+    box-sizing:border-box; overflow:hidden;
     background:radial-gradient(ellipse at 50% 38%, rgba(10,16,28,.60), rgba(2,3,7,.95)),
                linear-gradient(180deg, rgba(3,4,8,.92), rgba(3,4,8,.97));
   }
   #classScreen.show{ display:flex; }
+  #classScreen .cs-inner{
+    width:100%; max-height:100%; flex:0 1 auto;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:12px; box-sizing:border-box; overflow:hidden;
+  }
+  /* only a very short viewport has to scroll — then the faint hint appears */
+  #classScreen.overflowing .cs-inner{ overflow-y:auto; justify-content:flex-start; }
+  #classScreen.overflowing .cs-inner > *{ flex:0 0 auto; }
   #classScreen .cs-eyebrow{
-    font-family:var(--font-head); font-size:11px; letter-spacing:6px;
-    color:rgba(232,200,116,.62); text-transform:uppercase; margin-bottom:-8px;
+    font-family:var(--font-head); font-size:9px; line-height:1.2; letter-spacing:4px;
+    color:rgba(232,200,116,.62); text-transform:uppercase; margin:0;
   }
   #classTitle{
     font-family:var(--font-head); font-weight:900; margin:0;
-    font-size:clamp(22px,3.4vw,40px); letter-spacing:5px; text-transform:uppercase;
-    color:#ffd98a; text-shadow:0 0 26px rgba(255,206,120,.5), 0 0 70px rgba(255,170,50,.22), 0 4px 18px #000;
+    font-size:20px; line-height:1.1; letter-spacing:2.5px; text-transform:uppercase;
+    color:#ffd98a;
+    text-shadow:0 0 18px rgba(255,206,120,.45), 0 0 40px rgba(255,170,50,.18), 0 3px 12px #000;
   }
-  #classGrid{ display:flex; gap:18px; flex-wrap:wrap; justify-content:center; align-items:stretch; }
+  /* four cards, always a 2 x 2 grid with 16px gutters, capped at 220 x 220 */
+  #classGrid{
+    display:grid; grid-template-columns:repeat(2, minmax(0, 220px));
+    grid-auto-rows:minmax(0, 220px); gap:16px;
+    justify-content:center; align-content:center;
+    width:100%; max-width:456px; box-sizing:border-box;
+  }
   .class-card{
-    width:252px; padding:18px 16px 14px; display:flex; flex-direction:column; align-items:center;
-    gap:9px; text-align:center; cursor:pointer;
+    width:100%; max-width:220px; height:220px; max-height:220px;
+    padding:7px 10px 6px; display:flex; flex-direction:column; align-items:center;
+    gap:3px; text-align:center; cursor:pointer;
+    box-sizing:border-box; overflow:hidden;
     background:linear-gradient(180deg, rgba(13,16,24,.95), rgba(5,7,11,.98));
     border:1px solid rgba(232,200,116,.34); border-radius:3px;
     transition:transform .22s ease, box-shadow .25s ease, border-color .25s ease;
   }
   .class-card:hover, .class-card:focus-visible{
-    transform:translateY(-8px); border-color:var(--gold-bright); outline:none;
-    box-shadow:0 0 36px rgba(232,200,116,.3), inset 0 0 26px rgba(232,200,116,.06);
+    transform:translateY(-4px); border-color:var(--gold-bright); outline:none;
+    box-shadow:0 0 30px rgba(232,200,116,.3), inset 0 0 26px rgba(232,200,116,.06);
   }
   .class-card canvas.cicon{
-    width:92px; height:92px; display:block;
-    filter:drop-shadow(0 0 12px rgba(232,200,116,.28));
+    width:60px; height:60px; display:block; flex:0 0 auto;
+    filter:drop-shadow(0 0 10px rgba(232,200,116,.28));
   }
   .class-card .cname{
-    font-family:var(--font-head); font-size:14px; font-weight:700;
-    letter-spacing:1.9px; text-transform:uppercase; color:#ffe7b8; line-height:1.35;
+    font-family:var(--font-head); font-size:13px; font-weight:700;
+    letter-spacing:1.4px; text-transform:uppercase; color:#ffe7b8; line-height:1.2;
+    flex:0 0 auto;
   }
   .class-card .cdesc{
-    font-size:12.5px; line-height:1.45; color:#aebccd; min-height:54px;
+    font-size:11px; line-height:1.3; color:#aebccd;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   }
-  .class-card .cstats{ width:100%; display:flex; flex-direction:column; gap:5px; margin-top:2px; }
+  .class-card .cstats{ width:100%; display:flex; flex-direction:column; gap:3px; }
   .class-card .cstat{
-    display:flex; align-items:center; gap:8px;
-    font-size:8.5px; letter-spacing:1.6px; text-transform:uppercase; color:rgba(214,226,244,.62);
+    display:flex; align-items:center; gap:6px;
+    font-size:9px; line-height:1.2; letter-spacing:1.2px; text-transform:uppercase;
+    color:rgba(214,226,244,.62);
   }
-  .class-card .cstat .lbl{ width:48px; text-align:left; }
+  .class-card .cstat .lbl{ width:44px; flex:0 0 auto; text-align:left; }
   .class-card .cbar{
-    flex:1; height:5px; border-radius:3px; overflow:hidden;
+    flex:1; height:8px; border-radius:4px; overflow:hidden;
     background:rgba(255,255,255,.06); border:1px solid rgba(232,200,116,.16);
   }
   .class-card .cbar i{
-    display:block; height:100%; border-radius:2px;
+    display:block; height:100%; border-radius:3px;
     background:linear-gradient(90deg, rgba(168,116,47,.85), #ffd98a);
     box-shadow:0 0 8px rgba(255,217,138,.45);
   }
   .class-card .cq{
-    font-family:var(--font-head); font-size:9.5px; letter-spacing:1.8px;
-    text-transform:uppercase; color:#ffd98a; margin-top:2px;
+    font-family:var(--font-head); font-size:10px; line-height:1.2; letter-spacing:1.2px;
+    text-transform:uppercase; color:#ffd98a; white-space:nowrap;
   }
   .class-card .cpassive{
-    font-size:10.5px; line-height:1.4; color:rgba(159,179,200,.92); letter-spacing:.2px;
+    font-size:10px; line-height:1.3; color:rgba(159,179,200,.92); letter-spacing:.2px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   }
+  /* faint nudge, only rendered when the cards really do not fit */
+  #classScreen .cs-hint{
+    display:none; position:absolute; left:0; right:0; bottom:4px;
+    font-family:var(--font-stat); font-size:10px; letter-spacing:2px;
+    text-transform:uppercase; color:rgba(214,226,244,.38); pointer-events:none;
+  }
+  #classScreen.overflowing .cs-hint{ display:block; }
 
   /* ---------------- upgrade cards ---------------- */
   #upgradeScreen{ gap:26px; }
@@ -586,6 +616,7 @@
 
   <!-- ==================== CLASS SELECTION ==================== -->
   <div id="classScreen">
+   <div class="cs-inner">
     <div class="cs-eyebrow">Commander · pick your doctrine</div>
     <h1 id="classTitle">Choose Your Combat Style</h1>
     <div id="classGrid">
@@ -638,6 +669,8 @@
         <div class="cpassive">Passive · time powers recharge twice as fast</div>
       </div>
     </div>
+   </div>
+   <div class="cs-hint" aria-hidden="true">scroll to see more</div>
   </div>
 
   <!-- ==================== UPGRADES ==================== -->
@@ -3831,6 +3864,25 @@ function beginMission() {
   game.screen = 'class';
   game.menuTime = 0;
   drawClassCards();
+  updateClassHint();
+}
+
+/* the class screen fits the stage at every normal size; if a very short
+   viewport still cannot hold the 2 x 2 grid we let it scroll and show the
+   faint "scroll to see more" nudge at the bottom */
+function updateClassHint() {
+  const screen = UI.classScreen;
+  if (!screen) return;
+  const inner = screen.querySelector('.cs-inner');
+  if (!inner || !inner.children) return;
+  const kids = inner.children;
+  let need = 0;
+  for (let i = 0; i < kids.length; i++) need += kids[i].offsetHeight || 0;
+  let gap = 0;
+  try { gap = parseFloat(getComputedStyle(inner).rowGap) || 0; } catch (e) { gap = 0; }
+  need += Math.max(0, kids.length - 1) * gap;
+  const room = inner.clientHeight || 0;
+  if (screen.classList) screen.classList.toggle('overflowing', need > room + 1);
 }
 
 function drawClassCards() {
@@ -7412,6 +7464,7 @@ function resize() {
   const scale = Math.min(vw / W, vh / H);
   UI.stage.style.width = Math.max(320, Math.round(W * scale)) + 'px';
   UI.stage.style.height = Math.max(180, Math.round(H * scale)) + 'px';
+  updateClassHint();
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', resize);
@@ -7430,6 +7483,9 @@ window.addEventListener('orientationchange', resize);
 
   resize();
   updateHealthOrbs();
+  if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+    document.fonts.ready.then(updateClassHint).catch(function () {});
+  }
   requestAnimationFrame(frame);
 })();
 </script>
