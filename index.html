@@ -30,6 +30,21 @@
   }
   #game{ display:block; width:100%; height:100%; }
 
+  /* ---------------- screen layers ----------------
+     The menu, zone select, class select, HUD, upgrade cards, zone card, game
+     over and victory are eight separate layers stacked inside #stage. Every one
+     of them is display:none until the screen manager makes it the single active
+     layer, so two screens can never be on screen at the same time. */
+  .screen{ display:none !important; }
+  .screen.show{
+    display:flex !important;
+    animation:screenIn .34s ease-out both;
+  }
+  @keyframes screenIn{
+    from{ opacity:0; }
+    to{ opacity:1; }
+  }
+
   /* ---------------- generic floating type ---------------- */
   .shadow{ text-shadow:0 2px 10px rgba(0,0,0,.92); }
 
@@ -37,9 +52,7 @@
   #hud{
     position:absolute; inset:0; pointer-events:none;
     font-family:var(--font-stat);
-    transition:opacity .45s ease;
   }
-  #hud.hidden{ opacity:0; }
   #topLeft{ position:absolute; top:16px; left:22px; display:flex; flex-direction:column; gap:7px; }
   #orbs{ display:flex; gap:7px; align-items:center; }
   .orb{
@@ -575,13 +588,7 @@
     position:absolute; inset:0; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:14px; z-index:40;
     background:radial-gradient(ellipse at 50% 44%, rgba(8,14,28,.18), rgba(2,3,7,.62));
-    /* the title screen fades out over 0.4s like every other screen */
     opacity:1; visibility:visible; pointer-events:auto;
-    transition:opacity .4s ease, visibility 0s linear 0s;
-  }
-  #menu.hidden{
-    opacity:0; visibility:hidden; pointer-events:none;
-    transition:opacity .4s ease, visibility 0s linear .4s;
   }
   #menuTitle{
     font-family:var(--font-head); font-weight:900; margin:0;
@@ -853,7 +860,7 @@
   <!-- ==================== HUD ==================== -->
   <div id="overchargeGlow"></div>
 
-  <div id="hud">
+  <div id="hud" class="screen">
     <div id="topLeft">
       <div id="orbs">
         <span class="orb"></span><span class="orb"></span><span class="orb"></span><span class="orb"></span><span class="orb"></span>
@@ -953,7 +960,7 @@
   </div>
 
   <!-- ==================== MAIN MENU ==================== -->
-  <div id="menu">
+  <div id="menu" class="screen show">
     <canvas id="menuStars" width="1280" height="720" aria-hidden="true"></canvas>
     <h1 id="menuTitle">SURVIVE</h1>
     <div id="menuSub">1347 AD · Commander Rael</div>
@@ -992,7 +999,7 @@
   </div>
 
   <!-- ==================== CLASS SELECTION ==================== -->
-  <div id="classScreen">
+  <div id="classScreen" class="screen">
    <div class="cs-inner">
     <div class="cs-eyebrow" id="csEyebrow">Commander · pick your doctrine</div>
     <h1 id="classTitle">Choose Your Combat Style</h1>
@@ -1052,7 +1059,7 @@
   </div>
 
   <!-- ==================== ZONE SELECT ==================== -->
-  <div id="zoneScreen">
+  <div id="zoneScreen" class="screen">
     <div class="zs-eyebrow">Where Rael makes his stand</div>
     <h1 id="zoneTitle">Select Zone</h1>
     <div id="zoneHint">Locked zones open as you push deeper</div>
@@ -1061,14 +1068,14 @@
   </div>
 
   <!-- ==================== UPGRADES ==================== -->
-  <div class="overlay" id="upgradeScreen">
+  <div class="overlay screen" id="upgradeScreen">
     <div class="eyebrow">Data chip recovered</div>
     <h1>Choose an Upgrade</h1>
     <div id="upgradeCards"></div>
   </div>
 
   <!-- ==================== ZONE TRANSITION ==================== -->
-  <div class="overlay" id="transition">
+  <div class="overlay screen" id="transition">
     <div class="eyebrow" id="transEyebrow">Zone 2</div>
     <h1 id="transTitle">The Dark Forest</h1>
     <div class="story" id="transStory"></div>
@@ -1076,7 +1083,7 @@
   </div>
 
   <!-- ==================== GAME OVER ==================== -->
-  <div class="overlay" id="gameOver">
+  <div class="overlay screen" id="gameOver">
     <h1>You Fell</h1>
     <div class="statline" id="goZone">Zone 1 · The Village</div>
     <div class="statline">Score <b id="goScore">0</b> · Gems <b id="goGems">0</b></div>
@@ -1089,7 +1096,7 @@
   </div>
 
   <!-- ==================== VICTORY ==================== -->
-  <div class="overlay" id="victory">
+  <div class="overlay screen" id="victory">
     <div class="eyebrow">Year 3047 · Home</div>
     <h1>Commander Rael has returned to the future.</h1>
     <div class="statline">Final Score <b id="vicScore">0</b> · Gems <b id="vicGems">0</b></div>
@@ -1618,6 +1625,109 @@ const UI = {
 const ctx = UI.canvas.getContext('2d');
 const mmCtx = UI.minimap.getContext('2d');
 
+/* =============================================================================
+   SCREENS — one layer at a time
+   =============================================================================
+   Every full-screen layer in #stage is a `.screen` element with display:none in
+   the stylesheet. `Screens.show(name)` hides the previous layer *before* it
+   reveals the next one, so the HUD, the upgrade cards, the zone card, game over
+   and victory can never be displayed together. Nothing else in the file is
+   allowed to toggle a screen layer directly: all 27 call sites route through
+   here (see the audit table below). */
+const SCREEN_LAYERS = [
+  'menu',            /* title screen            — game.screen === 'menu'        */
+  'zoneScreen',      /* zone select             — game.screen === 'zones'       */
+  'classScreen',     /* class select            — game.screen === 'class'       */
+  'hud',             /* in-run HUD              — game.screen === 'playing'     */
+  'upgradeScreen',   /* upgrade cards           — game.screen === 'upgrade'     */
+  'transition',      /* zone completed card     — game.screen === 'transition'  */
+  'gameOver',        /* death                   — game.screen === 'gameover'    */
+  'victory'          /* final win               — game.screen === 'victory'     */
+];
+
+const Screens = {
+  current: null,
+
+  element(name) {
+    return (name && UI[name]) ? UI[name] : null;
+  },
+
+  /* every layer that exists, in a stable order */
+  layers() {
+    const out = [];
+    for (let i = 0; i < SCREEN_LAYERS.length; i++) {
+      const el = UI[SCREEN_LAYERS[i]];
+      if (el && el.classList) out.push(el);
+    }
+    return out;
+  },
+
+  /* hide one layer (its display falls back to none on its own) */
+  hide(name) {
+    const el = this.element(name);
+    if (el && el.classList) el.classList.remove('show');
+    if (this.current === name) this.current = null;
+  },
+
+  /* hide everything else first, then reveal exactly one layer */
+  show(name) {
+    const next = this.element(name);
+    const layers = this.layers();
+    for (let i = 0; i < layers.length; i++) {
+      if (layers[i] !== next) layers[i].classList.remove('show');
+    }
+    if (!next || !next.classList) {
+      this.current = null;
+      return null;
+    }
+    /* restart the fade so the cards re-animate on every visit */
+    next.classList.remove('show');
+    void next.offsetWidth;
+    next.classList.add('show');
+    this.current = name;
+    return next;
+  },
+
+  /* belt and braces: if a future call site ever flags two layers at once, keep
+     only the newest one. Runs a few times a second from the main loop. */
+  enforce() {
+    const vis = this.visible();
+    if (vis.length <= 1) return vis;
+    const keep = (this.current && vis.indexOf(this.current) >= 0) ? this.current : vis[vis.length - 1];
+    for (let i = 0; i < vis.length; i++) {
+      if (vis[i] !== keep) this.hide(vis[i]);
+    }
+    return this.visible();
+  },
+
+  /* which layers are displayed right now — the test harness asserts on this */
+  visible() {
+    const out = [];
+    const layers = this.layers();
+    for (let i = 0; i < layers.length; i++) {
+      if (layers[i].classList.contains('show')) out.push(SCREEN_LAYERS[i]);
+    }
+    return out;
+  }
+};
+
+/* ---------------------------- show / hide audit -----------------------------
+   game.screen   layer            the only place that reveals it
+   ---------------------------------------------------------------------------
+   'menu'        #menu            boot(), backToMenu()
+   'zones'       #zoneScreen      showZoneSelect()  — beginMission, Play Again
+   'class'       #classScreen     openClassScreen() — a zone card was picked
+   'playing'     #hud             startRun(), continueSavedRun(), retryZone(),
+                                  chooseUpgrade(), the zone card's Continue
+   'upgrade'     #upgradeScreen   showUpgrades()
+   'transition'  #transition      completeZone()
+   'gameover'    #gameOver        endRun()
+   'victory'     #victory         showVictory()
+   ---------------------------------------------------------------------------
+   Every one of those calls Screens.show(name), which clears the other seven
+   layers first. No other statement in this file writes a screen layer's
+   classList; `Screens.enforce()` re-checks the invariant from the main loop.
+   ------------------------------------------------------------------------- */
 /* ------------------------------ zones ------------------------------------- */
 const ZONES = [
   {
@@ -4761,7 +4871,7 @@ function completeZone() {
   UI.transEyebrow.textContent = 'Zone ' + next.id;
   UI.transTitle.textContent = next.name;
   UI.transStory.textContent = next.story;
-  UI.transition.classList.add('show');
+  Screens.show('transition');
   game.screen = 'transition';
 }
 
@@ -4821,15 +4931,15 @@ function showUpgrades() {
       if (up) chooseUpgrade(up);
     });
   });
-  UI.upgradeScreen.classList.add('show');
+  Screens.show('upgradeScreen');
   Sound.ability();
 }
 
 function chooseUpgrade(up) {
   game.upgradeLevels[up.id] = (game.upgradeLevels[up.id] || 0) + 1;
   up.apply();
-  UI.upgradeScreen.classList.remove('show');
   if (game.screen === 'upgrade') game.screen = 'playing';
+  Screens.show('hud');
   addText(game.player.x, game.player.y - 44, up.name.toUpperCase(), '#fde68a');
   Sound.gem();
   SaveSystem.save('upgrade');
@@ -5106,10 +5216,8 @@ const SaveSystem = (function () {
       armBossZone();
     }
 
-    UI.menu.classList.add('hidden');
-    UI.classScreen.classList.remove('show');
-    UI.hud.classList.remove('hidden');
     game.screen = 'playing';
+    Screens.show('hud');
     game.menuTime = 0;
     syncClassHud();
     updateObjective();
@@ -5259,9 +5367,6 @@ function beginMission() {
   Sound.ensure();
   toggleSettings(false);
   resetRun();   /* a fresh run: nothing carries over */
-  UI.menu.classList.add('hidden');
-  UI.hud.classList.add('hidden');
-  UI.classScreen.classList.remove('show');
   showZoneSelect();
 }
 
@@ -5344,8 +5449,7 @@ function drawZoneCards() {
 function showZoneSelect() {
   if (UI.zoneRow) UI.zoneRow.scrollLeft = 0;
   drawZoneCards();
-  UI.zoneScreen.classList.add('show');
-  UI.classScreen.classList.remove('show');
+  Screens.show('zoneScreen');
   game.screen = 'zones';
   game.menuTime = 0;
   /* start the strip on the frontier so the newest zone is in view */
@@ -5379,8 +5483,7 @@ function openClassScreen(zoneIndex) {
     if (saved && UI.skipClassName) UI.skipClassName.textContent = saved.name;
     UI.btnClassSkip.classList.toggle('show', !!saved);
   }
-  UI.zoneScreen.classList.remove('show');
-  UI.classScreen.classList.add('show');
+  Screens.show('classScreen');
   game.screen = 'class';
   game.menuTime = 0;
   drawClassCards();
@@ -5388,9 +5491,7 @@ function openClassScreen(zoneIndex) {
 }
 
 function backToMenu() {
-  UI.zoneScreen.classList.remove('show');
-  UI.classScreen.classList.remove('show');
-  UI.menu.classList.remove('hidden');
+  Screens.show('menu');
   game.screen = 'menu';
   refreshSaveUi();
 }
@@ -5450,11 +5551,8 @@ function startRun(classId, zoneIndex, opts) {
   /* freshPlayer:false — resetRun() already built this player, and rebuilding it
      inside loadZone would throw away the carried upgrades */
   loadZone(zone, { freshPlayer: false });
-  UI.classScreen.classList.remove('show');
-  UI.zoneScreen.classList.remove('show');
-  UI.menu.classList.add('hidden');
-  UI.hud.classList.remove('hidden');
   game.screen = 'playing';
+  Screens.show('hud');
   game.menuTime = 0;
   updateObjective();
   updateHealthOrbs();
@@ -5476,7 +5574,7 @@ function endRun() {
   UI.goScore.textContent = String(Math.floor(game.score));
   UI.goGems.textContent = String(game.gems);
   UI.goBest.textContent = 'Best score ' + Math.max(game.best, Math.floor(game.score));
-  UI.gameOver.classList.add('show');
+  Screens.show('gameOver');
 }
 
 function showVictory() {
@@ -5490,20 +5588,18 @@ function showVictory() {
   UI.vicScore.textContent = String(Math.floor(game.score));
   UI.vicGems.textContent = String(game.gems);
   UI.vicBest.textContent = 'Best score ' + Math.max(game.best, Math.floor(game.score));
-  UI.victory.classList.add('show');
+  Screens.show('victory');
   Sound.portal();
 }
 
 function retryZone() {
-  UI.gameOver.classList.remove('show');
   game.screen = 'playing';
   loadZone(game.zoneIndex);
+  Screens.show('hud');
   SaveSystem.save('retry');
 }
 
 function restartRun() {
-  UI.gameOver.classList.remove('show');
-  UI.victory.classList.remove('show');
   beginMission();
 }
 
@@ -5564,9 +5660,9 @@ document.getElementById('btnHowTo').addEventListener('click', () => {
   UI.howto.classList.toggle('show');
 });
 document.getElementById('btnContinue').addEventListener('click', () => {
-  UI.transition.classList.remove('show');
   loadZone(game.pendingZone);
   game.screen = 'playing';
+  Screens.show('hud');
   SaveSystem.save('zone');
 });
 for (let i = 0; i < UI.classCards.length; i++) {
@@ -11347,9 +11443,18 @@ function render() {
 /* ------------------------------ main loop ---------------------------------- */
 let lastT = 0;
 
+let screenGuardTimer = 0;
+
 function update(dt) {
   game.menuTime += dt;
   tickAbilityUnlock(dt);      /* the unlock card keeps its own 2s clock */
+
+  /* only the active layer may ever be displayed */
+  screenGuardTimer += dt;
+  if (screenGuardTimer >= 0.25) {
+    screenGuardTimer = 0;
+    Screens.enforce();
+  }
 
   if (game.screen === 'menu' || game.screen === 'class' || game.screen === 'zones') return;
 
@@ -11440,7 +11545,7 @@ window.addEventListener('orientationchange', resize);
   syncAbilityUnlocks(true);      /* silent: replay anything the frontier implies */
   syncAbilityHud();
   refreshSaveUi();
-  UI.hud.classList.add('hidden');
+  Screens.show('menu');          /* boot lands on the title screen, only */
 
   game.player = makePlayer();
   game.fog = new Uint8Array(FOG_COLS * FOG_COLS);
