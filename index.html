@@ -18,17 +18,30 @@
   }
   *{ box-sizing:border-box; }
   html,body{
-    margin:0; padding:0; height:100%; width:100%;
+    margin:0; padding:0; width:100%; height:100%;
     background:#04050a; overflow:hidden;
     font-family:var(--font-stat); color:#eaf0fa;
     user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent;
   }
+  /* the stage IS the window: nothing anywhere is given a fixed pixel size */
   #stage{
-    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
-    overflow:hidden; background:#05060a;
-    box-shadow:0 0 90px rgba(0,0,0,.9);
+    position:fixed; inset:0; width:100%; height:100%;
+    overflow:hidden; background:#04050a;
   }
-  #game{ display:block; width:100%; height:100%; }
+  #game{
+    display:block; position:absolute; inset:0;
+    width:100%; height:100%; background:#04050a;
+  }
+  /* the HUD and every screen-space effect ride in one layer that is laid out
+     in the 1280x720 base space and then scaled to the window, so the HUD sits
+     exactly where it always did — just bigger or smaller */
+  #uiLayer{
+    position:absolute; left:0; top:0;
+    width:1280px; height:720px;
+    transform-origin:0 0;
+    pointer-events:none;
+    z-index:10;
+  }
   .cicon-art{ display:block; width:100%; height:100%; }
 
   /* ---------------- overlay screens ----------------
@@ -139,55 +152,109 @@
   .stat svg{ width:16px; height:16px; }
   .stat .lbl{ font-size:11px; letter-spacing:2px; color:rgba(214,226,244,.6); font-weight:600; }
 
-  /* ability ring bar */
+  /* ------------------------------ ability bar ------------------------------
+     One clean row of square buttons, centred at the bottom of the screen.
+     Every slot is a fixed 52x52 square: the icon in the middle, the key in the
+     top-left corner, the ability name in tiny type under the icon. A locked
+     slot is a dark grey padlock. The circular sweep unwinds clockwise as the
+     cooldown counts down, and the thin ring fills back up behind it.
+     ------------------------------------------------------------------------ */
   #abilities{
-    position:absolute; bottom:24px; left:50%; transform:translateX(-50%);
-    display:flex; gap:20px; align-items:flex-end;
+    position:absolute; left:50%; bottom:16px;
+    transform:translateX(-50%);
+    display:flex; flex-direction:row; flex-wrap:nowrap;
+    align-items:flex-end; justify-content:center;
+    gap:8px; margin:0; padding:0;
+    z-index:26; pointer-events:none;
   }
-  .ability{ position:relative; width:56px; height:56px; display:flex; align-items:center; justify-content:center; }
-  .ability svg{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
-  .ability .ring-bg{ fill:rgba(8,12,20,.62); stroke:rgba(232,200,116,.16); stroke-width:3; }
+  .ability{
+    position:relative; display:block; flex:0 0 52px;
+    width:52px; height:52px; margin:0; padding:0;
+    box-sizing:border-box;
+  }
+  .ability .ab-btn{
+    position:relative; display:block; overflow:hidden;
+    width:52px; height:52px; margin:0; padding:0;
+    box-sizing:border-box; border-radius:4px;
+    background:linear-gradient(180deg, #121826 0%, #080b13 100%);
+    border:1px solid rgba(232,200,116,.6);
+    box-shadow:0 3px 10px rgba(0,0,0,.55), inset 0 0 12px rgba(232,200,116,.08);
+  }
+  /* the thin cooldown ring, drawn inside the square */
+  .ability svg.ab-ring{
+    position:absolute; inset:0; width:100%; height:100%;
+    transform:rotate(-90deg); pointer-events:none;
+  }
+  .ability .ring-bg{ fill:none; stroke:rgba(232,200,116,.14); stroke-width:3; }
   .ability .ring{
-    fill:none; stroke:var(--gold); stroke-width:3; stroke-linecap:round;
+    fill:none; stroke:rgba(232,200,116,.8); stroke-width:3; stroke-linecap:round;
     stroke-dasharray:169.6; stroke-dashoffset:0;
-    /* the dash offset is written every frame; the transition smooths the gaps */
     transition:stroke-dashoffset .12s linear, stroke .25s ease;
   }
-  .ability.ready .ring{ stroke:#8fe8ff; filter:drop-shadow(0 0 6px rgba(143,232,255,.55)); }
+  .ability.ready .ring{ stroke:rgba(143,232,255,.8); }
+  /* the circular cooldown overlay: a dark wedge that unwinds clockwise */
+  .ability .ab-sweep{
+    position:absolute; inset:0; border-radius:50%;
+    background:conic-gradient(rgba(2,4,9,.86) calc(var(--cd, 1) * 360deg), rgba(2,4,9,0) 0);
+    opacity:0; transition:opacity .12s linear;
+    pointer-events:none;
+  }
+  .ability.cooling .ab-sweep{ opacity:1; }
+  /* the icon, dead centre */
   .ability .icon{
-    font-family:var(--font-head); font-size:17px; font-weight:700; color:#f7e9c3;
-    text-shadow:0 0 12px rgba(232,200,116,.45);
+    position:absolute; left:0; right:0; top:11px; height:20px;
+    display:block; text-align:center; line-height:20px;
+    font-family:var(--font-head); font-size:17px; font-weight:700;
+    color:#f7e9c3; text-shadow:0 0 10px rgba(232,200,116,.45);
+    transition:opacity .15s ease;
   }
-  /* a locked slot is a dark grey padlock, no ring, no key letter */
-  .ability .lock{
-    position:absolute; display:none; width:20px; height:20px; color:#4b5563;
+  .ability.ready .icon{ color:#dff6ff; text-shadow:0 0 12px rgba(143,232,255,.6); }
+  /* the key label, tiny, pinned to the top-left corner */
+  .ability .key{
+    position:absolute; top:3px; left:4px;
+    font-family:var(--font-head); font-size:8px; font-weight:700; line-height:1;
+    letter-spacing:.4px; color:rgba(255,223,155,.92);
+    text-shadow:0 1px 3px rgba(0,0,0,.9);
+    white-space:nowrap;
   }
-  .ability .lock svg{ position:static; inset:auto; width:20px; height:20px; transform:none; }
-  .ability.locked{ filter:none; }
-  .ability.locked .lock{ display:block; }
-  .ability.locked .icon,
-  .ability.locked .cd,
-  .ability.locked .key{ display:none; }
-  .ability.locked .ring-bg{ fill:rgba(10,12,16,.72); stroke:rgba(107,114,128,.30); }
-  .ability.locked .ring{ stroke:rgba(75,85,99,.25); stroke-dashoffset:169.6; }
-  .ability.locked .label{ color:rgba(107,114,128,.55); }
-  .ability.ready .icon{ color:#dff6ff; text-shadow:0 0 14px rgba(143,232,255,.7); }
+  /* the ability name, tiny, under the icon */
+  .ability .label{
+    position:absolute; left:1px; right:1px; bottom:3px;
+    display:block; text-align:center;
+    font-size:7px; line-height:1; letter-spacing:.2px;
+    color:rgba(232,200,116,.82);
+    white-space:nowrap; overflow:hidden;
+  }
+  /* seconds still on the clock, right over the icon */
   .ability .cd{
-    position:absolute; font-family:var(--font-head); font-size:14px; font-weight:700;
-    color:#e8f4ff; letter-spacing:.5px;
-    text-shadow:0 0 4px #000, 0 0 10px rgba(0,0,0,.9);
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-head); font-size:14px; font-weight:700;
+    color:#e8f4ff; text-shadow:0 0 5px #000, 0 0 12px rgba(0,0,0,.95);
   }
   .ability.ready .cd{ display:none; }
-  .ability.cooling .icon{ opacity:.22; }
+  .ability.cooling .icon{ opacity:.3; }
   .ability.cooling .label{ color:rgba(232,200,116,.45); }
-  .ability .label{
-    position:absolute; bottom:-15px; left:50%; transform:translateX(-50%);
-    font-size:9.5px; letter-spacing:1.6px; color:rgba(232,200,116,.82); white-space:nowrap;
+  /* a locked slot is a dark grey padlock and nothing else */
+  .ability .lock{
+    position:absolute; inset:0; display:none;
+    align-items:center; justify-content:center;
+    color:#4b5563;
   }
-  .ability .key{
-    position:absolute; top:-13px; left:50%; transform:translateX(-50%);
-    font-size:9.5px; letter-spacing:1.4px; color:rgba(214,226,244,.55); white-space:nowrap;
+  .ability .lock svg{ width:20px; height:20px; display:block; fill:currentColor; }
+  .ability.locked .lock{ display:flex; }
+  .ability.locked .icon,
+  .ability.locked .cd,
+  .ability.locked .key,
+  .ability.locked .label,
+  .ability.locked .ab-sweep{ display:none; }
+  .ability.locked .ab-btn{
+    background:linear-gradient(180deg, #14161b 0%, #0a0b0f 100%);
+    border-color:rgba(107,114,128,.36);
+    box-shadow:none;
   }
+  .ability.locked .ring-bg{ stroke:rgba(107,114,128,.18); }
+  .ability.locked .ring{ stroke:transparent; }
 
   /* class badge (bottom left) */
   #classBadge{
@@ -199,10 +266,6 @@
     font-family:var(--font-head); font-size:13px; font-weight:700;
     letter-spacing:2.8px; text-transform:uppercase; color:#ffe0a4;
     text-shadow:0 0 16px rgba(232,200,116,.5), 0 2px 9px rgba(0,0,0,.9);
-  }
-  @media (max-width:820px){
-    #classBadge{ left:12px; bottom:12px; gap:6px; }
-    #className{ font-size:11px; letter-spacing:1.8px; }
   }
 
   /* ability screen effect */
@@ -476,11 +539,14 @@
     text-transform:uppercase; color:var(--gold);
   }
   #settingsPanel .sp-row{
-    display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
     font-family:var(--font-stat); font-size:11.5px; letter-spacing:1.5px;
     text-transform:uppercase; color:rgba(203,213,225,.66);
   }
-  #settingsPanel .sp-row b{ color:#ffe7b8; font-weight:600; letter-spacing:1px; }
+  #settingsPanel .sp-row b{
+    color:#ffe7b8; font-weight:600; letter-spacing:1px;
+    text-align:right; line-height:1.45; text-transform:none;
+  }
   #settingsPanel .sp-rule{ height:1px; background:linear-gradient(90deg, rgba(232,200,116,.4), rgba(232,200,116,0)); }
   #btnResetSave{
     font-family:var(--font-head); font-size:10.5px; font-weight:700; letter-spacing:2.2px;
@@ -724,9 +790,7 @@
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:12px; box-sizing:border-box; overflow:hidden;
   }
-  /* only a very short viewport has to scroll — then the faint hint appears */
-  #classScreen.overflowing .cs-inner{ overflow-y:auto; justify-content:flex-start; }
-  #classScreen.overflowing .cs-inner > *{ flex:0 0 auto; }
+
   #classScreen .cs-eyebrow{
     font-family:var(--font-head); font-size:9px; line-height:1.2; letter-spacing:4px;
     color:rgba(232,200,116,.62); text-transform:uppercase; margin:0;
@@ -739,15 +803,15 @@
   }
   /* four cards, always a 2 x 2 grid with 16px gutters, capped at 220 x 220 */
   #classGrid{
-    display:grid; grid-template-columns:repeat(2, minmax(0, 220px));
-    grid-auto-rows:minmax(0, 220px); gap:16px;
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(0, 200px));
+    grid-auto-rows:auto; gap:12px;
     justify-content:center; align-content:center;
-    width:100%; max-width:456px; box-sizing:border-box;
+    width:100%; max-width:928px; box-sizing:border-box;
   }
   .class-card{
-    width:100%; max-width:220px; height:220px; max-height:220px;
-    padding:7px 10px 6px; display:flex; flex-direction:column; align-items:center;
-    gap:3px; text-align:center; cursor:pointer;
+    width:100%; max-width:200px; height:auto; max-height:100%;
+    padding:12px; display:flex; flex-direction:column; align-items:center;
+    gap:2px; text-align:center; cursor:pointer;
     box-sizing:border-box; overflow:hidden;
     background:linear-gradient(180deg, rgba(13,16,24,.95), rgba(5,7,11,.98));
     border:1px solid rgba(232,200,116,.34); border-radius:3px;
@@ -758,28 +822,28 @@
     box-shadow:0 0 30px rgba(232,200,116,.3), inset 0 0 26px rgba(232,200,116,.06);
   }
   .class-card .cicon{
-    width:60px; height:60px; display:block; flex:0 0 auto;
+    width:55px; height:55px; display:block; flex:0 0 auto;
     filter:drop-shadow(0 0 10px rgba(232,200,116,.28));
   }
   .class-card .cicon svg{ width:100%; height:100%; display:block; }
   .class-card .cname{
-    font-family:var(--font-head); font-size:13px; font-weight:700;
-    letter-spacing:1.4px; text-transform:uppercase; color:#ffe7b8; line-height:1.2;
+    font-family:var(--font-head); font-size:11px; font-weight:700;
+    letter-spacing:1.2px; text-transform:uppercase; color:#ffe7b8; line-height:1.1;
     flex:0 0 auto;
   }
   .class-card .cdesc{
-    font-size:11px; line-height:1.3; color:#aebccd;
+    font-size:9px; line-height:1.1; color:#aebccd;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   }
-  .class-card .cstats{ width:100%; display:flex; flex-direction:column; gap:3px; }
+  .class-card .cstats{ width:100%; display:flex; flex-direction:column; gap:2px; }
   .class-card .cstat{
-    display:flex; align-items:center; gap:6px;
-    font-size:9px; line-height:1.2; letter-spacing:1.2px; text-transform:uppercase;
+    display:flex; align-items:center; gap:5px;
+    font-size:7px; line-height:1.1; letter-spacing:1.0px; text-transform:uppercase;
     color:rgba(214,226,244,.62);
   }
-  .class-card .cstat .lbl{ width:44px; flex:0 0 auto; text-align:left; }
+  .class-card .cstat .lbl{ width:40px; flex:0 0 auto; text-align:left; }
   .class-card .cbar{
-    flex:1; height:8px; border-radius:4px; overflow:hidden;
+    flex:1; height:6px; border-radius:3px; overflow:hidden;
     background:rgba(255,255,255,.06); border:1px solid rgba(232,200,116,.16);
   }
   .class-card .cbar i{
@@ -829,10 +893,10 @@
   }
   /* seven class cards + the shop tile: four across when there is room */
   @media (min-width: 940px){
-    #classGrid{ grid-template-columns:repeat(4, minmax(0, 220px)); max-width:928px; }
+    #classGrid{ grid-template-columns:repeat(auto-fit, minmax(0, 200px)); max-width:928px; }
   }
   @media (max-width: 939px){
-    #classGrid{ grid-template-columns:repeat(2, minmax(0, 220px)); }
+    #classGrid{ grid-template-columns:repeat(auto-fit, minmax(0, 200px)); }
   }
   /* ---------------- ability unlock ceremony ---------------- */
   #abilityUnlock{
@@ -1194,7 +1258,7 @@
 
   /* the seventh ability slot only exists once the Overdrive Core is bought */
   #abOverdrive{ display:none; }
-  #abOverdrive.show{ display:flex; }
+  #abOverdrive.show{ display:block; }
 
   /* ---------------- universe select strip (zone screen) ---------------- */
   #universeRow{
@@ -1294,20 +1358,21 @@
   #transition h1{ font-size:clamp(26px,4.4vw,46px); color:#ffe4ae; letter-spacing:5px; text-shadow:0 0 30px rgba(255,200,110,.45); }
   #transition .story{ font-size:16.5px; line-height:1.7; color:#c8d6e8; max-width:660px; }
 
-  /* small screens */
-  @media (max-width:900px){
-    #objective{ font-size:13px; top:14px; }
-    #zoneName{ font-size:15px; }
-    #abilities{ gap:16px; bottom:16px; }
-    .ability{ width:50px; height:50px; }
-    #minimap{ width:110px; height:110px; right:12px; bottom:12px; }
-    .stat{ font-size:15px; }
-  }
+  /* the HUD is drawn inside #uiLayer in the 1280x720 base space and scaled to
+     the window, so it is deliberately NOT given any width-based tweaks: it
+     looks identical on every screen, just bigger or smaller. */
 </style>
 </head>
 <body>
 <div id="stage">
-  <canvas id="game" width="1280" height="720"></canvas>
+  <!-- the render target: it fills the window and its buffer follows the window's
+       pixels. Every game coordinate (world, camera, player, enemies, HUD) is
+       written in the 1280x720 base space and scaled to fit the window, so the
+       game looks the same on every screen — only bigger or smaller. -->
+  <canvas id="game"></canvas>
+
+  <!-- the HUD and all in-stage effects live in one scaled layer -->
+  <div id="uiLayer">
 
   <!-- ==================== HUD ==================== -->
   <div id="overchargeGlow"></div>
@@ -1331,40 +1396,83 @@
       <span class="stat time" title="Run time"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c874" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.6 1.7M9 3h6"/></svg><span id="runTime">00:00:00</span></span>
     </div>
 
-    <div id="abilities">
+    <div id="abilities" role="group" aria-label="Abilities">
       <div class="ability" id="abQ">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon" id="qIcon">⚔</span><span class="cd"></span><span class="key">Q</span><span class="label" id="qLabel">BASH</span>
-        <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        <div class="ab-btn">
+          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" id="qIcon" aria-hidden="true">⚔</span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">Q</span>
+          <span class="label" id="qLabel">BASH</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
       </div>
-      <div class="ability" id="abNova">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">✦</span><span class="cd"></span><span class="key">E</span><span class="label">NOVA</span>
-        <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+      <div class="ability locked" id="abNova">
+        <div class="ab-btn">
+          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">✦</span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">E</span>
+          <span class="label">NOVA</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
       </div>
-      <div class="ability" id="abOverdrive">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">⇉</span><span class="cd"></span><span class="key">Z</span><span class="label">OVERDRIVE</span>
+      <div class="ability locked" id="abOverdrive">
+        <div class="ab-btn">
+          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">⇉</span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">Z</span>
+          <span class="label">OVERDRIVE</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
       </div>
-      <div class="ability" id="abDash">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">➤</span><span class="cd"></span><span class="key">SHIFT</span><span class="label">DASH</span>
-        <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+      <div class="ability locked" id="abDash">
+        <div class="ab-btn">
+          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">➤</span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">SHIFT</span>
+          <span class="label">DASH</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
       </div>
-      <div class="ability" id="abTurret">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">⌖</span><span class="cd"></span><span class="key">F</span><span class="label">TURRET</span>
-        <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+      <div class="ability locked" id="abTurret">
+        <div class="ab-btn">
+          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">⌖</span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">F</span>
+          <span class="label">TURRET</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
       </div>
-      <div class="ability" id="abOvercharge">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">⚡</span><span class="cd"></span><span class="key">R</span><span class="label">OVERCHARGE</span>
-        <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+      <div class="ability locked" id="abOvercharge">
+        <div class="ab-btn">
+          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">⚡</span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">R</span>
+          <span class="label">OVERCHARGE</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
       </div>
-      <div class="ability" id="abBomb">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">◉</span><span class="cd"></span><span class="key">X</span><span class="label">TIME BOMB</span>
-        <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+      <div class="ability locked" id="abBomb">
+        <div class="ab-btn">
+          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">◉</span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">X</span>
+          <span class="label">TIME BOMB</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
       </div>
     </div>
 
@@ -1417,8 +1525,7 @@
     <div class="b-rule"></div>
     <div class="b-objective" id="briefObjective">Clear <b>3 arenas</b> to unlock the boss</div>
   </div>
-
-
+  </div><!-- /#uiLayer -->
 </div>
 
 <!-- ==================== OVERLAY SCREENS ====================
@@ -1576,7 +1683,7 @@
     </div>
     <button id="btnClassSkip" type="button">Skip · continue as <span id="skipClassName">Vanguard Knight</span></button>
    </div>
-   <div class="cs-hint" aria-hidden="true">scroll to see more</div>
+ 
   </div>
 
   <!-- ==================== ZONE SELECT ==================== -->
@@ -1727,6 +1834,16 @@ const H = 720;               // logical render height
 const SKY_H = 120;           // fixed decorative sky band (screen space)
 const VIEW_H = H - SKY_H;    // playfield height
 const WORLD = 3000;          // every zone map is 3000 x 3000
+/* THE BASE RESOLUTION. The canvas itself is as big as the browser window, but
+   every coordinate in the game — world, camera, player, enemies, HUD — is
+   written in this 1280x720 space and drawn through one scale factor, so the
+   picture is identical on every screen: only bigger or smaller. */
+const BASE_W = W;
+const BASE_H = H;
+let viewScale = 1;           // device pixels per base pixel
+let viewOffX = 0;            // letterbox offset of the base box, device pixels
+let viewOffY = 0;
+let viewDpr = 1;             // backing-store pixels per CSS pixel
 const TAU = Math.PI * 2;
 const ARENA_R = 170;
 const BOSS_ARENA_R = 430;   /* the ring the boss fight is locked inside */
@@ -2138,6 +2255,7 @@ const BossMusic = (function () {
 /* ------------------------------ DOM --------------------------------------- */
 const UI = {
   stage: document.getElementById('stage'),
+  uiLayer: document.getElementById('uiLayer'),
   canvas: document.getElementById('game'),
   orbs: Array.from(document.querySelectorAll('#orbs .orb')),
   zoneBadge: document.getElementById('zoneBadge'),
@@ -2364,6 +2482,8 @@ function revealScreenElement(el, display) {
    or null for an unknown name (in which case everything stays hidden).
    ------------------------------------------------------------------------- */
 function showScreen(name, state) {
+  /* nothing may be waiting in the save queue when the curtain moves */
+  try { flushSaveGame(true); } catch (e) { /* storage is optional */ }
   /* 1. every screen off — unconditionally, before anything is turned on */
   const all = screenElements();
   for (let i = 0; i < all.length; i++) hideScreenElement(all[i]);
@@ -2756,6 +2876,9 @@ const UNIVERSES = UNIVERSE_BLUEPRINTS.map(function (blueprint, index) {
   const uni = Object.assign({}, blueprint);
   uni.index = index;
   uni.number = index + 1;
+  /* the chain, written down once: 1 -> 2 -> ... -> 6 -> the true ending.
+     The card, the intro and the victory screen all read this pointer. */
+  uni.nextUniverse = index + 1 < UNIVERSE_BLUEPRINTS.length ? index + 1 : null;
   uni.levels = blueprint.levels ? blueprint.levels.slice() : [0, 1, 2, 3, 4].map((k) => makeUniverseLevel(uni, k));
   uni.levels.forEach(function (z, k) {
     z.universe = index;
@@ -3549,8 +3672,12 @@ function revealFog() {
 /* ------------------------------ input -------------------------------------- */
 function pointerToWorldScreen(e) {
   const r = UI.canvas.getBoundingClientRect();
-  const sx = ((e.clientX - r.left) / r.width) * W;
-  const sy = ((e.clientY - r.top) / r.height) * H;
+  /* page pixels -> backing-store pixels -> the 1280x720 base space, so the
+     cursor lands on the same world point at any window size */
+  const kx = r.width > 0 ? UI.canvas.width / r.width : 1;
+  const ky = r.height > 0 ? UI.canvas.height / r.height : 1;
+  const sx = ((e.clientX - r.left) * kx - viewOffX) / viewScale;
+  const sy = ((e.clientY - r.top) * ky - viewOffY) / viewScale;
   return { x: sx, y: sy };
 }
 
@@ -6093,8 +6220,8 @@ function damageEnemy(e, dmg, silent, noChain) {
   if (idx >= 0) game.enemies.splice(idx, 1);
 
   const def = ENEMY_DEFS[e.type] || ENEMY_DEFS.knight;
-  /* 10 points a kill, lifted by the gem multiplier */
-  addScore(KILL_SCORE * gemMultiplier());
+  /* 10 points x the gem multiplier, plus the floating +N above the body */
+  awardKill(e);
   game.kills += 1;
   game.killsThisZone += 1;
   petOnKill();
@@ -6696,7 +6823,7 @@ function killBoss() {
   game.portal = { x: bx, y: by, r: 76, t: 0, open: 0 };
   setTimeout(() => { if (game.screen === 'playing') Sound.portal(); }, 700);
   updateObjective();
-  SaveSystem.save('boss');
+  saveGame('boss');
 }
 
 function hideBossBar() {
@@ -6770,6 +6897,7 @@ function updateGems(dt) {
 function collectGem(g) {
   addGems(1);
   addScore(8);
+  saveGame('gem');
   Sound.gem();
   for (let k = 0; k < 6; k++) {
     const a = rand(0, TAU);
@@ -6786,8 +6914,12 @@ function spawnParticle(x, y, vx, vy, life, size, color, drag) {
   });
 }
 
-function addText(x, y, text, color) {
-  game.texts.push({ x, y, text, color: color || '#fff', life: 0, maxLife: 1.1 });
+function addText(x, y, text, color, size, rise) {
+  game.texts.push({
+    x, y, text, color: color || '#fff', life: 0, maxLife: 1.1,
+    size: size || 15,                 /* score pops are a touch bigger */
+    rise: typeof rise === 'number' ? rise : 26   /* and climb further */
+  });
 }
 
 function updateParticles(dt) {
@@ -6814,7 +6946,7 @@ function updateParticles(dt) {
   for (let i = game.texts.length - 1; i >= 0; i--) {
     const t = game.texts[i];
     t.life += dt;
-    t.y -= 26 * dt;
+    t.y -= (t.rise || 26) * dt;         /* it keeps fading upward as it goes */
     if (t.life >= t.maxLife) game.texts.splice(i, 1);
   }
 }
@@ -7057,7 +7189,7 @@ function clearArena(arena, index) {
   }
   game.particles.push({ ring: true, x: arena.x, y: arena.y, r: arena.r * 0.3, maxR: arena.r * 1.4, life: 0, maxLife: 0.7, color: '#fde68a' });
   updateObjective();
-  SaveSystem.save('arena');
+  saveGame('level');
 
   const allCleared = game.arenas.every((x) => x.cleared);
   if (allCleared && !game.bossUnlocked && !game.boss) {
@@ -7114,7 +7246,7 @@ function completeZone() {
 
   game.pendingZone = game.zoneIndex + 1;
   noteZoneReached(game.pendingZone);
-  SaveSystem.save('zone');
+  saveGame('level');
   const next = ZONES[game.pendingZone];
   UI.transEyebrow.textContent = 'Universe ' + uni.number + ' · Level ' + (lvl + 1);
   UI.transTitle.textContent = next.name;
@@ -7133,11 +7265,16 @@ function completeZone() {
    ------------------------------------------------------------------------- */
 const LAST_UNIVERSE = UNIVERSES.length - 1;
 
-/* the universe after `index`, or -1 when the timeline is finished */
+/* the universe after `index`, or -1 when the timeline is finished.
+   It reads the explicit nextUniverse pointer, so the chain can never drift. */
 function nextUniverseIndex(index) {
   const n = Math.floor(Number(index));
   if (!isFinite(n) || n < 0) return 0;
-  return n >= LAST_UNIVERSE ? -1 : n + 1;
+  const uni = UNIVERSES[n];
+  if (!uni) return -1;
+  const next = uni.nextUniverse;
+  if (typeof next !== 'number' || next < 0 || next >= UNIVERSES.length) return -1;
+  return next;
 }
 
 /* the universe at an index, clamped — never undefined */
@@ -7192,7 +7329,7 @@ function showUniverseComplete(uni, nextIndex) {
   setUniversePanel('complete');
   showScreen('universeTransition');
   Sound.levelClear();
-  SaveSystem.save('universe');
+  saveGame('level');
 }
 
 /* the doors of the universe you are about to walk into */
@@ -7694,6 +7831,23 @@ function addScore(points) {
   return game.score;
 }
 
+/* what one kill is worth: ten points, lifted by the gem multiplier */
+function killScore() {
+  return KILL_SCORE * gemMultiplier();
+}
+
+/* THE payout for an enemy death — the one place a kill becomes score.
+   Every enemy dies inside damageEnemy (it is the only code that removes a body
+   from game.enemies), so every death lands here: the score, the +N that pops
+   above the corpse and climbs away, and the save that keeps it. */
+function awardKill(e) {
+  const points = killScore();
+  addScore(points);
+  if (e) addText(e.x, e.y - 22, '+' + points, '#ffe9a8', 17, 34);
+  saveGame('kill');
+  return points;
+}
+
 function syncGemMultHud() {
   game.gemMult = gemMultiplier();
   if (!UI.gemMult) return game.gemMult;
@@ -7720,6 +7874,66 @@ function addGems(n) {
   syncGemMultHud();
 }
 
+/* --------------------------- saveGame / loadGame ---------------------------
+   saveGame(reason) is the one door into storage: every kill, every gem, every
+   cleared arena, every dead boss and every screen change asks through it. The
+   write itself is coalesced (at most one every SAVE_GATE ms) so a room full of
+   gems cannot thrash localStorage — but a requested save always lands within
+   the same frame, and a forced flush lands it immediately.
+   ------------------------------------------------------------------------- */
+let saveWanted = null;          /* the reason waiting to be written */
+let saveGateAt = -1e9;          /* when the last write landed */
+const SAVE_GATE = 100;          /* ms between unforced writes */
+
+function flushSaveGame(force) {
+  if (!saveWanted) return false;
+  const t = nowMs();
+  /* still inside the gate: leave the queued write (and its timer) alone */
+  if (!force && t - saveGateAt < SAVE_GATE) return false;
+  if (saveTimer) { try { clearTimeout(saveTimer); } catch (e) {} saveTimer = 0; }
+  const reason = saveWanted;
+  saveWanted = null;
+  saveGateAt = t;
+  return SaveSystem.save(reason);
+}
+
+let saveTimer = 0;
+
+function saveGame(reason) {
+  saveWanted = reason || 'run';
+  flushSaveGame(false);         /* writes now unless one landed a moment ago */
+  /* a coalesced write must still land even if the game loop is parked (a menu,
+     a paused tab): the timer is the backstop, the frame flush the fast path */
+  if (saveWanted && !saveTimer && typeof setTimeout === 'function') {
+    saveTimer = setTimeout(function () {
+      saveTimer = 0;
+      flushSaveGame(true);
+    }, SAVE_GATE);
+  }
+  return true;
+}
+
+/* loadGame(): the boot read. Pulls the saved run, banks what it carries (best
+   score, lifetime gems, frontier, abilities, boss record) and repaints the menu
+   line with the zone and universe the run was left in. */
+function loadGame() {
+  const slot = SaveSystem.load();
+  if (slot) {
+    game.best = Math.max(game.best | 0, slot.best | 0);
+    game.lifetimeGems = Math.max(game.lifetimeGems | 0, slot.gemsTotal | 0);
+    game.maxZone = Math.max(game.maxZone | 0, slot.maxZone | 0);
+    if (!game.abilities) game.abilities = {};
+    for (let i = 0; i < ABILITY_IDS.length; i++) {
+      if (slot.abilities[ABILITY_IDS[i]]) game.abilities[ABILITY_IDS[i]] = true;
+    }
+    if (Array.isArray(slot.bosses) && slot.bosses.length) {
+      game.bossesDefeated = slot.bosses.slice(0, ZONES.length);
+    }
+  }
+  refreshSaveUi();
+  return slot;
+}
+
 /* ------------------------- save slot UI (menu) ----------------------------- */
 function refreshSaveUi() {
   const slot = SaveSystem.load();
@@ -7733,7 +7947,17 @@ function refreshSaveUi() {
   if (UI.continueMeta && slot) UI.continueMeta.textContent = SaveSystem.summary(slot);
   if (UI.spBest) UI.spBest.textContent = String(best);
   if (UI.spGems) UI.spGems.textContent = String(gems);
-  if (UI.spRun) UI.spRun.textContent = slot ? ('ZONE ' + (slot.zone + 1)) : 'NONE';
+  if (UI.spRun) {
+    if (!slot) {
+      UI.spRun.textContent = 'None';
+    } else {
+      /* where he was left: the universe, the level in it, and the zone itself */
+      const uni = universeOf(slot.zone);
+      const zone = ZONES[slot.zone] || ZONES[0];
+      UI.spRun.textContent = 'Universe ' + uni.number + ' · Level ' +
+        levelInUniverse(slot.zone) + ' — ' + zone.name;
+    }
+  }
 }
 
 /* the "Progress Saved" line only appears when the write really landed */
@@ -9594,6 +9818,7 @@ function onResetSaveClick() {
   /* two taps: the first arms the button, the second wipes the slot */
   const t = nowMs();
   if (resetArmedAt && (t - resetArmedAt) < 5000) {
+    saveWanted = null;              /* nothing queued may resurrect the slot */
     SaveSystem.clear();
     game.best = 0;
     game.lifetimeGems = 0;
@@ -9895,7 +10120,6 @@ function openClassScreen(zoneIndex) {
   showScreen('classSelect');
   game.menuTime = 0;
   drawClassCards();
-  updateClassHint();
 }
 
 function backToMenu() {
@@ -9907,23 +10131,7 @@ function backToMenu() {
   refreshSaveUi();
 }
 
-/* the class screen fits the stage at every normal size; if a very short
-   viewport still cannot hold the 2 x 2 grid we let it scroll and show the
-   faint "scroll to see more" nudge at the bottom */
-function updateClassHint() {
-  const screen = UI.classScreen;
-  if (!screen) return;
-  const inner = screen.querySelector('.cs-inner');
-  if (!inner || !inner.children) return;
-  const kids = inner.children;
-  let need = 0;
-  for (let i = 0; i < kids.length; i++) need += kids[i].offsetHeight || 0;
-  let gap = 0;
-  try { gap = parseFloat(getComputedStyle(inner).rowGap) || 0; } catch (e) { gap = 0; }
-  need += Math.max(0, kids.length - 1) * gap;
-  const room = inner.clientHeight || 0;
-  if (screen.classList) screen.classList.toggle('overflowing', need > room + 1);
-}
+
 
 function drawClassCards() {
   for (let i = 0; i < UI.classIcons.length; i++) {
@@ -10113,19 +10321,33 @@ function updateHealthOrbs() {
 
 const RING_LEN = 169.6;
 function setRing(el, readiness) {
+  if (!el) return;
   const ring = el.querySelector('.ring');
   if (!ring) return;
   const r = clamp(readiness, 0, 1);
   ring.style.strokeDashoffset = String(RING_LEN * (1 - r));
+  /* the same number drives the circular sweep, which unwinds clockwise */
+  el.style.setProperty('--cd', String(r));
   el.classList.toggle('ready', r >= 0.999);
   el.classList.toggle('cooling', r < 0.999);
+}
+
+/* the HUD writer. Every element is optional: one missing node must never be
+   able to abort the frame half-way and leave the score frozen on screen. */
+function hudSet(el, value) {
+  if (el && el.textContent !== value) el.textContent = value;
+}
+
+function hudCd(el, seconds) {
+  const cd = el && el.querySelector ? el.querySelector('.cd') : null;
+  if (cd) hudSet(cd, seconds > 0.05 ? String(Math.ceil(seconds)) : '');
 }
 
 function updateHud() {
   const p = game.player;
   if (!p) return;
-  UI.scoreVal.textContent = String(Math.floor(game.score));
-  UI.gemVal.textContent = String(game.gems);
+  hudSet(UI.scoreVal, String(Math.floor(game.score)));
+  hudSet(UI.gemVal, String(game.gems));
 
   setRing(UI.abilities.q, 1 - game.qCd / qCdMax());
   if (hasAbility('nova')) setRing(UI.abilities.nova, 1 - game.novaCd / (20 * cdScale()));
@@ -10139,19 +10361,18 @@ function updateHud() {
   }
 
   /* seconds left on the long cooldowns, ticking on the icon */
-  UI.abilities.q.querySelector('.cd').textContent =
-    game.qCd > 0.05 ? String(Math.ceil(game.qCd)) : '';
-  UI.abilities.overcharge.querySelector('.cd').textContent =
-    game.overchargeCd > 0.05 ? String(Math.ceil(game.overchargeCd)) : '';
-  UI.abilities.bomb.querySelector('.cd').textContent =
-    game.bombCd > 0.05 ? String(Math.ceil(game.bombCd)) : '';
+  hudCd(UI.abilities.q, game.qCd);
+  hudCd(UI.abilities.overcharge, game.overchargeCd);
+  hudCd(UI.abilities.bomb, game.bombCd);
 
   /* speedrun clock and gem multiplier, top-right */
   RunClock.paint();
   syncGemMultHud();
 
   /* screen effect */
-  UI.overchargeGlow.classList.toggle('on', game.overchargeTimer > 0);
+  if (UI.overchargeGlow && UI.overchargeGlow.classList) {
+    UI.overchargeGlow.classList.toggle('on', game.overchargeTimer > 0);
+  }
 }
 
 /* ------------------------------ buttons ------------------------------------ */
@@ -17474,7 +17695,7 @@ function drawParticles() {
     const a = clamp(1 - t.life / t.maxLife, 0, 1);
     ctx.globalAlpha = a;
     ctx.fillStyle = t.color;
-    ctx.font = '700 15px Rajdhani, sans-serif';
+    ctx.font = '700 ' + (t.size || 15) + 'px Rajdhani, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(t.text, t.x, t.y);
   }
@@ -18739,7 +18960,7 @@ function drawMinimapPath(k) {
 
 /* ------------------------------ main render -------------------------------- */
 function render() {
-  ctx.clearRect(0, 0, W, H);
+  paintBackdrop();
 
   /* menu, class and zone screens are opaque HTML layers — the loop is paused
      while one of them is open, so this is only a safety net */
@@ -18893,6 +19114,7 @@ function update(dt) {
   updateParticles(sdt);
   updateFog();
   updateHud();
+  flushSaveGame(false);         /* a kill or a gem asked for this frame */
   SaveSystem.tick(dt);
 
   if (game.shake > 0) game.shake = Math.max(0, game.shake - dt * 1.7);
@@ -18927,41 +19149,83 @@ function frame(t) {
   rafId = loopPaused ? 0 : requestAnimationFrame(frame);
 }
 
-/* ------------------------------ resize + boot ------------------------------ */
+/* ------------------------------ resize + boot ------------------------------
+   The canvas is the browser window. Its backing store is built from
+   innerWidth x innerHeight (times the device pixel ratio) and one uniform
+   scale factor maps the 1280x720 base space onto it — never a fixed pixel
+   size for the canvas, and never a different picture on a different screen.
+   ------------------------------------------------------------------------- */
+function viewportSize() {
+  const de = document.documentElement || {};
+  const vw = window.innerWidth || de.clientWidth || BASE_W;
+  const vh = window.innerHeight || de.clientHeight || BASE_H;
+  return { w: Math.max(1, vw), h: Math.max(1, vh) };
+}
+
+/* the whole window repainted dark, with the base-space transform left set */
+function paintBackdrop() {
+  const cv = UI.canvas;
+  if (!cv || !ctx) return;
+  /* the letterbox strips, and the base box they frame */
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#04050a';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(viewScale, 0, 0, viewScale, viewOffX, viewOffY);
+}
+
 function resize() {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const scale = Math.min(vw / W, vh / H);
-  UI.stage.style.width = Math.max(320, Math.round(W * scale)) + 'px';
-  UI.stage.style.height = Math.max(180, Math.round(H * scale)) + 'px';
-  updateClassHint();
+  const v = viewportSize();
+  const dpr = clamp(window.devicePixelRatio || 1, 1, 2);
+  viewDpr = dpr;
+  const bw = Math.max(1, Math.round(v.w * dpr));
+  const bh = Math.max(1, Math.round(v.h * dpr));
+  const cv = UI.canvas;
+  if (cv) {
+    /* only touch the buffer when it really changes: assigning width clears it */
+    if (cv.width !== bw) cv.width = bw;
+    if (cv.height !== bh) cv.height = bh;
+  }
+  const cw = cv ? cv.width : bw;
+  const ch = cv ? cv.height : bh;
+  /* THE scale factor: 1280x720 base space -> this window, aspect preserved */
+  viewScale = Math.min(cw / BASE_W, ch / BASE_H) || 1;
+  viewOffX = (cw - BASE_W * viewScale) / 2;
+  viewOffY = (ch - BASE_H * viewScale) / 2;
+  /* the HUD sits in a 1280x720 CSS-pixel box scaled by exactly the same factor */
+  if (UI.uiLayer) {
+    const cssScale = viewScale / dpr;
+    UI.uiLayer.style.transform =
+      'translate(' + (viewOffX / dpr) + 'px,' + (viewOffY / dpr) + 'px) scale(' + cssScale + ')';
+  }
+  paintBackdrop();
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', resize);
+window.addEventListener('fullscreenchange', resize);
+if (window.visualViewport && window.visualViewport.addEventListener) {
+  window.visualViewport.addEventListener('resize', resize);
+}
 /* a tab that was hidden can come back with a throttled (or dropped) frame
    pending; a live run always reclaims its loop on return */
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && game.screen === 'playing') startLoop();
+  /* leaving the tab must never cost the last kill or gem */
+  if (document.hidden) flushSaveGame(true);
 });
+window.addEventListener('pagehide', () => flushSaveGame(true));
+window.addEventListener('beforeunload', () => flushSaveGame(true));
 
 (function boot() {
-  /* best score + lifetime gems come from the save slot (the old bare keys are
-     still read so an existing install keeps its record) */
+  /* the saved run is read BEFORE the title screen paints, so the menu line
+     already knows the universe, the level and the zone he was left in */
   game.best = SaveSystem.best();
   game.lifetimeGems = SaveSystem.lifetimeGems();
   game.maxZone = SaveSystem.maxZone();
-  const bootSlot = SaveSystem.load();
-  if (bootSlot) {
-    for (let i = 0; i < ABILITY_IDS.length; i++) {
-      game.abilities[ABILITY_IDS[i]] = !!bootSlot.abilities[ABILITY_IDS[i]];
-    }
-    game.bossesDefeated = bootSlot.bosses.slice(0, ZONES.length);
-  }
+  loadGame();                    /* slot + abilities + bosses + the menu line */
   syncAbilityUnlocks(true);      /* silent: replay anything the frontier implies */
   syncAbilityHud();
   Shop.load();                   /* the depot reads its levels and satchel first */
   syncConsumableHud();
-  refreshSaveUi();
   for (let i = 0; i < UI.classIcons.length; i++) {
     paintClassIcon(UI.classIcons[i], CLASSES[i].id);   /* markup, painted once */
   }
@@ -18975,7 +19239,7 @@ document.addEventListener('visibilitychange', () => {
   resize();
   updateHealthOrbs();
   if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
-    document.fonts.ready.then(updateClassHint).catch(function () {});
+    document.fonts.ready.then(() => {}).catch(function () {});
   }
 })();
 </script>
