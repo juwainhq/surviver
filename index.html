@@ -411,11 +411,129 @@
     #settingsBtn{ top:10px; right:10px; width:34px; height:34px; font-size:16px; }
   }
 
+  /* ---------------- main menu starfield ---------------- */
+  #menuStars{
+    position:absolute; inset:0; width:100%; height:100%; display:block;
+    pointer-events:none; z-index:0;
+  }
+  #menuTitle, #menuSub, #howto, #menuBest{ position:relative; z-index:2; }
+  #menu .btn-row{ position:relative; z-index:2; }
+  #continueWrap{ position:relative; z-index:2; }
+
+  /* ---------------- zone select ---------------- */
+  #zoneScreen{
+    position:absolute; inset:0; display:none; flex-direction:column;
+    align-items:center; justify-content:center; gap:14px;
+    padding:18px 16px 12px; box-sizing:border-box; overflow:hidden;
+    z-index:44; text-align:center;
+    background:radial-gradient(ellipse at 50% 40%, rgba(12,20,36,.72), rgba(2,3,7,.96)),
+               linear-gradient(180deg, rgba(3,4,8,.92), rgba(3,4,8,.98));
+  }
+  #zoneScreen.show{ display:flex; }
+  #zoneScreen .zs-eyebrow{
+    font-family:var(--font-head); font-size:9px; line-height:1.2;
+    letter-spacing:4.5px; text-transform:uppercase; color:rgba(232,200,116,.62);
+  }
+  #zoneTitle{
+    font-family:var(--font-head); font-weight:900; margin:0;
+    font-size:clamp(18px,2.6vw,26px); line-height:1.1; letter-spacing:3px;
+    text-transform:uppercase; color:#ffd98a;
+    text-shadow:0 0 20px rgba(255,206,120,.45), 0 3px 12px #000;
+  }
+  #zoneHint{
+    font-family:var(--font-stat); font-size:10.5px; letter-spacing:2.4px;
+    text-transform:uppercase; color:rgba(203,213,225,.5);
+  }
+
+  /* the five cards sit in one horizontally scrollable row */
+  #zoneRow{
+    display:flex; flex-direction:row; flex-wrap:nowrap; align-items:stretch;
+    justify-content:flex-start; gap:16px;
+    width:100%; max-width:1120px; padding:6px 4px 14px;
+    overflow-x:auto; overflow-y:hidden;
+    scroll-snap-type:x proximity; box-sizing:border-box;
+  }
+  #zoneRow::-webkit-scrollbar{ height:7px; }
+  #zoneRow::-webkit-scrollbar-track{ background:rgba(255,255,255,.05); border-radius:4px; }
+  #zoneRow::-webkit-scrollbar-thumb{
+    background:rgba(232,200,116,.45); border-radius:4px;
+  }
+  #zoneRow{ scrollbar-width:thin; scrollbar-color:rgba(232,200,116,.45) rgba(255,255,255,.05); }
+
+  .zone-card{
+    position:relative; flex:0 0 204px; width:204px; min-height:228px;
+    display:flex; flex-direction:column; align-items:center; gap:7px;
+    padding:13px 13px 12px; box-sizing:border-box; overflow:hidden;
+    scroll-snap-align:center; text-align:center; cursor:pointer;
+    background:linear-gradient(180deg, rgba(13,16,24,.95), rgba(5,7,11,.98));
+    border:1px solid rgba(232,200,116,.30); border-radius:3px;
+    transition:transform .2s ease, box-shadow .25s ease, border-color .25s ease;
+  }
+  .zone-card:hover, .zone-card:focus-visible{
+    transform:translateY(-5px); border-color:var(--gold-bright); outline:none;
+    box-shadow:0 0 28px rgba(232,200,116,.3), inset 0 0 22px rgba(232,200,116,.06);
+  }
+  .zone-card .znum{
+    font-family:var(--font-head); font-size:9px; letter-spacing:3px;
+    text-transform:uppercase; color:rgba(232,200,116,.72);
+  }
+  .zone-card .zart{
+    width:54px; height:54px; flex:0 0 auto; margin:1px 0 0;
+    filter:drop-shadow(0 0 10px rgba(232,200,116,.25));
+  }
+  .zone-card .zname{
+    font-family:var(--font-head); font-size:12.5px; font-weight:700;
+    letter-spacing:1.3px; text-transform:uppercase; color:#ffe7b8; line-height:1.25;
+  }
+  .zone-card .zdesc{
+    font-size:10.5px; line-height:1.4; color:#aebccd;
+    display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .zone-card .zstate{
+    margin-top:auto; display:flex; align-items:center; justify-content:center; gap:6px;
+    font-family:var(--font-head); font-size:9px; letter-spacing:2px;
+    text-transform:uppercase; color:rgba(203,213,225,.55);
+  }
+  .zone-card .zstate svg{ width:13px; height:13px; display:block; }
+
+  /* completed: gold checkmark */
+  .zone-card.done{ border-color:rgba(255,217,138,.55); }
+  .zone-card.done .zstate{ color:#ffd98a; text-shadow:0 0 12px rgba(255,200,110,.45); }
+  .zone-card.done .zstate svg{ color:#ffd98a; filter:drop-shadow(0 0 6px rgba(255,200,110,.7)); }
+
+  /* reached but not finished: playable, blue-ish marker */
+  .zone-card.open{ border-color:rgba(143,232,255,.45); }
+  .zone-card.open .zstate{ color:#8fe8ff; text-shadow:0 0 12px rgba(56,189,248,.4); }
+  .zone-card.open .zstate svg{ color:#8fe8ff; }
+
+  /* not reached yet: locked and unclickable */
+  .zone-card.locked{
+    cursor:not-allowed; opacity:.55;
+    border-color:rgba(120,140,170,.22);
+    background:linear-gradient(180deg, rgba(9,11,16,.95), rgba(4,5,9,.98));
+  }
+  .zone-card.locked:hover{ transform:none; border-color:rgba(120,140,170,.3); box-shadow:none; }
+  .zone-card.locked .zname, .zone-card.locked .znum{ color:rgba(203,213,225,.55); }
+  .zone-card.locked .zdesc{ color:rgba(159,179,200,.5); }
+  .zone-card.locked .zart{ filter:grayscale(1) brightness(.6); }
+  .zone-card.locked .zstate{ color:rgba(159,179,200,.6); }
+
+  #btnZoneBack{
+    font-family:var(--font-head); font-size:10px; font-weight:700; letter-spacing:2.4px;
+    text-transform:uppercase; color:rgba(214,226,244,.75); background:transparent;
+    border:1px solid rgba(214,226,244,.28); border-radius:2px; padding:8px 18px;
+    cursor:pointer; -webkit-appearance:none; appearance:none; outline:none;
+    transition:color .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+  #btnZoneBack:hover, #btnZoneBack:focus-visible{
+    color:#fff; border-color:rgba(214,226,244,.65); box-shadow:0 0 18px rgba(180,200,230,.22);
+  }
+
   /* ---------------- main menu ---------------- */
   #menu{
     position:absolute; inset:0; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:14px; z-index:40;
-    background:radial-gradient(ellipse at 50% 42%, rgba(12,22,42,.32), rgba(2,3,7,.72));
+    background:radial-gradient(ellipse at 50% 44%, rgba(8,14,28,.18), rgba(2,3,7,.62));
   }
   #menu.hidden{ display:none; }
   #menuTitle{
@@ -528,6 +646,20 @@
     font-size:10px; line-height:1.3; color:rgba(159,179,200,.92); letter-spacing:.2px;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   }
+  /* one-click start for returning players: keeps the saved class and upgrades */
+  #btnClassSkip{
+    display:none; font-family:var(--font-head); font-size:10px; font-weight:700;
+    letter-spacing:2.2px; text-transform:uppercase; color:#bfe9ff;
+    background:rgba(8,18,28,.7); border:1px solid rgba(143,232,255,.35);
+    border-radius:2px; padding:8px 16px; cursor:pointer; margin-top:-4px;
+    -webkit-appearance:none; appearance:none; outline:none;
+    transition:color .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+  #btnClassSkip.show{ display:inline-block; }
+  #btnClassSkip:hover, #btnClassSkip:focus-visible{
+    color:#fff; border-color:#8fe8ff; box-shadow:0 0 20px rgba(56,189,248,.3);
+  }
+
   /* faint nudge, only rendered when the cards really do not fit */
   #classScreen .cs-hint{
     display:none; position:absolute; left:0; right:0; bottom:4px;
@@ -674,6 +806,7 @@
 
   <!-- ==================== MAIN MENU ==================== -->
   <div id="menu">
+    <canvas id="menuStars" width="1280" height="720" aria-hidden="true"></canvas>
     <h1 id="menuTitle">SURVIVE</h1>
     <div id="menuSub">1347 AD · Commander Rael</div>
 
@@ -715,7 +848,7 @@
   <!-- ==================== CLASS SELECTION ==================== -->
   <div id="classScreen">
    <div class="cs-inner">
-    <div class="cs-eyebrow">Commander · pick your doctrine</div>
+    <div class="cs-eyebrow" id="csEyebrow">Commander · pick your doctrine</div>
     <h1 id="classTitle">Choose Your Combat Style</h1>
     <div id="classGrid">
       <div class="class-card" id="cardKnight" data-class="knight" role="button" tabindex="0">
@@ -767,8 +900,18 @@
         <div class="cpassive">Passive · time powers recharge twice as fast</div>
       </div>
     </div>
+    <button id="btnClassSkip" type="button">Skip · continue as <span id="skipClassName">Vanguard Knight</span></button>
    </div>
    <div class="cs-hint" aria-hidden="true">scroll to see more</div>
+  </div>
+
+  <!-- ==================== ZONE SELECT ==================== -->
+  <div id="zoneScreen">
+    <div class="zs-eyebrow">Where Rael makes his stand</div>
+    <h1 id="zoneTitle">Select Zone</h1>
+    <div id="zoneHint">Locked zones open as you push deeper</div>
+    <div id="zoneRow"></div>
+    <button id="btnZoneBack" type="button">Back</button>
   </div>
 
   <!-- ==================== UPGRADES ==================== -->
@@ -1194,6 +1337,15 @@ const UI = {
   menu: document.getElementById('menu'),
   menuBest: document.getElementById('menuBest'),
   howto: document.getElementById('howto'),
+  menuStars: document.getElementById('menuStars'),
+  zoneScreen: document.getElementById('zoneScreen'),
+  zoneRow: document.getElementById('zoneRow'),
+  zoneTitle: document.getElementById('zoneTitle'),
+  zoneHint: document.getElementById('zoneHint'),
+  btnZoneBack: document.getElementById('btnZoneBack'),
+  csEyebrow: document.getElementById('csEyebrow'),
+  btnClassSkip: document.getElementById('btnClassSkip'),
+  skipClassName: document.getElementById('skipClassName'),
   continueWrap: document.getElementById('continueWrap'),
   btnContinueSave: document.getElementById('btnContinueSave'),
   continueMeta: document.getElementById('continueMeta'),
@@ -1230,6 +1382,7 @@ const ZONES = [
   {
     id: 1,
     name: 'The Village',
+    blurb: 'Ashen hamlet. Iron knights in the smoke, three war camps blocking the rift.',
     story: 'Rael crashes through a burning sky and lands among the ashes of a medieval hamlet. Iron-clad knights pour out of the smoke. Three war camps block the road to the time rift.',
     tile: 'cobble',
     ambient: 'ember',
@@ -1245,6 +1398,7 @@ const ZONES = [
   {
     id: 2,
     name: 'The Dark Forest',
+    blurb: 'Black roots and green fog. Hooded archers watch from between the trunks.',
     story: 'Past the village the road vanishes under black roots. Green fog crawls along the soil and hooded archers watch from between the trunks. The Forest Witch is close.',
     tile: 'soil',
     ambient: 'fog',
@@ -1260,6 +1414,7 @@ const ZONES = [
   {
     id: 3,
     name: 'The Castle Gates',
+    blurb: 'A ruined portcullis and a rain-soaked courtyard held by the garrison.',
     story: 'Dreadkeep’s portcullis hangs in ruins. Rain hammers the courtyard while the garrison forms up behind shattered walls. The Siege Commander has already mounted.',
     tile: 'stone',
     ambient: 'rain',
@@ -1275,6 +1430,7 @@ const ZONES = [
   {
     id: 4,
     name: 'The Sorcerer’s Tower',
+    blurb: 'Cracked violet stone. Drifting orbs and robed figures whisper in the dark.',
     story: 'The stairwell opens into a sanctum of cracked violet stone. Magic orbs drift upward from the floor and robed figures whisper in the dark. Archon is waiting at the summit.',
     tile: 'crack',
     ambient: 'orbs',
@@ -1290,6 +1446,7 @@ const ZONES = [
   {
     id: 5,
     name: 'The Time Portal',
+    blurb: 'The summit is gone. Only the roaring rift home — and the Time Tyrant.',
     story: 'The summit is gone. Only black stone, glowing energy fractures and the roaring rift home. Every dark legion Rael has fought stands between him and the portal — and their Time Tyrant.',
     tile: 'void',
     ambient: 'portal',
@@ -1402,6 +1559,7 @@ const game = {
   upgradeLevels: {},
   classId: 'knight',   /* picked on the class screen; knight is the fallback */
   lifetimeGems: 0,     /* every gem ever collected, across every run */
+  maxZone: 0,          /* highest zone index ever reached: unlocks the zone select */
   qCd: 0,              /* the class ability's own cooldown */
   novaCd: 0,
   turretCd: 0,
@@ -1490,6 +1648,15 @@ function resetRun() {
   game.bombs.length = 0;
 }
 
+/* mark the deepest zone reached: this is what unlocks the zone select */
+function noteZoneReached(index) {
+  const z = clamp(Math.round(index) || 0, 0, ZONES.length - 1);
+  if (z > (game.maxZone | 0)) {
+    game.maxZone = z;
+    SaveSystem.setMaxZone(z);
+  }
+}
+
 /* ------------------------------ zone loading ------------------------------- */
 function loadZone(zoneIndex, opts) {
   const o = opts || {};
@@ -1558,6 +1725,7 @@ function loadZone(zoneIndex, opts) {
   game.cam.x = cameraTargetX();
   game.cam.y = cameraTargetY();
 
+  noteZoneReached(game.zoneIndex);
   UI.zoneBadge.textContent = 'Zone ' + z.id;
   UI.zoneName.textContent = z.name;
   document.documentElement.style.setProperty('--zone-accent', z.accent);
@@ -3947,6 +4115,7 @@ function completeZone() {
     return;
   }
   game.pendingZone = game.zoneIndex + 1;
+  noteZoneReached(game.pendingZone);
   SaveSystem.save('zone');
   const next = ZONES[game.pendingZone];
   UI.transEyebrow.textContent = 'Zone ' + next.id;
@@ -4035,6 +4204,7 @@ function chooseUpgrade(up) {
 const SAVE_KEY = 'survive_save_v1';
 const SAVE_BEST_KEY = 'survive_best_score';
 const SAVE_GEMS_KEY = 'survive_gems_total';
+const SAVE_MAX_ZONE_KEY = 'survive_max_zone';   /* frontier: unlocks zone select */
 const SAVE_VERSION = 1;
 const AUTOSAVE_EVERY = 4;          /* seconds between background writes */
 
@@ -4119,6 +4289,7 @@ const SaveSystem = (function () {
       portal: game.portal ? { x: Math.round(game.portal.x), y: Math.round(game.portal.y) } : null,
       best: Math.max(game.best | 0, Math.floor(game.score || 0)),
       gemsTotal: Math.max(0, game.lifetimeGems | 0),
+      maxZone: clamp(Math.max(game.maxZone | 0, zone), 0, ZONES.length - 1),
       savedAt: Date.now()
     };
   }
@@ -4136,6 +4307,7 @@ const SaveSystem = (function () {
     if (ok) {
       if (snap.best > readCount(SAVE_BEST_KEY)) writeCount(SAVE_BEST_KEY, snap.best);
       if (snap.gemsTotal > readCount(SAVE_GEMS_KEY)) writeCount(SAVE_GEMS_KEY, snap.gemsTotal);
+      if (snap.maxZone > readCount(SAVE_MAX_ZONE_KEY)) writeCount(SAVE_MAX_ZONE_KEY, snap.maxZone);
       game.best = Math.max(game.best | 0, snap.best);
       if (typeof refreshSaveUi === 'function') refreshSaveUi();
     }
@@ -4164,6 +4336,7 @@ const SaveSystem = (function () {
       portal: null,
       best: Math.max(0, Math.floor(Number(raw.best) || 0)),
       gemsTotal: Math.max(0, Math.floor(Number(raw.gemsTotal) || 0)),
+      maxZone: clamp(Math.max(Math.round(Number(raw.maxZone) || 0), zone), 0, ZONES.length - 1),
       savedAt: Number(raw.savedAt) || 0
     };
     if (raw.portal && isFinite(Number(raw.portal.x)) && isFinite(Number(raw.portal.y))) {
@@ -4199,6 +4372,7 @@ const SaveSystem = (function () {
         s.removeItem(SAVE_KEY);
         s.removeItem(SAVE_BEST_KEY);
         s.removeItem(SAVE_GEMS_KEY);
+        s.removeItem(SAVE_MAX_ZONE_KEY);
       } catch (e) { /* ignore */ }
     }
     lastWriteOk = false;
@@ -4228,6 +4402,7 @@ const SaveSystem = (function () {
 
     game.score = slot.score;
     game.gems = slot.gems;
+    game.maxZone = clamp(Math.max(slot.maxZone | 0, slot.zone | 0), 0, ZONES.length - 1);
 
     loadZone(slot.zone, { freshPlayer: false });
 
@@ -4302,6 +4477,18 @@ const SaveSystem = (function () {
     tick: tick,
     best: function () { return readCount(SAVE_BEST_KEY); },
     lifetimeGems: function () { return readCount(SAVE_GEMS_KEY); },
+    maxZone: function () {
+      const stored = readCount(SAVE_MAX_ZONE_KEY);
+      const slot = load();
+      const fromSlot = slot ? (slot.maxZone | 0) : 0;
+      return clamp(Math.max(stored, fromSlot, 0), 0, ZONES.length - 1);
+    },
+    setMaxZone: function (n) {
+      const z = clamp(Math.round(n) || 0, 0, ZONES.length - 1);
+      if (z <= readCount(SAVE_MAX_ZONE_KEY)) return z;
+      writeCount(SAVE_MAX_ZONE_KEY, z);
+      return z;
+    },
     isAvailable: function () { return !!store(); },
     lastWriteOk: function () { return lastWriteOk; },
     lastWriteAt: function () { return lastWriteAt; },
@@ -4379,6 +4566,8 @@ function onResetSaveClick() {
     game.lifetimeGems = 0;
     game.score = 0;
     game.gems = 0;
+    game.maxZone = 0;
+    if (game.screen === 'zones') drawZoneCards();
     disarmResetSave();
     if (UI.spNote) UI.spNote.textContent = 'Save data cleared. A new run starts from Zone 1.';
     refreshSaveUi();
@@ -4398,14 +4587,141 @@ function onResetSaveClick() {
 function beginMission() {
   Sound.ensure();
   toggleSettings(false);
-  resetRun();   /* the class screen is the start of a fresh run, nothing carries over */
+  resetRun();   /* a fresh run: nothing carries over */
   UI.menu.classList.add('hidden');
   UI.hud.classList.add('hidden');
+  UI.classScreen.classList.remove('show');
+  showZoneSelect();
+}
+
+/* ------------------------------ zone select -------------------------------- */
+/* five cards in one scrollable row. Zones the player has already reached are
+   playable, finished ones carry a gold check, later ones stay locked. */
+let pendingStartZone = 0;
+
+const LOCK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+  '<path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg>';
+const CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+  '<path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.6l4.6 4.6L19.5 6.8"/></svg>';
+const PLAY_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+  '<path fill="currentColor" d="M8 5.2v13.6c0 .8.9 1.3 1.6.9l10.2-6.8a1 1 0 0 0 0-1.7L9.6 4.3A1 1 0 0 0 8 5.2z"/></svg>';
+
+function zoneArt(i) {
+  /* small emblem per zone: village, forest, gate, orb, rift */
+  const col = ['#f97316', '#22c55e', '#cbd5e1', '#a855f7', '#38bdf8'][i] || '#e8c874';
+  if (i === 1) {
+    return '<svg class="zart" viewBox="0 0 64 64"><path fill="#152015" d="M32 8l7 12h-4l6 10h-5l7 12H21l7-12h-5l6-10h-4z"/><rect x="29" y="42" width="6" height="14" fill="' + col + '" opacity=".85"/></svg>';
+  }
+  if (i === 2) {
+    return '<svg class="zart" viewBox="0 0 64 64"><path fill="#1b2230" d="M12 20h40v6H12zm0 12h16v6H12zm24 0h16v6H36zM12 44h40v6H12z"/><path fill="' + col + '" opacity=".8" d="M30 26h4v18h-4z"/></svg>';
+  }
+  if (i === 3) {
+    return '<svg class="zart" viewBox="0 0 64 64"><circle cx="32" cy="32" r="15" fill="none" stroke="' + col + '" stroke-width="2.4" opacity=".9"/><circle cx="32" cy="32" r="6" fill="' + col + '" opacity=".9"/><circle cx="32" cy="32" r="23" fill="none" stroke="' + col + '" stroke-width="1.2" opacity=".4"/></svg>';
+  }
+  if (i === 4) {
+    return '<svg class="zart" viewBox="0 0 64 64"><circle cx="32" cy="32" r="21" fill="none" stroke="' + col + '" stroke-width="2.2" opacity=".85"/><circle cx="32" cy="32" r="11" fill="none" stroke="' + col + '" stroke-width="1.6" opacity=".55"/><circle cx="32" cy="32" r="4.5" fill="' + col + '"/><path stroke="' + col + '" stroke-width="1.4" opacity=".45" d="M32 4v10M32 50v10M4 32h10M50 32h10"/></svg>';
+  }
+  return '<svg class="zart" viewBox="0 0 64 64"><path fill="#1b2230" d="M14 46h36v6H14zM20 38h24v6H20z"/><path fill="' + col + '" opacity=".85" d="M26 24h12v12H26z"/><path fill="none" stroke="' + col + '" stroke-width="2" opacity=".7" d="M18 20l6-8 8 7 8-7 6 8"/></svg>';
+}
+
+function drawZoneCards() {
+  const row = UI.zoneRow;
+  if (!row) return;
+  /* rebuild the strip so lock/check state always matches the frontier */
+  if (typeof row.replaceChildren === 'function') row.replaceChildren();
+  else row.innerHTML = '';
+
+  const maxZone = clamp(game.maxZone | 0, 0, ZONES.length - 1);
+  for (let i = 0; i < ZONES.length; i++) {
+    const z = ZONES[i];
+    const done = i < maxZone;
+    const locked = i > maxZone;
+    const card = document.createElement('div');
+    card.className = 'zone-card ' + (locked ? 'locked' : (done ? 'done' : 'open'));
+    card.setAttribute('data-zone', String(i));
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', locked ? '-1' : '0');
+    card.setAttribute('aria-disabled', locked ? 'true' : 'false');
+    card.setAttribute('aria-label', 'Zone ' + z.id + ' · ' + z.name + (locked ? ' (locked)' : ''));
+    card.innerHTML =
+      '<div class="znum">Zone ' + z.id + '</div>' +
+      zoneArt(i) +
+      '<div class="zname">' + z.name + '</div>' +
+      '<div class="zdesc">' + (z.blurb || '') + '</div>' +
+      (locked
+        ? '<span class="zstate">' + LOCK_SVG + 'Locked</span>'
+        : (done
+          ? '<span class="zstate">' + CHECK_SVG + 'Cleared</span>'
+          : '<span class="zstate">' + PLAY_SVG + 'Ready</span>'));
+    const idx = i;
+    card.addEventListener('click', () => selectZone(idx));
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectZone(idx); }
+    });
+    row.appendChild(card);
+  }
+
+  if (UI.zoneHint) {
+    UI.zoneHint.textContent = maxZone <= 0
+      ? 'Locked zones open as you push deeper'
+      : (maxZone >= ZONES.length - 1
+        ? 'Every zone unlocked'
+        : (maxZone + 1) + ' of ' + ZONES.length + ' zones unlocked');
+  }
+}
+
+function showZoneSelect() {
+  if (UI.zoneRow) UI.zoneRow.scrollLeft = 0;
+  drawZoneCards();
+  UI.zoneScreen.classList.add('show');
+  UI.classScreen.classList.remove('show');
+  game.screen = 'zones';
+  game.menuTime = 0;
+  /* start the strip on the frontier so the newest zone is in view */
+  const frontier = clamp(game.maxZone | 0, 0, ZONES.length - 1);
+  const el = UI.zoneRow && UI.zoneRow.children ? UI.zoneRow.children[frontier] : null;
+  if (el && typeof el.scrollIntoView === 'function') {
+    try { el.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) { /* ignore */ }
+  }
+}
+
+function selectZone(index) {
+  if (game.screen !== 'zones') return;
+  const maxZone = clamp(game.maxZone | 0, 0, ZONES.length - 1);
+  if (!(index >= 0 && index < ZONES.length) || index > maxZone) return;   /* locked */
+  pendingStartZone = index;
+  Sound.ensure();
+  Sound.ability();
+  openClassScreen(index);
+}
+
+/* the class screen is the last step before the run: it names the zone chosen */
+function openClassScreen(zoneIndex) {
+  pendingStartZone = clamp(typeof zoneIndex === 'number' ? zoneIndex : pendingStartZone, 0, ZONES.length - 1);
+  const z = ZONES[pendingStartZone];
+  if (UI.csEyebrow) UI.csEyebrow.textContent = 'Zone ' + z.id + ' · ' + z.name;
+
+  /* a slot remembers its class: offer a one-click start instead of a re-pick */
+  const slot = SaveSystem.load();
+  if (UI.btnClassSkip) {
+    const saved = slot ? (CLASSES.find((c) => c.id === slot.classId) || CLASSES[0]) : null;
+    if (saved && UI.skipClassName) UI.skipClassName.textContent = saved.name;
+    UI.btnClassSkip.classList.toggle('show', !!saved);
+  }
+  UI.zoneScreen.classList.remove('show');
   UI.classScreen.classList.add('show');
   game.screen = 'class';
   game.menuTime = 0;
   drawClassCards();
   updateClassHint();
+}
+
+function backToMenu() {
+  UI.zoneScreen.classList.remove('show');
+  UI.classScreen.classList.remove('show');
+  UI.menu.classList.remove('hidden');
+  game.screen = 'menu';
+  refreshSaveUi();
 }
 
 /* the class screen fits the stage at every normal size; if a very short
@@ -4433,12 +4749,38 @@ function drawClassCards() {
   drawClassIcon(UI.badgeIcon, getClass().id, 52);
 }
 
-function startRun(classId) {
+/* replay a saved upgrade map onto a fresh player, rank by rank */
+function applyUpgradeLevels(levels) {
+  game.upgradeLevels = {};
+  const map = levels || {};
+  for (let i = 0; i < UPGRADE_POOL.length; i++) {
+    const up = UPGRADE_POOL[i];
+    const lvl = clamp(Math.round(Number(map[up.id]) || 0), 0, up.max);
+    for (let k = 0; k < lvl; k++) {
+      game.upgradeLevels[up.id] = (game.upgradeLevels[up.id] || 0) + 1;
+      up.apply();
+    }
+  }
+}
+
+/* starting a run: class first, then the chosen zone, then whatever upgrades
+   the save slot had (the zone select promises "saved upgrades intact") */
+function startRun(classId, zoneIndex, opts) {
   Sound.ensure();
+  const o = opts || {};
+  const zone = clamp(typeof zoneIndex === 'number' ? zoneIndex : 0, 0, ZONES.length - 1);
+
   game.classId = classId;
   resetRun();
-  loadZone(0, { freshPlayer: true });
+  if (o.carryUpgrades) {
+    const slot = SaveSystem.load();
+    if (slot && slot.upgrades) applyUpgradeLevels(slot.upgrades);
+  }
+  /* freshPlayer:false — resetRun() already built this player, and rebuilding it
+     inside loadZone would throw away the carried upgrades */
+  loadZone(zone, { freshPlayer: false });
   UI.classScreen.classList.remove('show');
+  UI.zoneScreen.classList.remove('show');
   UI.menu.classList.add('hidden');
   UI.hud.classList.remove('hidden');
   game.screen = 'playing';
@@ -4558,7 +4900,9 @@ document.getElementById('btnContinue').addEventListener('click', () => {
 });
 for (let i = 0; i < UI.classCards.length; i++) {
   const card = UI.classCards[i];
-  const pick = () => { if (game.screen === 'class') startRun(CLASSES[i].id); };
+  const pick = () => {
+    if (game.screen === 'class') startRun(CLASSES[i].id, pendingStartZone, { carryUpgrades: true });
+  };
   card.addEventListener('click', pick);
   card.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); }
@@ -4570,6 +4914,14 @@ document.getElementById('btnAgain').addEventListener('click', restartRun);
 
 /* save slot: continue button, settings gear and the reset control */
 UI.btnContinueSave.addEventListener('click', continueSavedRun);
+if (UI.btnZoneBack) UI.btnZoneBack.addEventListener('click', backToMenu);
+if (UI.btnClassSkip) {
+  UI.btnClassSkip.addEventListener('click', () => {
+    if (game.screen !== 'class') return;
+    const slot = SaveSystem.load();
+    startRun(slot ? slot.classId : 'knight', pendingStartZone, { carryUpgrades: true });
+  });
+}
 UI.settingsBtn.addEventListener('click', (e) => {
   if (e && e.stopPropagation) e.stopPropagation();
   toggleSettings();
@@ -6984,6 +7336,149 @@ function drawPostFx() {
   }
 }
 
+/* ------------------------------ menu starfield ----------------------------- */
+/* the main menu gets its own animated sky: three parallax layers of stars that
+   twinkle and drift upward, a couple of slow nebula clouds and the occasional
+   shooting star. Drawn only while the menu is on screen. */
+const starfield = (function () {
+  const rng = makeRng(4242);
+  const layers = [];
+  const configs = [
+    { n: 150, size: 1.1, alpha: 0.55, speed: 3 },
+    { n: 85, size: 1.8, alpha: 0.8, speed: 7 },
+    { n: 34, size: 2.5, alpha: 1.0, speed: 12 }
+  ];
+  for (let L = 0; L < configs.length; L++) {
+    const cfg = configs[L];
+    for (let i = 0; i < cfg.n; i++) {
+      layers.push({
+        x: rng() * W,
+        y: rng() * H,
+        r: cfg.size * (0.7 + rng() * 0.7),
+        a: cfg.alpha * (0.55 + rng() * 0.6),
+        sp: cfg.speed * (0.7 + rng() * 0.8),
+        tw: rng() * TAU,
+        tws: 0.7 + rng() * 1.7,
+        tint: rng() > 0.86 ? (rng() > 0.5 ? '#cfe4ff' : '#ffe9c2') : '#ffffff'
+      });
+    }
+  }
+  return { stars: layers, shoot: -1, shootAt: 3.2 };
+}());
+
+let starCtx = null;
+
+function drawMenuStarfield() {
+  const cvs = UI.menuStars;
+  if (!cvs || !cvs.getContext) return;
+  if (!starCtx) {
+    starCtx = cvs.getContext('2d');
+    if (!starCtx) return;
+  }
+  const g = starCtx;
+  const cw = cvs.width || W;
+  const ch = cvs.height || H;
+  const t = game.menuTime || 0;
+
+  /* deep space, darker at the edges */
+  const bg = g.createRadialGradient(cw * 0.5, ch * 0.42, 40, cw * 0.5, ch * 0.5, Math.hypot(cw, ch) * 0.62);
+  bg.addColorStop(0, '#0c1730');
+  bg.addColorStop(0.55, '#060b17');
+  bg.addColorStop(1, '#02030a');
+  g.fillStyle = bg;
+  g.fillRect(0, 0, cw, ch);
+
+  /* two nebula clouds drifting very slowly */
+  const clouds = [
+    { x: 0.30 + Math.sin(t * 0.05) * 0.02, y: 0.62 + Math.cos(t * 0.04) * 0.015, r: 0.42, c: 'rgba(58,92,190,0.13)' },
+    { x: 0.72 + Math.cos(t * 0.037) * 0.02, y: 0.34 + Math.sin(t * 0.045) * 0.018, r: 0.36, c: 'rgba(120,70,180,0.12)' }
+  ];
+  for (let i = 0; i < clouds.length; i++) {
+    const cl = clouds[i];
+    const rad = g.createRadialGradient(cw * cl.x, ch * cl.y, 10, cw * cl.x, ch * cl.y, ch * cl.r);
+    rad.addColorStop(0, cl.c);
+    rad.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = rad;
+    g.fillRect(0, 0, cw, ch);
+  }
+
+  /* the stars themselves: drift up, wrap, twinkle */
+  for (let i = 0; i < starfield.stars.length; i++) {
+    const st = starfield.stars[i];
+    let y = (st.y - t * st.sp) % ch;
+    if (y < 0) y += ch;
+    const tw = 0.55 + 0.45 * Math.sin(t * st.tws + st.tw);
+    const a = clamp(st.a * tw, 0, 1);
+    if (a < 0.02) continue;
+    if (st.r > 1.9) {
+      /* the brightest few get a soft halo, added on top of the sky */
+      const halo = g.createRadialGradient(st.x, y, 0, st.x, y, st.r * 5);
+      halo.addColorStop(0, 'rgba(255,255,255,' + (0.5 * a).toFixed(3) + ')');
+      halo.addColorStop(0.35, 'rgba(196,224,255,' + (0.2 * a).toFixed(3) + ')');
+      halo.addColorStop(1, 'rgba(196,224,255,0)');
+      g.globalAlpha = 1;
+      g.globalCompositeOperation = 'lighter';
+      g.fillStyle = halo;
+      g.beginPath();
+      g.arc(st.x, y, st.r * 5, 0, TAU);
+      g.fill();
+      g.globalCompositeOperation = 'source-over';
+    }
+    g.globalAlpha = a;
+    g.fillStyle = st.tint;
+    g.beginPath();
+    g.arc(st.x, y, st.r, 0, TAU);
+    g.fill();
+  }
+  g.globalAlpha = 1;
+
+  /* a gentle vignette keeps the title and buttons readable */
+  const vg = g.createRadialGradient(cw * 0.5, ch * 0.5, ch * 0.28, cw * 0.5, ch * 0.5, ch * 0.95);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+  g.fillStyle = vg;
+  g.fillRect(0, 0, cw, ch);
+
+  /* a shooting star every few seconds */
+  starfield.shootAt -= 1 / 60;
+  if (starfield.shoot < 0 && starfield.shootAt <= 0) {
+    starfield.shoot = 0;
+    starfield.shootAt = 5.5 + Math.random() * 5;
+    starfield.shootX = 120 + Math.random() * (cw - 340);
+    starfield.shootY = 60 + Math.random() * (ch * 0.45);
+    starfield.shootA = 0.45 + Math.random() * 0.35;
+  }
+  if (starfield.shoot >= 0) {
+    starfield.shoot += 1 / 60;
+    const k = starfield.shoot / 0.9;
+    if (k >= 1) {
+      starfield.shoot = -1;
+    } else {
+      const hx = starfield.shootX + k * 260;
+      const hy = starfield.shootY + k * 150;
+      const tx = hx - Math.cos(starfield.shootA) * 120;
+      const ty = hy - Math.sin(starfield.shootA) * 120;
+      const fade = Math.sin(k * Math.PI);
+      const lg = g.createLinearGradient(tx, ty, hx, hy);
+      lg.addColorStop(0, 'rgba(180,220,255,0)');
+      lg.addColorStop(1, 'rgba(226,240,255,' + (0.85 * fade).toFixed(3) + ')');
+      g.strokeStyle = lg;
+      g.lineWidth = 2;
+      g.lineCap = 'round';
+      g.beginPath();
+      g.moveTo(tx, ty);
+      g.lineTo(hx, hy);
+      g.stroke();
+      g.globalAlpha = fade;
+      g.fillStyle = '#ffffff';
+      g.beginPath();
+      g.arc(hx, hy, 1.8, 0, TAU);
+      g.fill();
+      g.globalAlpha = 1;
+    }
+  }
+}
+
 /* ------------------------------ menu backdrop ------------------------------ */
 const menuStars = (function () {
   const arr = [];
@@ -7944,8 +8439,9 @@ function drawMinimapPath(k) {
 function render() {
   ctx.clearRect(0, 0, W, H);
 
-  if (game.screen === 'menu' || game.screen === 'class') {
+  if (game.screen === 'menu' || game.screen === 'class' || game.screen === 'zones') {
     drawMenuBackdrop();
+    if (game.screen === 'menu') drawMenuStarfield();
     return;
   }
 
@@ -8003,7 +8499,7 @@ let lastT = 0;
 function update(dt) {
   game.menuTime += dt;
 
-  if (game.screen === 'menu' || game.screen === 'class') return;
+  if (game.screen === 'menu' || game.screen === 'class' || game.screen === 'zones') return;
 
   if (game.screen !== 'playing') {
     updateParticles(dt * 0.5);
@@ -8081,6 +8577,7 @@ window.addEventListener('orientationchange', resize);
      still read so an existing install keeps its record) */
   game.best = SaveSystem.best();
   game.lifetimeGems = SaveSystem.lifetimeGems();
+  game.maxZone = SaveSystem.maxZone();
   refreshSaveUi();
   UI.hud.classList.add('hidden');
 
