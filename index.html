@@ -1004,6 +1004,53 @@
     background:rgba(232,200,116,.09);
     box-shadow:inset 0 0 22px rgba(232,200,116,.07);
   }
+  /* the cosmetics tab splits into the shelf and a live preview on the right */
+  .shop-body{ flex:1; display:flex; min-height:0; }
+  .shop-body #shopGrid{ flex:1; min-width:0; }
+  #cosPreview{
+    display:none; flex:0 0 300px; flex-direction:column; gap:12px;
+    padding:18px 22px 22px 0; box-sizing:border-box;
+  }
+  .shop-body.previewing #cosPreview{ display:flex; }
+  .shop-body.previewing #shopGrid{ flex:1; }
+  .cp-head{ text-align:center; }
+  .cp-kicker{
+    font-family:var(--font-head); font-size:9px; letter-spacing:4px;
+    text-transform:uppercase; color:rgba(232,200,116,.55);
+  }
+  .cp-name{
+    font-family:var(--font-head); font-size:16px; font-weight:900; letter-spacing:2.2px;
+    text-transform:uppercase; color:#ffe7b8; line-height:1.3; margin-top:3px;
+    text-shadow:0 0 22px rgba(232,200,116,.35);
+  }
+  .cp-stage{
+    flex:1; min-height:190px; position:relative; overflow:hidden;
+    background:radial-gradient(ellipse at 50% 58%, rgba(26,32,46,.85), rgba(3,4,9,.98) 74%);
+    border:1px solid rgba(232,200,116,.3); border-radius:3px;
+    box-shadow:inset 0 0 46px rgba(0,0,0,.85);
+  }
+  .cp-stage::after{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(ellipse at 50% 100%, rgba(232,200,116,.06), transparent 62%);
+  }
+  #cpCanvas{ display:block; width:100%; height:100%; }
+  .cp-meta{ text-align:center; display:flex; flex-direction:column; gap:5px; align-items:center; }
+  .cp-cost{
+    display:flex; align-items:center; gap:6px;
+    font-family:var(--font-head); font-size:15px; font-weight:700; color:#ffdf9b;
+    font-variant-numeric:tabular-nums;
+  }
+  .cp-cost svg{ width:13px; height:13px; }
+  .cp-state{
+    font-size:9.5px; letter-spacing:2.6px; text-transform:uppercase;
+    color:rgba(214,226,244,.5);
+  }
+  .cp-state.worn{ color:#6ee7b7; }
+  .cp-state.owned{ color:#ffe7b8; }
+  @media (max-width: 900px){
+    #cosPreview{ display:none !important; }
+  }
+
   #shopGrid{
     flex:1; overflow-y:auto; padding:18px 26px 22px;
     display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr));
@@ -1077,6 +1124,16 @@
     border-color:rgba(148,163,184,.28); background:rgba(148,163,184,.06);
   }
   .sc-buy.maxed:disabled{ color:#6ee7b7; border-color:rgba(110,231,183,.4); background:rgba(110,231,183,.08); opacity:.75; }
+  /* an owned paint job keeps its button gold: EQUIPPED / EQUIP */
+  .sc-buy.cos-eq{
+    color:#ffe7b8; border-color:rgba(232,200,116,.6); background:rgba(232,200,116,.12);
+  }
+  .sc-buy.cos-eq:disabled{
+    opacity:1; color:#ffdf9b; border-color:rgba(232,200,116,.7);
+    background:rgba(232,200,116,.18); box-shadow:0 0 14px rgba(232,200,116,.18) inset;
+    cursor:default;
+  }
+  .sc-buy.cos-eq:not(:disabled):hover{ background:rgba(232,200,116,.26); box-shadow:0 0 18px rgba(232,200,116,.3); }
   .shop-foot{
     padding:0 26px 16px; display:flex; justify-content:space-between; align-items:center; gap:16px;
   }
@@ -1614,7 +1671,22 @@
         <button class="shop-tab" type="button" data-tab="cosmetics">Cosmetics</button>
         <button class="shop-tab" type="button" data-tab="classes">Classes</button>
       </div>
-      <div id="shopGrid"></div>
+      <div class="shop-body" id="shopBody">
+        <div id="shopGrid"></div>
+        <aside id="cosPreview" aria-label="Cosmetic preview">
+          <div class="cp-head">
+            <div class="cp-kicker">Live preview</div>
+            <div class="cp-name" id="cpName">—</div>
+          </div>
+          <div class="cp-stage">
+            <canvas id="cpCanvas" width="300" height="290" aria-hidden="true"></canvas>
+          </div>
+          <div class="cp-meta">
+            <div class="cp-cost" id="cpCost"></div>
+            <div class="cp-state" id="cpState">Hover a card to try it on</div>
+          </div>
+        </aside>
+      </div>
       <div class="shop-foot">
         <div class="shop-note" id="shopNote">Upgrades are permanent — they follow Rael through every run and every universe.</div>
         <div class="shop-flash" id="shopFlash"></div>
@@ -2172,6 +2244,12 @@ const UI = {
   uiRoster: document.getElementById('uiRoster'),
   vicEnding: document.getElementById('vicEnding'),
   shopScreen: document.getElementById('shopScreen'),
+  shopBody: document.getElementById('shopBody'),
+  cosPreview: document.getElementById('cosPreview'),
+  cpCanvas: document.getElementById('cpCanvas'),
+  cpName: document.getElementById('cpName'),
+  cpCost: document.getElementById('cpCost'),
+  cpState: document.getElementById('cpState'),
   shopGrid: document.getElementById('shopGrid'),
   shopTabs: document.getElementById('shopTabs'),
   shopGems: document.getElementById('shopGems'),
@@ -2180,7 +2258,14 @@ const UI = {
   consumables: document.getElementById('consumables'),
   btnChangeClass: document.getElementById('btnChangeClass')
 };
-const ctx = UI.canvas.getContext('2d');
+let ctx = UI.canvas.getContext('2d');   /* the render target; the shop preview
+                                            borrows it through withRenderTarget */
+/* draw with `ctx` pointed at another canvas, then always put it back */
+function withRenderTarget(target, fn) {
+  const previous = ctx;
+  ctx = target;
+  try { fn(); } finally { ctx = previous; }
+}
 const mmCtx = UI.minimap.getContext('2d');
 
 /* =============================================================================
@@ -7666,6 +7751,9 @@ const CONSUMABLE_SLOTS = 3;
 /* ---- paint jobs: purely visual, and saved with the rest of the shop -------
    Each one swaps Rael's whole plate palette, his visor and glow, his dash trail
    and, for a few, a cosmetic flourish (boot flames, gold motes, void cracks). */
+/* set while the cosmetics preview paints a job the player does not own yet */
+let previewSkinId = null;
+
 const SHOP_COSMETICS = [
   {
     id: 'crimson', name: 'Crimson Commander', glyph: '✦', cost: 100,
@@ -7718,6 +7806,118 @@ const SHOP_COSMETICS = [
       helmet: '#8a6a1f', helmetLit: '#d9ad3e', helmetDark: '#4a3610',
       navy: '#c9a227', navyLit: '#ffe08a', navyDark: '#6d5412',
       silver: '#ffe08a', silverDark: '#b8912f', leg: '#6d5412', boot: '#a8842d'
+    }
+  },
+
+  /* ---- the second shipment: ten more paint jobs, each with its own flourish */
+  {
+    id: 'neon', name: 'Neon Samurai', glyph: '⚔', cost: 250,
+    desc: 'Teal and black plate, a neon teal katana glow and a teal dash trail.',
+    visor: '#4dffe0', glow: '#19f7d0', trail: '#2ff5d0', wisp: '#9ffff0',
+    neon: true,
+    armor: {
+      helmet: '#0d2226', helmetLit: '#154045', helmetDark: '#050f11',
+      navy: '#0a2a2c', navyLit: '#115a58', navyDark: '#041214',
+      silver: '#19f7d0', silverDark: '#0a8f7a', leg: '#07191b', boot: '#0e2f31'
+    }
+  },
+  {
+    id: 'arctic', name: 'Arctic Operative', glyph: '❄', cost: 200,
+    desc: 'White and ice blue armour, with a frost trail falling off the boots.',
+    visor: '#bff4ff', glow: '#8fdcff', trail: '#c9f0ff', wisp: '#eafcff',
+    frost: true,
+    armor: {
+      helmet: '#c9deeb', helmetLit: '#f4fbff', helmetDark: '#8ea9bd',
+      navy: '#e6f3fb', navyLit: '#ffffff', navyDark: '#a8c2d4',
+      silver: '#8fdcff', silverDark: '#5aa8c9', leg: '#b7cdda', boot: '#dcf0fa'
+    }
+  },
+  {
+    id: 'bloodknight', name: 'Blood Knight', glyph: '🩸', cost: 350,
+    desc: 'Deep red and black plate. The blade never stops dripping.',
+    visor: '#ff2d2d', glow: '#a30f16', trail: '#c8121c', wisp: '#ff4d4d',
+    blood: true,
+    armor: {
+      helmet: '#2a0709', helmetLit: '#571014', helmetDark: '#120203',
+      navy: '#3d0a0e', navyLit: '#6b1218', navyDark: '#170305',
+      silver: '#8d1119', silverDark: '#4a070c', leg: '#1a0406', boot: '#2e070a'
+    }
+  },
+  {
+    id: 'solar', name: 'Solar Flare', glyph: '☀', cost: 400,
+    desc: 'Bright orange and gold plate inside a pulsing flame aura.',
+    visor: '#fff3b0', glow: '#ffb020', trail: '#ffcf4d', wisp: '#ffe89a',
+    solar: true,
+    armor: {
+      helmet: '#7a3a06', helmetLit: '#c9660c', helmetDark: '#3b1a03',
+      navy: '#a44a06', navyLit: '#ff9a1f', navyDark: '#4a1f02',
+      silver: '#ffd24a', silverDark: '#b8801a', leg: '#5c2a04', boot: '#8a3f07'
+    }
+  },
+  {
+    id: 'phantom', name: 'Phantom', glyph: '☁', cost: 450,
+    desc: 'Dark grey plate at 70% opacity, with purple wisps peeling off it.',
+    visor: '#b98cff', glow: '#8b5cf6', trail: '#a78bfa', wisp: '#d8b4fe',
+    alpha: 0.7, wisps: true,
+    armor: {
+      helmet: '#3a3a44', helmetLit: '#55555f', helmetDark: '#1e1e26',
+      navy: '#2c2c36', navyLit: '#43434e', navyDark: '#141419',
+      silver: '#6b6b7a', silverDark: '#45454f', leg: '#232329', boot: '#333340'
+    }
+  },
+  {
+    id: 'mech', name: 'Mech Titan', glyph: '⚙', cost: 600,
+    desc: 'Bulky silver and blue mechanical plate, with sparks off the shoulders.',
+    visor: '#7cc8ff', glow: '#3b82f6', trail: '#60a5fa', wisp: '#bfdbfe',
+    bulky: true, sparks: true,
+    armor: {
+      helmet: '#8f9aa8', helmetLit: '#d3dae4', helmetDark: '#5b6572',
+      navy: '#1c2f4a', navyLit: '#2f4f77', navyDark: '#0d1626',
+      silver: '#c3ccd8', silverDark: '#7b8794', leg: '#2a3646', boot: '#465264'
+    }
+  },
+  {
+    id: 'corrupted', name: 'Corrupted', glyph: '▚', cost: 700,
+    desc: 'Black plate with a green corruption glitch flickering across the body.',
+    visor: '#39ff14', glow: '#22c55e', trail: '#4ade80', wisp: '#86efac',
+    glitch: true,
+    armor: {
+      helmet: '#0a0f08', helmetLit: '#16220f', helmetDark: '#040604',
+      navy: '#080c06', navyLit: '#152010', navyDark: '#020402',
+      silver: '#1f3a1a', silverDark: '#122310', leg: '#050804', boot: '#0b1208'
+    }
+  },
+  {
+    id: 'royal', name: 'Royal Guard', glyph: '♛', cost: 350,
+    desc: 'Deep purple and gold plate with a golden cape flowing behind him.',
+    visor: '#ffe27a', glow: '#ffd54a', trail: '#ffdf7a', wisp: '#fff0b8',
+    cape: true,
+    armor: {
+      helmet: '#3b1a5e', helmetLit: '#5e2a8f', helmetDark: '#210e35',
+      navy: '#4b2175', navyLit: '#6d34a5', navyDark: '#281144',
+      silver: '#ffd54a', silverDark: '#b3912d', leg: '#2a1244', boot: '#3d1a5e'
+    }
+  },
+  {
+    id: 'cyberninja', name: 'Cyber Ninja', glyph: '⌖', cost: 500,
+    desc: 'Sleek dark grey and red plate with a red laser sight from the helmet.',
+    visor: '#ff2b4a', glow: '#ef4444', trail: '#f87171', wisp: '#fca5a5',
+    laser: true,
+    armor: {
+      helmet: '#2b2b31', helmetLit: '#45454e', helmetDark: '#151519',
+      navy: '#1d1d22', navyLit: '#32323a', navyDark: '#0d0d10',
+      silver: '#8a1520', silverDark: '#540b12', leg: '#17171b', boot: '#26262c'
+    }
+  },
+  {
+    id: 'timelord', name: 'Time Lord', glyph: '⌛', cost: 1000,
+    desc: 'Plate that cycles through every colour, ringed by orbiting clock faces.',
+    visor: '#ffffff', glow: '#a78bfa', trail: '#c4b5fd', wisp: '#ede9fe',
+    cycle: true, orbits: true,
+    armor: {
+      helmet: '#2b2350', helmetLit: '#4a3a86', helmetDark: '#171233',
+      navy: '#2a2050', navyLit: '#453482', navyDark: '#150f2c',
+      silver: '#a78bfa', silverDark: '#6d4fd0', leg: '#1d1738', boot: '#2c2352'
     }
   }
 ];
@@ -7804,8 +8004,12 @@ const Shop = (function () {
   function classOwned(id) { ensure(); return !!state.classes[id]; }
   function cosmeticSkin() {
     ensure();
-    if (!state.cosmetic) return null;
-    return SHOP_COSMETICS.find((k) => k.id === state.cosmetic) || null;
+    /* the cosmetics preview draws whatever is hovered, owned or not */
+    const wanted = previewSkinId || state.cosmetic;
+    if (!wanted) return null;
+    const skin = SHOP_COSMETICS.find((k) => k.id === wanted) || null;
+    if (!skin) return null;
+    return skin.cycle ? cycledCosmetic(skin, game.time) : skin;
   }
   function cosmeticColour() {
     const skin = cosmeticSkin();
@@ -8025,7 +8229,7 @@ const SHOP_TABS = {
   },
   cosmetics: {
     items: SHOP_COSMETICS,
-    note: 'Paint jobs for the visor and the field glow. Click a card you own to wear it.'
+    note: 'Hover a paint job to see Rael wear it. Click a card you own to equip it.'
   },
   classes: {
     items: SHOP_CLASSES,
@@ -8106,7 +8310,9 @@ function shotShopCard(tab, it) {
     '<div class="sc-name">' + it.name + '</div></div>' +
     '<div class="sc-desc">' + it.desc + '</div>' + stars +
     '<div class="sc-foot"><span class="sc-cost">' + GEM_ICON + it.cost + '</span>' +
-    '<button class="sc-buy' + (st.full ? ' maxed' : '') + '" type="button" data-buy="' + it.id + '"' +
+    '<button class="sc-buy' + (st.full ? ' maxed' : '') +
+    (tab === 'cosmetics' && st.level > 0 ? ' cos-eq' : '') +
+    '" type="button" data-buy="' + it.id + '"' +
     (st.disabled ? ' disabled' : '') + '>' + st.label + '</button></div></div>';
 }
 
@@ -8137,6 +8343,162 @@ function renderShop() {
       tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === tab);
     }
   }
+  /* the cosmetics shelf carries a live preview next to it */
+  const previewing = tab === 'cosmetics' && !!UI.cosPreview;
+  if (UI.shopBody) UI.shopBody.classList.toggle('previewing', previewing);
+  if (previewing) {
+    const keep = (cosPreviewId && cosmeticById(cosPreviewId)) ? cosPreviewId : null;
+    setCosPreview(keep || Shop.state.cosmetic || SHOP_COSMETICS[0].id);
+    startCosPreview();
+  } else {
+    stopCosPreview();
+  }
+}
+
+/* =============================================================================
+   THE COSMETICS PREVIEW
+   =============================================================================
+   A dark stage on the right of the cosmetics tab. It draws the real trooper —
+   the same body, weapon and flourishes the battlefield uses — wearing whichever
+   paint job the pointer is on, with an idle bob. Hovering a card repaints it on
+   the next frame; nothing is bought until the player says so.
+   ------------------------------------------------------------------------- */
+let cosPreviewId = null;      /* the job on the stage right now */
+let cosPreviewRaf = 0;        /* its own clock: the game loop is parked */
+
+function cosmeticById(id) {
+  return SHOP_COSMETICS.find((k) => k.id === id) || null;
+}
+
+function setCosPreview(id) {
+  const skin = cosmeticById(id);
+  if (!skin) return;
+  cosPreviewId = id;
+  if (UI.cpName) UI.cpName.textContent = skin.name;
+  if (UI.cpCost) UI.cpCost.innerHTML = GEM_ICON + skin.cost;
+  if (UI.cpState) {
+    const worn = Shop.state.cosmetic === id;
+    const owned = shopCosmeticOwned(id);
+    UI.cpState.textContent = worn ? 'Equipped' : (owned ? 'Owned · click to equip'
+      : (Shop.gems() >= skin.cost ? 'Click to buy' : 'Not enough gems'));
+    UI.cpState.classList.toggle('worn', worn);
+    UI.cpState.classList.toggle('owned', !worn && owned);
+  }
+}
+
+/* one frame of the stage */
+function drawCosPreviewFrame(t) {
+  const cv = UI.cpCanvas;
+  if (!cv) return;
+  const pc = cv.getContext('2d');
+  if (!pc) return;
+  /* the stage is fluid: match the buffer to the box so nothing is stretched */
+  const box = (cv.getBoundingClientRect && cv.getBoundingClientRect()) || null;
+  const cw = Math.max(220, Math.round((box && box.width) || 300));
+  const chh = Math.max(200, Math.round((box && box.height) || 290));
+  if (cv.width !== cw || cv.height !== chh) { cv.width = cw; cv.height = chh; }
+  const w = cv.width;
+  const h = cv.height;
+  pc.clearRect(0, 0, w, h);
+
+  /* the dark box: a floor, a soft pool of light and a horizon line */
+  const floor = pc.createRadialGradient(w / 2, h * 0.78, 8, w / 2, h * 0.78, w * 0.62);
+  floor.addColorStop(0, 'rgba(56,64,86,0.55)');
+  floor.addColorStop(0.55, 'rgba(18,22,34,0.35)');
+  floor.addColorStop(1, 'rgba(3,4,9,0)');
+  pc.fillStyle = floor;
+  pc.fillRect(0, 0, w, h);
+
+  const skin = cosmeticById(cosPreviewId) || Shop.cosmeticSkin();
+  if (!skin) return;
+  const sx = skin.alpha || 1;
+
+  /* the trooper, idle: feet on the floor, a slow breath, facing the pointer */
+  const realPlayer = game.player;
+  const realTime = game.time;
+  const fake = {
+    x: 0, y: 0, r: 16, angle: -0.42,
+    hp: 5, maxHp: 5, moving: false, walk: 0, moveAng: Math.PI / 2,
+    dashTimer: 0, dashDir: { x: 1, y: 0 }, invuln: 0, shield: 0,
+    swingT: 0, swingFrom: 0, swingTo: 0, trail: [],
+    classId: realPlayer ? realPlayer.classId : 'knight',
+    cosmetic: skin.id, cosmeticAlpha: sx
+  };
+  const bob = Math.sin(t * 2.2) * 1.8;
+  const dir = 1;
+  previewSkinId = skin.id;
+
+  try {
+    game.player = fake;
+    game.time = t;
+    withRenderTarget(pc, function () {
+      /* the pool of light under him */
+      ctx.save();
+      const R = 30 + 2.5 * Math.sin(t * 1.5);
+      const halo = ctx.createRadialGradient(w / 2, h * 0.7, R * 0.3, w / 2, h * 0.7, R * 1.6);
+      halo.addColorStop(0, hexToRgba(skin.glow, 0.22));
+      halo.addColorStop(1, hexToRgba(skin.glow, 0));
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.ellipse(w / 2, h * 0.7, R * 1.6, R * 0.7, 0, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(w / 2, h * 0.56);
+      const scale = Math.min(w / 300, h / 290) * 2.7;
+      ctx.scale(scale, scale);
+      /* the shadow he stands on */
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.beginPath();
+      ctx.ellipse(0, SOLDIER.feet + 1, 17, 5.6, 0, 0, TAU);
+      ctx.fill();
+
+      drawSoldierAura(fake, soldierGlow(fake));
+      const g = soldierGlow(fake);
+      drawCosmeticFlourish(fake, g, bob, dir, 'back');
+      drawRaelBody(fake, bob, null, 1);
+      const weapon = getClass().weapon;
+      if (weapon === 'blade') drawKnightSword(fake, bob);
+      else if (weapon === 'axes') drawBerserkerAxes(fake, bob);
+      else drawRaelWeapon(fake, bob, null);
+      drawCosmeticFlourish(fake, g, bob, dir, 'front');
+      ctx.restore();
+    });
+  } finally {
+    game.player = realPlayer;
+    game.time = realTime;
+    previewSkinId = null;
+  }
+}
+
+function cosPreviewTick() {
+  cosPreviewRaf = 0;
+  if (!isCosPreviewOpen()) return;
+  try {
+    drawCosPreviewFrame(game.time + performance.now() / 1000);
+  } catch (err) {
+    /* a preview must never be able to break the shop */
+  }
+  cosPreviewRaf = requestAnimationFrame(cosPreviewTick);
+}
+
+function isCosPreviewOpen() {
+  return shopTab === 'cosmetics' && currentScreen === 'shopOverlay' && !!UI.cpCanvas;
+}
+
+function startCosPreview() {
+  if (!isCosPreviewOpen()) return;
+  if (!cosPreviewId) {
+    setCosPreview(Shop.state.cosmetic || SHOP_COSMETICS[0].id);
+  }
+  if (cosPreviewRaf) return;
+  cosPreviewRaf = requestAnimationFrame(cosPreviewTick);
+}
+
+function stopCosPreview() {
+  if (cosPreviewRaf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(cosPreviewRaf);
+  cosPreviewRaf = 0;
 }
 
 function shopSay(text, bad) {
@@ -8192,6 +8554,7 @@ function shopBuy(tab, id) {
       if (game.player) applyCosmeticToPlayer(game.player);
       Sound.ability();
       shopSay(it.name + ' equipped');
+      cosPreviewId = id;          /* the stage keeps showing what was just worn */
       renderShop();
       return true;
     }
@@ -8203,6 +8566,7 @@ function shopBuy(tab, id) {
     if (game.player) applyCosmeticToPlayer(game.player);
     Sound.ability();
     shopSay(it.name + ' bought and equipped');
+    cosPreviewId = id;            /* the stage follows the purchase */
     renderShop();
     return true;
   }
@@ -8269,9 +8633,11 @@ function openShop(from) {
   game.mouse.down = false;
   renderShop();
   showScreen('shopOverlay');
+  startCosPreview();
 }
 
 function closeShop() {
+  stopCosPreview();
   const back = shopReturn.screen || 'menu';
   const layer = SCREENS[shopReturn.layer] ? shopReturn.layer : 'mainMenu';
   showScreen(layer, back);
@@ -8901,6 +9267,16 @@ if (UI.shopTabs) {
   });
 }
 if (UI.shopGrid) {
+  const hoverCard = (e) => {
+    if (shopTab !== 'cosmetics') return;
+    const t2 = e.target;
+    const card = t2 && t2.closest ? t2.closest('[data-item]') : null;
+    if (!card) return;
+    const id = card.getAttribute('data-item');
+    if (id && id !== cosPreviewId) setCosPreview(id);
+  };
+  UI.shopGrid.addEventListener('mouseover', hoverCard);
+  UI.shopGrid.addEventListener('focusin', hoverCard);
   UI.shopGrid.addEventListener('click', (e) => {
     const btn = e.target && e.target.closest ? e.target.closest('[data-buy]') : null;
     if (btn && !btn.disabled) { shopBuy(shopTab, btn.getAttribute('data-buy')); return; }
@@ -13377,8 +13753,10 @@ function hexTriplet(hex) {
 function raelPalette(p) {
   if (!p || !p.cosmetic) return RAEL;
   const id = p.cosmetic;
-  if (p._skinId === id && p._skinPlate) return p._skinPlate;
   const skin = Shop.cosmeticSkin();
+  /* Time Lord re-colours itself every frame, so it must not be cached */
+  if (skin && skin.cycle) return skin.armor;
+  if (p._skinId === id && p._skinPlate) return p._skinPlate;
   p._skinId = id;
   p._skinPlate = (skin && skin.armor) ? skin.armor : RAEL;
   return p._skinPlate;
@@ -13406,7 +13784,19 @@ function soldierGlow(p) {
       wisp: skin.wisp || skin.glow,
       flames: !!skin.flames,
       aura: !!skin.aura,
-      cracks: !!skin.cracks
+      cracks: !!skin.cracks,
+      neon: !!skin.neon,
+      frost: !!skin.frost,
+      blood: !!skin.blood,
+      solar: !!skin.solar,
+      wisps: !!skin.wisps,
+      bulky: !!skin.bulky,
+      sparks: !!skin.sparks,
+      glitch: !!skin.glitch,
+      cape: !!skin.cape,
+      laser: !!skin.laser,
+      orbits: !!skin.orbits,
+      cycle: !!skin.cycle
     };
   }
   const t = game.time;
@@ -13507,6 +13897,319 @@ function drawBootFlames(p, bob, dir, g) {
     drawFlame(p.x + dir * side * 6.4, p.y + (bob || 0) + 22.4,
       Math.PI / 2 + Math.sin(t * 9 + i) * 0.18,
       11 + flick * 9, 2.4 + flick * 1.4, g, 0.5 + flick * 0.3);
+  }
+}
+
+
+/* =============================================================================
+   THE SECOND SHIPMENT — cosmetic flourishes
+   =============================================================================
+   Ten paint jobs, each with one signature flourish. They are drawn procedurally
+   from the clock instead of spawning particles, so the same code paints them on
+   the battlefield and in the shop's preview panel, and a paint job costs the
+   frame no more than a few strokes.
+   ------------------------------------------------------------------------- */
+/* Time Lord: the plate itself cycles through the spectrum */
+function hslHex(h, s, l) {
+  const hh = ((h % 360) + 360) % 360;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
+  const m = l - c / 2;
+  let r = 0, g2 = 0, b = 0;
+  if (hh < 60) { r = c; g2 = x; }
+  else if (hh < 120) { r = x; g2 = c; }
+  else if (hh < 180) { g2 = c; b = x; }
+  else if (hh < 240) { g2 = x; b = c; }
+  else if (hh < 300) { r = x; b = c; }
+  else { r = c; b = x; }
+  const to = (v) => {
+    const n = Math.round((v + m) * 255);
+    const hex2 = Math.max(0, Math.min(255, n)).toString(16);
+    return hex2.length === 1 ? '0' + hex2 : hex2;
+  };
+  return '#' + to(r) + to(g2) + to(b);
+}
+
+/* a cycled copy of a paint job, built from the wall clock the game runs on */
+function cycledCosmetic(skin, t) {
+  const h = (t * 42) % 360;
+  return {
+    id: skin.id, name: skin.name, cycle: true, orbits: true,
+    desc: skin.desc, cost: skin.cost, glyph: skin.glyph,
+    visor: hslHex(h + 40, 1.0, 0.82),
+    glow: hslHex(h, 0.92, 0.60),
+    trail: hslHex(h + 20, 0.92, 0.70),
+    wisp: hslHex(h + 60, 0.90, 0.86),
+    armor: {
+      helmet: hslHex(h, 0.45, 0.22), helmetLit: hslHex(h + 15, 0.55, 0.38), helmetDark: hslHex(h, 0.50, 0.12),
+      navy: hslHex(h + 10, 0.50, 0.24), navyLit: hslHex(h + 20, 0.65, 0.45), navyDark: hslHex(h, 0.45, 0.10),
+      silver: hslHex(h + 30, 0.85, 0.62), silverDark: hslHex(h + 30, 0.70, 0.38),
+      leg: hslHex(h, 0.45, 0.14), boot: hslHex(h, 0.50, 0.22)
+    }
+  };
+}
+
+/* ---- the flourishes, in two passes so a cape sits behind him and a laser
+        sight sits in front of him ---- */
+function drawCosmeticFlourish(p, g, bob, dir, layer) {
+  const t = game.time;
+  const x = p.x;
+  const y = p.y + (bob || 0);
+  const facing = dir >= 0 ? 1 : -1;
+
+  if (layer === 'back') {
+    /* Royal Guard: a golden cape streaming off his shoulders */
+    if (g.cape) {
+      ctx.save();
+      const sway = Math.sin(t * 2.2) * 3.4;
+      const grad = ctx.createLinearGradient(x - facing * 4, y - 8, x - facing * 30, y + 24);
+      grad.addColorStop(0, 'rgba(255,213,74,0.92)');
+      grad.addColorStop(0.55, 'rgba(180,140,40,0.72)');
+      grad.addColorStop(1, 'rgba(90,60,14,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(x - facing * 3, y - 12);
+      ctx.quadraticCurveTo(x - facing * (18 + sway), y - 4, x - facing * (26 + sway), y + 20 + Math.sin(t * 1.7) * 3);
+      ctx.quadraticCurveTo(x - facing * 16, y + 16, x - facing * 2, y + 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,235,160,0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    /* Mech Titan: a wider, boxier silhouette — pauldrons and a back pack */
+    if (g.bulky) {
+      ctx.save();
+      ctx.fillStyle = g.skin.armor.silver;
+      roundRect(ctx, x - 20, y - 15, 9, 10, 2.4); ctx.fill();
+      roundRect(ctx, x + 11, y - 15, 9, 10, 2.4); ctx.fill();
+      ctx.fillStyle = g.skin.armor.silverDark;
+      roundRect(ctx, x - 13, y - 10, 26, 6, 2); ctx.fill();
+      ctx.fillStyle = 'rgba(124,200,255,0.9)';
+      roundRect(ctx, x - 5, y - 19, 10, 4, 1.6); ctx.fill();
+      ctx.restore();
+    }
+
+    /* Solar Flare: a pulsing flame aura around the whole body */
+    if (g.solar) {
+      ctx.save();
+      const pulse = 0.62 + 0.38 * Math.sin(t * 3.1);
+      const R = 34 + pulse * 7;
+      const halo = ctx.createRadialGradient(x, y + 4, 6, x, y + 4, R);
+      halo.addColorStop(0, 'rgba(255,236,160,' + (0.34 * pulse).toFixed(3) + ')');
+      halo.addColorStop(0.55, 'rgba(255,150,32,' + (0.20 * pulse).toFixed(3) + ')');
+      halo.addColorStop(1, 'rgba(255,90,0,0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(x, y + 4, R, 0, TAU); ctx.fill();
+      /* flame tongues licking up off the shoulders */
+      ctx.globalAlpha = 0.7;
+      for (let i = 0; i < 7; i++) {
+        const a = (i / 7) * TAU + t * 0.9;
+        const rr = 16 + Math.sin(t * 6 + i) * 3;
+        const fx2 = x + Math.cos(a) * rr;
+        const fy = y + 2 + Math.sin(a) * rr * 0.62;
+        const len = 7 + (Math.sin(t * 9 + i * 1.7) * 0.5 + 0.5) * 9;
+        ctx.fillStyle = i % 2 ? 'rgba(255,196,64,0.75)' : 'rgba(255,120,20,0.7)';
+        ctx.beginPath();
+        ctx.moveTo(fx2 - 2.4, fy);
+        ctx.quadraticCurveTo(fx2, fy - len, fx2 + 2.4, fy);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    /* Phantom: purple wisps peeling off the plate */
+    if (g.wisps) {
+      ctx.save();
+      for (let i = 0; i < 6; i++) {
+        const ph = (t * 0.55 + i * 0.37) % 1;
+        const wx = x + Math.sin((i * 2.4) + t * 1.3) * 13 - facing * 2;
+        const wy = y + 14 - ph * 40;
+        const a = (1 - ph) * 0.55;
+        ctx.globalAlpha = a;
+        ctx.fillStyle = g.wisp;
+        ctx.shadowColor = g.glow;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.ellipse(wx, wy, 3.4 - ph * 1.6, 6.5 - ph * 2.6, Math.sin(t + i) * 0.7, 0, TAU);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  if (layer === 'front') {
+    /* Neon Samurai: the katana edge burns teal */
+    if (g.neon) {
+      ctx.save();
+      const bladeKnights = getClass().weapon === 'blade';
+      const hx = x + Math.cos(p.angle) * 12;
+      const hy = y + Math.sin(p.angle) * 12 - 5;
+      const len = bladeKnights ? 52 : 34;
+      ctx.translate(hx, hy);
+      ctx.rotate(p.angle);
+      ctx.shadowColor = '#19f7d0';
+      ctx.shadowBlur = 16;
+      ctx.strokeStyle = 'rgba(25,247,208,0.95)';
+      ctx.lineWidth = 3.2;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(len, 0); ctx.stroke();
+      ctx.shadowBlur = 6;
+      ctx.strokeStyle = '#eafffb';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(len, 0); ctx.stroke();
+      ctx.restore();
+    }
+
+    /* Arctic Operative: frost falling off both boots */
+    if (g.frost) {
+      ctx.save();
+      for (let i = 0; i < 8; i++) {
+        const ph = (t * 0.9 + i * 0.19) % 1;
+        const side = i % 2 ? 1 : -1;
+        const fx2 = x + side * (6 + (i % 3) * 3) + Math.sin(t * 2 + i) * 2.4;
+        const fy = y + 20 + ph * 22;
+        ctx.globalAlpha = (1 - ph) * 0.85;
+        ctx.fillStyle = i % 3 === 0 ? '#ffffff' : '#bfeaff';
+        ctx.shadowColor = '#8fdcff';
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.moveTo(fx2, fy - 2.6); ctx.lineTo(fx2 + 1.8, fy);
+        ctx.lineTo(fx2, fy + 2.6); ctx.lineTo(fx2 - 1.8, fy);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    /* Blood Knight: the blade never stops dripping */
+    if (g.blood) {
+      ctx.save();
+      const tipX = x + Math.cos(p.angle) * 40;
+      const tipY = y + Math.sin(p.angle) * 40 - 5;
+      ctx.shadowColor = '#7a0a10';
+      ctx.shadowBlur = 7;
+      for (let i = 0; i < 5; i++) {
+        const ph = (t * 0.75 + i * 0.23) % 1;
+        const dx = tipX - i * 2.6 + Math.sin(t * 1.6 + i) * 1.6;
+        const dy = tipY + ph * 26;
+        ctx.globalAlpha = (1 - ph) * 0.95;
+        ctx.fillStyle = '#8d0f16';
+        ctx.beginPath();
+        ctx.ellipse(dx, dy, 1.7, 2.6 + ph * 1.9, 0, 0, TAU);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,70,70,0.75)';
+        ctx.beginPath(); ctx.arc(dx - 0.5, dy - 0.8, 0.9, 0, TAU); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    /* Mech Titan: sparks spitting off the pauldrons */
+    if (g.sparks && Math.sin(t * 2.7) > -0.75) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,236,150,0.95)';
+      ctx.lineWidth = 1.2;
+      ctx.shadowColor = '#ffd166';
+      ctx.shadowBlur = 7;
+      for (let i = 0; i < 4; i++) {
+        const side = i % 2 ? 1 : -1;
+        const ph = (t * 2.4 + i * 0.31) % 1;
+        const sx = x + side * 16;
+        const sy = y - 12;
+        ctx.globalAlpha = (1 - ph) * 0.9;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx + side * ph * 12, sy - ph * 9);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    /* Corrupted: green glitch bars tearing across the plate */
+    if (g.glitch) {
+      ctx.save();
+      const on = Math.sin(t * 11.4) > 0.2 || Math.sin(t * 3.1) > 0.85;
+      if (on) {
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 5; i++) {
+          const seed = Math.sin(Math.floor(t * 9) * 12.9898 + i * 78.233) * 43758.5453;
+          const r = seed - Math.floor(seed);
+          const gy = y - 18 + (i * 8.6) + r * 4;
+          const gw = 12 + r * 14;
+          ctx.globalAlpha = 0.35 + r * 0.5;
+          ctx.fillStyle = '#39ff14';
+          ctx.fillRect(x - 12 + r * 6, gy, gw, 1.8 + r * 1.2);
+        }
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = '#0aff9d';
+        ctx.fillRect(x - 13, y + 4 + Math.sin(t * 7) * 3, 10, 1.4);
+        ctx.restore();
+      } else {
+        ctx.restore();
+      }
+      /* the odd green scanline crawling up the body */
+      ctx.save();
+      ctx.globalAlpha = 0.18 + 0.12 * Math.sin(t * 5.5);
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 1;
+      const scan = y + 20 - ((t * 26) % 46);
+      ctx.beginPath(); ctx.moveTo(x - 13, scan); ctx.lineTo(x + 13, scan); ctx.stroke();
+      ctx.restore();
+    }
+
+    /* Cyber Ninja: a red laser sight out of the helmet */
+    if (g.laser) {
+      ctx.save();
+      const ex = x + Math.cos(p.angle) * 8;
+      const ey = y + Math.sin(p.angle) * 8 - 12;
+      const far = 210;
+      const tx = ex + Math.cos(p.angle) * far;
+      const ty = ey + Math.sin(p.angle) * far;
+      const beam = ctx.createLinearGradient(ex, ey, tx, ty);
+      beam.addColorStop(0, 'rgba(255,43,74,0.85)');
+      beam.addColorStop(0.7, 'rgba(255,43,74,0.32)');
+      beam.addColorStop(1, 'rgba(255,43,74,0)');
+      ctx.strokeStyle = beam;
+      ctx.lineWidth = 1.6;
+      ctx.shadowColor = '#ff2b4a';
+      ctx.shadowBlur = 9;
+      ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(tx, ty); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,90,110,0.95)';
+      ctx.beginPath(); ctx.arc(ex, ey, 1.9, 0, TAU); ctx.fill();
+      /* the sight dot sitting where the beam lands */
+      const dot = 0.5 + 0.5 * Math.sin(t * 8);
+      ctx.globalAlpha = 0.45 + dot * 0.5;
+      ctx.beginPath(); ctx.arc(tx, ty, 2.6 + dot, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+
+    /* Time Lord: clock faces circling him, hands turning */
+    if (g.orbits) {
+      ctx.save();
+      for (let i = 0; i < 3; i++) {
+        const a = t * 0.9 + (i / 3) * TAU;
+        const rx = x + Math.cos(a) * 30;
+        const ry = y + 2 + Math.sin(a) * 15;
+        const r = 6.2 + (i === 0 ? 1.2 : 0);
+        ctx.globalAlpha = 0.55 + 0.35 * Math.abs(Math.sin(a));
+        ctx.fillStyle = 'rgba(12,10,26,0.85)';
+        ctx.strokeStyle = g.glow;
+        ctx.lineWidth = 1.2;
+        ctx.shadowColor = g.glow;
+        ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.arc(rx, ry, r, 0, TAU); ctx.fill(); ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        const ha = a * 3.1;
+        ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx + Math.cos(ha) * (r - 2.2), ry + Math.sin(ha) * (r - 2.2)); ctx.stroke();
+        ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx + Math.cos(ha * 2.4) * (r - 1.2), ry + Math.sin(ha * 2.4) * (r - 1.2)); ctx.stroke();
+      }
+      ctx.restore();
+    }
   }
 }
 
@@ -13929,7 +14632,9 @@ function drawPlayer() {
     /* aiming up? the weapon passes behind the soldier instead of through him */
     const behind = !bladeClass && Math.sin(p.angle) < -0.15;
     if (behind) drawGun();
+    drawCosmeticFlourish(p, g, bob, dir, 'back');
     drawBody();
+    drawCosmeticFlourish(p, g, bob, dir, 'front');
     drawThrusters(p, g, bob, dir);
     if (g.flames) drawBootFlames(p, bob, dir, g);
     if (!behind) drawGun();
