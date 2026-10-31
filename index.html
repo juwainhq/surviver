@@ -152,55 +152,109 @@
   .stat svg{ width:16px; height:16px; }
   .stat .lbl{ font-size:11px; letter-spacing:2px; color:rgba(214,226,244,.6); font-weight:600; }
 
-  /* ability ring bar */
+  /* ------------------------------ ability bar ------------------------------
+     One clean row of square buttons, centred at the bottom of the screen.
+     Every slot is a fixed 52x52 square: the icon in the middle, the key in the
+     top-left corner, the ability name in tiny type under the icon. A locked
+     slot is a dark grey padlock. The circular sweep unwinds clockwise as the
+     cooldown counts down, and the thin ring fills back up behind it.
+     ------------------------------------------------------------------------ */
   #abilities{
-    position:absolute; bottom:24px; left:50%; transform:translateX(-50%);
-    display:flex; gap:20px; align-items:flex-end;
+    position:absolute; left:50%; bottom:16px;
+    transform:translateX(-50%);
+    display:flex; flex-direction:row; flex-wrap:nowrap;
+    align-items:flex-end; justify-content:center;
+    gap:8px; margin:0; padding:0;
+    z-index:26; pointer-events:none;
   }
-  .ability{ position:relative; width:56px; height:56px; display:flex; align-items:center; justify-content:center; }
-  .ability svg{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
-  .ability .ring-bg{ fill:rgba(8,12,20,.62); stroke:rgba(232,200,116,.16); stroke-width:3; }
+  .ability{
+    position:relative; display:block; flex:0 0 52px;
+    width:52px; height:52px; margin:0; padding:0;
+    box-sizing:border-box;
+  }
+  .ability .ab-btn{
+    position:relative; display:block; overflow:hidden;
+    width:52px; height:52px; margin:0; padding:0;
+    box-sizing:border-box; border-radius:4px;
+    background:linear-gradient(180deg, #121826 0%, #080b13 100%);
+    border:1px solid rgba(232,200,116,.6);
+    box-shadow:0 3px 10px rgba(0,0,0,.55), inset 0 0 12px rgba(232,200,116,.08);
+  }
+  /* the thin cooldown ring, drawn inside the square */
+  .ability svg.ab-ring{
+    position:absolute; inset:0; width:100%; height:100%;
+    transform:rotate(-90deg); pointer-events:none;
+  }
+  .ability .ring-bg{ fill:none; stroke:rgba(232,200,116,.14); stroke-width:3; }
   .ability .ring{
-    fill:none; stroke:var(--gold); stroke-width:3; stroke-linecap:round;
+    fill:none; stroke:rgba(232,200,116,.8); stroke-width:3; stroke-linecap:round;
     stroke-dasharray:169.6; stroke-dashoffset:0;
-    /* the dash offset is written every frame; the transition smooths the gaps */
     transition:stroke-dashoffset .12s linear, stroke .25s ease;
   }
-  .ability.ready .ring{ stroke:#8fe8ff; filter:drop-shadow(0 0 6px rgba(143,232,255,.55)); }
+  .ability.ready .ring{ stroke:rgba(143,232,255,.8); }
+  /* the circular cooldown overlay: a dark wedge that unwinds clockwise */
+  .ability .ab-sweep{
+    position:absolute; inset:0; border-radius:50%;
+    background:conic-gradient(rgba(2,4,9,.86) calc(var(--cd, 1) * 360deg), rgba(2,4,9,0) 0);
+    opacity:0; transition:opacity .12s linear;
+    pointer-events:none;
+  }
+  .ability.cooling .ab-sweep{ opacity:1; }
+  /* the icon, dead centre */
   .ability .icon{
-    font-family:var(--font-head); font-size:17px; font-weight:700; color:#f7e9c3;
-    text-shadow:0 0 12px rgba(232,200,116,.45);
+    position:absolute; left:0; right:0; top:11px; height:20px;
+    display:block; text-align:center; line-height:20px;
+    font-family:var(--font-head); font-size:17px; font-weight:700;
+    color:#f7e9c3; text-shadow:0 0 10px rgba(232,200,116,.45);
+    transition:opacity .15s ease;
   }
-  /* a locked slot is a dark grey padlock, no ring, no key letter */
-  .ability .lock{
-    position:absolute; display:none; width:20px; height:20px; color:#4b5563;
+  .ability.ready .icon{ color:#dff6ff; text-shadow:0 0 12px rgba(143,232,255,.6); }
+  /* the key label, tiny, pinned to the top-left corner */
+  .ability .key{
+    position:absolute; top:3px; left:4px;
+    font-family:var(--font-head); font-size:8px; font-weight:700; line-height:1;
+    letter-spacing:.4px; color:rgba(255,223,155,.92);
+    text-shadow:0 1px 3px rgba(0,0,0,.9);
+    white-space:nowrap;
   }
-  .ability .lock svg{ position:static; inset:auto; width:20px; height:20px; transform:none; }
-  .ability.locked{ filter:none; }
-  .ability.locked .lock{ display:block; }
-  .ability.locked .icon,
-  .ability.locked .cd,
-  .ability.locked .key{ display:none; }
-  .ability.locked .ring-bg{ fill:rgba(10,12,16,.72); stroke:rgba(107,114,128,.30); }
-  .ability.locked .ring{ stroke:rgba(75,85,99,.25); stroke-dashoffset:169.6; }
-  .ability.locked .label{ color:rgba(107,114,128,.55); }
-  .ability.ready .icon{ color:#dff6ff; text-shadow:0 0 14px rgba(143,232,255,.7); }
+  /* the ability name, tiny, under the icon */
+  .ability .label{
+    position:absolute; left:1px; right:1px; bottom:3px;
+    display:block; text-align:center;
+    font-size:7px; line-height:1; letter-spacing:.2px;
+    color:rgba(232,200,116,.82);
+    white-space:nowrap; overflow:hidden;
+  }
+  /* seconds still on the clock, right over the icon */
   .ability .cd{
-    position:absolute; font-family:var(--font-head); font-size:14px; font-weight:700;
-    color:#e8f4ff; letter-spacing:.5px;
-    text-shadow:0 0 4px #000, 0 0 10px rgba(0,0,0,.9);
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-head); font-size:14px; font-weight:700;
+    color:#e8f4ff; text-shadow:0 0 5px #000, 0 0 12px rgba(0,0,0,.95);
   }
   .ability.ready .cd{ display:none; }
-  .ability.cooling .icon{ opacity:.22; }
+  .ability.cooling .icon{ opacity:.3; }
   .ability.cooling .label{ color:rgba(232,200,116,.45); }
-  .ability .label{
-    position:absolute; bottom:-15px; left:50%; transform:translateX(-50%);
-    font-size:9.5px; letter-spacing:1.6px; color:rgba(232,200,116,.82); white-space:nowrap;
+  /* a locked slot is a dark grey padlock and nothing else */
+  .ability .lock{
+    position:absolute; inset:0; display:none;
+    align-items:center; justify-content:center;
+    color:#4b5563;
   }
-  .ability .key{
-    position:absolute; top:-13px; left:50%; transform:translateX(-50%);
-    font-size:9.5px; letter-spacing:1.4px; color:rgba(214,226,244,.55); white-space:nowrap;
+  .ability .lock svg{ width:20px; height:20px; display:block; fill:currentColor; }
+  .ability.locked .lock{ display:flex; }
+  .ability.locked .icon,
+  .ability.locked .cd,
+  .ability.locked .key,
+  .ability.locked .label,
+  .ability.locked .ab-sweep{ display:none; }
+  .ability.locked .ab-btn{
+    background:linear-gradient(180deg, #14161b 0%, #0a0b0f 100%);
+    border-color:rgba(107,114,128,.36);
+    box-shadow:none;
   }
+  .ability.locked .ring-bg{ stroke:rgba(107,114,128,.18); }
+  .ability.locked .ring{ stroke:transparent; }
 
   /* class badge (bottom left) */
   #classBadge{
@@ -1203,7 +1257,7 @@
 
   /* the seventh ability slot only exists once the Overdrive Core is bought */
   #abOverdrive{ display:none; }
-  #abOverdrive.show{ display:flex; }
+  #abOverdrive.show{ display:block; }
 
   /* ---------------- universe select strip (zone screen) ---------------- */
   #universeRow{
@@ -1341,40 +1395,83 @@
       <span class="stat time" title="Run time"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c874" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.6 1.7M9 3h6"/></svg><span id="runTime">00:00:00</span></span>
     </div>
 
-    <div id="abilities">
+    <div id="abilities" role="group" aria-label="Abilities">
       <div class="ability" id="abQ">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon" id="qIcon">⚔</span><span class="cd"></span><span class="key">Q</span><span class="label" id="qLabel">BASH</span>
-        <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        <div class="ab-btn">
+          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" id="qIcon" aria-hidden="true">⚔</span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">Q</span>
+          <span class="label" id="qLabel">BASH</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
       </div>
-      <div class="ability" id="abNova">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">✦</span><span class="cd"></span><span class="key">E</span><span class="label">NOVA</span>
-        <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+      <div class="ability locked" id="abNova">
+        <div class="ab-btn">
+          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">✦</span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">E</span>
+          <span class="label">NOVA</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
       </div>
-      <div class="ability" id="abOverdrive">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">⇉</span><span class="cd"></span><span class="key">Z</span><span class="label">OVERDRIVE</span>
+      <div class="ability locked" id="abOverdrive">
+        <div class="ab-btn">
+          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">⇉</span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">Z</span>
+          <span class="label">OVERDRIVE</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
       </div>
-      <div class="ability" id="abDash">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">➤</span><span class="cd"></span><span class="key">SHIFT</span><span class="label">DASH</span>
-        <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+      <div class="ability locked" id="abDash">
+        <div class="ab-btn">
+          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">➤</span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">SHIFT</span>
+          <span class="label">DASH</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
       </div>
-      <div class="ability" id="abTurret">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">⌖</span><span class="cd"></span><span class="key">F</span><span class="label">TURRET</span>
-        <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+      <div class="ability locked" id="abTurret">
+        <div class="ab-btn">
+          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">⌖</span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">F</span>
+          <span class="label">TURRET</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
       </div>
-      <div class="ability" id="abOvercharge">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">⚡</span><span class="cd"></span><span class="key">R</span><span class="label">OVERCHARGE</span>
-        <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+      <div class="ability locked" id="abOvercharge">
+        <div class="ab-btn">
+          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">⚡</span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">R</span>
+          <span class="label">OVERCHARGE</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
       </div>
-      <div class="ability" id="abBomb">
-        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-        <span class="icon">◉</span><span class="cd"></span><span class="key">X</span><span class="label">TIME BOMB</span>
-        <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+      <div class="ability locked" id="abBomb">
+        <div class="ab-btn">
+          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">◉</span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">X</span>
+          <span class="label">TIME BOMB</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
       </div>
     </div>
 
@@ -10137,10 +10234,13 @@ function updateHealthOrbs() {
 
 const RING_LEN = 169.6;
 function setRing(el, readiness) {
+  if (!el) return;
   const ring = el.querySelector('.ring');
   if (!ring) return;
   const r = clamp(readiness, 0, 1);
   ring.style.strokeDashoffset = String(RING_LEN * (1 - r));
+  /* the same number drives the circular sweep, which unwinds clockwise */
+  el.style.setProperty('--cd', String(r));
   el.classList.toggle('ready', r >= 0.999);
   el.classList.toggle('cooling', r < 0.999);
 }
