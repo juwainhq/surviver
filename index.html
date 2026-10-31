@@ -1351,7 +1351,7 @@
   .shop-flash.show{ opacity:1; }
   .shop-flash.bad{ color:#fca5a5; }
 
-  /* ---- consumable satchel: three quick slots, bottom left ---- */
+    /* ---- consumable satchel: three quick slots, bottom left ---- */
   #consumables{
     position:absolute; left:22px; bottom:22px;
     display:flex; flex-direction:column; gap:8px; pointer-events:none;
@@ -1363,14 +1363,12 @@
     border:1px solid rgba(232,200,116,.3); border-radius:3px;
     transition:border-color .18s ease, box-shadow .18s ease, opacity .18s ease;
   }
-  .consumable-slot.empty{ opacity:.3; border-style:dashed; }
   .consumable-slot .key{
     flex:0 0 auto; width:19px; height:19px; border-radius:3px;
     display:flex; align-items:center; justify-content:center;
     font-family:var(--font-head); font-size:10px; font-weight:700; color:#0a0c12;
     background:rgba(232,200,116,.85);
   }
-  .consumable-slot.empty .key{ background:rgba(148,163,184,.4); }
   .consumable-slot .cicon{
     flex:0 0 auto; width:16px; text-align:center;
     font-family:var(--font-head); font-size:15px; color:#ffe4ae;
@@ -1379,9 +1377,7 @@
     font-family:var(--font-head); font-size:10px; letter-spacing:1.5px;
     text-transform:uppercase; color:#ffe7b8; white-space:nowrap; overflow:hidden;
   }
-  .consumable-slot.pop{ border-color:#ffd54a; box-shadow:0 0 24px rgba(255,213,74,.45); }
-
-  /* the seventh ability slot only exists once the Overdrive Core is bought */
+  .consumable-slot.pop{ border-color:#ffd54a; box-shadow:0 0 24px rgba(255,213,74,.45); }/* the seventh ability slot only exists once the Overdrive Core is bought */
   #abOverdrive{ display:none; }
   #abOverdrive.show{ display:block; }
 
@@ -8494,14 +8490,22 @@ function syncConsumableHud() {
   if (!host) return;
   Shop.ensure();
   const inv = Shop.state.inventory;
+  const count = inv.length;
+  if (count === 0) {
+    host.classList.add('hide');
+    host.innerHTML = '';
+    return;
+  }
+  host.classList.remove('hide');
   let html = '';
-  for (let i = 0; i < CONSUMABLE_SLOTS; i++) {
+  for (let i = 0; i < count; i++) {
     const id = inv[i];
-    const def = id ? SHOP_CONSUMABLES.find((c) => c.id === id) : null;
-    html += '<div class="consumable-slot' + (def ? '' : ' empty') + '" data-slot="' + i + '">' +
+    const def = SHOP_CONSUMABLES.find((c) => c.id === id);
+    if (!def) continue;
+    html += '<div class="consumable-slot" data-slot="' + i + '">' +
       '<span class="key">' + (i + 1) + '</span>' +
-      '<span class="cicon">' + (def ? def.glyph : '·') + '</span>' +
-      '<span class="cname">' + (def ? def.name : 'Empty') + '</span></div>';
+      '<span class="cicon">' + def.glyph + '</span>' +
+      '<span class="cname">' + def.name + '</span></div>';
   }
   host.innerHTML = html;
 }
