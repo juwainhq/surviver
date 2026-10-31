@@ -723,6 +723,45 @@
     font-size:10px; line-height:1.3; color:rgba(159,179,200,.92); letter-spacing:.2px;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   }
+  /* ---- the three shop classes: same card, a gem price pinned on top ---- */
+  #classGrid{ position:relative; }
+  .class-card{ position:relative; }
+  .class-card .cprice{
+    position:absolute; top:6px; right:7px;
+    display:none; align-items:center; gap:3px;
+    font-family:var(--font-head); font-size:10px; letter-spacing:.8px; line-height:1;
+    color:#7ff0c0; background:rgba(4,12,9,.86);
+    border:1px solid rgba(110,231,183,.45); border-radius:999px;
+    padding:3px 7px 3px 5px; pointer-events:none;
+  }
+  .class-card .cprice svg{ width:10px; height:10px; display:block; }
+  .class-card.locked .cprice{ display:flex; }
+  .class-card.locked{ border-color:rgba(110,231,183,.28); }
+  .class-card.locked canvas.cicon{ filter:grayscale(.8) brightness(.7); opacity:.8; }
+  .class-card.locked .cname{ color:#a8bccd; }
+  .class-card.locked .cdesc, .class-card.locked .cpassive{ color:rgba(159,179,200,.6); }
+  .class-card.locked:hover, .class-card.locked:focus-visible{
+    border-color:rgba(110,231,183,.85);
+    box-shadow:0 0 30px rgba(110,231,183,.22), inset 0 0 26px rgba(110,231,183,.05);
+  }
+  .class-card.shop-tile{
+    justify-content:center; gap:10px; text-align:center;
+    border-style:dashed; border-color:rgba(232,200,116,.3);
+    background:linear-gradient(180deg, rgba(10,12,18,.9), rgba(4,5,9,.96));
+  }
+  .class-card.shop-tile .cname{ font-size:12px; color:#ffd98a; }
+  .class-card.shop-tile .cdesc{ -webkit-line-clamp:3; }
+  .class-card.shop-tile .tileglyph{
+    font-family:var(--font-head); font-size:26px; color:rgba(232,200,116,.85);
+    text-shadow:0 0 16px rgba(232,200,116,.4);
+  }
+  /* seven class cards + the shop tile: four across when there is room */
+  @media (min-width: 940px){
+    #classGrid{ grid-template-columns:repeat(4, minmax(0, 220px)); max-width:928px; }
+  }
+  @media (max-width: 939px){
+    #classGrid{ grid-template-columns:repeat(2, minmax(0, 220px)); }
+  }
   /* ---------------- ability unlock ceremony ---------------- */
   #abilityUnlock{
     position:absolute; inset:0; display:none; z-index:48; pointer-events:none;
@@ -924,6 +963,22 @@
     color:#ffe7b8; text-transform:uppercase; line-height:1.3;
   }
   .sc-desc{ font-size:12.5px; line-height:1.45; color:#b9c8da; min-height:52px; }
+  /* the class shelf keeps the class-screen portrait on every card */
+  .shop-card.sc-class{ align-items:stretch; }
+  .sc-portrait{
+    width:88px; height:88px; align-self:center; display:block;
+    border-radius:50%;
+    background:radial-gradient(circle at 50% 42%, rgba(232,200,116,.16), rgba(6,8,13,.96) 72%);
+    border:1px solid rgba(232,200,116,.26);
+    box-shadow:inset 0 0 22px rgba(232,200,116,.12);
+    filter:drop-shadow(0 0 12px rgba(232,200,116,.22));
+  }
+  .shop-card.sc-class .sc-name{ text-align:center; }
+  .shop-card.sc-class .sc-desc{ min-height:44px; }
+  .sc-q{
+    font-size:10.5px; line-height:1.4; letter-spacing:.6px;
+    text-transform:uppercase; color:rgba(255,217,138,.86);
+  }
   .sc-stars{ font-size:13px; letter-spacing:3px; color:#e8c874; }
   .sc-stars .off{ color:rgba(232,200,116,.22); }
   .sc-foot{ margin-top:auto; display:flex; align-items:center; gap:10px; }
@@ -1302,6 +1357,50 @@
         </div>
         <div class="cq">Q · Temporal Rift</div>
         <div class="cpassive">Passive · time powers recharge twice as fast</div>
+      </div>
+      <div class="class-card locked" id="cardBerserker" data-class="berserker" role="button" tabindex="0">
+        <div class="cprice"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>300</div>
+        <canvas class="cicon" id="iconBerserker" width="184" height="184"></canvas>
+        <div class="cname">Berserker</div>
+        <div class="cdesc">No armour and only three orbs, but every blow lands three times as hard.</div>
+        <div class="cstats">
+          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i style="width:100%"></i></span></div>
+          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i style="width:100%"></i></span></div>
+          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i style="width:20%"></i></span></div>
+        </div>
+        <div class="cq">Q · Rage</div>
+        <div class="cpassive">Passive · 3 health orbs · one back every 5 kills</div>
+      </div>
+      <div class="class-card locked" id="cardShadow" data-class="shadow" role="button" tabindex="0">
+        <div class="cprice"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>400</div>
+        <canvas class="cicon" id="iconShadow" width="184" height="184"></canvas>
+        <div class="cname">Shadow Assassin</div>
+        <div class="cdesc">Permanently cloaked past 120 px. Shadow daggers hit like a hammer.</div>
+        <div class="cstats">
+          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i style="width:88%"></i></span></div>
+          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i style="width:96%"></i></span></div>
+          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i style="width:62%"></i></span></div>
+        </div>
+        <div class="cq">Q · Death Mark</div>
+        <div class="cpassive">Passive · unseen past 120 px · kills reset the dash</div>
+      </div>
+      <div class="class-card locked" id="cardTech" data-class="tech" role="button" tabindex="0">
+        <div class="cprice"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>500</div>
+        <canvas class="cicon" id="iconTech" width="184" height="184"></canvas>
+        <div class="cname">Tech Specialist</div>
+        <div class="cdesc">A bouncing disc and two standing turrets that never stop firing.</div>
+        <div class="cstats">
+          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i style="width:74%"></i></span></div>
+          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i style="width:62%"></i></span></div>
+          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i style="width:78%"></i></span></div>
+        </div>
+        <div class="cq">Q · System Overload</div>
+        <div class="cpassive">Passive · right click plants a turret · kills shave 1s off cooldowns</div>
+      </div>
+      <div class="class-card shop-tile" id="cardShopTile" role="button" tabindex="0">
+        <div class="tileglyph">⇉</div>
+        <div class="cname">More classes</div>
+        <div class="cdesc">Spend gems in the Supply Depot to unlock the rest of the roster.</div>
       </div>
     </div>
     <button id="btnClassSkip" type="button">Skip · continue as <span id="skipClassName">Vanguard Knight</span></button>
@@ -1863,13 +1962,20 @@ const UI = {
     document.getElementById('cardKnight'),
     document.getElementById('cardGunslinger'),
     document.getElementById('cardSniper'),
-    document.getElementById('cardMage')
+    document.getElementById('cardMage'),
+    document.getElementById('cardBerserker'),
+    document.getElementById('cardShadow'),
+    document.getElementById('cardTech')
   ],
+  cardShopTile: document.getElementById('cardShopTile'),
   classIcons: [
     document.getElementById('iconKnight'),
     document.getElementById('iconGunslinger'),
     document.getElementById('iconSniper'),
-    document.getElementById('iconMage')
+    document.getElementById('iconMage'),
+    document.getElementById('iconBerserker'),
+    document.getElementById('iconShadow'),
+    document.getElementById('iconTech')
   ],
   className: document.getElementById('className'),
   badgeIcon: document.getElementById('badgeIcon'),
@@ -2690,6 +2796,7 @@ const game = {
   beams: [],           /* instant sniper / railgun beams */
   swings: [],          /* live sword swooshes, drawn for 0.2s each */
   turrets: [],
+  discs: [],           /* Tech Specialist: live energy discs */
   bombs: [],
   pendingZone: 0,
   ambientClock: 0,
@@ -2728,6 +2835,11 @@ function makePlayer() {
     swingFrom: 0,
     swingTo: 0,
     swordTier: 0,       /* 0 silver · 1 plasma edge · 2 nova sword */
+    /* --- the three shop classes ------------------------------------------ */
+    rageT: 0,           /* Berserker: seconds of Rage left */
+    markT: 0,           /* Shadow Assassin: seconds left on a Death Mark */
+    markTarget: null,   /* the body the mark is pinned to */
+    cloakRange: cls.cloak || 0,   /* Shadow Assassin: unseen past this radius */
     bashTimer: 0,
     bashDir: { x: 1, y: 0 },
     dashTimer: 0,
@@ -2864,6 +2976,7 @@ function loadZone(zoneIndex, opts) {
   game.rift = null;
   game.beams.length = 0;
   game.turrets.length = 0;
+  game.discs.length = 0;
   game.bombs.length = 0;
   game.sandPillars.length = 0;
   game.mines.length = 0;
@@ -3216,7 +3329,15 @@ UI.canvas.addEventListener('pointerdown', (e) => {
   Sound.ensure();
   onPointerMove(e);
   if (e.button === 0) game.mouse.down = true;
-  if (e.button === 2 && game.screen === 'playing') dash();
+  if (e.button === 2 && game.screen === 'playing') {
+    /* the Tech Specialist plants a turret where the cursor stands */
+    if (getClass().weapon === 'disc') {
+      deployTurretAt(Math.round(game.mouse.x / viewZoom() + game.cam.x),
+                     Math.round((game.mouse.y - SKY_H) / viewZoom() + game.cam.y));
+    } else {
+      dash();
+    }
+  }
 });
 UI.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 window.addEventListener('pointerup', (e) => { if (e.button === 0) game.mouse.down = false; });
@@ -3348,7 +3469,7 @@ function updatePlayer(dt) {
     const mv = moveVector();
     const wantMove = mv.x !== 0 || mv.y !== 0;
     /* a sand mummy's grip: 45% of his stride while the wraps are on him */
-    const walkSpeed = p.speed * (p.slowT > 0 ? 0.55 : 1) * odm() * speedBuffMult();
+    const walkSpeed = p.speed * (p.slowT > 0 ? 0.55 : 1) * odm() * speedBuffMult() * rageSpeedMult();
     const tx = mv.x * walkSpeed;
     const ty = mv.y * walkSpeed;
     const dx = tx - p.vx;
@@ -3532,12 +3653,78 @@ const CLASSES = [
     colour: '#c4b5fd',
     q: { id: 'rift', name: 'Temporal Rift', label: 'RIFT', glyph: '◉', cd: 20, colour: '#a78bfa', cdScale: 0.5 },
     passive: 'Time powers recharge twice as fast'
+  },
+  /* ---- the three classes bought in the shop -------------------------------- */
+  {
+    id: 'berserker',
+    name: 'Berserker',
+    weapon: 'axes',
+    blurb: 'Dual energy axes that swing in a wide arc',
+    hp: 3,
+    speed: 340,                 /* the fastest class in the game */
+    damage: 3.84,               /* three times the knight's sword */
+    fireRate: 0,
+    bulletSpeed: 900,
+    zoom: 0.94,
+    colour: '#ff6b3d',
+    q: { id: 'rage', name: 'Rage', label: 'RAGE', glyph: '⚒\uFE0E', cd: 22, colour: '#ff7a45' },
+    passive: 'Heals an orb every 5 kills',
+    shop: 300,
+    locked: true
+  },
+  {
+    id: 'shadow',
+    name: 'Shadow Assassin',
+    weapon: 'daggers',
+    blurb: 'Throws shadow daggers that hit like a hammer',
+    hp: 4,
+    speed: 300,
+    damage: 4.2,
+    fireRate: 0.34,
+    bulletSpeed: 980,
+    zoom: 1,
+    colour: '#a78bfa',
+    q: { id: 'mark', name: 'Death Mark', label: 'MARK', glyph: '◎', cd: 16, colour: '#c4b5fd' },
+    passive: 'Cloaked beyond 120px · kills reset the dash',
+    cloak: 120,
+    shop: 400,
+    locked: true
+  },
+  {
+    id: 'tech',
+    name: 'Tech Specialist',
+    weapon: 'disc',
+    blurb: 'Bouncing energy disc and two standing turrets',
+    hp: 5,
+    speed: 250,
+    damage: 1.9,
+    fireRate: 0.42,
+    bulletSpeed: 700,
+    zoom: 1,
+    colour: '#34d399',
+    q: { id: 'overload', name: 'System Overload', label: 'OVERLOAD', glyph: '⌬', cd: 18, colour: '#6ee7b7' },
+    passive: 'Right click drops a turret · kills shave 1s off cooldowns',
+    shop: 500,
+    locked: true
   }
 ];
 
+/* the four doctrines Rael starts with; the rest are bought with gems */
+const FREE_CLASSES = ['knight', 'gunslinger', 'sniper', 'mage'];
+
+function classUnlocked(id) {
+  if (FREE_CLASSES.indexOf(id) >= 0) return true;
+  /* Shop lives further down the file: never touch it before it exists */
+  try { return !!Shop.classOwned(id); } catch (e) { return false; }
+}
+
 function getClass(id) {
   const key = id || game.classId || CLASSES[0].id;
-  for (let i = 0; i < CLASSES.length; i++) if (CLASSES[i].id === key) return CLASSES[i];
+  for (let i = 0; i < CLASSES.length; i++) {
+    if (CLASSES[i].id !== key) continue;
+    /* a doctrine that is not owned can never be played — not even from a save */
+    return classUnlocked(CLASSES[i].id) ? CLASSES[i] : CLASSES[0];
+  }
   return CLASSES[0];
 }
 
@@ -3735,6 +3922,104 @@ function drawClassIcon(canvas, id, size) {
     g.fillRect(35, -3.6, 4.4, 7.2);
     g.strokeStyle = 'rgba(199,210,254,0.55)'; g.lineWidth = 1.8;
     g.beginPath(); g.moveTo(41, 0); g.lineTo(50, 0); g.stroke();
+  } else if (id === 'berserker') {
+    /* a crossed pair of plasma axes */
+    const axe = function () {
+      g.strokeStyle = '#6b4a2c';
+      g.lineWidth = 5;
+      g.beginPath(); g.moveTo(-26, 26); g.lineTo(12, -16); g.stroke();
+      g.shadowColor = '#ff8a4c';
+      g.shadowBlur = 16;
+      const head = g.createLinearGradient(4, -30, 30, -4);
+      head.addColorStop(0, '#ffe0b8');
+      head.addColorStop(1, '#ff6b3d');
+      g.fillStyle = head;
+      g.beginPath();
+      g.moveTo(8, -26); g.lineTo(26, -34); g.lineTo(34, -14); g.lineTo(20, -8); g.lineTo(10, -15);
+      g.closePath();
+      g.fill();
+      g.strokeStyle = 'rgba(255,231,184,0.9)';
+      g.lineWidth = 2;
+      g.stroke();
+      g.shadowBlur = 0;
+    };
+    axe();
+    g.save(); g.scale(-1, 1); axe(); g.restore();
+  } else if (id === 'shadow') {
+    /* a hooded silhouette with two violet blades */
+    const aura = g.createRadialGradient(0, 0, 4, 0, 0, 46);
+    aura.addColorStop(0, 'rgba(196,181,253,0.5)');
+    aura.addColorStop(1, 'rgba(76,29,149,0)');
+    g.fillStyle = aura;
+    g.beginPath(); g.arc(0, 0, 46, 0, TAU); g.fill();
+    /* the two daggers, crossed behind him */
+    g.save();
+    g.rotate(0.75);
+    g.fillStyle = '#c4b5fd';
+    g.beginPath();
+    g.moveTo(0, -46); g.lineTo(5, -26); g.lineTo(2, -18); g.lineTo(-2, -18); g.lineTo(-5, -26);
+    g.closePath(); g.fill();
+    g.fillStyle = '#1b1229';
+    g.fillRect(-4, -18, 8, 14);
+    g.restore();
+    g.save();
+    g.rotate(-0.75);
+    g.fillStyle = '#a78bfa';
+    g.beginPath();
+    g.moveTo(0, -46); g.lineTo(5, -26); g.lineTo(2, -18); g.lineTo(-2, -18); g.lineTo(-5, -26);
+    g.closePath(); g.fill();
+    g.fillStyle = '#1b1229';
+    g.fillRect(-4, -18, 8, 14);
+    g.restore();
+    /* hood */
+    g.fillStyle = '#160f24';
+    g.beginPath();
+    g.moveTo(0, -30);
+    g.quadraticCurveTo(23, -18, 19, 16);
+    g.quadraticCurveTo(0, 30, -19, 16);
+    g.quadraticCurveTo(-23, -18, 0, -30);
+    g.closePath();
+    g.fill();
+    g.strokeStyle = 'rgba(167,139,250,0.9)';
+    g.lineWidth = 2.2;
+    g.stroke();
+    /* two points of light in the dark */
+    g.fillStyle = '#e9d5ff';
+    g.shadowColor = '#a78bfa';
+    g.shadowBlur = 10;
+    g.beginPath(); g.ellipse(-6.2, -8, 3.4, 2.2, -0.2, 0, TAU); g.fill();
+    g.beginPath(); g.ellipse(6.2, -8, 3.4, 2.2, 0.2, 0, TAU); g.fill();
+    g.shadowBlur = 0;
+  } else if (id === 'tech') {
+    /* a standing turret with a live disc orbiting it */
+    g.strokeStyle = 'rgba(110,231,183,0.32)';
+    g.lineWidth = 2;
+    g.beginPath(); g.arc(0, 8, 34, 0, TAU); g.stroke();
+    g.strokeStyle = '#33473f';
+    g.lineWidth = 6;
+    for (let i = 0; i < 3; i++) {
+      const a = -Math.PI / 2 + i * (TAU / 3) + 0.4;
+      g.beginPath();
+      g.moveTo(0, 14);
+      g.lineTo(Math.cos(a) * 19, 16 + Math.sin(a) * 11);
+      g.stroke();
+    }
+    g.fillStyle = '#1f3b34';
+    g.beginPath(); g.arc(0, 8, 13, 0, TAU); g.fill();
+    g.strokeStyle = '#6ee7b7';
+    g.lineWidth = 2.4;
+    g.stroke();
+    g.fillStyle = '#a7f3d0';
+    g.fillRect(-3, -26, 6, 26);
+    g.shadowColor = '#34d399';
+    g.shadowBlur = 12;
+    g.fillStyle = '#6ee7b7';
+    g.beginPath(); g.arc(0, -28, 4.6, 0, TAU); g.fill();
+    g.shadowBlur = 0;
+    g.strokeStyle = '#d1fae5';
+    g.lineWidth = 3;
+    g.beginPath(); g.arc(0, 8, 27, 0.45, 2.35); g.stroke();
+    g.beginPath(); g.arc(0, 8, 27, 0.45 + Math.PI, 2.35 + Math.PI); g.stroke();
   } else {
     /* a glowing orb held in a rune circle */
     const glow = g.createRadialGradient(0, 0, 3, 0, 0, 42);
@@ -4015,11 +4300,272 @@ function fireClassWeapon(dt) {
     updateSword(dt);
     return;
   }
+  if (cls.weapon === 'axes') {
+    /* the pair of axes swings on the same private clock as the sword */
+    updateAxes(dt);
+    return;
+  }
   if (game.mouse.down && p.fireTimer <= 0) {
     if (cls.weapon === 'pistols') firePistols(charged);
     else if (cls.weapon === 'rail') fireSniper(charged);
+    else if (cls.weapon === 'daggers') fireDaggers(charged);
+    else if (cls.weapon === 'disc') fireDisc(charged);
     else fireMageOrbs(charged);
     p.fireTimer = (p.fireRate * (charged ? 0.5 : 1)) / odm();
+  }
+}
+
+/* =============================================================================
+   THE THREE SHOP CLASSES
+   Berserker (dual axes), Shadow Assassin (daggers + cloak) and Tech Specialist
+   (bouncing disc + standing turrets). Everything here is driven by the class
+   definition in CLASSES, never by a hard-coded class id.
+   ========================================================================== */
+
+/* ------------------------------ berserker axes ------------------------------
+   Two plasma axes, one in each hand, sweeping a 150° arc together. They carry
+   three times the knight's damage and shove whatever survives out of reach.
+   ------------------------------------------------------------------------- */
+const AXE_ARC = (Math.PI * 5) / 6;          /* 150 degrees per swing */
+const AXE_RANGE = 104;
+const AXE_SWING_TIME = 0.22;
+const AXE_COOLDOWN = 0.5;
+
+function swingAxes() {
+  const p = game.player;
+  const dir = p.swingSign > 0 ? 1 : -1;
+  const half = AXE_ARC / 2;
+  p.swingSign = -dir;
+  p.swingT = AXE_SWING_TIME;
+  p.swingCd = AXE_COOLDOWN / (shopMagazineMult() * odm());
+  p.swingFrom = p.angle - half * dir;
+  p.swingTo = p.angle + half * dir;
+
+  const dmg = buffedDamage(p.damage * 1.65) * odm();
+  let hits = 0;
+
+  for (let i = game.enemies.length - 1; i >= 0; i--) {
+    const e = game.enemies[i];
+    if (!inSwordArc(p.x, p.y, p.angle, e.x, e.y, e.r, AXE_ARC, AXE_RANGE)) continue;
+    const a = Math.atan2(e.y - p.y, e.x - p.x);
+    damageEnemy(e, dmg, true);
+    e.x = clamp(e.x + Math.cos(a) * 14, 40, WORLD - 40);
+    e.y = clamp(e.y + Math.sin(a) * 14, 40, WORLD - 40);
+    for (let k = 0; k < 3; k++) {
+      spawnParticle(e.x, e.y, Math.cos(a + rand(-0.8, 0.8)) * rand(80, 240),
+        Math.sin(a + rand(-0.8, 0.8)) * rand(80, 240), 0.26, 5, '#ffb27a', 3);
+    }
+    hits++;
+  }
+  if (game.boss && !game.boss.entering &&
+      inSwordArc(p.x, p.y, p.angle, game.boss.x, game.boss.y, game.boss.r, AXE_ARC, AXE_RANGE)) {
+    damageBoss(dmg * 0.8);
+    hits++;
+  }
+
+  /* one hit per prop, sampled along the sweep exactly like the longsword */
+  const swung = new Set();
+  for (let s2 = 0; s2 <= 7; s2++) {
+    const a = p.swingFrom + (p.swingTo - p.swingFrom) * (s2 / 7);
+    for (let r = 0; r <= AXE_RANGE; r += 24) {
+      hits += hitBreakablesAt(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 'sword', swung);
+    }
+  }
+
+  game.swings.push({
+    kind: 'axe', x: p.x, y: p.y, a0: p.swingFrom, a1: p.swingTo,
+    life: 0, maxLife: AXE_SWING_TIME, tier: 0
+  });
+
+  Sound.swordSwing(1);
+  if (hits) {
+    Sound.swordHit(1);
+    game.shake = Math.max(game.shake, 0.18);
+  }
+  return hits;
+}
+
+function updateAxes(dt) {
+  const p = game.player;
+
+  /* the sword and the axe ribbons fade on the same list */
+  for (let i = game.swings.length - 1; i >= 0; i--) {
+    const sw = game.swings[i];
+    sw.life += dt;
+    if (sw.life >= sw.maxLife - 1e-6) game.swings.splice(i, 1);
+  }
+
+  if (p.swingT > 0) {
+    p.swingT = Math.max(0, p.swingT - dt);
+    if (p.swingT < 1e-6) p.swingT = 0;
+  }
+  if (p.swingCd > 0) p.swingCd = Math.max(0, p.swingCd - dt);
+
+  if (p.swingT > 0 && Math.random() < 0.75) {
+    const k = 1 - p.swingT / AXE_SWING_TIME;
+    const a = lerp(p.swingFrom, p.swingTo, 1 - Math.pow(1 - k, 2.2));
+    const rr = AXE_RANGE * rand(0.55, 0.95);
+    spawnParticle(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr,
+      rand(-70, 70), rand(-70, 70), rand(0.14, 0.26), rand(2, 4.6), '#ffb27a', 4);
+  }
+
+  if (game.mouse.down && p.swingCd <= 0) swingAxes();
+}
+
+/* --------------------------- shadow assassin daggers ------------------------
+   A pair of short shadow blades thrown straight out; each one punches through
+   a single body and hits far harder than a pistol round.
+   ------------------------------------------------------------------------- */
+function fireDaggers(charged) {
+  const p = game.player;
+  for (let i = 0; i < 2; i++) {
+    const a = p.angle + (i === 0 ? -0.05 : 0.05);
+    const side = (i === 0 ? -1 : 1) * 5;
+    game.bullets.push({
+      kind: 'dagger',
+      x: p.x + Math.cos(a) * (p.r + 4) - Math.sin(a) * side,
+      y: p.y + Math.sin(a) * (p.r + 4) + Math.cos(a) * side,
+      vx: Math.cos(a) * p.bulletSpeed,
+      vy: Math.sin(a) * p.bulletSpeed,
+      r: 4.6,
+      life: 0.85,
+      dmg: buffedDamage(p.damage),
+      knock: 3,
+      pierce: 1,
+      explosive: false,
+      hits: null,
+      spins: 0
+    });
+  }
+  Sound.pistol();
+  for (let i = 0; i < 2; i++) {
+    const a = p.angle + rand(-0.2, 0.2);
+    spawnParticle(p.x + Math.cos(p.angle) * (p.r + 16), p.y + Math.sin(p.angle) * (p.r + 16),
+      Math.cos(a) * rand(50, 150), Math.sin(a) * rand(50, 150), 0.16, 4, '#c4b5fd', 3);
+  }
+}
+
+/* ---------------------------- tech specialist disc -------------------------
+   One energy disc per shot, thrown at the cursor. It ricochets from body to
+   body — four bites at most — steering itself at the nearest fresh target.
+   ------------------------------------------------------------------------- */
+function fireDisc(charged) {
+  const p = game.player;
+  const a = p.angle;
+  if (!game.discs) game.discs = [];
+  game.discs.push({
+    x: p.x + Math.cos(a) * (p.r + 8),
+    y: p.y + Math.sin(a) * (p.r + 8),
+    vx: Math.cos(a) * p.bulletSpeed,
+    vy: Math.sin(a) * p.bulletSpeed,
+    ang: a,
+    speed: p.bulletSpeed,
+    spin: 0,
+    life: 2.4,
+    hits: [],
+    bounces: 4,
+    dmg: buffedDamage(p.damage * 1.3)
+  });
+  Sound.turretShot();
+  for (let i = 0; i < 3; i++) {
+    const aa = a + rand(-0.5, 0.5);
+    spawnParticle(p.x + Math.cos(a) * (p.r + 12), p.y + Math.sin(a) * (p.r + 12),
+      Math.cos(aa) * rand(60, 180), Math.sin(aa) * rand(60, 180), 0.16, 4, '#6ee7b7', 3);
+  }
+}
+
+function updateDiscs(dt) {
+  if (!game.discs) return;
+  for (let i = game.discs.length - 1; i >= 0; i--) {
+    const d = game.discs[i];
+    d.life -= dt;
+    d.spin += dt * 16;
+
+    /* steer for the nearest body it has not bitten yet */
+    let target = null;
+    let best = 320 * 320;
+    for (let j = 0; j < game.enemies.length; j++) {
+      const e = game.enemies[j];
+      if (d.hits.indexOf(e) >= 0) continue;
+      const dd = dist2(d.x, d.y, e.x, e.y);
+      if (dd < best) { best = dd; target = e; }
+    }
+    if (target) {
+      const want = angleTo(d.x, d.y, target.x, target.y);
+      let diff = want - d.ang;
+      while (diff > Math.PI) diff -= TAU;
+      while (diff < -Math.PI) diff += TAU;
+      d.ang += clamp(diff, -5 * dt, 5 * dt);
+      d.vx = Math.cos(d.ang) * d.speed;
+      d.vy = Math.sin(d.ang) * d.speed;
+    }
+
+    d.x += d.vx * dt;
+    d.y += d.vy * dt;
+
+    /* the map edge bounces it straight back in */
+    if (d.x < 40) { d.x = 40; d.vx = Math.abs(d.vx); d.ang = Math.atan2(d.vy, d.vx); }
+    if (d.x > WORLD - 40) { d.x = WORLD - 40; d.vx = -Math.abs(d.vx); d.ang = Math.atan2(d.vy, d.vx); }
+    if (d.y < 40) { d.y = 40; d.vy = Math.abs(d.vy); d.ang = Math.atan2(d.vy, d.vx); }
+    if (d.y > WORLD - 40) { d.y = WORLD - 40; d.vy = -Math.abs(d.vy); d.ang = Math.atan2(d.vy, d.vx); }
+
+    /* bite whatever it is touching, then look for the next one */
+    for (let j = game.enemies.length - 1; j >= 0; j--) {
+      const e = game.enemies[j];
+      if (d.hits.indexOf(e) >= 0) continue;
+      if (dist(d.x, d.y, e.x, e.y) > e.r + 16) continue;
+      d.hits.push(e);
+      d.bounces -= 1;
+      damageEnemy(e, d.dmg, true);
+      for (let k = 0; k < 5; k++) {
+        const a2 = rand(0, TAU);
+        spawnParticle(e.x, e.y, Math.cos(a2) * rand(50, 190), Math.sin(a2) * rand(50, 190),
+          0.22, 5, k % 2 ? '#6ee7b7' : '#a7f3d0', 3);
+      }
+    }
+    if (game.boss && !game.boss.entering && d.hits.indexOf(game.boss) < 0 &&
+        dist(d.x, d.y, game.boss.x, game.boss.y) < game.boss.r + 16) {
+      d.hits.push(game.boss);
+      d.bounces -= 1;
+      damageBoss(d.dmg);
+    }
+
+    if (d.bounces <= 0 || d.life <= 0) {
+      for (let k = 0; k < 8; k++) {
+        const a2 = rand(0, TAU);
+        spawnParticle(d.x, d.y, Math.cos(a2) * rand(40, 170), Math.sin(a2) * rand(40, 170),
+          0.24, 4.4, '#6ee7b7', 3);
+      }
+      game.discs.splice(i, 1);
+    }
+  }
+}
+
+/* the orange ribbon a pair of axes leaves behind */
+function drawAxeSwoosh() {
+  const R = AXE_RANGE * 0.84;
+  for (let i = 0; i < game.swings.length; i++) {
+    const sw = game.swings[i];
+    if (sw.kind !== 'axe') continue;
+    const k = sw.life / sw.maxLife;
+    const fade = Math.min(1, (1 - k) * 2.2);
+    if (fade <= 0.01) continue;
+    const reveal = 1 - Math.pow(1 - k, 2.2);
+    const head = sw.a0 + (sw.a1 - sw.a0) * reveal;
+    if (Math.abs(head - sw.a0) < 0.01) continue;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = fade * 0.85;
+    ctx.strokeStyle = '#ff9d5c';
+    ctx.lineWidth = 9;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head), Math.max(sw.a0, head));
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,231,184,0.9)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
   }
 }
 
@@ -4056,7 +4602,111 @@ function castClassAbility() {
   if (cls.q.id === 'bash') shieldBash();
   else if (cls.q.id === 'storm') bulletStorm();
   else if (cls.q.id === 'railgun') railgun();
+  else if (cls.q.id === 'rage') startRage();
+  else if (cls.q.id === 'mark') castDeathMark();
+  else if (cls.q.id === 'overload') systemOverload();
   else temporalRift();
+}
+
+/* ---- berserker: six seconds of Rage --------------------------------------- */
+const RAGE_TIME = 6;
+
+function startRage() {
+  const p = game.player;
+  p.rageT = RAGE_TIME;
+  Sound.overcharge();
+  game.shake = Math.max(game.shake, 0.4);
+  game.flashTimer = 0.2;
+  game.flashColor = '#ff8a5c';
+  addText(p.x, p.y - 44, 'RAGE', '#ff9d5c');
+  for (let i = 0; i < 24; i++) {
+    const a = rand(0, TAU);
+    spawnParticle(p.x + Math.cos(a) * 14, p.y + Math.sin(a) * 14,
+      Math.cos(a) * rand(90, 300), Math.sin(a) * rand(90, 300),
+      rand(0.3, 0.6), rand(4, 9), i % 2 ? '#ff7a45' : '#ffd6a5', 3.2);
+  }
+  game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 150, life: 0, maxLife: 0.45, color: '#ff9d5c' });
+  addText(p.x, p.y - 62, '3S OF NOTHING BUT HATE', '#ffd6a5');
+}
+
+/* ---- shadow assassin: Death Mark ----------------------------------------- */
+const MARK_TIME = 8;
+
+function castDeathMark() {
+  const p = game.player;
+  /* the body nearest the cursor, else the nearest body to Rael */
+  const wx = game.mouse.x / viewZoom() + game.cam.x;
+  const wy = (game.mouse.y - SKY_H) / viewZoom() + game.cam.y;
+  let target = null;
+  let best = 520 * 520;
+  for (let i = 0; i < game.enemies.length; i++) {
+    const e = game.enemies[i];
+    const d2 = dist2(wx, wy, e.x, e.y);
+    if (d2 < best) { best = d2; target = e; }
+  }
+  if (!target && game.boss && !game.boss.entering) {
+    if (dist2(p.x, p.y, game.boss.x, game.boss.y) < 760 * 760) target = game.boss;
+  }
+  if (!target) {
+    best = 620 * 620;
+    for (let i = 0; i < game.enemies.length; i++) {
+      const e = game.enemies[i];
+      const d2 = dist2(p.x, p.y, e.x, e.y);
+      if (d2 < best) { best = d2; target = e; }
+    }
+  }
+  if (!target) {
+    addText(p.x, p.y - 42, 'NO TARGET', '#c4b5fd');
+    game.qCd = 0;               /* nothing to mark: give the charge back */
+    return;
+  }
+  p.markTarget = target;
+  p.markT = MARK_TIME;
+  Sound.ability();
+  addText(target.x, target.y - 30, 'MARKED', '#c4b5fd');
+  game.particles.push({ ring: true, x: target.x, y: target.y, r: 8, maxR: target.r * 4, life: 0, maxLife: 0.5, color: '#c4b5fd' });
+}
+
+/* ---- tech specialist: System Overload ------------------------------------ */
+function deployTurretAt(x, y) {
+  if (game.turrets.length >= 2) {
+    const p = game.player;
+    addText(p.x, p.y - 44, 'MAX 2 TURRETS', '#fbbf24');
+    return false;
+  }
+  game.turrets.push({
+    x: clamp(x, 40, WORLD - 40), y: clamp(y, 40, WORLD - 40),
+    life: 1e9, maxLife: 1e9, permanent: true,
+    angle: 0, spin: 0, fireTimer: 0.2, range: 400
+  });
+  Sound.turretDrop();
+  game.shake = Math.max(game.shake, 0.2);
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * TAU;
+    spawnParticle(x + Math.cos(a) * 10, y + Math.sin(a) * 10,
+      Math.cos(a) * rand(60, 180), Math.sin(a) * rand(60, 180), 0.36, 5, i % 2 ? '#6ee7b7' : '#a7f3d0', 3);
+  }
+  game.particles.push({ ring: true, x, y, r: 6, maxR: 70, life: 0, maxLife: 0.36, color: '#6ee7b7' });
+  return true;
+}
+
+function systemOverload() {
+  const p = game.player;
+  const live = game.turrets.slice();
+  const boom = 8 + p.damage * 2;
+  for (let i = 0; i < live.length; i++) {
+    explodeAt(live[i].x, live[i].y, boom, '#6ee7b7');
+    game.particles.push({ ring: true, x: live[i].x, y: live[i].y, r: 8, maxR: 130, life: 0, maxLife: 0.42, color: '#34d399' });
+  }
+  game.turrets.length = 0;
+  /* two fresh towers are standing before the smoke even settles */
+  deployTurretAt(p.x - 38, p.y + 10);
+  deployTurretAt(p.x + 38, p.y + 10);
+  Sound.overcharge();
+  game.shake = Math.max(game.shake, 0.55);
+  game.flashTimer = 0.22;
+  game.flashColor = '#a7f3d0';
+  addText(p.x, p.y - 48, 'SYSTEM OVERLOAD', '#6ee7b7');
 }
 
 /* ---- knight: charge forward and hurl everything nearby away ---- */
@@ -4264,7 +4914,13 @@ function updateRift(dt) {
 }
 
 /* ---- E: a ring of 16 bolts that shreds anything close ---- */
+/* while Rage burns he cannot reach for anything else */
+function abilitiesLocked() {
+  return !!(game.player && game.player.rageT > 0);
+}
+
 function novaBlast() {
+  if (abilitiesLocked()) return;
   if (!hasAbility('nova')) return;
   if (game.novaCd > 0) return;
   const p = game.player;
@@ -4299,6 +4955,7 @@ const OVERDRIVE_CD = 60;
 const OVERDRIVE_TIME = 5;
 
 function startOverdrive() {
+  if (abilitiesLocked()) return;
   if (!hasAbility('overdrive')) return;
   if (game.overdriveCd > 0) return;
   if (game.overdriveTimer > 0) return;
@@ -4321,6 +4978,7 @@ function startOverdrive() {
 
 /* ---- SHIFT: dash in the movement direction, invincible ---- */
 function dash() {
+  if (abilitiesLocked()) return;
   if (!hasAbility('dash')) return;
   const p = game.player;
   if (p.dashCd > 0) return;
@@ -4345,7 +5003,13 @@ function dash() {
 
 /* ---- F: drop a stationary auto-turret (max 2) ---- */
 function dropTurret() {
+  if (abilitiesLocked()) return;
   if (!hasAbility('turret')) return;
+  /* the Tech Specialist plants standing turrets that never time out */
+  if (getClass().weapon === 'disc') {
+    if (deployTurretAt(game.player.x, game.player.y)) addText(game.player.x, game.player.y - 40, 'TURRET ONLINE', '#6ee7b7');
+    return;
+  }
   const p = game.player;
   if (game.turretCd > 0) return;
   if (game.turrets.length >= 2) {
@@ -4371,7 +5035,7 @@ function dropTurret() {
 function updateTurrets(dt) {
   for (let i = game.turrets.length - 1; i >= 0; i--) {
     const t = game.turrets[i];
-    t.life -= dt;
+    if (!t.permanent) t.life -= dt;
     if (t.life <= 0) {
       Sound.turretOff();
       for (let k = 0; k < 14; k++) {
@@ -4422,6 +5086,7 @@ function updateTurrets(dt) {
 
 /* ---- R: 8s of double fire rate and fat bullets ---- */
 function startOvercharge() {
+  if (abilitiesLocked()) return;
   if (!hasAbility('overcharge')) return;
   if (game.overchargeCd > 0) return;
   const p = game.player;
@@ -4440,6 +5105,7 @@ function startOvercharge() {
 
 /* ---- X: sticky bomb that detonates after 2s ---- */
 function throwBomb() {
+  if (abilitiesLocked()) return;
   if (!hasAbility('bomb')) return;
   if (game.bombCd > 0) return;
   const p = game.player;
@@ -4572,6 +5238,8 @@ function hurtPlayer(amount, raw) {
   /* raw damage is poison and other damage-over-time: it ignores wards and
      i-frames, because the tick already happened inside his blood */
   if (!raw) {
+    /* Berserker Rage: nothing reaches him while the red is up */
+    if (p.rageT > 0) return;
     /* Phase Cloak: out of phase, nothing can find him to hit him */
     if (p.phaseTimer > 0) return;
     if (p.invuln > 0 || p.dashTimer > 0) return;
@@ -4973,12 +5641,35 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
   }
 }
 
+/* Rage, Death Mark and the cloak are the three shop-class clocks */
+function updateClassKit(dt) {
+  const p = game.player;
+  if (!p) return;
+  if (p.rageT > 0) {
+    p.rageT = Math.max(0, p.rageT - dt);
+    if (p.rageT === 0) addText(p.x, p.y - 40, 'RAGE FADES', '#ffb27a');
+    if (Math.random() < 0.45) {
+      spawnParticle(p.x + rand(-13, 13), p.y + rand(-6, 12),
+        rand(-40, 40), rand(-110, -40), 0.36, rand(2, 5), Math.random() < 0.5 ? '#ff7a45' : '#ffd6a5', 3);
+    }
+  }
+  if (p.markT > 0) {
+    p.markT = Math.max(0, p.markT - dt);
+    const t = p.markTarget;
+    /* the mark dies with its host */
+    const alive = !!t && (t === game.boss || game.enemies.indexOf(t) >= 0);
+    if (!alive) { p.markT = 0; p.markTarget = null; }
+    else if (p.markT === 0) p.markTarget = null;
+  }
+}
+
 /* ------------------------------ enemy update ------------------------------- */
 function updateEnemies(dt) {
   const p = game.player;
   /* Phase Cloak: an out-of-phase Rael is not a target. The horde keeps sweeping
      along its last heading instead of turning to follow him, and nobody shoots. */
-  const canSee = !(p.phaseTimer > 0);
+  const phaseSee = !(p.phaseTimer > 0);
+  const cloakRange = p.cloakRange || 0;
 
   for (let i = game.enemies.length - 1; i >= 0; i--) {
     const e = game.enemies[i];
@@ -4997,6 +5688,8 @@ function updateEnemies(dt) {
     }
 
     const d = dist(e.x, e.y, p.x, p.y);
+    /* Shadow Assassin: past the cloak radius the horde loses him completely */
+    const canSee = phaseSee && !(cloakRange > 0 && d > cloakRange);
     /* where they think he is: the decoy first, then Rael, then a phantom heading */
     const lure = game.decoy;
     const tx = lure ? lure.x : (canSee ? p.x : e.x + Math.cos(e.heading) * 320);
@@ -5317,6 +6010,9 @@ function nearestEnemyTo(x, y, range, skip) {
 /* `noChain` stops a chain bolt's own kill from arcing again, so the lightning
    never runs away across the whole arena in one frame. */
 function damageEnemy(e, dmg, silent, noChain) {
+  /* Death Mark: everything lands three times harder on the marked body */
+  const marker = game.player;
+  if (marker && marker.markT > 0 && marker.markTarget === e) dmg *= 3;
   /* Critical Strike: any hit can triple, with a gold flash on the target */
   if ((game.shopCrit || 0) > 0 && Math.random() < game.shopCrit) {
     dmg *= 3;
@@ -5355,6 +6051,26 @@ function damageEnemy(e, dmg, silent, noChain) {
           rand(-90, 90), rand(-90, 90), 0.2, 4, '#bae6fd', 2);
       }
       damageEnemy(arc, Math.max(1, dmg * 0.5), true, true);
+    }
+  }
+
+  /* --- class passives -------------------------------------------------- */
+  if (pl) {
+    if (pl.classId === 'berserker' && game.kills > 0 && game.kills % 5 === 0 && pl.hp < pl.maxHp) {
+      pl.hp += 1;
+      updateHealthOrbs();
+      addText(pl.x, pl.y - 42, '+1 ORB', '#ffb27a');
+      Sound.ability();
+    }
+    if (pl.classId === 'shadow') pl.dashCd = 0;          /* the dash comes back on a kill */
+    if (pl.classId === 'tech') {                          /* a second off every clock */
+      game.qCd = Math.max(0, game.qCd - 1);
+      game.novaCd = Math.max(0, game.novaCd - 1);
+      game.turretCd = Math.max(0, game.turretCd - 1);
+      game.overchargeCd = Math.max(0, game.overchargeCd - 1);
+      game.bombCd = Math.max(0, game.bombCd - 1);
+      game.overdriveCd = Math.max(0, (game.overdriveCd || 0) - 1);
+      pl.dashCd = Math.max(0, (pl.dashCd || 0) - 1);
     }
   }
 
@@ -5837,6 +6553,8 @@ function damageBoss(dmg) {
   const b = game.boss;
   if (!b) return;
   if (b.entering) return;   /* the entrance cannot be interrupted */
+  const marker = game.player;
+  if (marker && marker.markT > 0 && marker.markTarget === b) dmg *= 3;
   if ((game.shopCrit || 0) > 0 && Math.random() < game.shopCrit) {
     dmg *= 3;
     critFlash(b.x, b.y - b.r * 0.4);
@@ -6984,15 +7702,15 @@ const SHOP_COSMETICS = [
 ];
 
 /* permanent doctrine perks, one per class */
+/* the three unlockable classes. Buying one opens it on the class screen for
+   good; nothing about the four starting doctrines changes. */
 const SHOP_CLASSES = [
-  { id: 'knight', name: 'Vanguard Doctrine', glyph: '⚔', cost: 150,
-    desc: 'As the Vanguard Knight: +1 max health orb and +6% damage.' },
-  { id: 'gunslinger', name: 'Gunslinger Doctrine', glyph: '➶', cost: 150,
-    desc: 'As the Gunslinger: +1 pierce and +10% fire rate.' },
-  { id: 'sniper', name: 'Sniper Doctrine', glyph: '⌖', cost: 150,
-    desc: 'As the Sniper: +15% damage on the rail shot.' },
-  { id: 'mage', name: 'Arcane Doctrine', glyph: '✧', cost: 150,
-    desc: 'As the Arcane: +1 orb per volley.' }
+  { id: 'berserker', name: 'Berserker', glyph: '⚒\uFE0E', cost: 300,
+    desc: '3 health orbs and no armour, but 3x damage and the fastest stride in the game. Dual energy axes, Rage, and an orb back every 5 kills.' },
+  { id: 'shadow', name: 'Shadow Assassin', glyph: '◎', cost: 400,
+    desc: 'Permanently cloaked beyond 120px. Shadow daggers hit hard, Death Mark triples damage on one target, and a kill resets your dash.' },
+  { id: 'tech', name: 'Tech Specialist', glyph: '⌬', cost: 500,
+    desc: 'Two standing turrets on right click, a disc that ricochets through four enemies, System Overload, and a second off every cooldown per kill.' }
 ];
 
 const GEM_ICON = '<svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>';
@@ -7221,7 +7939,13 @@ function shopBlastMult() { return 1 + 0.20 * shopLevel('blast'); }
 function odm() { return (game.overdriveTimer || 0) > 0 ? 2 : 1; }
 function shopFireBoost() { return (1 + 0.15 * shopLevel('magazine')) * odm(); }
 /* Damage Shard: every shot fired while it burns hits twice as hard */
-function buffedDamage(v) { return v * ((game.damageBuffT || 0) > 0 ? 2 : 1); }
+function buffedDamage(v) {
+  const p = game.player;
+  const rage = p && p.rageT > 0 ? 3 : 1;
+  return v * ((game.damageBuffT || 0) > 0 ? 2 : 1) * rage;
+}
+/* Berserker Rage: three times the stride while it burns */
+function rageSpeedMult() { const p = game.player; return p && p.rageT > 0 ? 3 : 1; }
 /* Speed Serum: half again as fast on foot while it lasts */
 function speedBuffMult() { return (game.speedBuffT || 0) > 0 ? 1.5 : 1; }
 function shopMagazineMult() { return 1 + 0.15 * shopLevel('magazine'); }
@@ -7248,14 +7972,6 @@ function applyShopUpgrades() {
   p.damage *= 1 + 0.10 * shopLevel('targeting');
   p.speed *= 1 + 0.08 * shopLevel('thruster');
   if (p.fireRate > 0) p.fireRate /= shopMagazineMult();
-
-  /* doctrine perks ride on top of the class build */
-  if (Shop.classOwned(cls.id)) {
-    if (cls.id === 'knight') { p.maxHp += 1; p.damage *= 1.06; }
-    else if (cls.id === 'gunslinger') { p.pierce = (p.pierce || 0) + 1; p.fireRate *= 0.9; }
-    else if (cls.id === 'sniper') { p.damage *= 1.15; }
-    else if (cls.id === 'mage') { p.mageOrbs = (p.mageOrbs | 0) + 1; p.damage *= 1.04; }
-  }
 
   p.hp = p.maxHp;
   game.shopGemMult = 1 + 0.25 * shopLevel('processor');
@@ -7292,7 +8008,7 @@ const SHOP_TABS = {
   },
   classes: {
     items: SHOP_CLASSES,
-    note: 'Doctrine perks: buy once, then every future run of that class carries it.'
+    note: 'Permanent unlocks: the four starting doctrines are free, these three are bought once and kept for ever.'
   }
 };
 
@@ -7325,7 +8041,7 @@ function shopItemState(tab, it) {
     };
   }
   if (tab === 'classes') {
-    const owned = Shop.classOwned(it.id);
+    const owned = classUnlocked(it.id);
     return {
       level: owned ? 1 : 0, max: 1, full: owned,
       cost: it.cost,
@@ -7373,10 +8089,30 @@ function shotShopCard(tab, it) {
     (st.disabled ? ' disabled' : '') + '>' + st.label + '</button></div></div>';
 }
 
+function shotShopClassCard(it) {
+  const st = shopItemState('classes', it);
+  const cls = CLASSES.find((c) => c.id === it.id) || null;
+  const line = cls ? ('Q · ' + cls.q.name + ' · ' + cls.passive) : '';
+  return '<div class="shop-card sc-class' + (st.full ? ' maxed' : '') + '" data-item="' + it.id + '">' +
+    '<canvas class="sc-portrait" width="96" height="96" data-icon="' + it.id + '"></canvas>' +
+    '<div class="sc-name">' + it.name + '</div>' +
+    '<div class="sc-desc">' + it.desc + '</div>' +
+    '<div class="sc-q">' + line + '</div>' +
+    '<div class="sc-foot"><span class="sc-cost">' + GEM_ICON + it.cost + '</span>' +
+    '<button class="sc-buy' + (st.full ? ' maxed' : '') + '" type="button" data-buy="' + it.id + '"' +
+    (st.disabled ? ' disabled' : '') + '>' + st.label + '</button></div></div>';
+}
+
 function renderShop() {
   const tab = SHOP_TABS[shopTab] ? shopTab : 'upgrades';
   if (!UI.shopGrid) return;
-  UI.shopGrid.innerHTML = SHOP_TABS[tab].items.map((it) => shotShopCard(tab, it)).join('');
+  UI.shopGrid.innerHTML = SHOP_TABS[tab].items.map((it) =>
+    tab === 'classes' ? shotShopClassCard(it) : shotShopCard(tab, it)).join('');
+  if (tab === 'classes' && UI.shopGrid.querySelectorAll) {
+    /* each class card carries the same painted portrait as the class screen */
+    const heads = UI.shopGrid.querySelectorAll('canvas[data-icon]');
+    for (let i = 0; i < heads.length; i++) drawClassIcon(heads[i], heads[i].getAttribute('data-icon'), 96);
+  }
   if (UI.shopNote) UI.shopNote.textContent = SHOP_TABS[tab].note;
   if (UI.shopGems) UI.shopGems.textContent = String(Shop.gems());
   if (UI.shopTabs) {
@@ -7456,14 +8192,13 @@ function shopBuy(tab, id) {
   }
 
   if (tab === 'classes') {
-    if (Shop.classOwned(id)) { shopSay('Doctrine already owned', true); return false; }
+    if (Shop.classOwned(id)) { shopSay('Already unlocked', true); return false; }
     if (gems < it.cost) { shopSay('Not enough gems', true); return false; }
     if (SaveSystem.spendGems(it.cost) < 0) { shopSay('Not enough gems', true); return false; }
     Shop.state.classes[id] = true;
     Shop.save();
     Sound.ability();
-    shopSay(it.name + ' unlocked');
-    if (shopRunActive()) shopApplyLive('doctrine');
+    shopSay(it.name + ' unlocked · pick them on the class screen');
     renderShop();
     return true;
   }
@@ -7483,15 +8218,6 @@ function shopApplyLive(id) {
   else if (id === 'critical') game.shopCrit = 0.10 * shopLevel('critical');
   else if (id === 'ironwill') game.shopIronWill = true;
   else if (id === 'overdrive') { game.abilities.overdrive = true; syncAbilityHud(); }
-  else if (id === 'doctrine') {
-    const cls = getClass();
-    if (Shop.classOwned(cls.id)) {
-      if (cls.id === 'knight') { p.maxHp += 1; p.damage *= 1.06; }
-      else if (cls.id === 'gunslinger') { p.pierce = (p.pierce || 0) + 1; p.fireRate *= 0.9; }
-      else if (cls.id === 'sniper') p.damage *= 1.15;
-      else if (cls.id === 'mage') p.mageOrbs = (p.mageOrbs | 0) + 1;
-    }
-  }
   updateHealthOrbs();
 }
 
@@ -7522,7 +8248,8 @@ function openShop(from) {
   refreshSaveUi();
   const layer = from || Screens.current || 'menu';
   const target = (game.screen === 'playing' || game.screen === 'transition' ||
-    game.screen === 'upgrade' || game.screen === 'universe') ? game.screen : 'menu';
+    game.screen === 'upgrade' || game.screen === 'universe' || game.screen === 'class')
+    ? game.screen : 'menu';
   shopReturn = {
     screen: layer === 'menu' ? 'menu' : target,
     layer: layer
@@ -7538,6 +8265,8 @@ function closeShop() {
   const back = shopReturn.screen || 'menu';
   game.screen = back;
   Screens.show(shopReturn.layer || 'menu');
+  /* a class bought while browsing is unlocked the moment he steps back */
+  if (back === 'class') drawClassCards();
   /* only bank the run if there really is one open behind the shop */
   if (back === 'playing' || back === 'transition' || back === 'upgrade' ||
       back === 'universe' || back === 'universeIntro') {
@@ -7929,6 +8658,29 @@ function drawClassCards() {
     drawClassIcon(UI.classIcons[i], CLASSES[i].id, 184);
   }
   drawClassIcon(UI.badgeIcon, getClass().id, 52);
+  syncClassCardLocks();
+}
+
+/* an unowned class wears its gem price and drops the shine */
+function syncClassCardLocks() {
+  for (let i = 0; i < UI.classCards.length; i++) {
+    const card = UI.classCards[i];
+    const cls = CLASSES[i];
+    if (!card || !cls) continue;
+    const locked = !classUnlocked(cls.id);
+    if (card.classList) card.classList.toggle('locked', locked);
+    if (card.setAttribute) {
+      card.setAttribute('aria-disabled', locked ? 'true' : 'false');
+      card.setAttribute('title', locked ? cls.name + ' — unlock it in the shop for ' + cls.shop + ' gems' : cls.name);
+    }
+  }
+}
+
+/* clicking a locked card takes him straight to the class shelf */
+function openShopForClass() {
+  Sound.ensure();
+  shopTab = 'classes';
+  openShop('classScreen');
 }
 
 /* replay a saved upgrade map onto a fresh player, rank by rank */
@@ -8171,13 +8923,23 @@ for (let i = 0; i < UI.classCards.length; i++) {
   const card = UI.classCards[i];
   const pick = () => {
     if (game.screen !== 'class') return;
+    const cls = CLASSES[i];
+    if (!cls) return;
+    if (!classUnlocked(cls.id)) { openShopForClass(); return; }
     const swap = pendingChangeClass;
     pendingChangeClass = false;
-    startRun(CLASSES[i].id, pendingStartZone, swap ? { changeClass: true } : { carryUpgrades: true });
+    startRun(cls.id, pendingStartZone, swap ? { changeClass: true } : { carryUpgrades: true });
   };
   card.addEventListener('click', pick);
   card.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); }
+  });
+}
+if (UI.cardShopTile) {
+  const openTile = () => { if (game.screen === 'class') openShopForClass(); };
+  UI.cardShopTile.addEventListener('click', openTile);
+  UI.cardShopTile.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTile(); }
   });
 }
 document.getElementById('btnRetry').addEventListener('click', retryZone);
@@ -9808,6 +10570,7 @@ function drawRaelWeapon(p, bob, flash) {
   const g = soldierGlow(p);
   const F = (v) => (flash || v);
   if (cls.weapon === 'blade') return;      /* the longsword is drawn separately */
+  if (cls.weapon === 'axes') return;       /* the twin axes are drawn separately */
 
   const idle = p.moving ? 0 : Math.sin(t * (TAU / 1.2)) * 1;
   const sx = Math.cos(p.angle) >= 0 ? 1 : -1;
@@ -9884,6 +10647,40 @@ function drawRaelWeapon(p, bob, flash) {
     ctx.fill();
     roundRect(ctx, 5.5, 2.4, 3.4, 5, 1);
     ctx.fill();
+  } else if (cls.weapon === 'daggers') {
+    /* one short shadow blade held low, its edge catching the visor light */
+    ctx.translate(3, 1.4);
+    ctx.rotate(-0.18);
+    ctx.fillStyle = F('#2b1b45');
+    ctx.beginPath();
+    ctx.moveTo(16, 0); ctx.lineTo(3, -3.6); ctx.lineTo(-5, -2); ctx.lineTo(-5, 2); ctx.lineTo(3, 3.6);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(196,181,253,0.95)';
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(14, 0.2); ctx.lineTo(1, 0.2);
+    ctx.stroke();
+    ctx.fillStyle = F('#1b1229');
+    roundRect(ctx, -8, -2.6, 5, 5.2, 1.6);
+    ctx.fill();
+  } else if (cls.weapon === 'disc') {
+    /* the launcher cradle with a live energy disc spinning in it */
+    ctx.rotate(-0.2);
+    ctx.fillStyle = F('#1f3b34');
+    roundRect(ctx, -1, -3.4, 12, 6.8, 2.4);
+    ctx.fill();
+    ctx.save();
+    ctx.translate(16, 0);
+    ctx.rotate(t * 9);
+    ctx.strokeStyle = F('#6ee7b7');
+    ctx.lineWidth = 2.4;
+    ctx.shadowColor = '#34d399';
+    ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(0, 0, 5.4, 0, TAU); ctx.stroke();
+    ctx.fillStyle = F('#d1fae5');
+    ctx.beginPath(); ctx.arc(0, 0, 1.8, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.shadowBlur = 0;
   } else {
     /* the arcane focus: a purple orb riding above the gauntlet */
     const lift = Math.sin(t * 2.2) * 2;
@@ -12832,6 +13629,7 @@ function drawSwordSwoosh() {
 
   for (let i = 0; i < game.swings.length; i++) {
     const sw = game.swings[i];
+    if (sw.kind === 'axe') continue;         /* the axes paint their own ribbon */
     const k = sw.life / sw.maxLife;
     /* hold the blade white-hot, then let it go quickly at the end */
     const fade = Math.min(1, (1 - k) * 1.9);
@@ -13134,9 +13932,13 @@ function drawPlayer() {
     }
   }
 
-  if (getClass().weapon === 'blade') {
+  const weaponKind = getClass().weapon;
+  if (weaponKind === 'blade') {
     drawKnightSword(p, bob);
     drawSwordSwoosh();
+  } else if (weaponKind === 'axes') {
+    drawBerserkerAxes(p, bob);
+    drawAxeSwoosh();
   }
 }
 
@@ -14468,10 +15270,137 @@ function drawObstacles() {
 /* enemy, boss and player art lives in art-actors.js / art-player.js */
 
 /* ------------------------------ projectiles -------------------------------- */
+/* ------------------------------ class drawing ------------------------------
+   Everything the three shop classes add to the frame: the twin axes, the
+   shadow daggers, the bouncing disc, the death-mark ring and the rage aura.
+   ------------------------------------------------------------------------- */
+function drawAxe(p, ang, lift, side) {
+  ctx.save();
+  ctx.translate(p.x, p.y + lift - 3);
+  ctx.rotate(ang);
+  ctx.translate(7, side * 4.5);
+  /* haft */
+  ctx.strokeStyle = '#5b4028';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(20, 0); ctx.stroke();
+  /* energy head */
+  ctx.shadowColor = '#ff8a4c';
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = '#ffb27a';
+  ctx.beginPath();
+  ctx.moveTo(17, -2.4);
+  ctx.lineTo(29, -13);
+  ctx.lineTo(33, -2);
+  ctx.lineTo(29, 12);
+  ctx.lineTo(17, 2.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,231,184,0.95)';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function drawBerserkerAxes(p, bob) {
+  const t = game.time;
+  const idle = p.moving ? 0 : Math.sin(t * (TAU / 1.2)) * 1;
+  let left = p.angle - 0.55;
+  let right = p.angle + 0.55;
+  if (p.swingT > 0) {
+    const k = 1 - p.swingT / AXE_SWING_TIME;
+    const a = lerp(p.swingFrom, p.swingTo, 1 - Math.pow(1 - k, 2.2));
+    left = a;
+    right = a;
+  }
+  drawAxe(p, left, bob + idle, -1);
+  drawAxe(p, right, bob + idle, 1);
+}
+
+function drawShadowDagger(b) {
+  const a = Math.atan2(b.vy, b.vx);
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  ctx.rotate(a);
+  ctx.shadowColor = '#a78bfa';
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = '#2b1b45';
+  ctx.beginPath();
+  ctx.moveTo(13, 0); ctx.lineTo(-1, -4.6); ctx.lineTo(-9, 0); ctx.lineTo(-1, 4.6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(196,181,253,0.95)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(11, 0); ctx.lineTo(-4, 0); ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function drawDiscs() {
+  if (!game.discs || !game.discs.length) return;
+  for (let i = 0; i < game.discs.length; i++) {
+    const d = game.discs[i];
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    ctx.rotate(d.spin);
+    ctx.shadowColor = '#34d399';
+    ctx.shadowBlur = 16;
+    ctx.strokeStyle = '#6ee7b7';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, 10, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(209,250,229,0.95)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(0, 0, 5.4, 0.3, 2.6); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, 5.4, 0.3 + Math.PI, 2.6 + Math.PI); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.shadowBlur = 0;
+}
+
+function drawClassFx() {
+  const p = game.player;
+  if (!p) return;
+  /* Death Mark: a violet reticle holds the chosen body */
+  if (p.markT > 0 && p.markTarget) {
+    const m = p.markTarget;
+    const pulse = 1 + 0.08 * Math.sin(game.time * 8);
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.rotate(game.time * 1.4);
+    ctx.strokeStyle = 'rgba(196,181,253,0.95)';
+    ctx.lineWidth = 2.2;
+    ctx.shadowColor = '#a78bfa';
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    for (let i = 0; i < 4; i++) {
+      const a0 = (i / 4) * TAU;
+      ctx.moveTo(Math.cos(a0) * (m.r + 9) * pulse, Math.sin(a0) * (m.r + 9) * pulse);
+      ctx.arc(0, 0, (m.r + 9) * pulse, a0, a0 + 0.7);
+    }
+    ctx.stroke();
+    ctx.restore();
+    ctx.shadowBlur = 0;
+  }
+  /* Rage: a hot red halo that never quite settles */
+  if (p.rageT > 0) {
+    const k = 0.45 + 0.25 * Math.sin(game.time * 12);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(p.x, p.y, 4, p.x, p.y, 46);
+    g.addColorStop(0, 'rgba(255,120,80,' + (0.55 * k + 0.2).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(255,60,20,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 46, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+}
+
 function drawBullets() {
   for (let i = 0; i < game.bullets.length; i++) {
     const b = game.bullets[i];
     if (b.kind === 'orb') { drawTimeOrb(b); continue; }
+    if (b.kind === 'dagger') { drawShadowDagger(b); continue; }
     const a = Math.atan2(b.vy, b.vx);
     const nova = b.kind === 'nova';
     const turret = b.kind === 'turret';
@@ -16392,10 +17321,12 @@ function render() {
   drawTurrets();
   drawBombs();
   drawBullets();
+  drawDiscs();
   drawBeams();
   drawParticles();
   drawPlayer();
   drawDecoy();
+  drawClassFx();
 
   /* collision boxes on top of everything in the world, still in world space */
   drawBreakableHitboxes(zoom);
@@ -16445,6 +17376,7 @@ function update(dt) {
   game.ambientClock += dt;
 
   updatePlayer(sdt);
+  updateClassKit(sdt);
   updateCamera(sdt);
   updateEnemies(sdt);
   updateTurrets(sdt);
@@ -16452,6 +17384,7 @@ function update(dt) {
   updateRift(sdt);
   updateBeams(sdt);
   updateBullets(sdt);
+  updateDiscs(sdt);
   updateEnemyBullets(sdt);
   updateGems(sdt);
   updateBreakables(sdt);
