@@ -1482,6 +1482,52 @@
   /* the HUD is drawn inside #uiLayer in the 1280x720 base space and scaled to
      the window, so it is deliberately NOT given any width-based tweaks: it
      looks identical on every screen, just bigger or smaller. */
+  /* --- MOBILE PAUSE BUTTON --- */
+  #mobilePauseBtn {
+    position:fixed; top:safe-area-inset-top; right:safe-area-inset-right;
+    width:44px; height:44px; margin:16px;
+    background:rgba(0,0,0,.6); border:1px solid rgba(255,255,255,.3);
+    border-radius:4px; color:#e8c874; font-size:24px; line-height:44px;
+    text-align:center; display:none; pointer-events:auto; touch-action:none;
+    box-shadow:0 0 8px rgba(0,0,0,.5);
+  }
+  #mobilePauseBtn.show { display:block; }
+  #mobilePauseBtn:active { background:rgba(255,255,255,.1); }
+
+  /* --- PAUSE MENU OVERLAY --- */
+  #pauseOverlay {
+    position:fixed; inset:0; z-index:1001;
+    background:rgba(5,5,15,.92); display:none;
+    flex-direction:column; align-items:center; justify-content:center;
+    pointer-events:none;
+  }
+  #pauseOverlay.show { display:flex; pointer-events:auto; }
+  #pauseTitle {
+    font-family:var(--font-head); font-size:48px; font-weight:900;
+    color:#e8c874; text-shadow:0 0 15px rgba(232,200,116,.6);
+    margin-bottom:32px;
+  }
+  .pause-btn {
+    width:280px; height:52px; margin:8px 0;
+    background:linear-gradient(180deg, rgba(8,11,18,.9) 0%, rgba(8,11,18,.4) 100%);
+    border:1px solid rgba(232,200,116,.4); border-radius:4px;
+    color:#eaf0fa; font-family:var(--font-stat); font-size:16px; font-weight:700;
+    cursor:pointer; transition:background .18s, border-color .18s, box-shadow .18s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .pause-btn:hover:not(:disabled) {
+    background:linear-gradient(180deg, rgba(8,11,18,.96) 0%, rgba(8,11,18,.6) 100%);
+    border-color:#e8c874; box-shadow:0 0 12px rgba(232,200,116,.3);
+  }
+  .pause-btn:disabled {
+    opacity:.4; cursor:not-allowed; pointer-events:none;
+  }
+  .pause-tooltip {
+    position:absolute; bottom:-28px; left:50%; transform:translateX(-50%);
+    background:#000; color:#ff8888; font-size:11px; padding:3px 8px;
+    border-radius:3px; white-space:nowrap; opacity:0; transition:opacity .18s;
+  }
+  .pause-btn:disabled:hover .pause-tooltip { opacity:1; }
 </style>
 </head>
 <body>
@@ -1495,6 +1541,8 @@
   <!-- the HUD and all in-stage effects live in one scaled layer -->
   <div id="uiLayer">
 
+  /* --- MOBILE PAUSE BUTTON --- */
+  <div id="mobilePauseBtn" aria-label="Pause">☰</div>
   <!-- ==================== MOBILE TOUCH CONTROLS ==================== -->
   <div id="touchControls">
     <div id="joyStick"><div id="joyDot"></div></div>
@@ -1658,11 +1706,23 @@
   </div><!-- /#uiLayer -->
 </div>
 
-<!-- ==================== OVERLAY SCREENS ====================
+  <!-- ==================== PAUSE MENU OVERLAY ==================== -->
+  <div id="pauseOverlay">
+    <h1 id="pauseTitle">PAUSED</h1>
+    <button class="pause-btn" id="btnResumePause">RESUME</button>
+    <button class="pause-btn" id="btnVisitShopPause">VISIT SHOP</button>
+    <button class="pause-btn" id="btnChangeClassPause">CHANGE CLASS
+      <span class="pause-tooltip">finish the current arena first</span>
+    </button>
+    <button class="pause-btn" id="btnLeaveMenuPause">LEAVE TO MENU</button>
+  </div>
+
+<!-- ==================== OVERLAY SCREENS ==================== -->
      Every menu, card, shop and result screen is a plain HTML layer that
      is pinned over the whole viewport at z-index 1000. Nothing here is
      drawn on the game canvas: while one of them is open the canvas is
      paused outright.
+
      ========================================================= -->
 <div id="overlays">
   <!-- ==================== MAIN MENU ==================== -->
@@ -19231,10 +19291,14 @@ function update(dt) {
     game.slowmo = Math.max(0, game.slowmo - dt);
     if (game.slowmo === 0) game.timeScale = 1;
   }
-  const sdt = dt * game.timeScale;
+  // PAUSE SYSTEM: if paused, timeScale is 0, so sdt is 0.
+  // We also stop the speedrun timer (game.time) and all cooldowns (sdt = 0).
+  const sdt = (isPaused ? 0 : dt) * game.timeScale;
 
-  game.time += sdt;
-  game.ambientClock += dt;
+  if (!isPaused) {
+    game.time += sdt;
+    game.ambientClock += dt;
+  }
 
   updatePlayer(sdt);
   updatePet(sdt);
@@ -19453,7 +19517,108 @@ function initTouchControls() {
   abE.addEventListener('touchstart', (e) => { triggerAbility('E'); e.preventDefault(); }, { passive: false });
   abShift.addEventListener('touchstart', (e) => { triggerAbility('Shift'); e.preventDefault(); }, { passive: false });
 }
-window.addEventListener('load', initTouchControls);
+/* --- PAUSE SYSTEM --- */
+let isPaused = false;
+function togglePause() {
+  if (!game || game.screen !== 'playing') return;
+  isPaused = !isPaused;
+  const overlay = document.getElementById('pauseOverlay');
+  const btnChange = document.getElementById('btnChangeClassPause');
+  if (isPaused) {
+    overlay.classList.add('show');
+    stopLoop();
+    // Check if mid-fight (arenas list not empty or boss active)
+    const midFight = game.arenas.length > 0 || game.boss || game.bossFight;
+    if (midFight) {
+      btnChange.disabled = true;
+      btnChange.querySelector('.pause-tooltip').style.opacity = '1';
+    } else {
+      btnChange.disabled = false;
+      btnChange.querySelector('.pause-tooltip').style.opacity = '0';
+    }
+    game.timeScale = 0;
+  } else {
+    overlay.classList.remove('show');
+    startLoop();
+    game.timeScale = 1;
+  }
+}
+
+function initPauseSystem() {
+  // Keyboard
+  window.addEventListener('keydown', (e) => {
+    if ((e.key === 'Escape' || e.key === 'p' || e.key === 'P') && game && game.screen === 'playing') {
+      togglePause();
+      e.preventDefault();
+    }
+  });
+
+  // Mobile button
+  const mobileBtn = document.getElementById('mobilePauseBtn');
+  if (mobileBtn) {
+    mobileBtn.addEventListener('touchstart', (e) => {
+      if (game && game.screen === 'playing') {
+        togglePause();
+        e.preventDefault();
+      }
+    }, { passive: false });
+  }
+
+  // Pause menu buttons
+  const btnResume = document.getElementById('btnResumePause');
+  if (btnResume) btnResume.addEventListener('click', togglePause);
+
+  const btnShop = document.getElementById('btnVisitShopPause');
+  if (btnShop) btnShop.addEventListener('click', () => {
+    if (isPaused) {
+      togglePause(); // unpause first
+      showScreen('shopOverlay');
+    }
+  });
+
+  const btnClass = document.getElementById('btnChangeClassPause');
+  if (btnClass) btnClass.addEventListener('click', () => {
+    if (isPaused && !btnClass.disabled) {
+      togglePause(); // unpause first
+      showScreen('class');
+    }
+  });
+
+  const btnLeave = document.getElementById('btnLeaveMenuPause');
+  if (btnLeave) btnLeave.addEventListener('click', () => {
+    if (!isPaused) return;
+    // Show confirmation popup
+    const confirmHtml = `
+      <div id="pauseConfirm" style="position:absolute; inset:0; background:rgba(0,0,0,.8); display:flex; align-items:center; justify-content:center; z-index:1002;">
+        <div style="background:#080b13; border:1px solid #e8c874; padding:24px; border-radius:6px; text-align:center; width:360px;">
+          <h2 style="font-family:Cinzel; color:#e8c874; margin-top:0;">Leave this zone?</h2>
+          <p style="font-family:Rajdhani; color:#eaf0fa; margin:12px 0;">Progress in this arena will be lost but your upgrades and zone progress are saved.</p>
+          <div style="display:flex; gap:16px; justify-content:center; margin-top:24px;">
+            <button class="pause-btn" style="width:120px; margin:0;" id="btnConfirmLeave">CONFIRM</button>
+            <button class="pause-btn" style="width:120px; margin:0;" id="btnCancelLeave">CANCEL</button>
+          </div>
+        </div>
+      </div>
+    `;
+    const container = document.createElement('div');
+    container.innerHTML = confirmHtml;
+    const overlay = document.getElementById('pauseOverlay');
+    overlay.appendChild(container.firstChild);
+
+    const btnConfirm = document.getElementById('btnConfirmLeave');
+    const btnCancel = document.getElementById('btnCancelLeave');
+    if (btnConfirm) btnConfirm.addEventListener('click', () => {
+      SaveSystem.save('pause-leave');
+      showScreen('menu');
+      togglePause();
+      container.remove();
+    });
+    if (btnCancel) btnCancel.addEventListener('click', () => {
+      container.remove();
+    });
+  });
+}
+window.addEventListener('load', initPauseSystem);
 
 (function boot() {
   /* the saved run is read BEFORE the title screen paints, so the menu line
