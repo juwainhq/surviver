@@ -29,23 +29,61 @@
     box-shadow:0 0 90px rgba(0,0,0,.9);
   }
   #game{ display:block; width:100%; height:100%; }
+  .cicon-art{ display:block; width:100%; height:100%; }
 
-  /* ---------------- screen layers ----------------
-     The menu, zone select, class select, HUD, upgrade cards, zone card, game
-     over and victory are eight separate layers stacked inside #stage. Every one
-     of them is display:none until the screen manager makes it the single active
-     layer, so two screens can never be on screen at the same time. */
-  .screen{ display:none !important; }
-  /* an inactive layer is not merely transparent — it is out of the layout, so
-     there is no state in which two screens can share the screen */
-  .screen:not(.show){ display:none !important; }
+  /* ---------------- overlay screens ----------------
+     Every menu, card, shop and result screen is a plain HTML layer pinned over
+     the whole viewport at z-index 1000 with an opaque backdrop, so the game
+     canvas can never be seen through it. They live in #overlays (a sibling of
+     #stage, outside its transform), are display:none until the screen manager
+     reveals exactly one of them, and are built from HTML and CSS only — no
+     canvas, no drawing code. */
+  #overlays{
+    position:fixed; inset:0; z-index:1000; pointer-events:none;
+  }
+  .screen{
+    position:fixed !important; inset:0 !important;
+    top:0 !important; left:0 !important;
+    width:100% !important; height:100% !important;
+    max-width:none !important; max-height:none !important;
+    margin:0 !important; border-radius:0 !important;
+    z-index:1000 !important;
+    background:rgba(5,5,15,0.97) !important;
+    /* this is only the no-script fallback: showScreen() writes the inline
+       display of every screen, and inline beats this rule every time */
+    display:none;
+    flex-direction:column;
+    opacity:1 !important; visibility:visible !important;
+    transform:none !important;
+    transition:none !important;
+    pointer-events:none;
+    box-sizing:border-box;
+  }
   .screen.show{
-    display:flex !important;
-    animation:screenIn .34s ease-out both;
+    pointer-events:auto;
+    animation:screenIn .28s ease-out both;
   }
   @keyframes screenIn{
     from{ opacity:0; }
     to{ opacity:1; }
+  }
+  /* four screens kept the legacy .overlay class for their layout; strip the
+     blur and the gradient so nothing half-transparent survives on top */
+  .overlay.screen{
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    transition:none !important;
+  }
+  /* the HUD is the one layer that is NOT an overlay: it rides inside the stage
+     on top of the canvas, has no backdrop and lets the mouse through */
+  #hud.screen{
+    position:absolute !important; inset:0 !important;
+    width:auto !important; height:auto !important;
+    max-width:none !important; max-height:none !important;
+    z-index:20 !important;
+    background:none !important;
+    pointer-events:none !important;
+    animation:none !important;
   }
 
   /* ---------------- generic floating type ---------------- */
@@ -156,7 +194,7 @@
     position:absolute; left:22px; bottom:20px; display:flex; align-items:center; gap:9px;
     pointer-events:none;
   }
-  #classBadge canvas{ width:26px; height:26px; filter:drop-shadow(0 0 8px rgba(232,200,116,.45)); }
+  #classBadge .badge-icon{ width:26px; height:26px; flex:0 0 auto; filter:drop-shadow(0 0 8px rgba(232,200,116,.45)); }
   #className{
     font-family:var(--font-head); font-size:13px; font-weight:700;
     letter-spacing:2.8px; text-transform:uppercase; color:#ffe0a4;
@@ -462,12 +500,27 @@
     #settingsBtn{ top:10px; right:10px; width:34px; height:34px; font-size:16px; }
   }
 
-  /* ---------------- main menu starfield ---------------- */
-  #menuStars{
-    position:absolute; inset:0; width:100%; height:100%; display:block;
-    pointer-events:none; z-index:0;
+  /* ---------------- main menu backdrop (pure CSS) ----------------
+     The title screen used to paint a starfield on a canvas. It is a stack of
+     CSS gradients now, so nothing behind the overlay can bleed through. */
+  #menu{
+    background-color:rgba(5,5,15,0.97) !important;
+    background-image:
+      radial-gradient(1.6px 1.6px at 12% 18%, rgba(255,255,255,.85), rgba(255,255,255,0) 60%),
+      radial-gradient(1.3px 1.3px at 28% 62%, rgba(214,232,255,.7), rgba(214,232,255,0) 60%),
+      radial-gradient(1.1px 1.1px at 41% 27%, rgba(255,255,255,.6), rgba(255,255,255,0) 60%),
+      radial-gradient(1.7px 1.7px at 58% 71%, rgba(255,244,214,.8), rgba(255,244,214,0) 60%),
+      radial-gradient(1.2px 1.2px at 67% 22%, rgba(255,255,255,.7), rgba(255,255,255,0) 60%),
+      radial-gradient(1.4px 1.4px at 79% 48%, rgba(198,222,255,.75), rgba(198,222,255,0) 60%),
+      radial-gradient(1.1px 1.1px at 88% 78%, rgba(255,255,255,.6), rgba(255,255,255,0) 60%),
+      radial-gradient(1.5px 1.5px at 21% 84%, rgba(255,231,184,.7), rgba(255,231,184,0) 60%),
+      radial-gradient(1.2px 1.2px at 47% 92%, rgba(255,255,255,.55), rgba(255,255,255,0) 60%),
+      radial-gradient(1.3px 1.3px at 93% 34%, rgba(255,255,255,.6), rgba(255,255,255,0) 60%),
+      radial-gradient(ellipse 60% 44% at 30% 62%, rgba(56,89,190,.16), rgba(56,89,190,0) 70%),
+      radial-gradient(ellipse 52% 40% at 74% 34%, rgba(120,70,180,.14), rgba(120,70,180,0) 70%),
+      radial-gradient(ellipse at 50% 40%, rgba(16,30,58,.85), rgba(3,4,10,.98) 72%) !important;
   }
-  #menuTitle, #menuSub, #howto, #menuBest{ position:relative; z-index:2; }
+  #menuTitle, #menuSub, #menuBest{ position:relative; z-index:2; }
   #menu .btn-row{ position:relative; z-index:2; }
   #continueWrap{ position:relative; z-index:2; }
 
@@ -600,7 +653,7 @@
   #menu{
     position:absolute; inset:0; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:14px; z-index:40;
-    background:radial-gradient(ellipse at 50% 44%, rgba(8,14,28,.18), rgba(2,3,7,.62));
+    /* the paint lives in the #menu rule above: an opaque CSS starfield */
     opacity:1; visibility:visible; pointer-events:auto;
   }
   #menuTitle{
@@ -619,16 +672,34 @@
     color:#c3d2e6; text-transform:uppercase; margin-bottom:6px;
   }
   #menuBest{ font-size:13px; letter-spacing:2.4px; color:rgba(232,200,116,.7); margin-top:4px; }
-  #howto{
-    display:none; flex-direction:column; gap:8px; margin-top:8px;
-    font-size:14px; color:#cfdaea; letter-spacing:.6px; max-width:640px;
+  /* ---------------- how to play ---------------- */
+  #howToPlay{ align-items:center; justify-content:center; text-align:center; padding:28px; }
+  #howToPlay .htp-inner{
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+    max-width:760px; margin:0 auto;
   }
-  #howto.show{ display:flex; }
-  #howto b{ color:var(--gold); font-family:var(--font-head); letter-spacing:1.4px; }
-  #howto .row{ display:flex; gap:10px; align-items:baseline; justify-content:center; flex-wrap:wrap; }
+  #howToPlay .htp-eyebrow{
+    font-family:var(--font-head); font-size:10px; letter-spacing:4px;
+    text-transform:uppercase; color:rgba(232,200,116,.62);
+  }
+  #howToPlay h1{
+    font-family:var(--font-head); font-weight:900; margin:0 0 4px;
+    font-size:clamp(22px,3.4vw,38px); letter-spacing:4px; text-transform:uppercase;
+    color:#ffe4ae; text-shadow:0 0 30px rgba(255,200,110,.45);
+  }
+  #howToPlay b{ color:var(--gold); font-family:var(--font-head); letter-spacing:1.4px; }
+  #howToPlay .row{
+    display:flex; gap:10px; align-items:baseline; justify-content:center; flex-wrap:wrap;
+    font-size:14.5px; line-height:1.5; color:#cfdaea; letter-spacing:.6px; max-width:720px;
+  }
+  #howToPlay .btn{ margin-top:14px; }
+
+  /* a utility that never has to touch `display` from a script */
+  .is-hidden{ display:none !important; }
 
   /* ---------------- class selection ---------------- */
-  /* the whole screen lives inside the stage: it fits the viewport, no scrolling */
+  /* a viewport-sized overlay: seven cards plus the depot tile, four across on
+     a wide window, and the picker only scrolls when the window is too short */
   #classScreen{
     position:absolute; inset:0; width:100%; height:100%; max-height:100%;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -686,10 +757,11 @@
     transform:translateY(-4px); border-color:var(--gold-bright); outline:none;
     box-shadow:0 0 30px rgba(232,200,116,.3), inset 0 0 26px rgba(232,200,116,.06);
   }
-  .class-card canvas.cicon{
+  .class-card .cicon{
     width:60px; height:60px; display:block; flex:0 0 auto;
     filter:drop-shadow(0 0 10px rgba(232,200,116,.28));
   }
+  .class-card .cicon svg{ width:100%; height:100%; display:block; }
   .class-card .cname{
     font-family:var(--font-head); font-size:13px; font-weight:700;
     letter-spacing:1.4px; text-transform:uppercase; color:#ffe7b8; line-height:1.2;
@@ -722,6 +794,45 @@
   .class-card .cpassive{
     font-size:10px; line-height:1.3; color:rgba(159,179,200,.92); letter-spacing:.2px;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  /* ---- the three shop classes: same card, a gem price pinned on top ---- */
+  #classGrid{ position:relative; }
+  .class-card{ position:relative; }
+  .class-card .cprice{
+    position:absolute; top:6px; right:7px;
+    display:none; align-items:center; gap:3px;
+    font-family:var(--font-head); font-size:10px; letter-spacing:.8px; line-height:1;
+    color:#7ff0c0; background:rgba(4,12,9,.86);
+    border:1px solid rgba(110,231,183,.45); border-radius:999px;
+    padding:3px 7px 3px 5px; pointer-events:none;
+  }
+  .class-card .cprice svg{ width:10px; height:10px; display:block; }
+  .class-card.locked .cprice{ display:flex; }
+  .class-card.locked{ border-color:rgba(110,231,183,.28); }
+  .class-card.locked .cicon{ filter:grayscale(.8) brightness(.7); opacity:.8; }
+  .class-card.locked .cname{ color:#a8bccd; }
+  .class-card.locked .cdesc, .class-card.locked .cpassive{ color:rgba(159,179,200,.6); }
+  .class-card.locked:hover, .class-card.locked:focus-visible{
+    border-color:rgba(110,231,183,.85);
+    box-shadow:0 0 30px rgba(110,231,183,.22), inset 0 0 26px rgba(110,231,183,.05);
+  }
+  .class-card.shop-tile{
+    justify-content:center; gap:10px; text-align:center;
+    border-style:dashed; border-color:rgba(232,200,116,.3);
+    background:linear-gradient(180deg, rgba(10,12,18,.9), rgba(4,5,9,.96));
+  }
+  .class-card.shop-tile .cname{ font-size:12px; color:#ffd98a; }
+  .class-card.shop-tile .cdesc{ -webkit-line-clamp:3; }
+  .class-card.shop-tile .tileglyph{
+    font-family:var(--font-head); font-size:26px; color:rgba(232,200,116,.85);
+    text-shadow:0 0 16px rgba(232,200,116,.4);
+  }
+  /* seven class cards + the shop tile: four across when there is room */
+  @media (min-width: 940px){
+    #classGrid{ grid-template-columns:repeat(4, minmax(0, 220px)); max-width:928px; }
+  }
+  @media (max-width: 939px){
+    #classGrid{ grid-template-columns:repeat(2, minmax(0, 220px)); }
   }
   /* ---------------- ability unlock ceremony ---------------- */
   #abilityUnlock{
@@ -848,6 +959,169 @@
   .card .rank{ margin-top:auto; font-size:10px; letter-spacing:2.6px; color:rgba(232,200,116,.65); text-transform:uppercase; }
 
 
+
+  /* ---------------- gem shop ---------------- */
+  #shopScreen{
+    justify-content:center; align-items:center; padding:0;
+    background:rgba(5,5,15,.97);
+    backdrop-filter:none;
+  }
+  .shop-wrap{
+    width:min(1180px,96vw); height:min(790px,94vh); margin:auto;
+    display:flex; flex-direction:column;
+    background:linear-gradient(180deg, rgba(9,11,18,.985), rgba(3,4,8,.99));
+    border:1px solid rgba(232,200,116,.45); border-radius:4px;
+    box-shadow:0 0 100px rgba(0,0,0,.92), inset 0 0 70px rgba(232,200,116,.04);
+  }
+  .shop-head{
+    display:flex; align-items:center; gap:18px; padding:18px 26px 14px;
+    border-bottom:1px solid rgba(232,200,116,.22);
+  }
+  .shop-head h2{
+    font-family:var(--font-head); font-size:clamp(17px,2.2vw,25px); font-weight:900;
+    letter-spacing:6px; text-transform:uppercase; color:#ffe7b8; margin:0;
+    text-shadow:0 0 30px rgba(232,200,116,.35);
+  }
+  .shop-sub{ font-size:9.5px; letter-spacing:3.4px; text-transform:uppercase; color:rgba(232,200,116,.55); }
+  .shop-bank{
+    margin-left:auto; display:flex; align-items:center; gap:9px;
+    font-family:var(--font-head); font-size:21px; font-weight:700; color:#ffdf9b;
+    font-variant-numeric:tabular-nums; letter-spacing:1px;
+  }
+  .shop-bank svg{ width:21px; height:21px; filter:drop-shadow(0 0 8px rgba(110,231,183,.55)); }
+  .shop-tabs{ display:flex; gap:8px; padding:14px 26px 0; flex-wrap:wrap; }
+  .shop-tab{
+    font-family:var(--font-head); font-size:10.5px; font-weight:700; letter-spacing:2.6px;
+    text-transform:uppercase; color:rgba(214,226,244,.55); background:none;
+    border:1px solid rgba(232,200,116,.18); border-bottom:none;
+    border-radius:3px 3px 0 0; padding:10px 20px; cursor:pointer;
+    transition:color .2s ease, background .2s ease, border-color .2s ease;
+    -webkit-appearance:none; appearance:none;
+  }
+  .shop-tab:hover{ color:#ffe7b8; border-color:rgba(232,200,116,.4); }
+  .shop-tab.active{
+    color:#ffe7b8; border-color:rgba(232,200,116,.6);
+    background:rgba(232,200,116,.09);
+    box-shadow:inset 0 0 22px rgba(232,200,116,.07);
+  }
+  #shopGrid{
+    flex:1; overflow-y:auto; padding:18px 26px 22px;
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr));
+    gap:14px; align-content:start;
+  }
+  #shopGrid::-webkit-scrollbar{ width:8px; }
+  #shopGrid::-webkit-scrollbar-track{ background:rgba(255,255,255,.04); border-radius:4px; }
+  #shopGrid::-webkit-scrollbar-thumb{ background:rgba(232,200,116,.35); border-radius:4px; }
+  .shop-card{
+    display:flex; flex-direction:column; gap:9px; padding:15px 15px 13px;
+    background:linear-gradient(180deg, rgba(16,19,28,.97), rgba(5,7,11,.98));
+    border:1px solid rgba(232,200,116,.3); border-radius:3px;
+    transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+  }
+  .shop-card:hover{ border-color:rgba(232,200,116,.6); box-shadow:0 0 26px rgba(232,200,116,.14); }
+  .shop-card.owned{ border-color:rgba(232,200,116,.42); }
+  .shop-card.maxed{ border-color:rgba(110,231,183,.5); }
+  .sc-top{ display:flex; align-items:center; gap:11px; }
+  .sc-icon{
+    flex:0 0 auto; width:38px; height:38px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-head); font-size:16px; color:#ffe4ae;
+    border:1px solid rgba(232,200,116,.45);
+    background:radial-gradient(circle at 50% 40%, rgba(232,200,116,.18), rgba(8,10,16,.9));
+    box-shadow:inset 0 0 16px rgba(232,200,116,.16);
+  }
+  .sc-name{
+    font-family:var(--font-head); font-size:12.5px; font-weight:700; letter-spacing:1.2px;
+    color:#ffe7b8; text-transform:uppercase; line-height:1.3;
+  }
+  .sc-desc{ font-size:12.5px; line-height:1.45; color:#b9c8da; min-height:52px; }
+  /* the class shelf keeps the class-screen portrait on every card */
+  .shop-card.sc-class{ align-items:stretch; }
+  .sc-portrait{
+    width:88px; height:88px; align-self:center; display:block;
+    padding:10px; box-sizing:border-box;
+    border-radius:50%;
+    background:radial-gradient(circle at 50% 42%, rgba(232,200,116,.16), rgba(6,8,13,.96) 72%);
+    border:1px solid rgba(232,200,116,.26);
+    box-shadow:inset 0 0 22px rgba(232,200,116,.12);
+    filter:drop-shadow(0 0 12px rgba(232,200,116,.22));
+  }
+  .shop-card.sc-class .sc-name{ text-align:center; }
+  .shop-card.sc-class .sc-desc{ min-height:44px; }
+  .sc-portrait svg{ width:100%; height:100%; display:block; }
+  .sc-q{
+    font-size:10.5px; line-height:1.4; letter-spacing:.6px;
+    text-transform:uppercase; color:rgba(255,217,138,.86);
+  }
+  .sc-stars{ font-size:13px; letter-spacing:3px; color:#e8c874; }
+  .sc-stars .off{ color:rgba(232,200,116,.22); }
+  .sc-foot{ margin-top:auto; display:flex; align-items:center; gap:10px; }
+  .sc-cost{
+    display:flex; align-items:center; gap:6px;
+    font-family:var(--font-head); font-size:14px; font-weight:700; color:#ffdf9b;
+    font-variant-numeric:tabular-nums;
+  }
+  .sc-cost svg{ width:13px; height:13px; }
+  .sc-buy{
+    margin-left:auto; font-family:var(--font-head); font-size:10px; font-weight:700;
+    letter-spacing:2.2px; text-transform:uppercase; color:#ffe7b8;
+    background:rgba(232,200,116,.12); border:1px solid rgba(232,200,116,.55);
+    border-radius:2px; padding:8px 15px; cursor:pointer;
+    transition:background .2s ease, box-shadow .2s ease, color .2s ease;
+    -webkit-appearance:none; appearance:none;
+  }
+  .sc-buy:hover:not(:disabled){ background:rgba(232,200,116,.24); box-shadow:0 0 18px rgba(232,200,116,.3); }
+  .sc-buy:active:not(:disabled){ transform:scale(.97); }
+  .sc-buy:disabled{
+    opacity:.34; cursor:not-allowed; color:#93a4b8;
+    border-color:rgba(148,163,184,.28); background:rgba(148,163,184,.06);
+  }
+  .sc-buy.maxed:disabled{ color:#6ee7b7; border-color:rgba(110,231,183,.4); background:rgba(110,231,183,.08); opacity:.75; }
+  .shop-foot{
+    padding:0 26px 16px; display:flex; justify-content:space-between; align-items:center; gap:16px;
+  }
+  .shop-note{ font-size:10px; letter-spacing:2.4px; text-transform:uppercase; color:rgba(214,226,244,.4); }
+  .shop-flash{
+    font-family:var(--font-head); font-size:11px; letter-spacing:2.6px; text-transform:uppercase;
+    color:#6ee7b7; opacity:0; transition:opacity .25s ease;
+  }
+  .shop-flash.show{ opacity:1; }
+  .shop-flash.bad{ color:#fca5a5; }
+
+  /* ---- consumable satchel: three quick slots, bottom left ---- */
+  #consumables{
+    position:absolute; left:22px; bottom:22px;
+    display:flex; flex-direction:column; gap:8px; pointer-events:none;
+  }
+  #consumables.hide{ display:none; }
+  .consumable-slot{
+    width:196px; height:38px; display:flex; align-items:center; gap:9px; padding:0 11px;
+    background:linear-gradient(90deg, rgba(8,11,18,.86), rgba(8,11,18,.3));
+    border:1px solid rgba(232,200,116,.3); border-radius:3px;
+    transition:border-color .18s ease, box-shadow .18s ease, opacity .18s ease;
+  }
+  .consumable-slot.empty{ opacity:.3; border-style:dashed; }
+  .consumable-slot .key{
+    flex:0 0 auto; width:19px; height:19px; border-radius:3px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-head); font-size:10px; font-weight:700; color:#0a0c12;
+    background:rgba(232,200,116,.85);
+  }
+  .consumable-slot.empty .key{ background:rgba(148,163,184,.4); }
+  .consumable-slot .cicon{
+    flex:0 0 auto; width:16px; text-align:center;
+    font-family:var(--font-head); font-size:15px; color:#ffe4ae;
+  }
+  .consumable-slot .cname{
+    font-family:var(--font-head); font-size:10px; letter-spacing:1.5px;
+    text-transform:uppercase; color:#ffe7b8; white-space:nowrap; overflow:hidden;
+  }
+  .consumable-slot.pop{ border-color:#ffd54a; box-shadow:0 0 24px rgba(255,213,74,.45); }
+
+  /* the seventh ability slot only exists once the Overdrive Core is bought */
+  #abOverdrive{ display:none; }
+  #abOverdrive.show{ display:flex; }
+
   /* ---------------- universe select strip (zone screen) ---------------- */
   #universeRow{
     display:flex; gap:11px; justify-content:center; flex-wrap:wrap;
@@ -872,7 +1146,12 @@
   #universeCaption{ font-size:10.5px; letter-spacing:3.4px; text-transform:uppercase; color:rgba(232,200,116,.55); margin-bottom:2px; }
 
   /* ---------------- universe complete / intro cards ---------------- */
-  #universeComplete, #universeIntro{ justify-content:center; align-items:center; }
+  #universeTransition{ justify-content:center; align-items:center; padding:24px; }
+  .uni-panel{
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    gap:16px; text-align:center; width:100%;
+  }
+  .uni-panel.on{ display:flex; }
   .uni-inner{
     width:min(880px,92vw); padding:42px 38px 34px; text-align:center;
     background:radial-gradient(ellipse at 50% -10%, rgba(232,200,116,.13), rgba(4,5,9,.97) 62%);
@@ -989,6 +1268,10 @@
         <span class="icon">✦</span><span class="cd"></span><span class="key">E</span><span class="label">NOVA</span>
         <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
       </div>
+      <div class="ability" id="abOverdrive">
+        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+        <span class="icon">⇉</span><span class="cd"></span><span class="key">Z</span><span class="label">OVERDRIVE</span>
+      </div>
       <div class="ability" id="abDash">
         <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
         <span class="icon">➤</span><span class="cd"></span><span class="key">SHIFT</span><span class="label">DASH</span>
@@ -1011,8 +1294,10 @@
       </div>
     </div>
 
+    <div id="consumables" aria-label="Consumables"></div>
+
     <div id="classBadge">
-      <canvas id="badgeIcon" width="52" height="52"></canvas>
+      <div id="badgeIcon" class="badge-icon" aria-hidden="true"></div>
       <span id="className">Vanguard Knight</span>
     </div>
 
@@ -1059,9 +1344,18 @@
     <div class="b-objective" id="briefObjective">Clear <b>3 arenas</b> to unlock the boss</div>
   </div>
 
+
+</div>
+
+<!-- ==================== OVERLAY SCREENS ====================
+     Every menu, card, shop and result screen is a plain HTML layer that
+     is pinned over the whole viewport at z-index 1000. Nothing here is
+     drawn on the game canvas: while one of them is open the canvas is
+     paused outright.
+     ========================================================= -->
+<div id="overlays">
   <!-- ==================== MAIN MENU ==================== -->
-  <div id="menu" class="screen show">
-    <canvas id="menuStars" width="1280" height="720" aria-hidden="true"></canvas>
+  <div id="menu" class="screen">
     <h1 id="menuTitle">SURVIVE</h1>
     <div id="menuSub">1347 AD · Commander Rael</div>
 
@@ -1075,7 +1369,7 @@
       <div class="sp-row"><span>Saved run</span><b id="spRun">None</b></div>
       <div class="sp-rule"></div>
       <button id="btnResetSave" type="button">Reset save</button>
-      <div id="spNote">Clears the saved run, the best score and lifetime gems.</div>
+      <div id="spNote">Clears the saved run, the best score, the gem bank and every shop purchase.</div>
     </div>
 
     <div id="continueWrap">
@@ -1085,16 +1379,26 @@
 
     <div class="btn-row" style="margin-top:12px">
       <button class="btn" id="btnBegin">Begin Mission</button>
+      <button class="btn" id="btnShop">Shop</button>
       <button class="btn ghost" id="btnHowTo">How To Play</button>
     </div>
-    <div id="howto">
+    <div id="menuBest">BEST SCORE 0</div>
+  </div>
+
+  <!-- ==================== HOW TO PLAY ==================== -->
+  <div id="howToPlay" class="screen">
+    <div class="htp-inner">
+      <div class="htp-eyebrow">Commander Rael · Field Manual</div>
+      <h1 id="howToTitle">How To Play</h1>
       <div class="row"><b>WASD</b> move</div>
       <div class="row"><b>LEFT CLICK</b> use class weapon</div>
       <div class="row"><b>Q</b> class ability</div>
       <div class="row"><b>E</b> Nova Blast · <b>SHIFT</b> Dash · <b>F</b> Turret Drop · <b>R</b> Overcharge · <b>X</b> Time Bomb</div>
+      <div class="row"><b>1 2 3</b> use a satchel supply</div>
       <div class="row">Nova Blast, Dash, Turret Drop, Overcharge and Time Bomb are unlocked by defeating bosses — one per boss, in that order.</div>
+      <div class="row">Clear every arena, beat the champion, then walk into the portal it leaves behind. Six universes, five levels each.</div>
+      <button class="btn" id="btnHowToBack" type="button">Back</button>
     </div>
-    <div id="menuBest">BEST SCORE 0</div>
   </div>
 
   <!-- ==================== CLASS SELECTION ==================== -->
@@ -1104,7 +1408,7 @@
     <h1 id="classTitle">Choose Your Combat Style</h1>
     <div id="classGrid">
       <div class="class-card" id="cardKnight" data-class="knight" role="button" tabindex="0">
-        <canvas class="cicon" id="iconKnight" width="184" height="184"></canvas>
+        <div class="cicon" id="iconKnight" aria-hidden="true"></div>
         <div class="cname">Vanguard Knight</div>
         <div class="cdesc">A long silver longsword carves a wide arc through everything in front of him.</div>
         <div class="cstats">
@@ -1116,7 +1420,7 @@
         <div class="cpassive">Passive · 7 health orbs</div>
       </div>
       <div class="class-card" id="cardGunslinger" data-class="gunslinger" role="button" tabindex="0">
-        <canvas class="cicon" id="iconGunslinger" width="184" height="184"></canvas>
+        <div class="cicon" id="iconGunslinger" aria-hidden="true"></div>
         <div class="cname">Gunslinger</div>
         <div class="cdesc">Twin pistols pour out a storm of bolts that punch through the crowd.</div>
         <div class="cstats">
@@ -1128,7 +1432,7 @@
         <div class="cpassive">Passive · bolts pierce 2 enemies</div>
       </div>
       <div class="class-card" id="cardSniper" data-class="sniper" role="button" tabindex="0">
-        <canvas class="cicon" id="iconSniper" width="184" height="184"></canvas>
+        <div class="cicon" id="iconSniper" aria-hidden="true"></div>
         <div class="cname">Sniper</div>
         <div class="cdesc">One shot, one kill. A rail of light crosses the entire screen.</div>
         <div class="cstats">
@@ -1140,7 +1444,7 @@
         <div class="cpassive">Passive · sees much further</div>
       </div>
       <div class="class-card" id="cardMage" data-class="mage" role="button" tabindex="0">
-        <canvas class="cicon" id="iconMage" width="184" height="184"></canvas>
+        <div class="cicon" id="iconMage" aria-hidden="true"></div>
         <div class="cname">Chrono Mage</div>
         <div class="cdesc">Three slow orbs hunt their prey down on their own.</div>
         <div class="cstats">
@@ -1150,6 +1454,50 @@
         </div>
         <div class="cq">Q · Temporal Rift</div>
         <div class="cpassive">Passive · time powers recharge twice as fast</div>
+      </div>
+      <div class="class-card locked" id="cardBerserker" data-class="berserker" role="button" tabindex="0">
+        <div class="cprice"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>300</div>
+        <div class="cicon" id="iconBerserker" aria-hidden="true"></div>
+        <div class="cname">Berserker</div>
+        <div class="cdesc">No armour and only three orbs, but every blow lands three times as hard.</div>
+        <div class="cstats">
+          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i style="width:100%"></i></span></div>
+          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i style="width:100%"></i></span></div>
+          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i style="width:20%"></i></span></div>
+        </div>
+        <div class="cq">Q · Rage</div>
+        <div class="cpassive">Passive · 3 health orbs · one back every 5 kills</div>
+      </div>
+      <div class="class-card locked" id="cardShadow" data-class="shadow" role="button" tabindex="0">
+        <div class="cprice"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>400</div>
+        <div class="cicon" id="iconShadow" aria-hidden="true"></div>
+        <div class="cname">Shadow Assassin</div>
+        <div class="cdesc">Permanently cloaked past 120 px. Shadow daggers hit like a hammer.</div>
+        <div class="cstats">
+          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i style="width:88%"></i></span></div>
+          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i style="width:96%"></i></span></div>
+          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i style="width:62%"></i></span></div>
+        </div>
+        <div class="cq">Q · Death Mark</div>
+        <div class="cpassive">Passive · unseen past 120 px · kills reset the dash</div>
+      </div>
+      <div class="class-card locked" id="cardTech" data-class="tech" role="button" tabindex="0">
+        <div class="cprice"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>500</div>
+        <div class="cicon" id="iconTech" aria-hidden="true"></div>
+        <div class="cname">Tech Specialist</div>
+        <div class="cdesc">A bouncing disc and two standing turrets that never stop firing.</div>
+        <div class="cstats">
+          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i style="width:74%"></i></span></div>
+          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i style="width:62%"></i></span></div>
+          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i style="width:78%"></i></span></div>
+        </div>
+        <div class="cq">Q · System Overload</div>
+        <div class="cpassive">Passive · right click plants a turret · kills shave 1s off cooldowns</div>
+      </div>
+      <div class="class-card shop-tile" id="cardShopTile" role="button" tabindex="0">
+        <div class="tileglyph">⇉</div>
+        <div class="cname">More classes</div>
+        <div class="cdesc">Spend gems in the Supply Depot to unlock the rest of the roster.</div>
       </div>
     </div>
     <button id="btnClassSkip" type="button">Skip · continue as <span id="skipClassName">Vanguard Knight</span></button>
@@ -1180,7 +1528,10 @@
     <div class="eyebrow" id="transEyebrow">Zone 2</div>
     <h1 id="transTitle">The Dark Forest</h1>
     <div class="story" id="transStory"></div>
-    <button class="btn" id="btnContinue" style="margin-top:8px">Continue</button>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn" id="btnContinue">Continue</button>
+      <button class="btn ghost" id="btnVisitShop">Visit Shop</button>
+    </div>
   </div>
 
   <!-- ==================== GAME OVER ==================== -->
@@ -1213,8 +1564,12 @@
     </div>
   </div>
 
-  <!-- ==================== UNIVERSE COMPLETE ==================== -->
-  <div class="screen" id="universeComplete">
+  <!-- ==================== UNIVERSE TRANSITION ====================
+       One screen, two panels: the "universe complete" card and the intro card
+       for the one that follows. showScreen('universeTransition') reveals the
+       screen; setUniversePanel() swaps which of the two panels is inside it. -->
+  <div class="screen" id="universeTransition">
+   <div class="uni-panel" id="uniCompletePanel">
     <div class="uni-inner">
       <div class="uni-kicker" id="ucKicker">Universe 1 complete</div>
       <h1 class="uni-title" id="ucName">Medieval 1347 AD</h1>
@@ -1228,10 +1583,9 @@
       </div>
       <button class="btn" id="btnNextUniverse">Enter Next Universe</button>
     </div>
-  </div>
+   </div>
 
-  <!-- ==================== UNIVERSE INTRO ==================== -->
-  <div class="screen" id="universeIntro">
+   <div class="uni-panel" id="uniIntroPanel">
     <div class="uni-inner">
       <div class="uni-kicker" id="uiKicker">Universe 2</div>
       <h1 class="uni-title" id="uiName">Ancient Egypt 2500 BC</h1>
@@ -1240,6 +1594,32 @@
       <div class="uni-story" id="uiStory"></div>
       <div class="uni-roster" id="uiRoster"></div>
       <button class="btn" id="btnEnterUniverse">Enter Universe</button>
+    </div>
+   </div>
+  </div>
+
+  <!-- ==================== GEM SHOP ==================== -->
+  <div class="screen" id="shopScreen">
+    <div class="shop-wrap">
+      <div class="shop-head">
+        <div>
+          <h2>Supply Depot</h2>
+          <div class="shop-sub">Permanent upgrades · purchased with gems</div>
+        </div>
+        <div class="shop-bank"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg><span id="shopGems">0</span></div>
+      </div>
+      <div class="shop-tabs" id="shopTabs">
+        <button class="shop-tab active" type="button" data-tab="upgrades">Upgrades</button>
+        <button class="shop-tab" type="button" data-tab="consumables">Consumables</button>
+        <button class="shop-tab" type="button" data-tab="cosmetics">Cosmetics</button>
+        <button class="shop-tab" type="button" data-tab="classes">Classes</button>
+      </div>
+      <div id="shopGrid"></div>
+      <div class="shop-foot">
+        <div class="shop-note" id="shopNote">Upgrades are permanent — they follow Rael through every run and every universe.</div>
+        <div class="shop-flash" id="shopFlash"></div>
+        <button class="btn shop-close" id="btnShopClose" type="button">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1683,13 +2063,20 @@ const UI = {
     document.getElementById('cardKnight'),
     document.getElementById('cardGunslinger'),
     document.getElementById('cardSniper'),
-    document.getElementById('cardMage')
+    document.getElementById('cardMage'),
+    document.getElementById('cardBerserker'),
+    document.getElementById('cardShadow'),
+    document.getElementById('cardTech')
   ],
+  cardShopTile: document.getElementById('cardShopTile'),
   classIcons: [
     document.getElementById('iconKnight'),
     document.getElementById('iconGunslinger'),
     document.getElementById('iconSniper'),
-    document.getElementById('iconMage')
+    document.getElementById('iconMage'),
+    document.getElementById('iconBerserker'),
+    document.getElementById('iconShadow'),
+    document.getElementById('iconTech')
   ],
   className: document.getElementById('className'),
   badgeIcon: document.getElementById('badgeIcon'),
@@ -1711,15 +2098,14 @@ const UI = {
     dash: document.getElementById('abDash'),
     turret: document.getElementById('abTurret'),
     overcharge: document.getElementById('abOvercharge'),
-    bomb: document.getElementById('abBomb')
+    bomb: document.getElementById('abBomb'),
+    overdrive: document.getElementById('abOverdrive')
   },
   qIcon: document.getElementById('qIcon'),
   qLabel: document.getElementById('qLabel'),
   overchargeGlow: document.getElementById('overchargeGlow'),
   menu: document.getElementById('menu'),
   menuBest: document.getElementById('menuBest'),
-  howto: document.getElementById('howto'),
-  menuStars: document.getElementById('menuStars'),
   zoneScreen: document.getElementById('zoneScreen'),
   zoneRow: document.getElementById('zoneRow'),
   zoneTitle: document.getElementById('zoneTitle'),
@@ -1768,8 +2154,8 @@ const UI = {
   runTime: document.getElementById('runTime'),
   universeRow: document.getElementById('universeRow'),
   universeCaption: document.getElementById('universeCaption'),
-  universeComplete: document.getElementById('universeComplete'),
-  universeIntro: document.getElementById('universeIntro'),
+  universeTransition: document.getElementById('universeTransition'),
+  howToPlay: document.getElementById('howToPlay'),
   ucKicker: document.getElementById('ucKicker'),
   ucName: document.getElementById('ucName'),
   ucEra: document.getElementById('ucEra'),
@@ -1777,149 +2163,191 @@ const UI = {
   ucScore: document.getElementById('ucScore'),
   ucUps: document.getElementById('ucUps'),
   ucNext: document.getElementById('ucNext'),
+  btnNextUniverse: document.getElementById('btnNextUniverse'),
+  btnEnterUniverse: document.getElementById('btnEnterUniverse'),
   uiKicker: document.getElementById('uiKicker'),
   uiName: document.getElementById('uiName'),
   uiEra: document.getElementById('uiEra'),
   uiStory: document.getElementById('uiStory'),
   uiRoster: document.getElementById('uiRoster'),
   vicEnding: document.getElementById('vicEnding'),
+  shopScreen: document.getElementById('shopScreen'),
+  shopGrid: document.getElementById('shopGrid'),
+  shopTabs: document.getElementById('shopTabs'),
+  shopGems: document.getElementById('shopGems'),
+  shopFlash: document.getElementById('shopFlash'),
+  shopNote: document.getElementById('shopNote'),
+  consumables: document.getElementById('consumables'),
   btnChangeClass: document.getElementById('btnChangeClass')
 };
 const ctx = UI.canvas.getContext('2d');
 const mmCtx = UI.minimap.getContext('2d');
 
 /* =============================================================================
-   SCREENS — one layer at a time
+   SCREENS — one screen at a time, and only one way to change that
    =============================================================================
-   Every full-screen layer in #stage is a `.screen` element with display:none in
-   the stylesheet. `Screens.show(name)` hides the previous layer *before* it
-   reveals the next one, so the HUD, the upgrade cards, the zone card, game over
-   and victory can never be displayed together. Nothing else in the file is
-   allowed to toggle a screen layer directly: all 27 call sites route through
-   here (see the audit table below). */
-const SCREEN_LAYERS = [
-  'menu',            /* title screen            — game.screen === 'menu'        */
-  'zoneScreen',      /* zone select             — game.screen === 'zones'       */
-  'classScreen',     /* class select            — game.screen === 'class'       */
-  'hud',             /* in-run HUD              — game.screen === 'playing'     */
-  'upgradeScreen',   /* upgrade cards           — game.screen === 'upgrade'     */
-  'transition',      /* zone completed card     — game.screen === 'transition'  */
-  'gameOver',        /* death                   — game.screen === 'gameover'    */
-  'universeComplete',/* universe cleared card   — game.screen === 'universe'    */
-  'universeIntro',   /* next universe card      — game.screen === 'universeIntro'*/
-  'victory'          /* final win               — game.screen === 'victory'     */
-];
+   showScreen(name) is the ONLY code in this file that can make a screen visible
+   or invisible. It works in two passes:
 
-const Screens = {
-  current: null,
+     1. it walks every one of the eleven screen elements and sets
+        display:none (inline, !important) on all of them;
+     2. it sets display:flex — or display:block for the game/HUD — on the one
+        screen that was asked for.
 
-  element(name) {
-    return (name && UI[name]) ? UI[name] : null;
-  },
-
-  /* every layer that exists, in a stable order */
-  layers() {
-    const out = [];
-    for (let i = 0; i < SCREEN_LAYERS.length; i++) {
-      const el = UI[SCREEN_LAYERS[i]];
-      if (el && el.classList) out.push(el);
-    }
-    return out;
-  },
-
-  /* hide one layer: the class stops the fade-in, the inline display makes the
-     layer impossible to see even if the stylesheet is ever overridden */
-  hide(name) {
-    const el = this.element(name);
-    if (el && el.classList) {
-      el.classList.remove('show');
-      if (el.style) el.style.display = 'none';
-    }
-    if (this.current === name) this.current = null;
-  },
-
-  /* hide everything else first, then reveal exactly one layer */
-  show(name) {
-    const next = this.element(name);
-    const layers = this.layers();
-    /* the previous screen is fully hidden BEFORE the next one is revealed */
-    for (let i = 0; i < layers.length; i++) {
-      if (layers[i] === next) continue;
-      layers[i].classList.remove('show');
-      if (layers[i].style) layers[i].style.display = 'none';
-    }
-    if (!next || !next.classList) {
-      this.current = null;
-      return null;
-    }
-    /* hand the layer back to the stylesheet, then restart the fade */
-    if (next.style) next.style.display = '';
-    next.classList.remove('show');
-    void next.offsetWidth;
-    next.classList.add('show');
-    this.current = name;
-    return next;
-  },
-
-  /* boot / recovery: clear every layer, then reveal exactly one */
-  reset(name) {
-    const layers = this.layers();
-    for (let i = 0; i < layers.length; i++) {
-      layers[i].classList.remove('show');
-      if (layers[i].style) layers[i].style.display = 'none';
-    }
-    this.current = null;
-    return name ? this.show(name) : null;
-  },
-
-  /* belt and braces: if a future call site ever flags two layers at once, keep
-     only the newest one. Runs a few times a second from the main loop. */
-  enforce() {
-    const vis = this.visible();
-    if (vis.length <= 1) {
-      /* nothing flagged twice, but a layer without .show must still be gone */
-      const layers = this.layers();
-      for (let i = 0; i < layers.length; i++) {
-        if (!layers[i].classList.contains('show') && layers[i].style && layers[i].style.display !== 'none') {
-          layers[i].style.display = 'none';
-        }
-      }
-      return vis;
-    }
-    const keep = (this.current && vis.indexOf(this.current) >= 0) ? this.current : vis[vis.length - 1];
-    for (let i = 0; i < vis.length; i++) {
-      if (vis[i] !== keep) this.hide(vis[i]);
-    }
-    return this.visible();
-  },
-
-  /* which layers are displayed right now — the test harness asserts on this */
-  visible() {
-    const out = [];
-    const layers = this.layers();
-    for (let i = 0; i < layers.length; i++) {
-      if (layers[i].classList.contains('show')) out.push(SCREEN_LAYERS[i]);
-    }
-    return out;
-  }
+   Because `display` is written inline and marked important, no stylesheet rule,
+   stale class, boot order accident or half-applied CSS can put a second screen
+   on screen: the state is rebuilt from scratch on every single call. Nothing
+   else in the file writes a screen's display, and enforceScreen() re-asserts
+   the invariant a few times a second from the main loop.
+   ------------------------------------------------------------------------- */
+const SCREENS = {
+  /* the name the game asks for            element id             how it shows  */
+  mainMenu:           { el: 'menu',                 display: 'flex',  state: 'menu' },
+  howToPlay:          { el: 'howToPlay',            display: 'flex',  state: 'howto' },
+  classSelect:        { el: 'classScreen',          display: 'flex',  state: 'class' },
+  zoneSelect:         { el: 'zoneScreen',           display: 'flex',  state: 'zones' },
+  game:               { el: 'hud',                  display: 'block', state: 'playing' },
+  shopOverlay:        { el: 'shopScreen',           display: 'flex',  state: 'shop' },
+  upgradeCard:        { el: 'upgradeScreen',        display: 'flex',  state: 'upgrade' },
+  levelTransition:    { el: 'transition',           display: 'flex',  state: 'transition' },
+  universeTransition: { el: 'universeTransition',   display: 'flex',  state: 'universe' },
+  gameOver:           { el: 'gameOver',             display: 'flex',  state: 'gameover' },
+  victory:            { el: 'victory',              display: 'flex',  state: 'victory' }
 };
+const SCREEN_NAMES = Object.keys(SCREENS);
+
+/* the screen that is on right now — the manager's own bookkeeping */
+let currentScreen = null;
+
+function screenElement(name) {
+  const def = SCREENS[name];
+  return (def && document.getElementById(def.el)) || null;
+}
+
+/* every screen element, whatever its state */
+function screenElements() {
+  const out = [];
+  for (let i = 0; i < SCREEN_NAMES.length; i++) {
+    const el = screenElement(SCREEN_NAMES[i]);
+    if (el) out.push(el);
+  }
+  return out;
+}
+
+/* pass one: this element is out of the picture, inline and important */
+function hideScreenElement(el) {
+  if (!el) return;
+  el.style.setProperty('display', 'none', 'important');
+  el.classList.remove('show');
+  el.setAttribute('aria-hidden', 'true');
+  el.hidden = true;
+}
+
+/* pass two: exactly this element, and nothing else */
+function revealScreenElement(el, display) {
+  el.style.setProperty('display', display || 'flex', 'important');
+  el.classList.remove('show');
+  void el.offsetWidth;          /* restart the fade-in from the top */
+  el.classList.add('show');
+  el.removeAttribute('aria-hidden');
+  el.hidden = false;
+}
+
+/* ---------------------------------------------------------------------------
+   showScreen(name[, state])
+     name  — one of the eleven keys in SCREENS
+     state — optional game.screen value (only the universe cards need one)
+   Hides ALL screens first, then shows the requested one. Returns the element,
+   or null for an unknown name (in which case everything stays hidden).
+   ------------------------------------------------------------------------- */
+function showScreen(name, state) {
+  /* 1. every screen off — unconditionally, before anything is turned on */
+  const all = screenElements();
+  for (let i = 0; i < all.length; i++) hideScreenElement(all[i]);
+
+  const def = SCREENS[name];
+  if (!def) {
+    currentScreen = null;
+    setLoopPausedFor(null);
+    return null;
+  }
+
+  /* 2. exactly one screen on */
+  const el = screenElement(name);
+  if (!el) {
+    currentScreen = null;
+    setLoopPausedFor(null);
+    return null;
+  }
+  revealScreenElement(el, def.display);
+  currentScreen = name;
+  game.screen = state || def.state;
+  /* the game screen runs the world; every other screen parks it */
+  setLoopPausedFor(name);
+  return el;
+}
+
+/* the names of the screens that are currently displayed (0 or 1, in practice) */
+function screensVisible() {
+  const out = [];
+  for (let i = 0; i < SCREEN_NAMES.length; i++) {
+    const el = screenElement(SCREEN_NAMES[i]);
+    if (!el) continue;
+    const inline = el.style.getPropertyValue('display');
+    const shown = inline ? inline !== 'none' : (el.hidden ? false : true);
+    if (shown) out.push(SCREEN_NAMES[i]);
+  }
+  return out;
+}
+
+/* the safety net: if anything ever breaks exclusivity, rebuild it from the
+   manager's own record. Runs from update() a few times a second. */
+function enforceScreen() {
+  const vis = screensVisible();
+  if (vis.length === 1 && vis[0] === currentScreen) return true;
+  const keep = currentScreen || vis[vis.length - 1] || 'mainMenu';
+  showScreen(keep);
+  return false;
+}
+
+/* the universe screen holds two cards: "universe complete" and the intro for
+   the next one. Only one panel is ever inside it. */
+function setUniversePanel(which) {
+  const complete = document.getElementById('uniCompletePanel');
+  const intro = document.getElementById('uniIntroPanel');
+  const wantIntro = which === 'intro';
+  if (complete) {
+    complete.classList.toggle('on', !wantIntro);
+    complete.style.setProperty('display', wantIntro ? 'none' : 'flex', 'important');
+  }
+  if (intro) {
+    intro.classList.toggle('on', wantIntro);
+    intro.style.setProperty('display', wantIntro ? 'flex' : 'none', 'important');
+  }
+}
 
 /* ---------------------------- show / hide audit -----------------------------
-   game.screen   layer            the only place that reveals it
+   screen name           element              the one place that opens it
    ---------------------------------------------------------------------------
-   'menu'        #menu            boot(), backToMenu()
-   'zones'       #zoneScreen      showZoneSelect()  — beginMission, Play Again
-   'class'       #classScreen     openClassScreen() — a zone card was picked
-   'playing'     #hud             startRun(), continueSavedRun(), retryZone(),
-                                  chooseUpgrade(), the zone card's Continue
-   'upgrade'     #upgradeScreen   showUpgrades()
-   'transition'  #transition      completeZone()
-   'gameover'    #gameOver        endRun()
-   'victory'     #victory         showVictory()
+   'mainMenu'            #menu                boot()  ·  backToMenu()
+   'howToPlay'           #howToPlay           the HOW TO PLAY button on the menu
+   'zoneSelect'          #zoneScreen          showZoneSelect() — beginMission
+   'classSelect'         #classScreen         openClassScreen() — a zone was picked
+   'game'                #hud                 startRun(), continueSavedRun(),
+                                              retryZone(), chooseUpgrade(),
+                                              the zone card's Continue,
+                                              loadUniverseStart()
+   'upgradeCard'         #upgradeScreen       showUpgrades()
+   'levelTransition'     #transition          completeZone()  (levels 1-4)
+   'universeTransition'  #universeTransition  beginUniverseTransition() (level 5)
+                                              · showUniverseIntro() (panel two)
+   'gameOver'            #gameOver            endRun()
+   'victory'             #victory             showVictory() — the end of universe 6
    ---------------------------------------------------------------------------
-   Every one of those calls Screens.show(name), which clears the other seven
-   layers first. No other statement in this file writes a screen layer's
-   classList; `Screens.enforce()` re-checks the invariant from the main loop.
+   Every one of those ends in showScreen(name), which turns ALL eleven screens
+   off before it turns one on. No other statement in this file writes a screen
+   element's display; enforceScreen() re-checks it from the main loop and
+   rebuilds the state from currentScreen if anything ever drifts.
    ------------------------------------------------------------------------- */
 /* ------------------------------ zones ------------------------------------- */
 const MEDIEVAL_LEVELS = [
@@ -2461,6 +2889,20 @@ const game = {
   mouse: { x: W / 2, y: H / 2, down: false },
   keys: Object.create(null),
   abilityCdScale: 1,   /* set by the Reactor Coils upgrade */
+  /* --- shop (permanent, bought with the gem bank) -------------------------- */
+  shopGemMult: 1,      /* Gem Processor */
+  shopCdScale: 1,      /* Cooldown Chip */
+  shopCrit: 0,         /* Critical Strike */
+  shopBlast: 1,        /* Blast Radius */
+  shopIronWill: false, /* Iron Will */
+  ironWillUsed: {},    /* universe index -> Iron Will already spent */
+  gemCarry: 0,         /* Gem Processor remainder */
+  overdriveCd: 0,
+  overdriveTimer: 0,
+  /* --- consumable effects -------------------------------------------------- */
+  speedBuffT: 0,       /* Speed Serum */
+  damageBuffT: 0,      /* Damage Shard */
+  decoy: null,         /* Decoy Drone: { x, y, t, maxT, spin } */
   cdModule: 1,         /* set by the Cooldown Module chip: composes with the above */
   secondWindUsed: false,  /* Second Wind is once per zone */
   waveDelay: 0,
@@ -2487,6 +2929,7 @@ const game = {
   beams: [],           /* instant sniper / railgun beams */
   swings: [],          /* live sword swooshes, drawn for 0.2s each */
   turrets: [],
+  discs: [],           /* Tech Specialist: live energy discs */
   bombs: [],
   pendingZone: 0,
   ambientClock: 0,
@@ -2525,6 +2968,11 @@ function makePlayer() {
     swingFrom: 0,
     swingTo: 0,
     swordTier: 0,       /* 0 silver · 1 plasma edge · 2 nova sword */
+    /* --- the three shop classes ------------------------------------------ */
+    rageT: 0,           /* Berserker: seconds of Rage left */
+    markT: 0,           /* Shadow Assassin: seconds left on a Death Mark */
+    markTarget: null,   /* the body the mark is pinned to */
+    cloakRange: cls.cloak || 0,   /* Shadow Assassin: unseen past this radius */
     bashTimer: 0,
     bashDir: { x: 1, y: 0 },
     dashTimer: 0,
@@ -2586,6 +3034,18 @@ function resetRun() {
   game.stormTimer = 0;
   game.stormFire = 0;
   game.arenaGrace = 0;
+  game.overdriveCd = 0;
+  game.overdriveTimer = 0;
+  game.speedBuffT = 0;
+  game.damageBuffT = 0;
+  game.decoy = null;
+  game.gemCarry = 0;
+  game.shopGemMult = 1;
+  game.shopCdScale = 1;
+  game.shopCrit = 0;
+  game.shopBlast = 1;
+  game.shopIronWill = false;
+  game.ironWillUsed = {};
   game.rift = null;
   game.beams.length = 0;
   game.turrets.length = 0;
@@ -2641,9 +3101,15 @@ function loadZone(zoneIndex, opts) {
   game.stormTimer = 0;
   game.stormFire = 0;
   game.arenaGrace = 0;
+  game.overdriveCd = 0;
+  game.overdriveTimer = 0;
+  game.speedBuffT = 0;
+  game.damageBuffT = 0;
+  game.decoy = null;
   game.rift = null;
   game.beams.length = 0;
   game.turrets.length = 0;
+  game.discs.length = 0;
   game.bombs.length = 0;
   game.sandPillars.length = 0;
   game.mines.length = 0;
@@ -2996,7 +3462,15 @@ UI.canvas.addEventListener('pointerdown', (e) => {
   Sound.ensure();
   onPointerMove(e);
   if (e.button === 0) game.mouse.down = true;
-  if (e.button === 2 && game.screen === 'playing') dash();
+  if (e.button === 2 && game.screen === 'playing') {
+    /* the Tech Specialist plants a turret where the cursor stands */
+    if (getClass().weapon === 'disc') {
+      deployTurretAt(Math.round(game.mouse.x / viewZoom() + game.cam.x),
+                     Math.round((game.mouse.y - SKY_H) / viewZoom() + game.cam.y));
+    } else {
+      dash();
+    }
+  }
 });
 UI.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 window.addEventListener('pointerup', (e) => { if (e.button === 0) game.mouse.down = false; });
@@ -3012,6 +3486,10 @@ window.addEventListener('keydown', (e) => {
   if (k === 'f' && hasAbility('turret')) dropTurret();
   if (k === 'r' && hasAbility('overcharge')) startOvercharge();
   if (k === 'x' && hasAbility('bomb')) throwBomb();
+  if (k === 'z' && hasAbility('overdrive')) startOverdrive();
+  if (k === '1') useConsumableSlot(0);
+  if (k === '2') useConsumableSlot(1);
+  if (k === '3') useConsumableSlot(2);
   if (k === 'Shift' && hasAbility('dash')) dash();
 });
 window.addEventListener('keyup', (e) => {
@@ -3060,6 +3538,33 @@ function updatePlayer(dt) {
     }
   }
 
+  /* Golden Legend: a drifting gold mote aura (visual only) */
+  if (p.cosmetic === 'golden' && Math.random() < 0.16) {
+    spawnParticle(p.x + rand(-15, 15), p.y + rand(-4, 20),
+      rand(-14, 14), rand(-46, -15), rand(0.45, 0.85), rand(2, 4), '#ffd54a', 1.5);
+  }
+  /* Speed Serum: a light wake behind his boots */
+  if (game.speedBuffT > 0 && p.moving && Math.random() < 0.5) {
+    spawnParticle(p.x + rand(-8, 8), p.y + rand(14, 22), rand(-20, 20), rand(10, 40),
+      0.3, rand(2, 4), '#7dd3fc', 2);
+  }
+
+  /* consumable buffs */
+  if (game.speedBuffT > 0) game.speedBuffT = Math.max(0, game.speedBuffT - dt);
+  if (game.damageBuffT > 0) game.damageBuffT = Math.max(0, game.damageBuffT - dt);
+  if (game.decoy) {
+    game.decoy.t -= dt;
+    game.decoy.spin += dt * 3.4;
+    if (game.decoy.t <= 0) game.decoy = null;
+  }
+
+  /* Overdrive: the buff burns down, the cooldown behind it keeps running */
+  if (game.overdriveCd > 0) game.overdriveCd = Math.max(0, game.overdriveCd - dt);
+  if (game.overdriveTimer > 0) {
+    game.overdriveTimer = Math.max(0, game.overdriveTimer - dt);
+    if (game.overdriveTimer === 0) addText(p.x, p.y - 40, 'OVERDRIVE OVER', '#e8c874');
+  }
+
   /* dash */
   if (p.dashCd > 0) p.dashCd = Math.max(0, p.dashCd - dt);
   const wasDashing = p.dashTimer > 0;
@@ -3097,7 +3602,7 @@ function updatePlayer(dt) {
     const mv = moveVector();
     const wantMove = mv.x !== 0 || mv.y !== 0;
     /* a sand mummy's grip: 45% of his stride while the wraps are on him */
-    const walkSpeed = p.speed * (p.slowT > 0 ? 0.55 : 1);
+    const walkSpeed = p.speed * (p.slowT > 0 ? 0.55 : 1) * odm() * speedBuffMult() * rageSpeedMult();
     const tx = mv.x * walkSpeed;
     const ty = mv.y * walkSpeed;
     const dx = tx - p.vx;
@@ -3200,12 +3705,13 @@ function updatePlayer(dt) {
   /* gunslinger bullet storm */
   if (game.stormTimer > 0) updateBulletStorm(dt);
 
-  /* cooldowns */
-  if (game.qCd > 0) game.qCd = Math.max(0, game.qCd - dt);
-  if (game.novaCd > 0) game.novaCd = Math.max(0, game.novaCd - dt);
-  if (game.turretCd > 0) game.turretCd = Math.max(0, game.turretCd - dt);
-  if (game.bombCd > 0) game.bombCd = Math.max(0, game.bombCd - dt);
-  if (game.overchargeCd > 0) game.overchargeCd = Math.max(0, game.overchargeCd - dt);
+  /* cooldowns — Overdrive doubles the clock they run on */
+  const cdt = dt * odm();
+  if (game.qCd > 0) game.qCd = Math.max(0, game.qCd - cdt);
+  if (game.novaCd > 0) game.novaCd = Math.max(0, game.novaCd - cdt);
+  if (game.turretCd > 0) game.turretCd = Math.max(0, game.turretCd - cdt);
+  if (game.bombCd > 0) game.bombCd = Math.max(0, game.bombCd - cdt);
+  if (game.overchargeCd > 0) game.overchargeCd = Math.max(0, game.overchargeCd - cdt);
   if (game.overchargeTimer > 0) {
     game.overchargeTimer = Math.max(0, game.overchargeTimer - dt);
     /* embers while the reactor is burning */
@@ -3280,12 +3786,78 @@ const CLASSES = [
     colour: '#c4b5fd',
     q: { id: 'rift', name: 'Temporal Rift', label: 'RIFT', glyph: '◉', cd: 20, colour: '#a78bfa', cdScale: 0.5 },
     passive: 'Time powers recharge twice as fast'
+  },
+  /* ---- the three classes bought in the shop -------------------------------- */
+  {
+    id: 'berserker',
+    name: 'Berserker',
+    weapon: 'axes',
+    blurb: 'Dual energy axes that swing in a wide arc',
+    hp: 3,
+    speed: 340,                 /* the fastest class in the game */
+    damage: 3.84,               /* three times the knight's sword */
+    fireRate: 0,
+    bulletSpeed: 900,
+    zoom: 0.94,
+    colour: '#ff6b3d',
+    q: { id: 'rage', name: 'Rage', label: 'RAGE', glyph: '⚒\uFE0E', cd: 22, colour: '#ff7a45' },
+    passive: 'Heals an orb every 5 kills',
+    shop: 300,
+    locked: true
+  },
+  {
+    id: 'shadow',
+    name: 'Shadow Assassin',
+    weapon: 'daggers',
+    blurb: 'Throws shadow daggers that hit like a hammer',
+    hp: 4,
+    speed: 300,
+    damage: 4.2,
+    fireRate: 0.34,
+    bulletSpeed: 980,
+    zoom: 1,
+    colour: '#a78bfa',
+    q: { id: 'mark', name: 'Death Mark', label: 'MARK', glyph: '◎', cd: 16, colour: '#c4b5fd' },
+    passive: 'Cloaked beyond 120px · kills reset the dash',
+    cloak: 120,
+    shop: 400,
+    locked: true
+  },
+  {
+    id: 'tech',
+    name: 'Tech Specialist',
+    weapon: 'disc',
+    blurb: 'Bouncing energy disc and two standing turrets',
+    hp: 5,
+    speed: 250,
+    damage: 1.9,
+    fireRate: 0.42,
+    bulletSpeed: 700,
+    zoom: 1,
+    colour: '#34d399',
+    q: { id: 'overload', name: 'System Overload', label: 'OVERLOAD', glyph: '⌬', cd: 18, colour: '#6ee7b7' },
+    passive: 'Right click drops a turret · kills shave 1s off cooldowns',
+    shop: 500,
+    locked: true
   }
 ];
 
+/* the four doctrines Rael starts with; the rest are bought with gems */
+const FREE_CLASSES = ['knight', 'gunslinger', 'sniper', 'mage'];
+
+function classUnlocked(id) {
+  if (FREE_CLASSES.indexOf(id) >= 0) return true;
+  /* Shop lives further down the file: never touch it before it exists */
+  try { return !!Shop.classOwned(id); } catch (e) { return false; }
+}
+
 function getClass(id) {
   const key = id || game.classId || CLASSES[0].id;
-  for (let i = 0; i < CLASSES.length; i++) if (CLASSES[i].id === key) return CLASSES[i];
+  for (let i = 0; i < CLASSES.length; i++) {
+    if (CLASSES[i].id !== key) continue;
+    /* a doctrine that is not owned can never be played — not even from a save */
+    return classUnlocked(CLASSES[i].id) ? CLASSES[i] : CLASSES[0];
+  }
   return CLASSES[0];
 }
 
@@ -3328,200 +3900,122 @@ function syncClassHud() {
   UI.qIcon.textContent = c.q.glyph;
   UI.qLabel.textContent = c.q.label;
   UI.abilities.q.style.color = c.q.colour;
-  drawClassIcon(UI.badgeIcon, c.id, 52);
+  paintClassIcon(UI.badgeIcon, c.id);
 }
 
-/* every class icon is painted with the 2D canvas api, never an image file */
-function drawClassIcon(canvas, id, size) {
-  if (!canvas || !canvas.getContext) return;
-  const S = size || canvas.width || 96;
-  const g = canvas.getContext('2d');
-  if (!g) return;
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.clearRect(0, 0, canvas.width || S, canvas.height || S);
-  g.save();
-  g.translate((canvas.width || S) / 2, (canvas.height || S) / 2);
-  g.scale((canvas.width || S) / 100, (canvas.height || S) / 100);
-  g.lineCap = 'round';
-  g.lineJoin = 'round';
-  if (id === 'knight') {
-    /* kite shield */
-    const face = g.createLinearGradient(-18, -26, 18, 30);
-    face.addColorStop(0, '#2c3f58');
-    face.addColorStop(1, '#0d1622');
-    g.fillStyle = face;
-    g.strokeStyle = '#ffd98a';
-    g.lineWidth = 3.4;
-    g.beginPath();
-    g.moveTo(-18, -25); g.lineTo(18, -25); g.lineTo(18, 2);
-    g.lineTo(0, 29); g.lineTo(-18, 2);
-    g.closePath(); g.fill(); g.stroke();
-    /* seam + boss */
-    g.strokeStyle = 'rgba(255,217,138,0.7)';
-    g.lineWidth = 2;
-    g.beginPath(); g.moveTo(0, -22); g.lineTo(0, 24); g.stroke();
-    g.fillStyle = 'rgba(255,217,138,0.95)';
-    g.beginPath(); g.arc(0, -4, 4.6, 0, TAU); g.fill();
-    g.fillStyle = 'rgba(24,36,54,0.9)';
-    g.beginPath(); g.arc(0, -4, 1.8, 0, TAU); g.fill();
-    /* cyan rim light */
-    g.strokeStyle = 'rgba(147,224,255,0.8)';
-    g.lineWidth = 2;
-    g.beginPath(); g.moveTo(-18, 2); g.lineTo(0, 29); g.lineTo(18, 2); g.stroke();
+/* =============================================================================
+   CLASS EMBLEMS — inline SVG, built with markup only.
+   The whole interface is HTML and CSS: nothing the player clicks or reads is
+   ever drawn on a canvas, so no game frame can bleed through a screen.
+   ========================================================================== */
+const CLASS_ICONS = {
+  knight:
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<defs><linearGradient id="ciKnightPlate" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="#2c3f58"/><stop offset="1" stop-color="#0d1622"/></linearGradient></defs>' +
+    '<path d="M32 22h36v26c0 16-12 26-18 30-6-4-18-14-18-30z" fill="url(#ciKnightPlate)" ' +
+    'stroke="#ffd98a" stroke-width="3.2" stroke-linejoin="round"/>' +
+    '<path d="M50 24v50" stroke="#ffd98a" stroke-opacity=".5" stroke-width="2"/>' +
+    '<circle cx="50" cy="41" r="4.4" fill="#ffd98a"/><circle cx="50" cy="41" r="1.7" fill="#182436"/>' +
+    '<g transform="rotate(26 50 50)">' +
+    '<path d="M50 8l5.4 10v30H44.6V18z" fill="#eef4ff"/>' +
+    '<path d="M50 8l5.4 10v30H50z" fill="#b9c8da"/>' +
+    '<path d="M36 48h28l-3.4 7.6H39.4z" fill="#f0c46a"/>' +
+    '<rect x="46.4" y="55.6" width="7.2" height="16" rx="2" fill="#3a2414"/>' +
+    '<circle cx="50" cy="75" r="4.6" fill="#e0b455"/>' +
+    '</g></svg>',
+  gunslinger:
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<g transform="rotate(-30 50 50)">' +
+    '<rect x="16" y="43" width="48" height="9" rx="2.4" fill="#dfe9f5"/>' +
+    '<rect x="16" y="41" width="30" height="3" fill="#a9bccd"/>' +
+    '<path d="M32 52h14l-3.4 17h-11z" fill="#8fa4b8"/>' +
+    '<path d="M45 52h6l-1.6 12h-3.4z" fill="#e0b455"/>' +
+    '<circle cx="68" cy="47.5" r="5" fill="#7dd3fc" opacity=".4"/>' +
+    '<circle cx="68" cy="47.5" r="2.2" fill="#7dd3fc"/>' +
+    '</g>' +
+    '<g transform="rotate(30 50 50)">' +
+    '<rect x="16" y="48" width="48" height="9" rx="2.4" fill="#c9d6e4"/>' +
+    '<rect x="16" y="46" width="30" height="3" fill="#93a5bb"/>' +
+    '<path d="M32 57h14l-3.4 17h-11z" fill="#7d92a8"/>' +
+    '<path d="M45 57h6l-1.6 12h-3.4z" fill="#e0b455"/>' +
+    '<circle cx="68" cy="52.5" r="5" fill="#7dd3fc" opacity=".4"/>' +
+    '<circle cx="68" cy="52.5" r="2.2" fill="#7dd3fc"/>' +
+    '</g></svg>',
+  sniper:
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<g transform="rotate(-26 50 50)">' +
+    '<path d="M12 54l20-8 6 8-20 10z" fill="#9fb0c2"/>' +
+    '<rect x="26" y="45" width="52" height="8" rx="2" fill="#e6eef8"/>' +
+    '<rect x="62" y="47.4" width="22" height="3.2" rx="1.4" fill="#c9d6e4"/>' +
+    '<rect x="30" y="53" width="9" height="14" rx="2" fill="#8fa4b8"/>' +
+    '<rect x="26" y="35" width="24" height="7" rx="2" fill="#3c4d61"/>' +
+    '<circle cx="38" cy="38.5" r="5.4" fill="none" stroke="#ffd98a" stroke-width="2"/>' +
+    '<circle cx="38" cy="38.5" r="2" fill="#c7d2fe"/>' +
+    '<rect x="84" y="46" width="5" height="6" rx="1.4" fill="#ffd98a"/>' +
+    '<path d="M89 49h7" stroke="#c7d2fe" stroke-width="2" opacity=".55"/>' +
+    '</g></svg>',
+  mage:
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<defs><radialGradient id="ciMageGlow">' +
+    '<stop offset="0" stop-color="#f7f2ff"/><stop offset=".45" stop-color="#a78bfa"/>' +
+    '<stop offset="1" stop-color="#6d28d9" stop-opacity="0"/></radialGradient></defs>' +
+    '<circle cx="50" cy="50" r="30" fill="url(#ciMageGlow)"/>' +
+    '<circle cx="50" cy="50" r="13.4" fill="#f5f3ff"/>' +
+    '<circle cx="50" cy="50" r="9.6" fill="none" stroke="#8b5cf6" stroke-width="1.8"/>' +
+    '<path d="M50 50V41.4M50 50l6 4" stroke="#6d28d9" stroke-width="2.6" stroke-linecap="round"/>' +
+    '<circle cx="50" cy="50" r="27" fill="none" stroke="#ffd98a" stroke-width="2.2"/>' +
+    '<g fill="none" stroke="#ffd98a" stroke-width="2.2" stroke-linecap="round">' +
+    '<path d="M77 50a4 4 0 0 1 4 4"/><path d="M23 50a4 4 0 0 0-4 4"/>' +
+    '<path d="M50 77a4 4 0 0 1-4 4"/><path d="M50 23a4 4 0 0 1 4-4"/>' +
+    '</g></svg>',
+  berserker:
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<g transform="rotate(40 50 50)">' +
+    '<rect x="24" y="47" width="46" height="5" rx="2.4" fill="#6b4a2c"/>' +
+    '<path d="M64 29l18-7 7 21-16 6-9-9z" fill="#ffb27a" stroke="#ffe7b8" stroke-width="2" stroke-linejoin="round"/>' +
+    '</g>' +
+    '<g transform="rotate(-40 50 50)">' +
+    '<rect x="24" y="47" width="46" height="5" rx="2.4" fill="#6b4a2c"/>' +
+    '<path d="M64 29l18-7 7 21-16 6-9-9z" fill="#ff8a5c" stroke="#ffe7b8" stroke-width="2" stroke-linejoin="round"/>' +
+    '</g>' +
+    '<circle cx="50" cy="52" r="5.4" fill="#ffd6a5"/>' +
+    '<circle cx="50" cy="52" r="2" fill="#7a3a1a"/></svg>',
+  shadow:
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<defs><radialGradient id="ciShadowGlow">' +
+    '<stop offset="0" stop-color="#a78bfa" stop-opacity=".5"/>' +
+    '<stop offset="1" stop-color="#4c1d95" stop-opacity="0"/></radialGradient></defs>' +
+    '<circle cx="50" cy="50" r="34" fill="url(#ciShadowGlow)"/>' +
+    '<g transform="rotate(28 50 50)"><path d="M50 12l4.4 16-3 6h-2.8l-3-6z" fill="#c4b5fd"/>' +
+    '<rect x="45.6" y="34" width="8.8" height="12" rx="2" fill="#1b1229"/></g>' +
+    '<g transform="rotate(-28 50 50)"><path d="M50 12l4.4 16-3 6h-2.8l-3-6z" fill="#a78bfa"/>' +
+    '<rect x="45.6" y="34" width="8.8" height="12" rx="2" fill="#1b1229"/></g>' +
+    '<path d="M50 34c13 4 19 16 16 30-6 8-26 8-32 0-3-14 3-26 16-30z" fill="#160f24" ' +
+    'stroke="#a78bfa" stroke-width="2" stroke-linejoin="round"/>' +
+    '<ellipse cx="44" cy="56" rx="3.4" ry="2.2" fill="#e9d5ff"/>' +
+    '<ellipse cx="56" cy="56" rx="3.4" ry="2.2" fill="#e9d5ff"/></svg>',
+  tech:
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<circle cx="50" cy="54" r="29" fill="none" stroke="#6ee7b7" stroke-opacity=".32" stroke-width="2"/>' +
+    '<g stroke="#33473f" stroke-width="5" stroke-linecap="round">' +
+    '<path d="M50 62l-15 13"/><path d="M50 62l15 13"/><path d="M50 62v18"/></g>' +
+    '<circle cx="50" cy="56" r="11" fill="#1f3b34" stroke="#6ee7b7" stroke-width="2.4"/>' +
+    '<rect x="47" y="27" width="6" height="23" rx="3" fill="#a7f3d0"/>' +
+    '<circle cx="50" cy="25" r="4.6" fill="#6ee7b7" fill-opacity=".9"/>' +
+    '<path d="M73 54a23 23 0 0 1-11 19" fill="none" stroke="#d1fae5" stroke-width="3" stroke-linecap="round"/>' +
+    '<path d="M27 54a23 23 0 0 0 11 19" fill="none" stroke="#d1fae5" stroke-width="3" stroke-linecap="round"/></svg>'
+};
 
-    /* the longsword, laid point-up across the shield */
-    g.save();
-    g.rotate(0.5);
-    g.translate(0, 8);
-    g.shadowColor = 'rgba(232,242,255,0.9)';
-    g.shadowBlur = 12;
-    const steel = g.createLinearGradient(-7, 0, 7, 0);
-    steel.addColorStop(0, '#8fa0b6');
-    steel.addColorStop(0.45, '#ffffff');
-    steel.addColorStop(1, '#93a5bb');
-    g.fillStyle = steel;
-    g.beginPath();
-    g.moveTo(0, -49);
-    g.lineTo(7, -35);
-    g.lineTo(7, 2);
-    g.lineTo(-7, 2);
-    g.lineTo(-7, -35);
-    g.closePath();
-    g.fill();
-    /* fuller */
-    g.strokeStyle = 'rgba(255,255,255,0.75)';
-    g.lineWidth = 1.6;
-    g.beginPath(); g.moveTo(0, -38); g.lineTo(0, -2); g.stroke();
-    /* gold crossguard */
-    const guard = g.createLinearGradient(0, 2, 0, 11);
-    guard.addColorStop(0, '#ffe9b0');
-    guard.addColorStop(1, '#b8862f');
-    g.fillStyle = guard;
-    g.beginPath();
-    g.moveTo(-21, 1); g.lineTo(21, 1); g.lineTo(17, 10); g.lineTo(-17, 10);
-    g.closePath(); g.fill();
-    g.shadowBlur = 0;
-    /* grip */
-    g.fillStyle = '#3a2414';
-    g.fillRect(-5, 10, 10, 20);
-    g.strokeStyle = 'rgba(255,214,150,0.4)';
-    g.lineWidth = 1.4;
-    for (let i = 0; i < 4; i++) {
-      g.beginPath(); g.moveTo(-5, 13 + i * 4); g.lineTo(5, 16 + i * 4); g.stroke();
-    }
-    /* pommel */
-    g.fillStyle = '#e0b455';
-    g.beginPath(); g.arc(0, 33, 5, 0, TAU); g.fill();
-    g.restore();
-  } else if (id === 'gunslinger') {
-    /* twin pistols, crossed like a duellist's crest */
-    const pistol = function () {
-      /* slide / barrel */
-      g.fillStyle = '#dfe9f5';
-      g.beginPath();
-      g.moveTo(-26, -5); g.lineTo(12, -5); g.lineTo(16, -1); g.lineTo(16, 4);
-      g.lineTo(-26, 4);
-      g.closePath(); g.fill();
-      /* top rib + rear sight */
-      g.fillStyle = '#a9bccd';
-      g.fillRect(-24, -4.6, 32, 2.4);
-      g.fillRect(-24, -8, 5, 3.4);
-      /* grip */
-      g.fillStyle = '#8fa4b8';
-      g.beginPath();
-      g.moveTo(-11, 3); g.lineTo(-1, 3); g.lineTo(3, 22); g.lineTo(-10, 22);
-      g.closePath(); g.fill();
-      /* trigger guard */
-      g.strokeStyle = 'rgba(255,217,138,0.95)'; g.lineWidth = 2.2;
-      g.beginPath(); g.arc(-1, 7, 4.4, 0.1, 1.5); g.stroke();
-      /* muzzle glow */
-      g.fillStyle = 'rgba(125,211,252,0.45)';
-      g.beginPath(); g.arc(17, -1, 8, 0, TAU); g.fill();
-      g.fillStyle = '#7dd3fc';
-      g.beginPath(); g.arc(17, -1, 3.4, 0, TAU); g.fill();
-    };
-    g.save();
-    g.rotate(-0.62);
-    g.translate(-6, 10);
-    pistol();
-    g.restore();
-    g.save();
-    g.scale(-1, 1);
-    g.rotate(-0.62);
-    g.translate(-6, 10);
-    pistol();
-    g.restore();
-  } else if (id === 'sniper') {
-    /* long rifle with a scope, pointed up-right */
-    g.rotate(-0.62);
-    /* stock */
-    g.fillStyle = '#9fb0c2';
-    g.beginPath();
-    g.moveTo(-38, 4); g.lineTo(-18, -3); g.lineTo(-14, 4); g.lineTo(-34, 12);
-    g.closePath(); g.fill();
-    /* body + long barrel */
-    g.fillStyle = '#e6eef8';
-    g.fillRect(-20, -3.2, 54, 6.2);
-    g.fillStyle = '#c9d6e4';
-    g.fillRect(18, -1.8, 18, 3.4);
-    /* grip and mag */
-    g.fillStyle = '#8fa4b8';
-    g.fillRect(-6, 3, 9, 12);
-    g.fillRect(-18, 3, 8, 8);
-    /* scope */
-    g.fillStyle = '#3c4d61';
-    g.fillRect(-8, -13, 22, 6);
-    g.fillStyle = '#ffd98a';
-    g.fillRect(-10, -12.4, 3, 4.8);
-    g.fillRect(14, -12.4, 3, 4.8);
-    g.strokeStyle = 'rgba(255,217,138,0.9)'; g.lineWidth = 2;
-    g.beginPath(); g.arc(3, -10, 4.8, 0, TAU); g.stroke();
-    g.fillStyle = 'rgba(199,210,254,0.95)';
-    g.beginPath(); g.arc(3, -10, 2.2, 0, TAU); g.fill();
-    /* muzzle flash + tracer */
-    g.fillStyle = '#ffd98a';
-    g.fillRect(35, -3.6, 4.4, 7.2);
-    g.strokeStyle = 'rgba(199,210,254,0.55)'; g.lineWidth = 1.8;
-    g.beginPath(); g.moveTo(41, 0); g.lineTo(50, 0); g.stroke();
-  } else {
-    /* a glowing orb held in a rune circle */
-    const glow = g.createRadialGradient(0, 0, 3, 0, 0, 42);
-    glow.addColorStop(0, 'rgba(237,233,254,0.98)');
-    glow.addColorStop(0.34, 'rgba(167,139,250,0.8)');
-    glow.addColorStop(1, 'rgba(109,40,217,0)');
-    g.fillStyle = glow;
-    g.beginPath(); g.arc(0, 0, 42, 0, TAU); g.fill();
-    g.fillStyle = '#f5f3ff';
-    g.beginPath(); g.arc(0, 0, 16, 0, TAU); g.fill();
-    /* a clock face floating in the orb */
-    g.strokeStyle = 'rgba(139,92,246,0.75)'; g.lineWidth = 1.8;
-    g.beginPath(); g.arc(0, 0, 11.4, 0, TAU); g.stroke();
-    g.lineWidth = 1.4;
-    for (let i = 0; i < 4; i++) {
-      const a = (i / 4) * TAU;
-      g.beginPath();
-      g.moveTo(Math.cos(a) * 8.6, Math.sin(a) * 8.6);
-      g.lineTo(Math.cos(a) * 11.2, Math.sin(a) * 11.2);
-      g.stroke();
-    }
-    g.strokeStyle = 'rgba(109,40,217,0.98)';
-    g.lineWidth = 2.6;
-    g.beginPath(); g.moveTo(0, 1.2); g.lineTo(0, -7.6); g.stroke();
-    g.beginPath(); g.moveTo(0, 1.2); g.lineTo(6.6, 4.2); g.stroke();
-    g.fillStyle = 'rgba(109,40,217,0.98)';
-    g.beginPath(); g.arc(0, 1.2, 1.9, 0, TAU); g.fill();
-    /* gold rune ring */
-    g.strokeStyle = 'rgba(255,217,138,0.95)'; g.lineWidth = 2.4;
-    g.beginPath(); g.arc(0, 0, 31, 0, TAU); g.stroke();
-    g.lineWidth = 2.6;
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * TAU + 0.26;
-      g.beginPath();
-      g.arc(Math.cos(a) * 38, Math.sin(a) * 38, 4.6, a, a + 1.5);
-      g.stroke();
-    }
-  }
-  g.restore();
+/* the emblem markup for one class id */
+function classIconSVG(id) {
+  return CLASS_ICONS[id] || CLASS_ICONS.knight;
+}
+
+/* drop the emblem into any element that carries a class id */
+function paintClassIcon(el, id) {
+  if (!el) return;
+  el.innerHTML = classIconSVG(id);
 }
 
 /* ------------------------------ knight sword -------------------------------
@@ -3549,11 +4043,11 @@ function swingSword() {
 
   const half = arc / 2;
   p.swingT = SWORD_SWING_TIME;
-  p.swingCd = SWORD_COOLDOWN;
+  p.swingCd = SWORD_COOLDOWN / (shopMagazineMult() * odm());
   p.swingFrom = p.angle - half * dir;
   p.swingTo = p.angle + half * dir;
 
-  const dmg = swordDamage();
+  const dmg = buffedDamage(swordDamage()) * odm();
   let hits = 0;
 
   for (let i = game.enemies.length - 1; i >= 0; i--) {
@@ -3665,7 +4159,7 @@ function firePistols(charged) {
       vy: Math.sin(a) * p.bulletSpeed,
       r: charged ? 6 : 3.6,
       life: 0.72,
-      dmg: p.damage,
+      dmg: buffedDamage(p.damage),
       knock: 4,
       pierce: p.pierce || 0,
       explosive: boom,
@@ -3706,14 +4200,14 @@ function fireSniper(charged) {
   }
   if (game.boss && !game.boss.entering &&
       segHitsCircle(x1, y1, x2, y2, game.boss.x, game.boss.y, game.boss.r + pad)) {
-    damageBoss(p.damage * (charged ? 1.35 : 1));
+    damageBoss(buffedDamage(p.damage * (charged ? 1.35 : 1)));
   }
   /* one hit per prop, all from the same 40px distance rule */
   hitBreakablesAlong(x1, y1, x2, y2, 'sniper');
   p.shotCount = (p.shotCount | 0) + 1;
   if (p.explosiveRounds && p.shotCount % 5 === 0) {
     /* the fifth rail round carries a charge: it bursts where it lands */
-    explodeAt(landX, landY, p.damage * 0.6, '#fbbf24');
+    explodeAt(landX, landY, buffedDamage(p.damage * 0.6), '#fbbf24');
   }
   Sound.sniperShot();
   game.shake = Math.max(game.shake, 0.3);
@@ -3726,7 +4220,7 @@ function fireSniper(charged) {
 
 function fireMageOrbs(charged) {
   const p = game.player;
-  const n = p.arc ? 4 : 3;
+  const n = (p.arc ? 4 : 3) + (p.mageOrbs | 0);
   for (let i = 0; i < n; i++) {
     const a = p.angle + (i - (n - 1) / 2) * 0.42;
     p.shotCount = (p.shotCount | 0) + 1;
@@ -3739,7 +4233,7 @@ function fireMageOrbs(charged) {
       vy: Math.sin(a) * p.bulletSpeed,
       r: charged ? 10 : 7,
       life: 3.2,
-      dmg: p.damage * (charged ? 1.25 : 1),
+      dmg: buffedDamage(p.damage * (charged ? 1.25 : 1)),
       knock: 2,
       explosive: boom,
       homing: true,
@@ -3763,11 +4257,272 @@ function fireClassWeapon(dt) {
     updateSword(dt);
     return;
   }
+  if (cls.weapon === 'axes') {
+    /* the pair of axes swings on the same private clock as the sword */
+    updateAxes(dt);
+    return;
+  }
   if (game.mouse.down && p.fireTimer <= 0) {
     if (cls.weapon === 'pistols') firePistols(charged);
     else if (cls.weapon === 'rail') fireSniper(charged);
+    else if (cls.weapon === 'daggers') fireDaggers(charged);
+    else if (cls.weapon === 'disc') fireDisc(charged);
     else fireMageOrbs(charged);
-    p.fireTimer = p.fireRate * (charged ? 0.5 : 1);
+    p.fireTimer = (p.fireRate * (charged ? 0.5 : 1)) / odm();
+  }
+}
+
+/* =============================================================================
+   THE THREE SHOP CLASSES
+   Berserker (dual axes), Shadow Assassin (daggers + cloak) and Tech Specialist
+   (bouncing disc + standing turrets). Everything here is driven by the class
+   definition in CLASSES, never by a hard-coded class id.
+   ========================================================================== */
+
+/* ------------------------------ berserker axes ------------------------------
+   Two plasma axes, one in each hand, sweeping a 150° arc together. They carry
+   three times the knight's damage and shove whatever survives out of reach.
+   ------------------------------------------------------------------------- */
+const AXE_ARC = (Math.PI * 5) / 6;          /* 150 degrees per swing */
+const AXE_RANGE = 104;
+const AXE_SWING_TIME = 0.22;
+const AXE_COOLDOWN = 0.5;
+
+function swingAxes() {
+  const p = game.player;
+  const dir = p.swingSign > 0 ? 1 : -1;
+  const half = AXE_ARC / 2;
+  p.swingSign = -dir;
+  p.swingT = AXE_SWING_TIME;
+  p.swingCd = AXE_COOLDOWN / (shopMagazineMult() * odm());
+  p.swingFrom = p.angle - half * dir;
+  p.swingTo = p.angle + half * dir;
+
+  const dmg = buffedDamage(p.damage * 1.65) * odm();
+  let hits = 0;
+
+  for (let i = game.enemies.length - 1; i >= 0; i--) {
+    const e = game.enemies[i];
+    if (!inSwordArc(p.x, p.y, p.angle, e.x, e.y, e.r, AXE_ARC, AXE_RANGE)) continue;
+    const a = Math.atan2(e.y - p.y, e.x - p.x);
+    damageEnemy(e, dmg, true);
+    e.x = clamp(e.x + Math.cos(a) * 14, 40, WORLD - 40);
+    e.y = clamp(e.y + Math.sin(a) * 14, 40, WORLD - 40);
+    for (let k = 0; k < 3; k++) {
+      spawnParticle(e.x, e.y, Math.cos(a + rand(-0.8, 0.8)) * rand(80, 240),
+        Math.sin(a + rand(-0.8, 0.8)) * rand(80, 240), 0.26, 5, '#ffb27a', 3);
+    }
+    hits++;
+  }
+  if (game.boss && !game.boss.entering &&
+      inSwordArc(p.x, p.y, p.angle, game.boss.x, game.boss.y, game.boss.r, AXE_ARC, AXE_RANGE)) {
+    damageBoss(dmg * 0.8);
+    hits++;
+  }
+
+  /* one hit per prop, sampled along the sweep exactly like the longsword */
+  const swung = new Set();
+  for (let s2 = 0; s2 <= 7; s2++) {
+    const a = p.swingFrom + (p.swingTo - p.swingFrom) * (s2 / 7);
+    for (let r = 0; r <= AXE_RANGE; r += 24) {
+      hits += hitBreakablesAt(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 'sword', swung);
+    }
+  }
+
+  game.swings.push({
+    kind: 'axe', x: p.x, y: p.y, a0: p.swingFrom, a1: p.swingTo,
+    life: 0, maxLife: AXE_SWING_TIME, tier: 0
+  });
+
+  Sound.swordSwing(1);
+  if (hits) {
+    Sound.swordHit(1);
+    game.shake = Math.max(game.shake, 0.18);
+  }
+  return hits;
+}
+
+function updateAxes(dt) {
+  const p = game.player;
+
+  /* the sword and the axe ribbons fade on the same list */
+  for (let i = game.swings.length - 1; i >= 0; i--) {
+    const sw = game.swings[i];
+    sw.life += dt;
+    if (sw.life >= sw.maxLife - 1e-6) game.swings.splice(i, 1);
+  }
+
+  if (p.swingT > 0) {
+    p.swingT = Math.max(0, p.swingT - dt);
+    if (p.swingT < 1e-6) p.swingT = 0;
+  }
+  if (p.swingCd > 0) p.swingCd = Math.max(0, p.swingCd - dt);
+
+  if (p.swingT > 0 && Math.random() < 0.75) {
+    const k = 1 - p.swingT / AXE_SWING_TIME;
+    const a = lerp(p.swingFrom, p.swingTo, 1 - Math.pow(1 - k, 2.2));
+    const rr = AXE_RANGE * rand(0.55, 0.95);
+    spawnParticle(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr,
+      rand(-70, 70), rand(-70, 70), rand(0.14, 0.26), rand(2, 4.6), '#ffb27a', 4);
+  }
+
+  if (game.mouse.down && p.swingCd <= 0) swingAxes();
+}
+
+/* --------------------------- shadow assassin daggers ------------------------
+   A pair of short shadow blades thrown straight out; each one punches through
+   a single body and hits far harder than a pistol round.
+   ------------------------------------------------------------------------- */
+function fireDaggers(charged) {
+  const p = game.player;
+  for (let i = 0; i < 2; i++) {
+    const a = p.angle + (i === 0 ? -0.05 : 0.05);
+    const side = (i === 0 ? -1 : 1) * 5;
+    game.bullets.push({
+      kind: 'dagger',
+      x: p.x + Math.cos(a) * (p.r + 4) - Math.sin(a) * side,
+      y: p.y + Math.sin(a) * (p.r + 4) + Math.cos(a) * side,
+      vx: Math.cos(a) * p.bulletSpeed,
+      vy: Math.sin(a) * p.bulletSpeed,
+      r: 4.6,
+      life: 0.85,
+      dmg: buffedDamage(p.damage),
+      knock: 3,
+      pierce: 1,
+      explosive: false,
+      hits: null,
+      spins: 0
+    });
+  }
+  Sound.pistol();
+  for (let i = 0; i < 2; i++) {
+    const a = p.angle + rand(-0.2, 0.2);
+    spawnParticle(p.x + Math.cos(p.angle) * (p.r + 16), p.y + Math.sin(p.angle) * (p.r + 16),
+      Math.cos(a) * rand(50, 150), Math.sin(a) * rand(50, 150), 0.16, 4, '#c4b5fd', 3);
+  }
+}
+
+/* ---------------------------- tech specialist disc -------------------------
+   One energy disc per shot, thrown at the cursor. It ricochets from body to
+   body — four bites at most — steering itself at the nearest fresh target.
+   ------------------------------------------------------------------------- */
+function fireDisc(charged) {
+  const p = game.player;
+  const a = p.angle;
+  if (!game.discs) game.discs = [];
+  game.discs.push({
+    x: p.x + Math.cos(a) * (p.r + 8),
+    y: p.y + Math.sin(a) * (p.r + 8),
+    vx: Math.cos(a) * p.bulletSpeed,
+    vy: Math.sin(a) * p.bulletSpeed,
+    ang: a,
+    speed: p.bulletSpeed,
+    spin: 0,
+    life: 2.4,
+    hits: [],
+    bounces: 4,
+    dmg: buffedDamage(p.damage * 1.3)
+  });
+  Sound.turretShot();
+  for (let i = 0; i < 3; i++) {
+    const aa = a + rand(-0.5, 0.5);
+    spawnParticle(p.x + Math.cos(a) * (p.r + 12), p.y + Math.sin(a) * (p.r + 12),
+      Math.cos(aa) * rand(60, 180), Math.sin(aa) * rand(60, 180), 0.16, 4, '#6ee7b7', 3);
+  }
+}
+
+function updateDiscs(dt) {
+  if (!game.discs) return;
+  for (let i = game.discs.length - 1; i >= 0; i--) {
+    const d = game.discs[i];
+    d.life -= dt;
+    d.spin += dt * 16;
+
+    /* steer for the nearest body it has not bitten yet */
+    let target = null;
+    let best = 320 * 320;
+    for (let j = 0; j < game.enemies.length; j++) {
+      const e = game.enemies[j];
+      if (d.hits.indexOf(e) >= 0) continue;
+      const dd = dist2(d.x, d.y, e.x, e.y);
+      if (dd < best) { best = dd; target = e; }
+    }
+    if (target) {
+      const want = angleTo(d.x, d.y, target.x, target.y);
+      let diff = want - d.ang;
+      while (diff > Math.PI) diff -= TAU;
+      while (diff < -Math.PI) diff += TAU;
+      d.ang += clamp(diff, -5 * dt, 5 * dt);
+      d.vx = Math.cos(d.ang) * d.speed;
+      d.vy = Math.sin(d.ang) * d.speed;
+    }
+
+    d.x += d.vx * dt;
+    d.y += d.vy * dt;
+
+    /* the map edge bounces it straight back in */
+    if (d.x < 40) { d.x = 40; d.vx = Math.abs(d.vx); d.ang = Math.atan2(d.vy, d.vx); }
+    if (d.x > WORLD - 40) { d.x = WORLD - 40; d.vx = -Math.abs(d.vx); d.ang = Math.atan2(d.vy, d.vx); }
+    if (d.y < 40) { d.y = 40; d.vy = Math.abs(d.vy); d.ang = Math.atan2(d.vy, d.vx); }
+    if (d.y > WORLD - 40) { d.y = WORLD - 40; d.vy = -Math.abs(d.vy); d.ang = Math.atan2(d.vy, d.vx); }
+
+    /* bite whatever it is touching, then look for the next one */
+    for (let j = game.enemies.length - 1; j >= 0; j--) {
+      const e = game.enemies[j];
+      if (d.hits.indexOf(e) >= 0) continue;
+      if (dist(d.x, d.y, e.x, e.y) > e.r + 16) continue;
+      d.hits.push(e);
+      d.bounces -= 1;
+      damageEnemy(e, d.dmg, true);
+      for (let k = 0; k < 5; k++) {
+        const a2 = rand(0, TAU);
+        spawnParticle(e.x, e.y, Math.cos(a2) * rand(50, 190), Math.sin(a2) * rand(50, 190),
+          0.22, 5, k % 2 ? '#6ee7b7' : '#a7f3d0', 3);
+      }
+    }
+    if (game.boss && !game.boss.entering && d.hits.indexOf(game.boss) < 0 &&
+        dist(d.x, d.y, game.boss.x, game.boss.y) < game.boss.r + 16) {
+      d.hits.push(game.boss);
+      d.bounces -= 1;
+      damageBoss(d.dmg);
+    }
+
+    if (d.bounces <= 0 || d.life <= 0) {
+      for (let k = 0; k < 8; k++) {
+        const a2 = rand(0, TAU);
+        spawnParticle(d.x, d.y, Math.cos(a2) * rand(40, 170), Math.sin(a2) * rand(40, 170),
+          0.24, 4.4, '#6ee7b7', 3);
+      }
+      game.discs.splice(i, 1);
+    }
+  }
+}
+
+/* the orange ribbon a pair of axes leaves behind */
+function drawAxeSwoosh() {
+  const R = AXE_RANGE * 0.84;
+  for (let i = 0; i < game.swings.length; i++) {
+    const sw = game.swings[i];
+    if (sw.kind !== 'axe') continue;
+    const k = sw.life / sw.maxLife;
+    const fade = Math.min(1, (1 - k) * 2.2);
+    if (fade <= 0.01) continue;
+    const reveal = 1 - Math.pow(1 - k, 2.2);
+    const head = sw.a0 + (sw.a1 - sw.a0) * reveal;
+    if (Math.abs(head - sw.a0) < 0.01) continue;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = fade * 0.85;
+    ctx.strokeStyle = '#ff9d5c';
+    ctx.lineWidth = 9;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head), Math.max(sw.a0, head));
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,231,184,0.9)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
   }
 }
 
@@ -3792,7 +4547,9 @@ const ABILITIES = [
   { id: 'overcharge', key: 'r', name: 'Overcharge', cd: 30 },
   { id: 'bomb', key: 'x', name: 'Time Bomb', cd: 18 }
 ];
-function cdScale() { return (game.abilityCdScale || 1) * (game.cdModule || 1); }
+function cdScale() {
+  return (game.abilityCdScale || 1) * (game.cdModule || 1) * (game.shopCdScale || 1);
+}
 
 /* ---- Q: the class ability ---- */
 function castClassAbility() {
@@ -3802,7 +4559,111 @@ function castClassAbility() {
   if (cls.q.id === 'bash') shieldBash();
   else if (cls.q.id === 'storm') bulletStorm();
   else if (cls.q.id === 'railgun') railgun();
+  else if (cls.q.id === 'rage') startRage();
+  else if (cls.q.id === 'mark') castDeathMark();
+  else if (cls.q.id === 'overload') systemOverload();
   else temporalRift();
+}
+
+/* ---- berserker: six seconds of Rage --------------------------------------- */
+const RAGE_TIME = 6;
+
+function startRage() {
+  const p = game.player;
+  p.rageT = RAGE_TIME;
+  Sound.overcharge();
+  game.shake = Math.max(game.shake, 0.4);
+  game.flashTimer = 0.2;
+  game.flashColor = '#ff8a5c';
+  addText(p.x, p.y - 44, 'RAGE', '#ff9d5c');
+  for (let i = 0; i < 24; i++) {
+    const a = rand(0, TAU);
+    spawnParticle(p.x + Math.cos(a) * 14, p.y + Math.sin(a) * 14,
+      Math.cos(a) * rand(90, 300), Math.sin(a) * rand(90, 300),
+      rand(0.3, 0.6), rand(4, 9), i % 2 ? '#ff7a45' : '#ffd6a5', 3.2);
+  }
+  game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 150, life: 0, maxLife: 0.45, color: '#ff9d5c' });
+  addText(p.x, p.y - 62, '3S OF NOTHING BUT HATE', '#ffd6a5');
+}
+
+/* ---- shadow assassin: Death Mark ----------------------------------------- */
+const MARK_TIME = 8;
+
+function castDeathMark() {
+  const p = game.player;
+  /* the body nearest the cursor, else the nearest body to Rael */
+  const wx = game.mouse.x / viewZoom() + game.cam.x;
+  const wy = (game.mouse.y - SKY_H) / viewZoom() + game.cam.y;
+  let target = null;
+  let best = 520 * 520;
+  for (let i = 0; i < game.enemies.length; i++) {
+    const e = game.enemies[i];
+    const d2 = dist2(wx, wy, e.x, e.y);
+    if (d2 < best) { best = d2; target = e; }
+  }
+  if (!target && game.boss && !game.boss.entering) {
+    if (dist2(p.x, p.y, game.boss.x, game.boss.y) < 760 * 760) target = game.boss;
+  }
+  if (!target) {
+    best = 620 * 620;
+    for (let i = 0; i < game.enemies.length; i++) {
+      const e = game.enemies[i];
+      const d2 = dist2(p.x, p.y, e.x, e.y);
+      if (d2 < best) { best = d2; target = e; }
+    }
+  }
+  if (!target) {
+    addText(p.x, p.y - 42, 'NO TARGET', '#c4b5fd');
+    game.qCd = 0;               /* nothing to mark: give the charge back */
+    return;
+  }
+  p.markTarget = target;
+  p.markT = MARK_TIME;
+  Sound.ability();
+  addText(target.x, target.y - 30, 'MARKED', '#c4b5fd');
+  game.particles.push({ ring: true, x: target.x, y: target.y, r: 8, maxR: target.r * 4, life: 0, maxLife: 0.5, color: '#c4b5fd' });
+}
+
+/* ---- tech specialist: System Overload ------------------------------------ */
+function deployTurretAt(x, y) {
+  if (game.turrets.length >= 2) {
+    const p = game.player;
+    addText(p.x, p.y - 44, 'MAX 2 TURRETS', '#fbbf24');
+    return false;
+  }
+  game.turrets.push({
+    x: clamp(x, 40, WORLD - 40), y: clamp(y, 40, WORLD - 40),
+    life: 1e9, maxLife: 1e9, permanent: true,
+    angle: 0, spin: 0, fireTimer: 0.2, range: 400
+  });
+  Sound.turretDrop();
+  game.shake = Math.max(game.shake, 0.2);
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * TAU;
+    spawnParticle(x + Math.cos(a) * 10, y + Math.sin(a) * 10,
+      Math.cos(a) * rand(60, 180), Math.sin(a) * rand(60, 180), 0.36, 5, i % 2 ? '#6ee7b7' : '#a7f3d0', 3);
+  }
+  game.particles.push({ ring: true, x, y, r: 6, maxR: 70, life: 0, maxLife: 0.36, color: '#6ee7b7' });
+  return true;
+}
+
+function systemOverload() {
+  const p = game.player;
+  const live = game.turrets.slice();
+  const boom = 8 + p.damage * 2;
+  for (let i = 0; i < live.length; i++) {
+    explodeAt(live[i].x, live[i].y, boom, '#6ee7b7');
+    game.particles.push({ ring: true, x: live[i].x, y: live[i].y, r: 8, maxR: 130, life: 0, maxLife: 0.42, color: '#34d399' });
+  }
+  game.turrets.length = 0;
+  /* two fresh towers are standing before the smoke even settles */
+  deployTurretAt(p.x - 38, p.y + 10);
+  deployTurretAt(p.x + 38, p.y + 10);
+  Sound.overcharge();
+  game.shake = Math.max(game.shake, 0.55);
+  game.flashTimer = 0.22;
+  game.flashColor = '#a7f3d0';
+  addText(p.x, p.y - 48, 'SYSTEM OVERLOAD', '#6ee7b7');
 }
 
 /* ---- knight: charge forward and hurl everything nearby away ---- */
@@ -3964,7 +4825,7 @@ function updateRift(dt) {
   if (!r) return;
   r.life -= dt;
   r.spin += dt * 1.9;
-  r.r = Math.min(215, r.r + dt * 620);
+  r.r = Math.min(215 * (game.shopBlast || 1), r.r + dt * 620);
   if (r.life <= 0) {
     Sound.riftEnd();
     for (let i = 0; i < 26; i++) {
@@ -4010,7 +4871,13 @@ function updateRift(dt) {
 }
 
 /* ---- E: a ring of 16 bolts that shreds anything close ---- */
+/* while Rage burns he cannot reach for anything else */
+function abilitiesLocked() {
+  return !!(game.player && game.player.rageT > 0);
+}
+
 function novaBlast() {
+  if (abilitiesLocked()) return;
   if (!hasAbility('nova')) return;
   if (game.novaCd > 0) return;
   const p = game.player;
@@ -4036,12 +4903,39 @@ function novaBlast() {
     spawnParticle(p.x + Math.cos(a) * (p.r + 10), p.y + Math.sin(a) * (p.r + 10),
       Math.cos(a) * rand(80, 200), Math.sin(a) * rand(80, 200), 0.3, 7, '#a5f3fc', 4);
   }
-  game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 190, life: 0, maxLife: 0.42, color: '#a5f3fc' });
+  game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 190 * (game.shopBlast || 1), life: 0, maxLife: 0.42, color: '#a5f3fc' });
   addText(p.x, p.y - 40, 'NOVA BLAST', '#a5f3fc');
+}
+
+/* ---- Z: Overdrive (bought in the shop): every stat doubles for 5s ---- */
+const OVERDRIVE_CD = 60;
+const OVERDRIVE_TIME = 5;
+
+function startOverdrive() {
+  if (abilitiesLocked()) return;
+  if (!hasAbility('overdrive')) return;
+  if (game.overdriveCd > 0) return;
+  if (game.overdriveTimer > 0) return;
+  const p = game.player;
+  game.overdriveCd = OVERDRIVE_CD * cdScale();
+  game.overdriveTimer = OVERDRIVE_TIME;
+  Sound.overcharge();
+  game.shake = Math.max(game.shake, 0.35);
+  game.flashTimer = 0.24;
+  game.flashColor = '#ffe9a8';
+  addText(p.x, p.y - 46, 'OVERDRIVE', '#ffd54a');
+  game.particles.push({ ring: true, x: p.x, y: p.y, r: 10, maxR: 220, life: 0, maxLife: 0.5, color: '#ffd54a' });
+  for (let i = 0; i < 26; i++) {
+    const a = rand(0, TAU);
+    spawnParticle(p.x + Math.cos(a) * 14, p.y + Math.sin(a) * 14,
+      Math.cos(a) * rand(80, 300), Math.sin(a) * rand(80, 300),
+      0.45, rand(4, 9), i % 2 ? '#ffd54a' : '#fff7d6', 3.4);
+  }
 }
 
 /* ---- SHIFT: dash in the movement direction, invincible ---- */
 function dash() {
+  if (abilitiesLocked()) return;
   if (!hasAbility('dash')) return;
   const p = game.player;
   if (p.dashCd > 0) return;
@@ -4066,7 +4960,13 @@ function dash() {
 
 /* ---- F: drop a stationary auto-turret (max 2) ---- */
 function dropTurret() {
+  if (abilitiesLocked()) return;
   if (!hasAbility('turret')) return;
+  /* the Tech Specialist plants standing turrets that never time out */
+  if (getClass().weapon === 'disc') {
+    if (deployTurretAt(game.player.x, game.player.y)) addText(game.player.x, game.player.y - 40, 'TURRET ONLINE', '#6ee7b7');
+    return;
+  }
   const p = game.player;
   if (game.turretCd > 0) return;
   if (game.turrets.length >= 2) {
@@ -4092,7 +4992,7 @@ function dropTurret() {
 function updateTurrets(dt) {
   for (let i = game.turrets.length - 1; i >= 0; i--) {
     const t = game.turrets[i];
-    t.life -= dt;
+    if (!t.permanent) t.life -= dt;
     if (t.life <= 0) {
       Sound.turretOff();
       for (let k = 0; k < 14; k++) {
@@ -4143,6 +5043,7 @@ function updateTurrets(dt) {
 
 /* ---- R: 8s of double fire rate and fat bullets ---- */
 function startOvercharge() {
+  if (abilitiesLocked()) return;
   if (!hasAbility('overcharge')) return;
   if (game.overchargeCd > 0) return;
   const p = game.player;
@@ -4161,6 +5062,7 @@ function startOvercharge() {
 
 /* ---- X: sticky bomb that detonates after 2s ---- */
 function throwBomb() {
+  if (abilitiesLocked()) return;
   if (!hasAbility('bomb')) return;
   if (game.bombCd > 0) return;
   const p = game.player;
@@ -4216,7 +5118,7 @@ function explodeBomb(b) {
 /* the volatile fifth round: a small hot burst where it lands. `skip` is the
    body the round already hit, so nothing takes the same shot twice. */
 function explodeAt(x, y, dmg, colour, skip) {
-  const R = 92;
+  const R = 92 * (game.shopBlast || 1);
   const col = colour || '#fbbf24';
   Sound.bombBoom();
   game.shake = Math.max(game.shake, 0.2);
@@ -4293,6 +5195,8 @@ function hurtPlayer(amount, raw) {
   /* raw damage is poison and other damage-over-time: it ignores wards and
      i-frames, because the tick already happened inside his blood */
   if (!raw) {
+    /* Berserker Rage: nothing reaches him while the red is up */
+    if (p.rageT > 0) return;
     /* Phase Cloak: out of phase, nothing can find him to hit him */
     if (p.phaseTimer > 0) return;
     if (p.invuln > 0 || p.dashTimer > 0) return;
@@ -4358,6 +5262,26 @@ function hurtPlayer(amount, raw) {
       for (let i = 0; i < 22; i++) {
         const a = rand(0, TAU);
         spawnParticle(p.x, p.y, Math.cos(a) * rand(90, 300), Math.sin(a) * rand(90, 300), 0.45, 7, '#ffe9ae', 3);
+      }
+      updateHealthOrbs();
+      return;
+    }
+    /* Iron Will: one free resurrection per universe */
+    const uniIdx = Math.floor(clamp(game.zoneIndex | 0, 0, ZONES.length - 1) / LEVELS_PER_UNIVERSE);
+    if (game.shopIronWill && !(game.ironWillUsed && game.ironWillUsed[uniIdx])) {
+      game.ironWillUsed = game.ironWillUsed || {};
+      game.ironWillUsed[uniIdx] = true;
+      p.hp = Math.min(2, p.maxHp);
+      p.invuln = 2.6;
+      p.hitFlash = 0;
+      Sound.ability();
+      addText(p.x, p.y - 46, 'IRON WILL', '#ffd54a');
+      game.flashTimer = 0.3;
+      game.flashColor = '#ffd54a';
+      game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 8, maxR: 120, life: 0, maxLife: 0.6, color: '#ffd54a' });
+      for (let i = 0; i < 26; i++) {
+        const a = rand(0, TAU);
+        spawnParticle(p.x, p.y, Math.cos(a) * rand(90, 320), Math.sin(a) * rand(90, 320), 0.5, 7, '#ffe9ae', 3);
       }
       updateHealthOrbs();
       return;
@@ -4674,23 +5598,59 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
   }
 }
 
+/* Rage, Death Mark and the cloak are the three shop-class clocks */
+function updateClassKit(dt) {
+  const p = game.player;
+  if (!p) return;
+  if (p.rageT > 0) {
+    p.rageT = Math.max(0, p.rageT - dt);
+    if (p.rageT === 0) addText(p.x, p.y - 40, 'RAGE FADES', '#ffb27a');
+    if (Math.random() < 0.45) {
+      spawnParticle(p.x + rand(-13, 13), p.y + rand(-6, 12),
+        rand(-40, 40), rand(-110, -40), 0.36, rand(2, 5), Math.random() < 0.5 ? '#ff7a45' : '#ffd6a5', 3);
+    }
+  }
+  if (p.markT > 0) {
+    p.markT = Math.max(0, p.markT - dt);
+    const t = p.markTarget;
+    /* the mark dies with its host */
+    const alive = !!t && (t === game.boss || game.enemies.indexOf(t) >= 0);
+    if (!alive) { p.markT = 0; p.markTarget = null; }
+    else if (p.markT === 0) p.markTarget = null;
+  }
+}
+
 /* ------------------------------ enemy update ------------------------------- */
 function updateEnemies(dt) {
   const p = game.player;
   /* Phase Cloak: an out-of-phase Rael is not a target. The horde keeps sweeping
      along its last heading instead of turning to follow him, and nobody shoots. */
-  const canSee = !(p.phaseTimer > 0);
+  const phaseSee = !(p.phaseTimer > 0);
+  const cloakRange = p.cloakRange || 0;
 
   for (let i = game.enemies.length - 1; i >= 0; i--) {
     const e = game.enemies[i];
     e.t += dt;
     if (e.hitFlash > 0) e.hitFlash = Math.max(0, e.hitFlash - dt);
     if (e.contactCd > 0) e.contactCd = Math.max(0, e.contactCd - dt);
+    /* Freeze Grenade: a frozen body holds perfectly still and hits nothing */
+    if (e.freeze > 0) {
+      e.freeze = Math.max(0, e.freeze - dt);
+      e.throttle = approach(e.throttle, 0, dt * 6);
+      if (Math.random() < 0.06) {
+        spawnParticle(e.x + rand(-e.r, e.r), e.y + rand(-e.r, e.r),
+          rand(-20, 20), rand(-40, -10), 0.4, 4, '#bae6fd', 2);
+      }
+      continue;
+    }
 
     const d = dist(e.x, e.y, p.x, p.y);
-    /* where they think he is: himself, or a phantom dead ahead of their heading */
-    const tx = canSee ? p.x : e.x + Math.cos(e.heading) * 320;
-    const ty = canSee ? p.y : e.y + Math.sin(e.heading) * 320;
+    /* Shadow Assassin: past the cloak radius the horde loses him completely */
+    const canSee = phaseSee && !(cloakRange > 0 && d > cloakRange);
+    /* where they think he is: the decoy first, then Rael, then a phantom heading */
+    const lure = game.decoy;
+    const tx = lure ? lure.x : (canSee ? p.x : e.x + Math.cos(e.heading) * 320);
+    const ty = lure ? lure.y : (canSee ? p.y : e.y + Math.sin(e.heading) * 320);
     const ang = angleTo(e.x, e.y, tx, ty);
 
     /* ------------------------------------------------------------------
@@ -4863,7 +5823,7 @@ function updateBullets(dt) {
     if (brk && brk.t < bestT) { bestT = brk.t; hitKind = 'break'; hitObj = brk.obj; hitBreakKind = brk.kind; }
 
     if (hitKind === 'enemy') {
-      damageEnemy(hitObj, b.dmg, false);
+      damageEnemy(hitObj, b.dmg * odm(), false);
       if (b.knock) {
         const a = Math.atan2(b.vy, b.vx);
         hitObj.x = clamp(hitObj.x + Math.cos(a) * b.knock, 40, WORLD - 40);
@@ -4882,7 +5842,7 @@ function updateBullets(dt) {
         hit = true;
       }
     }
-    else if (hitKind === 'boss') { damageBoss(b.dmg); hit = true; }
+    else if (hitKind === 'boss') { damageBoss(b.dmg * odm()); hit = true; }
     else if (hitKind === 'break') {
       damageBreakableObject(hitObj, hitBreakKind, b.kind || 'bullet', b.x, b.y);
       hit = true;
@@ -5007,6 +5967,14 @@ function nearestEnemyTo(x, y, range, skip) {
 /* `noChain` stops a chain bolt's own kill from arcing again, so the lightning
    never runs away across the whole arena in one frame. */
 function damageEnemy(e, dmg, silent, noChain) {
+  /* Death Mark: everything lands three times harder on the marked body */
+  const marker = game.player;
+  if (marker && marker.markT > 0 && marker.markTarget === e) dmg *= 3;
+  /* Critical Strike: any hit can triple, with a gold flash on the target */
+  if ((game.shopCrit || 0) > 0 && Math.random() < game.shopCrit) {
+    dmg *= 3;
+    critFlash(e.x, e.y);
+  }
   e.hp -= dmg;
   e.hitFlash = 0.12;
   if (e.hp > 0) return;
@@ -5040,6 +6008,26 @@ function damageEnemy(e, dmg, silent, noChain) {
           rand(-90, 90), rand(-90, 90), 0.2, 4, '#bae6fd', 2);
       }
       damageEnemy(arc, Math.max(1, dmg * 0.5), true, true);
+    }
+  }
+
+  /* --- class passives -------------------------------------------------- */
+  if (pl) {
+    if (pl.classId === 'berserker' && game.kills > 0 && game.kills % 5 === 0 && pl.hp < pl.maxHp) {
+      pl.hp += 1;
+      updateHealthOrbs();
+      addText(pl.x, pl.y - 42, '+1 ORB', '#ffb27a');
+      Sound.ability();
+    }
+    if (pl.classId === 'shadow') pl.dashCd = 0;          /* the dash comes back on a kill */
+    if (pl.classId === 'tech') {                          /* a second off every clock */
+      game.qCd = Math.max(0, game.qCd - 1);
+      game.novaCd = Math.max(0, game.novaCd - 1);
+      game.turretCd = Math.max(0, game.turretCd - 1);
+      game.overchargeCd = Math.max(0, game.overchargeCd - 1);
+      game.bombCd = Math.max(0, game.bombCd - 1);
+      game.overdriveCd = Math.max(0, (game.overdriveCd || 0) - 1);
+      pl.dashCd = Math.max(0, (pl.dashCd || 0) - 1);
     }
   }
 
@@ -5522,6 +6510,12 @@ function damageBoss(dmg) {
   const b = game.boss;
   if (!b) return;
   if (b.entering) return;   /* the entrance cannot be interrupted */
+  const marker = game.player;
+  if (marker && marker.markT > 0 && marker.markTarget === b) dmg *= 3;
+  if ((game.shopCrit || 0) > 0 && Math.random() < game.shopCrit) {
+    dmg *= 3;
+    critFlash(b.x, b.y - b.r * 0.4);
+  }
   /* the Hive Queen's regenerating shield eats damage before her body does */
   if (b.kit === 'hivequeen' && (b.shield || 0) > 0) {
     const eaten = Math.min(b.shield, dmg);
@@ -5820,6 +6814,13 @@ function syncAbilityHud() {
   }
   /* the class slot is always live */
   if (UI.abilities.q) UI.abilities.q.classList.remove('locked');
+  /* Overdrive is a shop unlock: the seventh slot only exists once it is bought */
+  if (UI.abilities.overdrive) {
+    const on = hasAbility('overdrive');
+    UI.abilities.overdrive.classList.toggle('show', on);
+    UI.abilities.overdrive.classList.toggle('locked', !on);
+    if (on) UI.abilities.overdrive.classList.remove('cooling');
+  }
 }
 
 /* entering an arena hands the player a short grace window: enemies are already
@@ -5941,7 +6942,8 @@ function updatePortal(dt) {
   const p = game.player;
   if (game.portal.open >= 1 &&
       dist(p.x, p.y, game.portal.x, game.portal.y) < game.portal.r * 0.8) {
-    completeZone();
+    enterPortal();
+    return;                 /* the portal is spent: nothing left to animate */
   }
   if (Math.random() < 0.7) {
     const a = rand(0, TAU);
@@ -5949,6 +6951,17 @@ function updatePortal(dt) {
     spawnParticle(game.portal.x + Math.cos(a) * rr, game.portal.y + Math.sin(a) * rr,
       Math.cos(a + 1.6) * 40, Math.sin(a + 1.6) * 40, 0.8, 7, '#38bdf8', 1);
   }
+}
+
+/* The portal entry event. Rael steps into the lit portal and this fires exactly
+   once: the portal is cleared first (so the event cannot re-enter itself while
+   the world is being handed over to the next card), then the level is closed. */
+function enterPortal() {
+  if (game.screen !== 'playing' || !game.portal) return;
+  game.portal = null;
+  game.mouse.down = false;
+  game.keys = {};
+  completeZone();
 }
 
 function completeZone() {
@@ -5962,11 +6975,7 @@ function completeZone() {
 
   /* the fifth level ends a universe — one card to bank it, one to open the next */
   if (lvl >= LEVELS_PER_UNIVERSE) {
-    if (uni.index >= UNIVERSES.length - 1) {
-      showVictory();      /* the Architect is down: the true ending */
-      return;
-    }
-    showUniverseComplete(uni);
+    beginUniverseTransition();
     return;
   }
 
@@ -5977,65 +6986,123 @@ function completeZone() {
   UI.transEyebrow.textContent = 'Universe ' + uni.number + ' · Level ' + (lvl + 1);
   UI.transTitle.textContent = next.name;
   UI.transStory.textContent = next.story;
-  Screens.show('transition');
-  game.screen = 'transition';
+  showScreen('levelTransition');
 }
 
-/* --------------------------- universe transitions -------------------------- */
-/* Finishing level five of a universe: bank the run, show the card, and only
-   move on when the player presses the button. Nothing is lost — the score,
-   upgrades, abilities and class all travel into the next universe. */
+/* --------------------------- universe transitions --------------------------
+   Six universes, five levels each, one chain:
+       Universe 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> the true ending.
+   Every step is derived from `nextUniverseIndex()` — there is no second place
+   that does universe arithmetic, so the pointer can never drift or go stale.
+   Finishing level five of a universe banks the run and shows the card; only
+   the player's button moves the world on. Nothing is lost on the way: score,
+   gems, upgrades, abilities, class, health and satchel all travel with Rael.
+   ------------------------------------------------------------------------- */
+const LAST_UNIVERSE = UNIVERSES.length - 1;
+
+/* the universe after `index`, or -1 when the timeline is finished */
+function nextUniverseIndex(index) {
+  const n = Math.floor(Number(index));
+  if (!isFinite(n) || n < 0) return 0;
+  return n >= LAST_UNIVERSE ? -1 : n + 1;
+}
+
+/* the universe at an index, clamped — never undefined */
+function universeAt(index) {
+  return UNIVERSES[clamp(Math.floor(Number(index)) || 0, 0, LAST_UNIVERSE)];
+}
+
+/* text writes go through here so one missing element can never abort a
+   transition half-way and leave the world frozen behind no card at all */
+function writeText(el, value) {
+  if (!el) return false;
+  el.textContent = value === null || value === undefined ? '' : String(value);
+  return true;
+}
+
 let pendingUniverse = 0;
 
-function showUniverseComplete(uni) {
+/* level five of a universe was cleared: victory if that was the last one,
+   otherwise the completion card that names the universe after it */
+function beginUniverseTransition() {
+  const uni = universeOf(game.zoneIndex);
+  const nextIndex = nextUniverseIndex(uni.index);
+  if (nextIndex < 0) {
+    showVictory();          /* Universe 6 is done: the true ending, nothing else */
+    return;
+  }
+  showUniverseComplete(uni, nextIndex);
+}
+
+function showUniverseComplete(uni, nextIndex) {
+  const from = uni || universeOf(game.zoneIndex);
+  const target = nextIndex === undefined ? nextUniverseIndex(from.index) : nextIndex;
+  const next = target >= 0 ? UNIVERSES[target] : null;
+  pendingUniverse = target >= 0 ? next.index : LAST_UNIVERSE;
   game.screen = 'universe';
   game.mouse.down = false;
-  pendingUniverse = Math.min(UNIVERSES.length - 1, uni.index + 1);
-  const next = UNIVERSES[pendingUniverse];
+  game.keys = {};
+
   let ups = 0;
   for (const k in game.upgradeLevels) ups += game.upgradeLevels[k] || 0;
-  UI.ucKicker.textContent = 'Universe ' + uni.number + ' complete';
-  UI.ucName.textContent = uni.name;
-  UI.ucEra.textContent = uni.era;
-  UI.ucTime.textContent = RunClock.format(RunClock.tick());
-  UI.ucScore.textContent = String(Math.floor(game.score));
-  UI.ucUps.textContent = String(ups);
-  UI.ucNext.textContent = next.name;
-  Screens.show('universeComplete');
+  writeText(UI.ucKicker, 'Universe ' + from.number + ' complete');
+  writeText(UI.ucName, from.name);
+  writeText(UI.ucEra, from.era);
+  writeText(UI.ucTime, RunClock.format(RunClock.tick()));
+  writeText(UI.ucScore, Math.floor(game.score));
+  writeText(UI.ucUps, ups);
+  /* the next universe, by name — never a dash, never a stale pointer */
+  writeText(UI.ucNext, next ? next.name : 'True Ending');
+  if (UI.btnNextUniverse) {
+    UI.btnNextUniverse.textContent = next ? 'Enter Next Universe' : 'See the True Ending';
+  }
+  setUniversePanel('complete');
+  showScreen('universeTransition');
   Sound.levelClear();
   SaveSystem.save('universe');
 }
 
+/* the doors of the universe you are about to walk into */
 function showUniverseIntro(index) {
-  const u = UNIVERSES[clamp(index, 0, UNIVERSES.length - 1)];
+  const u = universeAt(index === undefined ? pendingUniverse : index);
   pendingUniverse = u.index;
   game.screen = 'universeIntro';
-  UI.uiKicker.textContent = 'Universe ' + u.number;
-  UI.uiName.textContent = u.name;
-  UI.uiEra.textContent = u.era;
-  UI.uiStory.textContent = u.story;
-  /* the roster of the universe you are about to walk into */
+  writeText(UI.uiKicker, 'Universe ' + u.number);
+  writeText(UI.uiName, u.name);
+  writeText(UI.uiEra, u.era);
+  writeText(UI.uiStory, u.story);
   if (UI.uiRoster) {
     UI.uiRoster.innerHTML = u.enemies.map(function (id) {
       const label = ENEMY_LABELS[id] || id;
       return '<span class="uni-chip">' + label + '</span>';
     }).join('') + '<span class="uni-chip">' + u.boss.name + '</span>';
   }
-  Screens.show('universeIntro');
+  setUniversePanel('intro');
+  showScreen('universeTransition', 'universeIntro');
   Sound.portal();
 }
 
-/* step through the door: same run, same Rael, five fresh levels */
 function enterUniverse() {
-  const u = UNIVERSES[clamp(pendingUniverse, 0, UNIVERSES.length - 1)];
+  return loadUniverseStart(pendingUniverse);
+}
+
+/* Level 1 of a universe as a live run: same Rael, same score, same upgrades,
+   five fresh levels and that universe's own enemies. This is the single place
+   that opens a universe, so both the button and any future caller behave. */
+function loadUniverseStart(index) {
+  const u = universeAt(index);
   const first = u.index * LEVELS_PER_UNIVERSE;
+  pendingUniverse = u.index;
   game.pendingZone = first;
-  noteZoneReached(first);
-  loadZone(first, { freshPlayer: false });
   game.screen = 'playing';
-  Screens.show('hud');
+  loadZone(first, { freshPlayer: false });
+  noteZoneReached(first);
+  showScreen('game');       /* reveals the HUD and unpauses the loop */
+  startLoop();              /* belt and braces: the world is awake again */
   showBanner(u.name.toUpperCase());
+  updateObjective();
   SaveSystem.save('universe');
+  return u.index;
 }
 
 function updateObjective() {
@@ -6097,15 +7164,14 @@ function showUpgrades() {
       if (up) chooseUpgrade(up);
     });
   });
-  Screens.show('upgradeScreen');
+  showScreen('upgradeCard');
   Sound.ability();
 }
 
 function chooseUpgrade(up) {
   game.upgradeLevels[up.id] = (game.upgradeLevels[up.id] || 0) + 1;
   up.apply();
-  if (game.screen === 'upgrade') game.screen = 'playing';
-  Screens.show('hud');
+  showScreen('game');
   addText(game.player.x, game.player.y - 44, up.name.toUpperCase(), '#fde68a');
   Sound.gem();
   SaveSystem.save('upgrade');
@@ -6357,6 +7423,7 @@ const SaveSystem = (function () {
     while (game.bossesDefeated.length < ZONES.length) game.bossesDefeated.push(false);
 
     loadZone(slot.zone, { freshPlayer: false });
+    applyShopUpgrades();
 
     const maxHp = game.player.maxHp;
     game.player.hp = (slot.hp >= 1 && slot.hp <= maxHp) ? slot.hp : maxHp;
@@ -6390,8 +7457,7 @@ const SaveSystem = (function () {
       armBossZone();
     }
 
-    game.screen = 'playing';
-    Screens.show('hud');
+    showScreen('game');
     game.menuTime = 0;
     syncClassHud();
     updateObjective();
@@ -6436,6 +7502,22 @@ const SaveSystem = (function () {
       return readCount(SAVE_TIME_KEY);
     },
     lifetimeGems: function () { return readCount(SAVE_GEMS_KEY); },
+    /* spending the bank: the live total, the bare key and the run slot all
+       move together, so a reload can never refund a purchase */
+    spendGems: function (n) {
+      const cost = Math.max(0, Math.floor(Number(n) || 0));
+      if (!cost) return -1;
+      const slot = load();
+      const have = Math.max(game.lifetimeGems | 0, readCount(SAVE_GEMS_KEY), slot ? slot.gemsTotal | 0 : 0);
+      if (have < cost) return -1;
+      const left = have - cost;
+      game.lifetimeGems = left;
+      writeCount(SAVE_GEMS_KEY, left);
+      const raw = readJSON(SAVE_KEY);
+      if (raw && typeof raw === 'object') { raw.gemsTotal = left; writeJSON(SAVE_KEY, raw); }
+      if (typeof refreshSaveUi === 'function') refreshSaveUi();
+      return left;
+    },
     maxZone: function () {
       const stored = readCount(SAVE_MAX_ZONE_KEY);
       const slot = load();
@@ -6490,7 +7572,14 @@ function syncGemMultHud() {
 
 /* gems are counted twice: in the run and for the lifetime total */
 function addGems(n) {
-  const amount = Math.max(0, Math.floor(n || 0));
+  const raw = Math.max(0, Number(n) || 0);
+  if (!raw) return;
+  /* Gem Processor pays a fraction per pickup, so the bonus is banked as a
+     running remainder instead of being rounded away on every single gem */
+  const mult = game.shopGemMult || 1;
+  game.gemCarry = (game.gemCarry || 0) + raw * mult;
+  const amount = Math.floor(game.gemCarry + 1e-9);
+  game.gemCarry = Math.max(0, game.gemCarry - amount);
   if (!amount) return;
   game.gems += amount;
   game.gemsRun = Math.max(0, (game.gemsRun | 0) + amount);
@@ -6518,6 +7607,688 @@ function refreshSaveUi() {
 function markProgressSaved(el, ok) {
   if (!el || !el.classList) return;
   el.classList.toggle('show', !!ok);
+}
+
+
+/* =============================================================================
+   GEM SHOP
+   =============================================================================
+   Every gem Rael picks up is banked twice: in the run (spendable score) and for
+   good, under survive_gems_total. The shop spends that bank on permanent gear.
+   What is bought lives in survive_shop_v1 and is re-applied to Rael at the start
+   of every run, in every universe, for as long as the browser remembers him. */
+
+const SHOP_KEY = 'survive_shop_v1';
+const SHOP_VERSION = 1;
+
+/* the ten permanent stat upgrades */
+const SHOP_UPGRADES = [
+  { id: 'armor', name: 'Reinforced Armor', glyph: '⛨', max: 5, cost: 50,
+    desc: '+1 max health orb per level.' },
+  { id: 'targeting', name: 'Targeting Module', glyph: '⌖', max: 5, cost: 40,
+    desc: '+10% bullet damage per level.' },
+  { id: 'thruster', name: 'Thruster Boots', glyph: '➤', max: 5, cost: 35,
+    desc: '+8% movement speed per level.' },
+  { id: 'magazine', name: 'Extended Magazine', glyph: '▤', max: 3, cost: 60,
+    desc: '+15% fire rate per level.' },
+  { id: 'processor', name: 'Gem Processor', glyph: '◈', max: 3, cost: 80,
+    desc: '+25% gems earned per level.' },
+  { id: 'cooldown', name: 'Cooldown Chip', glyph: '◷', max: 3, cost: 70,
+    desc: '-10% to every ability cooldown per level.' },
+  { id: 'blast', name: 'Blast Radius', glyph: '◎', max: 3, cost: 90,
+    desc: '+20% explosion and ability radius per level.' },
+  { id: 'critical', name: 'Critical Strike', glyph: '✷', max: 3, cost: 100,
+    desc: '10% chance per level for any hit to deal triple damage with a gold flash.' },
+  { id: 'ironwill', name: 'Iron Will', glyph: '✚', max: 1, cost: 200,
+    desc: 'Once per universe, auto-revive at 2 health orbs.' },
+  { id: 'overdrive', name: 'Overdrive Core', glyph: '⇉', max: 1, cost: 500,
+    desc: 'Unlocks the 7th ability — OVERDRIVE: all stats doubled for 5s, 60s cooldown, key Z.' }
+];
+
+/* one-shot supplies: bought into a three-slot satchel, fired from the HUD with
+   1 / 2 / 3 while a run is live */
+const SHOP_CONSUMABLES = [
+  { id: 'vial', name: 'Health Vial', glyph: '✚', cost: 15,
+    desc: 'Instantly restores 2 health orbs.' },
+  { id: 'serum', name: 'Speed Serum', glyph: '➤', cost: 20,
+    desc: '+50% movement speed for 10 seconds.' },
+  { id: 'shard', name: 'Damage Shard', glyph: '✷', cost: 25,
+    desc: 'Doubles your damage for 8 seconds, with a red battle glow.' },
+  { id: 'freeze', name: 'Freeze Grenade', glyph: '❄', cost: 30,
+    desc: 'Freezes every enemy on screen for 4 seconds.' },
+  { id: 'magnet', name: 'Gem Magnet', glyph: '◈', cost: 20,
+    desc: 'Pulls every gem on screen straight into your hands.' },
+  { id: 'decoy', name: 'Decoy Drone', glyph: '⌖', cost: 35,
+    desc: 'Drops a hologram that distracts every enemy for 6 seconds.' }
+];
+const CONSUMABLE_SLOTS = 3;
+
+/* ---- paint jobs: purely visual, and saved with the rest of the shop -------
+   Each one swaps Rael's whole plate palette, his visor and glow, his dash trail
+   and, for a few, a cosmetic flourish (boot flames, gold motes, void cracks). */
+const SHOP_COSMETICS = [
+  {
+    id: 'crimson', name: 'Crimson Commander', glyph: '✦', cost: 100,
+    desc: 'Red and black plate with a burning red visor.',
+    visor: '#ff3b3b', glow: '#ff2b2b', trail: '#ff5a5a', wisp: '#ff7a7a',
+    armor: {
+      helmet: '#40101a', helmetLit: '#7a1626', helmetDark: '#1c0509',
+      navy: '#7d1020', navyLit: '#b81c2e', navyDark: '#2c0509',
+      silver: '#2a0a11', silverDark: '#16040a', leg: '#170409', boot: '#26070d'
+    }
+  },
+  {
+    id: 'ghost', name: 'Ghost Protocol', glyph: '❖', cost: 150,
+    desc: 'White translucent armour with a white visor and a white glow.',
+    visor: '#ffffff', glow: '#dff6ff', trail: '#eaf9ff', wisp: '#ffffff', alpha: 0.62,
+    armor: {
+      helmet: '#c7d5e2', helmetLit: '#f2f8ff', helmetDark: '#93a5b6',
+      navy: '#dae6f1', navyLit: '#ffffff', navyDark: '#9aacbd',
+      silver: '#ffffff', silverDark: '#c3d2df', leg: '#b4c3d1', boot: '#d6e3ee'
+    }
+  },
+  {
+    id: 'inferno', name: 'Inferno Knight', glyph: '✷', cost: 200,
+    desc: 'Orange and black plate, with a flame trail pouring off the boots.',
+    visor: '#ffb347', glow: '#ff7a18', trail: '#ff9d3d', wisp: '#ffb066',
+    flames: true,
+    armor: {
+      helmet: '#241203', helmetLit: '#4d2608', helmetDark: '#0f0702',
+      navy: '#1a0d04', navyLit: '#3d1b06', navyDark: '#090402',
+      silver: '#d2601a', silverDark: '#8a3a0c', leg: '#140a03', boot: '#2a1406'
+    }
+  },
+  {
+    id: 'void', name: 'Void Walker', glyph: '◈', cost: 300,
+    desc: 'Pure black armour split by purple energy cracks.',
+    visor: '#b06bff', glow: '#a855f7', trail: '#8b5cf6', wisp: '#c084fc',
+    cracks: true,
+    armor: {
+      helmet: '#0a0a12', helmetLit: '#16162e', helmetDark: '#03030a',
+      navy: '#06060e', navyLit: '#14142c', navyDark: '#010104',
+      silver: '#2a1550', silverDark: '#180a30', leg: '#04040a', boot: '#0a0a16'
+    }
+  },
+  {
+    id: 'golden', name: 'Golden Legend', glyph: '✧', cost: 500,
+    desc: 'Gold plate wrapped in a drifting golden particle aura.',
+    visor: '#fff3c4', glow: '#ffd54a', trail: '#ffdf7a', wisp: '#ffe9a8',
+    aura: true,
+    armor: {
+      helmet: '#8a6a1f', helmetLit: '#d9ad3e', helmetDark: '#4a3610',
+      navy: '#c9a227', navyLit: '#ffe08a', navyDark: '#6d5412',
+      silver: '#ffe08a', silverDark: '#b8912f', leg: '#6d5412', boot: '#a8842d'
+    }
+  }
+];
+
+/* permanent doctrine perks, one per class */
+/* the three unlockable classes. Buying one opens it on the class screen for
+   good; nothing about the four starting doctrines changes. */
+const SHOP_CLASSES = [
+  { id: 'berserker', name: 'Berserker', glyph: '⚒\uFE0E', cost: 300,
+    desc: '3 health orbs and no armour, but 3x damage and the fastest stride in the game. Dual energy axes, Rage, and an orb back every 5 kills.' },
+  { id: 'shadow', name: 'Shadow Assassin', glyph: '◎', cost: 400,
+    desc: 'Permanently cloaked beyond 120px. Shadow daggers hit hard, Death Mark triples damage on one target, and a kill resets your dash.' },
+  { id: 'tech', name: 'Tech Specialist', glyph: '⌬', cost: 500,
+    desc: 'Two standing turrets on right click, a disc that ricochets through four enemies, System Overload, and a second off every cooldown per kill.' }
+];
+
+const GEM_ICON = '<svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>';
+
+const Shop = (function () {
+  const state = { levels: {}, classes: {}, cosmetics: {}, cosmetic: null, inventory: [] };
+  let loaded = false;
+
+  function store() {
+    try { return window.localStorage || null; } catch (e) { return null; }
+  }
+
+  function load() {
+    loaded = true;
+    state.levels = {};
+    state.classes = {};
+    state.cosmetics = {};
+    state.cosmetic = null;
+    state.inventory = [];
+    const s = store();
+    if (!s) return state;
+    let raw = null;
+    try { raw = JSON.parse(s.getItem(SHOP_KEY) || 'null'); } catch (e) { raw = null; }
+    if (!raw || typeof raw !== 'object') return state;
+    const lv = (raw.levels && typeof raw.levels === 'object') ? raw.levels : {};
+    for (let i = 0; i < SHOP_UPGRADES.length; i++) {
+      const it = SHOP_UPGRADES[i];
+      const v = clamp(Math.round(Number(lv[it.id]) || 0), 0, it.max);
+      if (v > 0) state.levels[it.id] = v;
+    }
+    const cl = (raw.classes && typeof raw.classes === 'object') ? raw.classes : {};
+    for (let i = 0; i < SHOP_CLASSES.length; i++) {
+      if (cl[SHOP_CLASSES[i].id]) state.classes[SHOP_CLASSES[i].id] = true;
+    }
+    const cos = (raw.cosmetics && typeof raw.cosmetics === 'object') ? raw.cosmetics : {};
+    for (let i = 0; i < SHOP_COSMETICS.length; i++) {
+      if (cos[SHOP_COSMETICS[i].id]) state.cosmetics[SHOP_COSMETICS[i].id] = true;
+    }
+    if (typeof raw.cosmetic === 'string' && SHOP_COSMETICS.some((c) => c.id === raw.cosmetic)) {
+      state.cosmetic = raw.cosmetic;
+      state.cosmetics[raw.cosmetic] = true;   /* wearing something means owning it */
+    }
+    /* the satchel: at most three supplies, oldest first */
+    const inv = Array.isArray(raw.inventory) ? raw.inventory : [];
+    for (let i = 0; i < inv.length && state.inventory.length < CONSUMABLE_SLOTS; i++) {
+      if (SHOP_CONSUMABLES.some((c) => c.id === inv[i])) state.inventory.push(inv[i]);
+    }
+    return state;
+  }
+
+  function save() {
+    const s = store();
+    if (!s) return false;
+    try {
+      s.setItem(SHOP_KEY, JSON.stringify({
+        v: SHOP_VERSION, levels: state.levels, classes: state.classes,
+        cosmetics: state.cosmetics, cosmetic: state.cosmetic,
+        inventory: state.inventory.slice(0, CONSUMABLE_SLOTS)
+      }));
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function ensure() { if (!loaded) load(); return state; }
+  function level(id) { ensure(); return state.levels[id] | 0; }
+  function maxed(id) {
+    const def = SHOP_UPGRADES.find((u) => u.id === id);
+    return !!def && level(id) >= def.max;
+  }
+  function classOwned(id) { ensure(); return !!state.classes[id]; }
+  function cosmeticSkin() {
+    ensure();
+    if (!state.cosmetic) return null;
+    return SHOP_COSMETICS.find((k) => k.id === state.cosmetic) || null;
+  }
+  function cosmeticColour() {
+    const skin = cosmeticSkin();
+    return skin ? skin.glow : null;
+  }
+  function inventory() { ensure(); return state.inventory.slice(); }
+
+  return {
+    load: load, save: save, ensure: ensure,
+    level: level, maxed: maxed,
+    classOwned: classOwned, cosmeticColour: cosmeticColour, cosmeticSkin: cosmeticSkin,
+    inventory: inventory,
+    state: state,
+    /* what the bank holds right now */
+    gems: function () {
+      refreshSaveUi();
+      return Math.max(0, game.lifetimeGems | 0);
+    }
+  };
+}());
+
+/* ------------------------- the consumable satchel -------------------------
+   Three quick slots, bottom left. Anything bought in the CONSUMABLES tab lands
+   here, keys 1 / 2 / 3 fire it, and the item is gone when it is used. */
+function syncConsumableHud() {
+  const host = UI.consumables;
+  if (!host) return;
+  Shop.ensure();
+  const inv = Shop.state.inventory;
+  let html = '';
+  for (let i = 0; i < CONSUMABLE_SLOTS; i++) {
+    const id = inv[i];
+    const def = id ? SHOP_CONSUMABLES.find((c) => c.id === id) : null;
+    html += '<div class="consumable-slot' + (def ? '' : ' empty') + '" data-slot="' + i + '">' +
+      '<span class="key">' + (i + 1) + '</span>' +
+      '<span class="cicon">' + (def ? def.glyph : '·') + '</span>' +
+      '<span class="cname">' + (def ? def.name : 'Empty') + '</span></div>';
+  }
+  host.innerHTML = html;
+}
+
+function useConsumableSlot(slot) {
+  if (game.screen !== 'playing') return false;
+  Shop.ensure();
+  const inv = Shop.state.inventory;
+  if (slot < 0 || slot >= CONSUMABLE_SLOTS) return false;
+  const id = inv[slot];
+  if (!id) return false;
+  const p = game.player;
+  if (!p) return false;
+  applyConsumable(id, p);
+  inv.splice(slot, 1);
+  Shop.save();
+  syncConsumableHud();
+  return true;
+}
+
+function collectAllGems() {
+  const p = game.player;
+  if (!p) return 0;
+  let n = 0;
+  for (let i = game.gemsList.length - 1; i >= 0; i--) {
+    const g = game.gemsList[i];
+    addGems(1);
+    addScore(8);
+    n++;
+    for (let k = 0; k < 5; k++) {
+      const a = rand(0, TAU);
+      spawnParticle(g.x, g.y, Math.cos(a) * rand(40, 130), Math.sin(a) * rand(40, 130), 0.3, 5, '#6ee7b7', 2);
+    }
+    game.gemsList.splice(i, 1);
+  }
+  if (n) Sound.gem();
+  return n;
+}
+
+function applyConsumable(id, p) {
+  if (id === 'vial') {
+    p.hp = Math.min(p.maxHp, p.hp + 2);
+    updateHealthOrbs();
+    addText(p.x, p.y - 44, '+2 HEALTH', '#6ee7b7');
+    for (let i = 0; i < 16; i++) {
+      const a = rand(0, TAU);
+      spawnParticle(p.x, p.y, Math.cos(a) * rand(50, 180), Math.sin(a) * rand(50, 180), 0.4, 6, '#6ee7b7', 3);
+    }
+  } else if (id === 'serum') {
+    game.speedBuffT = 10;
+    addText(p.x, p.y - 44, 'SPEED SERUM', '#a5f3fc');
+    for (let i = 0; i < 18; i++) {
+      const a = rand(0, TAU);
+      spawnParticle(p.x, p.y, Math.cos(a) * rand(90, 260), Math.sin(a) * rand(90, 260), 0.36, 6, '#7dd3fc', 3);
+    }
+    game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 8, maxR: 80, life: 0, maxLife: 0.4, color: '#7dd3fc' });
+  } else if (id === 'shard') {
+    game.damageBuffT = 8;
+    addText(p.x, p.y - 44, 'DAMAGE SHARD', '#ff6b6b');
+    game.flashTimer = 0.18;
+    game.flashColor = '#ff6b6b';
+    for (let i = 0; i < 20; i++) {
+      const a = rand(0, TAU);
+      spawnParticle(p.x, p.y, Math.cos(a) * rand(80, 240), Math.sin(a) * rand(80, 240), 0.4, 6, '#f87171', 3);
+    }
+    game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 8, maxR: 96, life: 0, maxLife: 0.45, color: '#f87171' });
+  } else if (id === 'freeze') {
+    let frozen = 0;
+    for (let i = 0; i < game.enemies.length; i++) {
+      const e = game.enemies[i];
+      const sx = toScreenX(e.x), sy = toScreenY(e.y);
+      if (sx < -40 || sx > W + 40 || sy < SKY_H - 40 || sy > H + 40) continue;
+      e.freeze = 4;
+      frozen++;
+      for (let k = 0; k < 6; k++) {
+        const a = rand(0, TAU);
+        spawnParticle(e.x, e.y, Math.cos(a) * rand(30, 120), Math.sin(a) * rand(30, 120), 0.4, 5, '#bae6fd', 2);
+      }
+    }
+    addText(p.x, p.y - 44, frozen ? 'FROZEN · ' + frozen : 'NOTHING IN RANGE', '#bae6fd');
+    game.flashTimer = 0.2;
+    game.flashColor = '#bae6fd';
+    game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 12, maxR: 520, life: 0, maxLife: 0.5, color: '#bae6fd' });
+  } else if (id === 'magnet') {
+    const n = collectAllGems();
+    addText(p.x, p.y - 44, n ? 'GEMS PULLED · ' + n : 'NO GEMS NEARBY', '#6ee7b7');
+    game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 10, maxR: 300, life: 0, maxLife: 0.45, color: '#6ee7b7' });
+  } else if (id === 'decoy') {
+    game.decoy = {
+      x: p.x + Math.cos(p.angle) * 64,
+      y: p.y + Math.sin(p.angle) * 64,
+      t: 6, maxT: 6, spin: 0
+    };
+    addText(p.x, p.y - 44, 'DECOY DEPLOYED', '#67e8f9');
+    for (let i = 0; i < 16; i++) {
+      const a = rand(0, TAU);
+      spawnParticle(game.decoy.x, game.decoy.y, Math.cos(a) * rand(50, 200), Math.sin(a) * rand(50, 200), 0.4, 6, '#67e8f9', 3);
+    }
+  }
+  Sound.ability();
+  updateHealthOrbs();
+}
+
+/* the worn paint job, stamped onto a player (palette + trail + flourish) */
+function applyCosmeticToPlayer(p) {
+  const skin = Shop.cosmeticSkin();
+  p.cosmetic = skin ? skin.id : null;
+  p.cosmeticAlpha = skin && skin.alpha ? skin.alpha : 1;
+}
+
+/* the permanent numbers, read straight off the shop each run */
+function shopLevel(id) { return Shop.level(id); }
+function shopBlastMult() { return 1 + 0.20 * shopLevel('blast'); }
+/* Overdrive: every stat doubles, so the multipliers below are 2x while it runs */
+function odm() { return (game.overdriveTimer || 0) > 0 ? 2 : 1; }
+function shopFireBoost() { return (1 + 0.15 * shopLevel('magazine')) * odm(); }
+/* Damage Shard: every shot fired while it burns hits twice as hard */
+function buffedDamage(v) {
+  const p = game.player;
+  const rage = p && p.rageT > 0 ? 3 : 1;
+  return v * ((game.damageBuffT || 0) > 0 ? 2 : 1) * rage;
+}
+/* Berserker Rage: three times the stride while it burns */
+function rageSpeedMult() { const p = game.player; return p && p.rageT > 0 ? 3 : 1; }
+/* Speed Serum: half again as fast on foot while it lasts */
+function speedBuffMult() { return (game.speedBuffT || 0) > 0 ? 1.5 : 1; }
+function shopMagazineMult() { return 1 + 0.15 * shopLevel('magazine'); }
+
+/* The gold flash a critical hit leaves behind */
+function critFlash(x, y) {
+  addText(x, y - 26, 'CRIT', '#ffd54a');
+  game.particles.push({ ring: true, x: x, y: y, r: 4, maxR: 40, life: 0, maxLife: 0.24, color: '#ffd54a' });
+  for (let i = 0; i < 9; i++) {
+    const a = rand(0, TAU);
+    spawnParticle(x, y, Math.cos(a) * rand(70, 240), Math.sin(a) * rand(70, 240),
+      rand(0.18, 0.34), rand(3, 6), i % 2 ? '#ffe9a8' : '#fbbf24', 3);
+  }
+}
+
+/* every permanent purchase, stamped onto a brand-new player at run start */
+function applyShopUpgrades() {
+  const p = game.player;
+  if (!p) return;
+  Shop.ensure();
+
+  const cls = getClass();
+  p.maxHp = Math.max(1, p.maxHp + shopLevel('armor'));
+  p.damage *= 1 + 0.10 * shopLevel('targeting');
+  p.speed *= 1 + 0.08 * shopLevel('thruster');
+  if (p.fireRate > 0) p.fireRate /= shopMagazineMult();
+
+  p.hp = p.maxHp;
+  game.shopGemMult = 1 + 0.25 * shopLevel('processor');
+  game.shopCdScale = Math.pow(0.90, shopLevel('cooldown'));
+  game.shopBlast = shopBlastMult();
+  game.shopCrit = 0.10 * shopLevel('critical');
+  game.shopIronWill = shopLevel('ironwill') > 0;
+  game.ironWillUsed = {};
+  if (!game.abilities) game.abilities = {};
+  game.abilities.overdrive = shopLevel('overdrive') > 0;
+  applyCosmeticToPlayer(p);
+  syncConsumableHud();
+  updateHealthOrbs();
+  syncAbilityHud();
+}
+
+/* ------------------------------- the shop UI -------------------------------- */
+let shopTab = 'upgrades';
+let shopReturn = { screen: 'menu', layer: 'menu' };
+let shopFlashTimer = 0;
+
+const SHOP_TABS = {
+  upgrades: {
+    items: SHOP_UPGRADES,
+    note: 'Upgrades are permanent — they follow Rael through every run and every universe.'
+  },
+  consumables: {
+    items: SHOP_CONSUMABLES,
+    note: 'One-shot supplies. They can only be used while a run is live.'
+  },
+  cosmetics: {
+    items: SHOP_COSMETICS,
+    note: 'Paint jobs for the visor and the field glow. Click a card you own to wear it.'
+  },
+  classes: {
+    items: SHOP_CLASSES,
+    note: 'Permanent unlocks: the four starting doctrines are free, these three are bought once and kept for ever.'
+  }
+};
+
+function shopRunActive() {
+  return shopReturn.screen === 'playing' || shopReturn.screen === 'transition' ||
+    shopReturn.screen === 'upgrade' || shopReturn.screen === 'universe';
+}
+
+function shopItemState(tab, it) {
+  const gems = Shop.gems();
+  if (tab === 'upgrades') {
+    const lvl = Shop.level(it.id);
+    const full = lvl >= it.max;
+    return {
+      level: lvl, max: it.max, full: full,
+      cost: it.cost,
+      disabled: full || gems < it.cost,
+      label: full ? (it.max === 1 ? 'Owned' : 'Maxed') : (lvl > 0 ? 'Upgrade' : 'Buy')
+    };
+  }
+  if (tab === 'cosmetics') {
+    Shop.ensure();
+    const worn = Shop.state.cosmetic === it.id;
+    const has = shopCosmeticOwned(it.id);
+    return {
+      level: has ? 1 : 0, max: 1, full: worn,
+      cost: it.cost,
+      disabled: worn || (!has && gems < it.cost),
+      label: worn ? 'Equipped' : (has ? 'Equip' : 'Buy')
+    };
+  }
+  if (tab === 'classes') {
+    const owned = classUnlocked(it.id);
+    return {
+      level: owned ? 1 : 0, max: 1, full: owned,
+      cost: it.cost,
+      disabled: owned || gems < it.cost,
+      label: owned ? 'Owned' : 'Buy'
+    };
+  }
+  /* supplies fill the three-slot satchel; a full satchel blocks the sale */
+  Shop.ensure();
+  const held = Shop.state.inventory.filter((k) => k === it.id).length;
+  const satchelFull = Shop.state.inventory.length >= CONSUMABLE_SLOTS;
+  return {
+    level: 0, max: 0, full: satchelFull, cost: it.cost,
+    held: held,
+    disabled: satchelFull || gems < it.cost,
+    label: satchelFull ? 'Satchel Full' : 'Buy'
+  };
+}
+
+function shopCosmeticOwned(id) {
+  Shop.ensure();
+  return !!Shop.state.cosmetics[id] || Shop.state.cosmetic === id;
+}
+
+function shopStars(lvl, max) {
+  if (!max) return '';
+  let out = '';
+  for (let i = 0; i < max; i++) out += (i < lvl ? '★' : '<span class="off">★</span>');
+  return out;
+}
+
+function shotShopCard(tab, it) {
+  const st = shopItemState(tab, it);
+  const carried = Shop.ensure() && Shop.state.inventory.length;
+  const stars = tab === 'consumables'
+    ? '<div class="sc-stars"><span class="off">HELD ' + (st.held | 0) + ' · SATCHEL ' + carried + '/' + CONSUMABLE_SLOTS + '</span></div>'
+    : '<div class="sc-stars">' + shopStars(st.level, st.max) + '</div>';
+  return '<div class="shop-card' + (st.full ? ' maxed' : '') + (st.level > 0 ? ' owned' : '') +
+    '" data-item="' + it.id + '">' +
+    '<div class="sc-top"><div class="sc-icon">' + it.glyph + '</div>' +
+    '<div class="sc-name">' + it.name + '</div></div>' +
+    '<div class="sc-desc">' + it.desc + '</div>' + stars +
+    '<div class="sc-foot"><span class="sc-cost">' + GEM_ICON + it.cost + '</span>' +
+    '<button class="sc-buy' + (st.full ? ' maxed' : '') + '" type="button" data-buy="' + it.id + '"' +
+    (st.disabled ? ' disabled' : '') + '>' + st.label + '</button></div></div>';
+}
+
+function shotShopClassCard(it) {
+  const st = shopItemState('classes', it);
+  const cls = CLASSES.find((c) => c.id === it.id) || null;
+  const line = cls ? ('Q · ' + cls.q.name + ' · ' + cls.passive) : '';
+  return '<div class="shop-card sc-class' + (st.full ? ' maxed' : '') + '" data-item="' + it.id + '">' +
+    '<div class="sc-portrait" aria-hidden="true">' + classIconSVG(it.id) + '</div>' +
+    '<div class="sc-name">' + it.name + '</div>' +
+    '<div class="sc-desc">' + it.desc + '</div>' +
+    '<div class="sc-q">' + line + '</div>' +
+    '<div class="sc-foot"><span class="sc-cost">' + GEM_ICON + it.cost + '</span>' +
+    '<button class="sc-buy' + (st.full ? ' maxed' : '') + '" type="button" data-buy="' + it.id + '"' +
+    (st.disabled ? ' disabled' : '') + '>' + st.label + '</button></div></div>';
+}
+
+function renderShop() {
+  const tab = SHOP_TABS[shopTab] ? shopTab : 'upgrades';
+  if (!UI.shopGrid) return;
+  UI.shopGrid.innerHTML = SHOP_TABS[tab].items.map((it) =>
+    tab === 'classes' ? shotShopClassCard(it) : shotShopCard(tab, it)).join('');
+  if (UI.shopNote) UI.shopNote.textContent = SHOP_TABS[tab].note;
+  if (UI.shopGems) UI.shopGems.textContent = String(Shop.gems());
+  if (UI.shopTabs) {
+    const tabs = UI.shopTabs.querySelectorAll('[data-tab]');
+    for (let i = 0; i < tabs.length; i++) {
+      tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === tab);
+    }
+  }
+}
+
+function shopSay(text, bad) {
+  if (!UI.shopFlash) return;
+  UI.shopFlash.textContent = text;
+  UI.shopFlash.classList.toggle('bad', !!bad);
+  UI.shopFlash.classList.add('show');
+  shopFlashTimer = 2.2;
+}
+
+function shopBuy(tab, id) {
+  const list = SHOP_TABS[tab] ? SHOP_TABS[tab].items : [];
+  const it = list.find((k) => k.id === id);
+  if (!it) return false;
+  const gems = Shop.gems();
+
+  if (tab === 'upgrades') {
+    if (Shop.maxed(id)) { shopSay('Already at maximum', true); return false; }
+    if (gems < it.cost) { shopSay('Not enough gems', true); return false; }
+    if (SaveSystem.spendGems(it.cost) < 0) { shopSay('Not enough gems', true); return false; }
+    Shop.state.levels[id] = Shop.level(id) + 1;
+    Shop.save();
+    Sound.ability();
+    shopSay(it.name + ' · level ' + Shop.level(id) + '/' + it.max);
+    /* a purchase made between levels lands on the live player at once */
+    if (shopRunActive()) shopApplyLive(id);
+    renderShop();
+    return true;
+  }
+
+  if (tab === 'consumables') {
+    Shop.ensure();
+    if (Shop.state.inventory.length >= CONSUMABLE_SLOTS) {
+      shopSay('Satchel full — use one first', true);
+      return false;
+    }
+    if (gems < it.cost) { shopSay('Not enough gems', true); return false; }
+    if (SaveSystem.spendGems(it.cost) < 0) { shopSay('Not enough gems', true); return false; }
+    Shop.state.inventory.push(id);
+    Shop.save();
+    Sound.gem();
+    shopSay(it.name + ' stowed · ' + Shop.state.inventory.length + '/' + CONSUMABLE_SLOTS);
+    syncConsumableHud();
+    renderShop();
+    return true;
+  }
+
+  if (tab === 'cosmetics') {
+    if (shopCosmeticOwned(id)) {
+      /* EQUIP simply replaces the current look */
+      Shop.state.cosmetic = id;
+      Shop.save();
+      if (game.player) applyCosmeticToPlayer(game.player);
+      Sound.ability();
+      shopSay(it.name + ' equipped');
+      renderShop();
+      return true;
+    }
+    if (gems < it.cost) { shopSay('Not enough gems', true); return false; }
+    if (SaveSystem.spendGems(it.cost) < 0) { shopSay('Not enough gems', true); return false; }
+    Shop.state.cosmetics[id] = true;
+    Shop.state.cosmetic = id;
+    Shop.save();
+    if (game.player) applyCosmeticToPlayer(game.player);
+    Sound.ability();
+    shopSay(it.name + ' bought and equipped');
+    renderShop();
+    return true;
+  }
+
+  if (tab === 'classes') {
+    if (Shop.classOwned(id)) { shopSay('Already unlocked', true); return false; }
+    if (gems < it.cost) { shopSay('Not enough gems', true); return false; }
+    if (SaveSystem.spendGems(it.cost) < 0) { shopSay('Not enough gems', true); return false; }
+    Shop.state.classes[id] = true;
+    Shop.save();
+    Sound.ability();
+    shopSay(it.name + ' unlocked · pick them on the class screen');
+    renderShop();
+    return true;
+  }
+  return false;
+}
+
+/* buying mid-run takes effect immediately, not at the next zone */
+function shopApplyLive(id) {
+  const p = game.player;
+  if (!p) return;
+  if (id === 'armor') { p.maxHp += 1; p.hp = Math.min(p.maxHp, p.hp + 1); }
+  else if (id === 'targeting') p.damage *= 1.10;
+  else if (id === 'thruster') p.speed *= 1.08;
+  else if (id === 'magazine') { if (p.fireRate > 0) p.fireRate /= 1.15; }
+  else if (id === 'processor') game.shopGemMult = 1 + 0.25 * shopLevel('processor');
+  else if (id === 'cooldown') game.shopCdScale = Math.pow(0.90, shopLevel('cooldown'));
+  else if (id === 'critical') game.shopCrit = 0.10 * shopLevel('critical');
+  else if (id === 'ironwill') game.shopIronWill = true;
+  else if (id === 'overdrive') { game.abilities.overdrive = true; syncAbilityHud(); }
+  updateHealthOrbs();
+}
+
+function useConsumable(id) {
+  const p = game.player;
+  if (!p) return;
+  if (id === 'medkit') {
+    p.hp = Math.min(p.maxHp, p.hp + 1);
+    updateHealthOrbs();
+    addText(p.x, p.y - 40, '+1 HEALTH', '#6ee7b7');
+    Sound.ability();
+  } else if (id === 'charge') {
+    game.qCd = 0; game.novaCd = 0; game.turretCd = 0;
+    game.overchargeCd = 0; game.bombCd = 0; game.overdriveCd = 0;
+    p.dashCd = 0;
+    addText(p.x, p.y - 40, 'ALL ABILITIES READY', '#a5f3fc');
+    Sound.ability();
+  } else if (id === 'aegis') {
+    p.shield = (p.shield | 0) + 1;
+    addText(p.x, p.y - 40, '+1 SHIELD', '#facc15');
+    Sound.ability();
+  }
+  shopSay('Supply used');
+}
+
+function openShop(from) {
+  Shop.ensure();
+  refreshSaveUi();
+  const layer = (from && SCREENS[from]) ? from : (currentScreen || 'mainMenu');
+  /* what we come back to: the screen state the shop was opened from */
+  const back = SCREENS[layer].state;
+  shopReturn = { screen: back, layer: layer };
+  game.mouse.down = false;
+  renderShop();
+  showScreen('shopOverlay');
+}
+
+function closeShop() {
+  const back = shopReturn.screen || 'menu';
+  const layer = SCREENS[shopReturn.layer] ? shopReturn.layer : 'mainMenu';
+  showScreen(layer, back);
+  /* a class bought while browsing is unlocked the moment he steps back */
+  if (back === 'class') drawClassCards();
+  /* only bank the run if there really is one open behind the shop */
+  if (back === 'playing' || back === 'transition' || back === 'upgrade' ||
+      back === 'universe' || back === 'universeIntro') {
+    SaveSystem.save('shop');
+  }
+  renderShop();
+}
+
+function shopTabSet(tab) {
+  if (!SHOP_TABS[tab]) return;
+  shopTab = tab;
+  renderShop();
 }
 
 /* --------------------------- continue / settings --------------------------- */
@@ -6565,11 +8336,14 @@ function onResetSaveClick() {
     game.gems = 0;
     game.maxZone = 0;
     game.abilities = { dash: false, nova: false, turret: false, overcharge: false, bomb: false };
-    game.bossesDefeated = [false, false, false, false, false];
+    game.bossesDefeated = new Array(ZONES.length).fill(false);
+    /* the shop is progress too: a full reset hands back an empty depot */
+    try { window.localStorage.removeItem(SHOP_KEY); } catch (err) { /* ignore */ }
+    Shop.load();
     syncAbilityHud();
     if (game.screen === 'zones') drawZoneCards();
     disarmResetSave();
-    if (UI.spNote) UI.spNote.textContent = 'Save data cleared. A new run starts from Zone 1.';
+    if (UI.spNote) UI.spNote.textContent = 'Save data cleared — run, gems and every shop purchase wiped.';
     refreshSaveUi();
     return;
   }
@@ -6578,7 +8352,7 @@ function onResetSaveClick() {
     UI.btnResetSave.classList.add('armed');
     UI.btnResetSave.textContent = 'Confirm reset?';
   }
-  if (UI.spNote) UI.spNote.textContent = 'This wipes the saved run, best score and lifetime gems. Tap again to confirm.';
+  if (UI.spNote) UI.spNote.textContent = 'This wipes the saved run, best score, gem bank and shop. Tap again to confirm.';
 }
 
 /* ------------------------------ speedrun clock ------------------------------
@@ -6814,8 +8588,7 @@ function showZoneSelect() {
   /* land on the universe Rael has actually reached */
   game.uiUniverse = Math.floor(clamp(game.maxZone | 0, 0, ZONES.length - 1) / LEVELS_PER_UNIVERSE);
   drawZoneCards();
-  Screens.show('zoneScreen');
-  game.screen = 'zones';
+  showScreen('zoneSelect');
   game.menuTime = 0;
   /* start the strip on the frontier so the newest level is in view */
   const frontier = clamp(game.maxZone | 0, 0, ZONES.length - 1) -
@@ -6854,8 +8627,7 @@ function openClassScreen(zoneIndex) {
     if (saved && UI.skipClassName) UI.skipClassName.textContent = saved.name;
     UI.btnClassSkip.classList.toggle('show', !!saved && !pendingChangeClass);
   }
-  Screens.show('classScreen');
-  game.screen = 'class';
+  showScreen('classSelect');
   game.menuTime = 0;
   drawClassCards();
   updateClassHint();
@@ -6866,8 +8638,7 @@ function backToMenu() {
   /* backing out of the zone select abandons the mission: the clock rewinds and
      waits for the next BEGIN MISSION */
   RunClock.reset();
-  Screens.show('menu');
-  game.screen = 'menu';
+  showScreen('mainMenu');
   refreshSaveUi();
 }
 
@@ -6891,9 +8662,32 @@ function updateClassHint() {
 
 function drawClassCards() {
   for (let i = 0; i < UI.classIcons.length; i++) {
-    drawClassIcon(UI.classIcons[i], CLASSES[i].id, 184);
+    paintClassIcon(UI.classIcons[i], CLASSES[i].id);
   }
-  drawClassIcon(UI.badgeIcon, getClass().id, 52);
+  paintClassIcon(UI.badgeIcon, getClass().id);
+  syncClassCardLocks();
+}
+
+/* an unowned class wears its gem price and drops the shine */
+function syncClassCardLocks() {
+  for (let i = 0; i < UI.classCards.length; i++) {
+    const card = UI.classCards[i];
+    const cls = CLASSES[i];
+    if (!card || !cls) continue;
+    const locked = !classUnlocked(cls.id);
+    if (card.classList) card.classList.toggle('locked', locked);
+    if (card.setAttribute) {
+      card.setAttribute('aria-disabled', locked ? 'true' : 'false');
+      card.setAttribute('title', locked ? cls.name + ' — unlock it in the shop for ' + cls.shop + ' gems' : cls.name);
+    }
+  }
+}
+
+/* clicking a locked card takes him straight to the class shelf */
+function openShopForClass() {
+  Sound.ensure();
+  shopTab = 'classes';
+  openShop('classSelect');
 }
 
 /* replay a saved upgrade map onto a fresh player, rank by rank */
@@ -6954,8 +8748,8 @@ function startRun(classId, zoneIndex, opts) {
   /* freshPlayer:false — resetRun() already built this player, and rebuilding it
      inside loadZone would throw away the carried upgrades */
   loadZone(zone, { freshPlayer: false });
-  game.screen = 'playing';
-  Screens.show('hud');
+  applyShopUpgrades();       /* permanent shop levels, stamped on at run start */
+  showScreen('game');
   game.menuTime = 0;
   updateObjective();
   updateHealthOrbs();
@@ -6978,7 +8772,7 @@ function endRun() {
   UI.goScore.textContent = String(Math.floor(game.score));
   UI.goGems.textContent = String(game.gems);
   UI.goBest.textContent = 'Best score ' + Math.max(game.best, Math.floor(game.score));
-  Screens.show('gameOver');
+  showScreen('gameOver');
 }
 
 const TRUE_ENDING =
@@ -7004,10 +8798,10 @@ function showVictory() {
   if (UI.vicBestTime) {
     const showBest = !time.record && time.best > 0;
     UI.vicBestTime.textContent = 'Best time ' + RunClock.format(time.best);
-    UI.vicBestTime.style.display = showBest ? 'block' : 'none';
+    UI.vicBestTime.classList.toggle('is-hidden', !showBest);
   }
 
-  Screens.show('victory');
+  showScreen('victory');
   Sound.portal();
 }
 
@@ -7028,7 +8822,7 @@ function retryZone() {
   pendingChangeClass = false;
   game.screen = 'playing';
   loadZone(game.zoneIndex);
-  Screens.show('hud');
+  showScreen('game');
   SaveSystem.save('retry');
 }
 
@@ -7074,6 +8868,10 @@ function updateHud() {
   if (hasAbility('turret')) setRing(UI.abilities.turret, 1 - game.turretCd / (25 * cdScale()));
   if (hasAbility('overcharge')) setRing(UI.abilities.overcharge, 1 - game.overchargeCd / (30 * cdScale()));
   if (hasAbility('bomb')) setRing(UI.abilities.bomb, 1 - game.bombCd / (18 * cdScale()));
+  if (hasAbility('overdrive')) {
+    setRing(UI.abilities.overdrive, 1 - game.overdriveCd / (OVERDRIVE_CD * cdScale()));
+    UI.abilities.overdrive.classList.toggle('active', game.overdriveTimer > 0);
+  }
 
   /* seconds left on the long cooldowns, ticking on the icon */
   UI.abilities.q.querySelector('.cd').textContent =
@@ -7093,30 +8891,63 @@ function updateHud() {
 
 /* ------------------------------ buttons ------------------------------------ */
 document.getElementById('btnBegin').addEventListener('click', beginMission);
-document.getElementById('btnNextUniverse').addEventListener('click', () => {
+document.getElementById('btnShop').addEventListener('click', () => openShop('mainMenu'));
+document.getElementById('btnVisitShop').addEventListener('click', () => openShop('levelTransition'));
+document.getElementById('btnShopClose').addEventListener('click', closeShop);
+if (UI.shopTabs) {
+  UI.shopTabs.addEventListener('click', (e) => {
+    const btn = e.target && e.target.closest ? e.target.closest('[data-tab]') : null;
+    if (btn) shopTabSet(btn.getAttribute('data-tab'));
+  });
+}
+if (UI.shopGrid) {
+  UI.shopGrid.addEventListener('click', (e) => {
+    const btn = e.target && e.target.closest ? e.target.closest('[data-buy]') : null;
+    if (btn && !btn.disabled) { shopBuy(shopTab, btn.getAttribute('data-buy')); return; }
+    /* a paint job that is already owned is worn by clicking anywhere on its card */
+    if (shopTab !== 'cosmetics') return;
+    const card = e.target && e.target.closest ? e.target.closest('[data-item]') : null;
+    if (!card) return;
+    const id = card.getAttribute('data-item');
+    if (shopCosmeticOwned(id)) shopBuy('cosmetics', id);
+  });
+}
+UI.btnNextUniverse.addEventListener('click', () => {
   showUniverseIntro(pendingUniverse);
 });
-document.getElementById('btnEnterUniverse').addEventListener('click', enterUniverse);
+UI.btnEnterUniverse.addEventListener('click', enterUniverse);
 document.getElementById('btnHowTo').addEventListener('click', () => {
-  UI.howto.classList.toggle('show');
+  showScreen('howToPlay');
+});
+document.getElementById('btnHowToBack').addEventListener('click', () => {
+  showScreen('mainMenu');
 });
 document.getElementById('btnContinue').addEventListener('click', () => {
   loadZone(game.pendingZone);
-  game.screen = 'playing';
-  Screens.show('hud');
+  showScreen('game');
   SaveSystem.save('zone');
 });
 for (let i = 0; i < UI.classCards.length; i++) {
   const card = UI.classCards[i];
   const pick = () => {
     if (game.screen !== 'class') return;
+    const cls = CLASSES[i];
+    if (!cls) return;
+    if (!classUnlocked(cls.id)) { openShopForClass(); return; }
     const swap = pendingChangeClass;
     pendingChangeClass = false;
-    startRun(CLASSES[i].id, pendingStartZone, swap ? { changeClass: true } : { carryUpgrades: true });
+    startRun(cls.id, pendingStartZone, swap ? { changeClass: true } : { carryUpgrades: true });
   };
   card.addEventListener('click', pick);
   card.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); }
+  });
+}
+if (UI.cardShopTile) {
+  const openTile = () => { if (game.screen === 'class') openShopForClass(); };
+  UI.cardShopTile.addEventListener('click', openTile);
+  UI.cardShopTile.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTile(); }
   });
 }
 document.getElementById('btnRetry').addEventListener('click', retryZone);
@@ -8588,6 +10419,9 @@ function drawRaelBody(p, bob, flash, mirror) {
   const t = game.time;
   const g = soldierGlow(p);
   const F = (v) => (flash || v);
+  /* the worn paint job swaps the whole plate palette */
+  const P = raelPalette(p);
+  const skinA = (p.cosmeticAlpha || 1);
 
   /* legs alternate left-right every 0.15s (p.walk runs at 12 rad/s, so 1.75x
      puts one foot forward every 0.15s) */
@@ -8603,6 +10437,7 @@ function drawRaelBody(p, bob, flash, mirror) {
   ctx.translate(p.x + sway, p.y + (bob || 0) + idle);
   /* mirror about the body itself, so the turn squash stays centred on him */
   ctx.scale(mirror === undefined ? 1 : mirror, 1);
+  if (skinA < 1) ctx.globalAlpha = skinA;
 
   /* ---- boot glow pooling on the floor ---- */
   for (let i = 0; i < 2; i++) {
@@ -8618,14 +10453,14 @@ function drawRaelBody(p, bob, flash, mirror) {
   }
 
   /* ---- legs: two short dark rectangles with a gap ---- */
-  block(-8.4, 4 + liftL * 0.4, 7, 12, 2.2, F(RAEL.leg));
-  block(1.4, 4 + liftR * 0.4, 7, 12, 2.2, F(RAEL.leg));
+  block(-8.4, 4 + liftL * 0.4, 7, 12, 2.2, F(P.leg));
+  block(1.4, 4 + liftR * 0.4, 7, 12, 2.2, F(P.leg));
 
   /* ---- boots, wider than the legs ---- */
   for (let i = 0; i < 2; i++) {
     const lift = i === 0 ? liftL : liftR;
     const bx = i === 0 ? -10.2 : 0.6;
-    block(bx, 13.4 + lift, 9.6, 8.6, 2.8, F(RAEL.boot));
+    block(bx, 13.4 + lift, 9.6, 8.6, 2.8, F(P.boot));
     /* the electric strip along the sole */
     ctx.fillStyle = F(g.glow);
     ctx.globalAlpha = flash ? 0.5 : 0.9;
@@ -8636,9 +10471,9 @@ function drawRaelBody(p, bob, flash, mirror) {
 
   /* ---- torso: wide barrel chest in dark navy ---- */
   const chest = ctx.createLinearGradient(0, -8, 0, 7);
-  chest.addColorStop(0, F(RAEL.navyLit));
-  chest.addColorStop(0.55, F(RAEL.navy));
-  chest.addColorStop(1, F(RAEL.navyDark));
+  chest.addColorStop(0, F(P.navyLit));
+  chest.addColorStop(0.55, F(P.navy));
+  chest.addColorStop(1, F(P.navyDark));
   ctx.fillStyle = F(chest);
   roundRect(ctx, -13, -8, 26, 15, 4.5);
   ctx.fill();
@@ -8651,8 +10486,8 @@ function drawRaelBody(p, bob, flash, mirror) {
   for (let i = 0; i < 2; i++) {
     const side = i === 0 ? -1 : 1;
     const px = side > 0 ? 10.6 : -18.6;
-    block(px, -7.4, 8, 8.2, 2.2, F(RAEL.silver));
-    ctx.strokeStyle = F(RAEL.silverDark);
+    block(px, -7.4, 8, 8.2, 2.2, F(P.silver));
+    ctx.strokeStyle = F(P.silverDark);
     ctx.lineWidth = 1;
     roundRect(ctx, px + 0.5, -6.9, 7, 7.2, 2);
     ctx.stroke();
@@ -8675,15 +10510,34 @@ function drawRaelBody(p, bob, flash, mirror) {
   ctx.fill();
   ctx.restore();
 
+  /* Void Walker: purple energy cracks running through the black plate */
+  if (g.cracks) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(168,85,247,0.9)';
+    ctx.shadowColor = '#a855f7';
+    ctx.shadowBlur = 8;
+    ctx.lineWidth = 1.1;
+    for (let i = 0; i < 3; i++) {
+      const y0 = -6 + i * 4.4;
+      ctx.beginPath();
+      ctx.moveTo(-10 + i * 2, y0);
+      ctx.lineTo(-3 + i * 1.5, y0 + 2.2);
+      ctx.lineTo(2 + i * 1.2, y0 - 1.4);
+      ctx.lineTo(11 - i * 1.6, y0 + 1.8);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   /* ---- head: large rounded helmet ---- */
-  ctx.fillStyle = F(RAEL.helmet);
+  ctx.fillStyle = F(P.helmet);
   roundRect(ctx, -9, -22, 18, 14.5, 5.5);
   ctx.fill();
   /* lit crown + dark jaw give the helmet its roundness */
-  ctx.fillStyle = F(RAEL.helmetLit);
+  ctx.fillStyle = F(P.helmetLit);
   roundRect(ctx, -7.4, -21, 14.8, 5, 2.6);
   ctx.fill();
-  ctx.fillStyle = F(RAEL.helmetDark);
+  ctx.fillStyle = F(P.helmetDark);
   roundRect(ctx, -7.6, -11.2, 15.2, 3.2, 1.5);
   ctx.fill();
   ctx.strokeStyle = 'rgba(9,14,22,0.9)';
@@ -8705,7 +10559,7 @@ function drawRaelBody(p, bob, flash, mirror) {
   ctx.restore();
 
   /* ---- antenna on the top right ---- */
-  ctx.fillStyle = F(RAEL.silverDark);
+  ctx.fillStyle = F(P.silverDark);
   ctx.fillRect(6.2, -28, 1.7, 6.4);
   ctx.fillStyle = F(g.visor);
   ctx.beginPath();
@@ -8724,11 +10578,13 @@ function drawRaelWeapon(p, bob, flash) {
   const g = soldierGlow(p);
   const F = (v) => (flash || v);
   if (cls.weapon === 'blade') return;      /* the longsword is drawn separately */
+  if (cls.weapon === 'axes') return;       /* the twin axes are drawn separately */
 
   const idle = p.moving ? 0 : Math.sin(t * (TAU / 1.2)) * 1;
   const sx = Math.cos(p.angle) >= 0 ? 1 : -1;
 
   ctx.save();
+  if (p.cosmeticAlpha && p.cosmeticAlpha < 1) ctx.globalAlpha = p.cosmeticAlpha;
   ctx.translate(p.x + sx * 3, p.y + (bob || 0) + idle - 3);
   ctx.rotate(p.angle);
   if (Math.cos(p.angle) < 0) ctx.scale(1, -1);
@@ -8799,6 +10655,40 @@ function drawRaelWeapon(p, bob, flash) {
     ctx.fill();
     roundRect(ctx, 5.5, 2.4, 3.4, 5, 1);
     ctx.fill();
+  } else if (cls.weapon === 'daggers') {
+    /* one short shadow blade held low, its edge catching the visor light */
+    ctx.translate(3, 1.4);
+    ctx.rotate(-0.18);
+    ctx.fillStyle = F('#2b1b45');
+    ctx.beginPath();
+    ctx.moveTo(16, 0); ctx.lineTo(3, -3.6); ctx.lineTo(-5, -2); ctx.lineTo(-5, 2); ctx.lineTo(3, 3.6);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(196,181,253,0.95)';
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(14, 0.2); ctx.lineTo(1, 0.2);
+    ctx.stroke();
+    ctx.fillStyle = F('#1b1229');
+    roundRect(ctx, -8, -2.6, 5, 5.2, 1.6);
+    ctx.fill();
+  } else if (cls.weapon === 'disc') {
+    /* the launcher cradle with a live energy disc spinning in it */
+    ctx.rotate(-0.2);
+    ctx.fillStyle = F('#1f3b34');
+    roundRect(ctx, -1, -3.4, 12, 6.8, 2.4);
+    ctx.fill();
+    ctx.save();
+    ctx.translate(16, 0);
+    ctx.rotate(t * 9);
+    ctx.strokeStyle = F('#6ee7b7');
+    ctx.lineWidth = 2.4;
+    ctx.shadowColor = '#34d399';
+    ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(0, 0, 5.4, 0, TAU); ctx.stroke();
+    ctx.fillStyle = F('#d1fae5');
+    ctx.beginPath(); ctx.arc(0, 0, 1.8, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.shadowBlur = 0;
   } else {
     /* the arcane focus: a purple orb riding above the gauntlet */
     const lift = Math.sin(t * 2.2) * 2;
@@ -11477,9 +13367,48 @@ function drawBoss() {
    With one orb left every glow turns a flickering red. */
 const SOLDIER = { w: 40, h: 44, scale: 1, feet: 22 };
 
+function hexTriplet(hex) {
+  const h = String(hex).replace('#', '');
+  const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16);
+  return ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255);
+}
+
+/* the plate palette for the worn paint job (falls back to the standard RAEL) */
+function raelPalette(p) {
+  if (!p || !p.cosmetic) return RAEL;
+  const id = p.cosmetic;
+  if (p._skinId === id && p._skinPlate) return p._skinPlate;
+  const skin = Shop.cosmeticSkin();
+  p._skinId = id;
+  p._skinPlate = (skin && skin.armor) ? skin.armor : RAEL;
+  return p._skinPlate;
+}
+
+function raelSkinOf(p) {
+  if (!p || !p.cosmetic) return null;
+  return Shop.cosmeticSkin();
+}
+
 /* one place that decides what colour the trooper's glow is right now */
 function soldierGlow(p) {
   const low = p.hp <= 1 && p.hp > 0;
+  /* a shop paint job recolours the visor, the aura and the dash trail */
+  const skin = low ? null : raelSkinOf(p);
+  if (skin) {
+    return {
+      low: false, flick: 1, cosmetic: true, skin: skin,
+      rgb: hexTriplet(skin.glow),
+      glow: skin.glow,
+      visor: skin.visor,
+      visorHot: 'rgba(255,255,255,0.97)',
+      visorGlow: hexToRgba(skin.visor, 0.95),
+      trail: skin.trail || skin.glow,
+      wisp: skin.wisp || skin.glow,
+      flames: !!skin.flames,
+      aura: !!skin.aura,
+      cracks: !!skin.cracks
+    };
+  }
   const t = game.time;
   const flick = low
     ? 0.5 + 0.5 * Math.abs(Math.sin(t * 8.5)) * (Math.sin(t * 23.7) > -0.55 ? 1 : 0.2)
@@ -11566,6 +13495,18 @@ function drawThrusters(p, g, bob, dir) {
     const len = (17 + jitter * 9) * (g.low ? 1.1 : 1);
     const wid = 3 + jitter * 1.1;
     drawFlame(p.x + dir * side * bx, p.y + bob + by, ang, len, wid, g, 0.55 + jitter * 0.22);
+  }
+}
+
+/* Inferno Knight: a live flame licking off both boots, even standing still */
+function drawBootFlames(p, bob, dir, g) {
+  const t = game.time;
+  for (let i = 0; i < 2; i++) {
+    const side = i === 0 ? -1 : 1;
+    const flick = Math.sin(t * 17 + i * 2.3) * 0.5 + 0.5;
+    drawFlame(p.x + dir * side * 6.4, p.y + (bob || 0) + 22.4,
+      Math.PI / 2 + Math.sin(t * 9 + i) * 0.18,
+      11 + flick * 9, 2.4 + flick * 1.4, g, 0.5 + flick * 0.3);
   }
 }
 
@@ -11696,6 +13637,7 @@ function drawSwordSwoosh() {
 
   for (let i = 0; i < game.swings.length; i++) {
     const sw = game.swings[i];
+    if (sw.kind === 'axe') continue;         /* the axes paint their own ribbon */
     const k = sw.life / sw.maxLife;
     /* hold the blade white-hot, then let it go quickly at the end */
     const fade = Math.min(1, (1 - k) * 1.9);
@@ -11782,6 +13724,39 @@ function drawSwordSwoosh() {
 
     ctx.restore();
   }
+}
+
+/* Decoy Drone: a cyan hologram of Rael that every enemy would rather chase */
+function drawDecoy() {
+  const d = game.decoy;
+  if (!d) return;
+  const fade = clamp(d.t / 0.6, 0, 1);
+  const bob = Math.sin(game.time * 6) * 2.2;
+  ctx.save();
+  ctx.globalAlpha = fade * (0.5 + 0.2 * Math.sin(game.time * 12));
+  ctx.shadowColor = '#22d3ee';
+  ctx.shadowBlur = 18;
+  ctx.strokeStyle = 'rgba(103,232,249,0.85)';
+  ctx.lineWidth = 1.6;
+  /* the holo body: the same 40x44 silhouette, hollow */
+  roundRect(ctx, d.x - 12, d.y - 22 + bob, 24, 32, 7);
+  ctx.stroke();
+  roundRect(ctx, d.x - 9, d.y - 22 + bob, 18, 9, 4.5);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(103,232,249,0.18)';
+  roundRect(ctx, d.x - 12, d.y - 22 + bob, 24, 32, 7);
+  ctx.fill();
+  /* rotating projector ring at the emitter */
+  ctx.globalAlpha = fade * 0.7;
+  ctx.beginPath();
+  ctx.ellipse(d.x, d.y + 16, 16, 6, 0, 0, TAU);
+  ctx.stroke();
+  ctx.setLineDash([5, 5]);
+  ctx.lineDashOffset = -game.time * 40;
+  ctx.beginPath();
+  ctx.ellipse(d.x, d.y + 16, 22, 8, 0, 0, TAU);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawPlayer() {
@@ -11872,8 +13847,25 @@ function drawPlayer() {
     ctx.restore();
   }
 
+  /* Damage Shard: a red battle halo for as long as the shard burns */
+  if (game.damageBuffT > 0) {
+    const k = 0.55 + 0.45 * Math.sin(game.time * 10);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,80,80,' + (0.4 + 0.3 * k).toFixed(3) + ')';
+    ctx.lineWidth = 2.6;
+    ctx.shadowColor = 'rgba(255,70,70,0.95)';
+    ctx.shadowBlur = 18;
+    ctx.setLineDash([9, 6]);
+    ctx.lineDashOffset = game.time * 46;
+    ctx.beginPath(); ctx.arc(p.x, p.y + 4, p.r + 26, 0, TAU); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 0.16 + 0.12 * k;
+    ctx.fillStyle = '#ff5555';
+    ctx.beginPath(); ctx.arc(p.x, p.y + 4, p.r + 26, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+
   if (game.overchargeTimer > 0) {
-    /* roaring red reactor halo */
     const k = 0.55 + 0.45 * Math.sin(game.time * 12);
     ctx.save();
     ctx.strokeStyle = 'rgba(248,113,113,' + (0.45 + 0.3 * k).toFixed(3) + ')';
@@ -11895,11 +13887,11 @@ function drawPlayer() {
       ctx.globalAlpha = a * 0.30;
       ctx.translate(t.x, t.y);
       ctx.scale(t.dir, 1);
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillStyle = g.trail || '#38bdf8';
       roundRect(ctx, -10, -22, 20, 44, 8);
       ctx.fill();
       ctx.globalAlpha = a * 0.5;
-      ctx.fillStyle = '#a5f3fc';
+      ctx.fillStyle = g.wisp || '#a5f3fc';
       roundRect(ctx, -7, -17.6, 14, 5, 2.3);
       ctx.fill();
       ctx.restore();
@@ -11939,6 +13931,7 @@ function drawPlayer() {
     if (behind) drawGun();
     drawBody();
     drawThrusters(p, g, bob, dir);
+    if (g.flames) drawBootFlames(p, bob, dir, g);
     if (!behind) drawGun();
 
     /* ---- took a hit: flash red ---- */
@@ -11947,9 +13940,13 @@ function drawPlayer() {
     }
   }
 
-  if (getClass().weapon === 'blade') {
+  const weaponKind = getClass().weapon;
+  if (weaponKind === 'blade') {
     drawKnightSword(p, bob);
     drawSwordSwoosh();
+  } else if (weaponKind === 'axes') {
+    drawBerserkerAxes(p, bob);
+    drawAxeSwoosh();
   }
 }
 
@@ -13281,10 +15278,137 @@ function drawObstacles() {
 /* enemy, boss and player art lives in art-actors.js / art-player.js */
 
 /* ------------------------------ projectiles -------------------------------- */
+/* ------------------------------ class drawing ------------------------------
+   Everything the three shop classes add to the frame: the twin axes, the
+   shadow daggers, the bouncing disc, the death-mark ring and the rage aura.
+   ------------------------------------------------------------------------- */
+function drawAxe(p, ang, lift, side) {
+  ctx.save();
+  ctx.translate(p.x, p.y + lift - 3);
+  ctx.rotate(ang);
+  ctx.translate(7, side * 4.5);
+  /* haft */
+  ctx.strokeStyle = '#5b4028';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(20, 0); ctx.stroke();
+  /* energy head */
+  ctx.shadowColor = '#ff8a4c';
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = '#ffb27a';
+  ctx.beginPath();
+  ctx.moveTo(17, -2.4);
+  ctx.lineTo(29, -13);
+  ctx.lineTo(33, -2);
+  ctx.lineTo(29, 12);
+  ctx.lineTo(17, 2.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,231,184,0.95)';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function drawBerserkerAxes(p, bob) {
+  const t = game.time;
+  const idle = p.moving ? 0 : Math.sin(t * (TAU / 1.2)) * 1;
+  let left = p.angle - 0.55;
+  let right = p.angle + 0.55;
+  if (p.swingT > 0) {
+    const k = 1 - p.swingT / AXE_SWING_TIME;
+    const a = lerp(p.swingFrom, p.swingTo, 1 - Math.pow(1 - k, 2.2));
+    left = a;
+    right = a;
+  }
+  drawAxe(p, left, bob + idle, -1);
+  drawAxe(p, right, bob + idle, 1);
+}
+
+function drawShadowDagger(b) {
+  const a = Math.atan2(b.vy, b.vx);
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  ctx.rotate(a);
+  ctx.shadowColor = '#a78bfa';
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = '#2b1b45';
+  ctx.beginPath();
+  ctx.moveTo(13, 0); ctx.lineTo(-1, -4.6); ctx.lineTo(-9, 0); ctx.lineTo(-1, 4.6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(196,181,253,0.95)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(11, 0); ctx.lineTo(-4, 0); ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function drawDiscs() {
+  if (!game.discs || !game.discs.length) return;
+  for (let i = 0; i < game.discs.length; i++) {
+    const d = game.discs[i];
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    ctx.rotate(d.spin);
+    ctx.shadowColor = '#34d399';
+    ctx.shadowBlur = 16;
+    ctx.strokeStyle = '#6ee7b7';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, 10, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(209,250,229,0.95)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(0, 0, 5.4, 0.3, 2.6); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, 5.4, 0.3 + Math.PI, 2.6 + Math.PI); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.shadowBlur = 0;
+}
+
+function drawClassFx() {
+  const p = game.player;
+  if (!p) return;
+  /* Death Mark: a violet reticle holds the chosen body */
+  if (p.markT > 0 && p.markTarget) {
+    const m = p.markTarget;
+    const pulse = 1 + 0.08 * Math.sin(game.time * 8);
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.rotate(game.time * 1.4);
+    ctx.strokeStyle = 'rgba(196,181,253,0.95)';
+    ctx.lineWidth = 2.2;
+    ctx.shadowColor = '#a78bfa';
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    for (let i = 0; i < 4; i++) {
+      const a0 = (i / 4) * TAU;
+      ctx.moveTo(Math.cos(a0) * (m.r + 9) * pulse, Math.sin(a0) * (m.r + 9) * pulse);
+      ctx.arc(0, 0, (m.r + 9) * pulse, a0, a0 + 0.7);
+    }
+    ctx.stroke();
+    ctx.restore();
+    ctx.shadowBlur = 0;
+  }
+  /* Rage: a hot red halo that never quite settles */
+  if (p.rageT > 0) {
+    const k = 0.45 + 0.25 * Math.sin(game.time * 12);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(p.x, p.y, 4, p.x, p.y, 46);
+    g.addColorStop(0, 'rgba(255,120,80,' + (0.55 * k + 0.2).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(255,60,20,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 46, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+}
+
 function drawBullets() {
   for (let i = 0; i < game.bullets.length; i++) {
     const b = game.bullets[i];
     if (b.kind === 'orb') { drawTimeOrb(b); continue; }
+    if (b.kind === 'dagger') { drawShadowDagger(b); continue; }
     const a = Math.atan2(b.vy, b.vx);
     const nova = b.kind === 'nova';
     const turret = b.kind === 'turret';
@@ -13930,162 +16054,6 @@ const starfield = (function () {
   }
   return { stars: layers, shoot: -1, shootAt: 3.2 };
 }());
-
-let starCtx = null;
-
-function drawMenuStarfield() {
-  const cvs = UI.menuStars;
-  if (!cvs || !cvs.getContext) return;
-  if (!starCtx) {
-    starCtx = cvs.getContext('2d');
-    if (!starCtx) return;
-  }
-  const g = starCtx;
-  const cw = cvs.width || W;
-  const ch = cvs.height || H;
-  const t = game.menuTime || 0;
-
-  /* deep space, darker at the edges */
-  const bg = g.createRadialGradient(cw * 0.5, ch * 0.42, 40, cw * 0.5, ch * 0.5, Math.hypot(cw, ch) * 0.62);
-  bg.addColorStop(0, '#0c1730');
-  bg.addColorStop(0.55, '#060b17');
-  bg.addColorStop(1, '#02030a');
-  g.fillStyle = bg;
-  g.fillRect(0, 0, cw, ch);
-
-  /* two nebula clouds drifting very slowly */
-  const clouds = [
-    { x: 0.30 + Math.sin(t * 0.05) * 0.02, y: 0.62 + Math.cos(t * 0.04) * 0.015, r: 0.42, c: 'rgba(58,92,190,0.13)' },
-    { x: 0.72 + Math.cos(t * 0.037) * 0.02, y: 0.34 + Math.sin(t * 0.045) * 0.018, r: 0.36, c: 'rgba(120,70,180,0.12)' }
-  ];
-  for (let i = 0; i < clouds.length; i++) {
-    const cl = clouds[i];
-    const rad = g.createRadialGradient(cw * cl.x, ch * cl.y, 10, cw * cl.x, ch * cl.y, ch * cl.r);
-    rad.addColorStop(0, cl.c);
-    rad.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = rad;
-    g.fillRect(0, 0, cw, ch);
-  }
-
-  /* the stars themselves: drift up, wrap, twinkle */
-  for (let i = 0; i < starfield.stars.length; i++) {
-    const st = starfield.stars[i];
-    let y = (st.y - t * st.sp) % ch;
-    if (y < 0) y += ch;
-    const tw = 0.55 + 0.45 * Math.sin(t * st.tws + st.tw);
-    const a = clamp(st.a * tw, 0, 1);
-    if (a < 0.02) continue;
-    if (st.r > 1.9) {
-      /* the brightest few get a soft halo, added on top of the sky */
-      const halo = g.createRadialGradient(st.x, y, 0, st.x, y, st.r * 5);
-      halo.addColorStop(0, 'rgba(255,255,255,' + (0.5 * a).toFixed(3) + ')');
-      halo.addColorStop(0.35, 'rgba(196,224,255,' + (0.2 * a).toFixed(3) + ')');
-      halo.addColorStop(1, 'rgba(196,224,255,0)');
-      g.globalAlpha = 1;
-      g.globalCompositeOperation = 'lighter';
-      g.fillStyle = halo;
-      g.beginPath();
-      g.arc(st.x, y, st.r * 5, 0, TAU);
-      g.fill();
-      g.globalCompositeOperation = 'source-over';
-    }
-    g.globalAlpha = a;
-    g.fillStyle = st.tint;
-    g.beginPath();
-    g.arc(st.x, y, st.r, 0, TAU);
-    g.fill();
-  }
-  g.globalAlpha = 1;
-
-  /* a gentle vignette keeps the title and buttons readable */
-  const vg = g.createRadialGradient(cw * 0.5, ch * 0.5, ch * 0.28, cw * 0.5, ch * 0.5, ch * 0.95);
-  vg.addColorStop(0, 'rgba(0,0,0,0)');
-  vg.addColorStop(1, 'rgba(0,0,0,0.55)');
-  g.fillStyle = vg;
-  g.fillRect(0, 0, cw, ch);
-
-  /* a shooting star every few seconds */
-  starfield.shootAt -= 1 / 60;
-  if (starfield.shoot < 0 && starfield.shootAt <= 0) {
-    starfield.shoot = 0;
-    starfield.shootAt = 5.5 + Math.random() * 5;
-    starfield.shootX = 120 + Math.random() * (cw - 340);
-    starfield.shootY = 60 + Math.random() * (ch * 0.45);
-    starfield.shootA = 0.45 + Math.random() * 0.35;
-  }
-  if (starfield.shoot >= 0) {
-    starfield.shoot += 1 / 60;
-    const k = starfield.shoot / 0.9;
-    if (k >= 1) {
-      starfield.shoot = -1;
-    } else {
-      const hx = starfield.shootX + k * 260;
-      const hy = starfield.shootY + k * 150;
-      const tx = hx - Math.cos(starfield.shootA) * 120;
-      const ty = hy - Math.sin(starfield.shootA) * 120;
-      const fade = Math.sin(k * Math.PI);
-      const lg = g.createLinearGradient(tx, ty, hx, hy);
-      lg.addColorStop(0, 'rgba(180,220,255,0)');
-      lg.addColorStop(1, 'rgba(226,240,255,' + (0.85 * fade).toFixed(3) + ')');
-      g.strokeStyle = lg;
-      g.lineWidth = 2;
-      g.lineCap = 'round';
-      g.beginPath();
-      g.moveTo(tx, ty);
-      g.lineTo(hx, hy);
-      g.stroke();
-      g.globalAlpha = fade;
-      g.fillStyle = '#ffffff';
-      g.beginPath();
-      g.arc(hx, hy, 1.8, 0, TAU);
-      g.fill();
-      g.globalAlpha = 1;
-    }
-  }
-}
-
-/* ------------------------------ menu backdrop ------------------------------ */
-const menuStars = (function () {
-  const arr = [];
-  const rng = makeRng(777);
-  for (let i = 0; i < 190; i++) {
-    arr.push({
-      x: rng() * W, y: rng() * H,
-      r: rng() > 0.9 ? 2 : 1,
-      a: 0.2 + rng() * 0.7,
-      sp: 3 + rng() * 14,
-      tw: rng() * TAU
-    });
-  }
-  return arr;
-})();
-
-function drawMenuBackdrop() {
-  const g = ctx.createRadialGradient(W * 0.5, H * 0.42, 60, W * 0.5, H * 0.5, Math.hypot(W, H) * 0.7);
-  g.addColorStop(0, '#0d1a30');
-  g.addColorStop(0.55, '#070c18');
-  g.addColorStop(1, '#020308');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
-
-  /* drifting nebula */
-  const neb = ctx.createRadialGradient(W * 0.32, H * 0.62, 20, W * 0.32, H * 0.62, 420);
-  neb.addColorStop(0, 'rgba(56,89,190,0.10)');
-  neb.addColorStop(1, 'rgba(56,89,190,0)');
-  ctx.fillStyle = neb;
-  ctx.fillRect(0, 0, W, H);
-
-  const t = game.menuTime;
-  for (let i = 0; i < menuStars.length; i++) {
-    const s = menuStars[i];
-    const y = (s.y + t * s.sp) % H;
-    const tw = 0.55 + 0.45 * Math.sin(t * 1.6 + s.tw);
-    ctx.globalAlpha = clamp(s.a * tw, 0, 1);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(s.x, y, s.r, s.r);
-  }
-  ctx.globalAlpha = 1;
-}
 
 /* ------------------------------ minimap ------------------------------------ */
 let mmFog = null;
@@ -15161,9 +17129,9 @@ function drawMinimapPath(k) {
 function render() {
   ctx.clearRect(0, 0, W, H);
 
+  /* menu, class and zone screens are opaque HTML layers — the loop is paused
+     while one of them is open, so this is only a safety net */
   if (game.screen === 'menu' || game.screen === 'class' || game.screen === 'zones') {
-    drawMenuBackdrop();
-    if (game.screen === 'menu') drawMenuStarfield();
     return;
   }
 
@@ -15205,9 +17173,12 @@ function render() {
   drawTurrets();
   drawBombs();
   drawBullets();
+  drawDiscs();
   drawBeams();
   drawParticles();
   drawPlayer();
+  drawDecoy();
+  drawClassFx();
 
   /* collision boxes on top of everything in the world, still in world space */
   drawBreakableHitboxes(zoom);
@@ -15220,8 +17191,37 @@ function render() {
   drawMinimap();
 }
 
-/* ------------------------------ main loop ---------------------------------- */
+/* ------------------------------ main loop ----------------------------------
+   The canvas only ever runs while the HUD is the active layer. Every other
+   screen is an HTML overlay and parks the loop outright — no update, no
+   render, no requestAnimationFrame — so nothing in the world can move (or
+   even be repainted) behind a menu, a card, the shop or a result screen.
+   ------------------------------------------------------------------------- */
 let lastT = 0;
+let rafId = 0;
+let loopPaused = true;          /* the title screen owns the screen at boot */
+
+function startLoop() {
+  /* lift the flag FIRST: a frame left queued by a pause must never be able to
+     swallow the resume and park the world for good */
+  loopPaused = false;
+  lastT = 0;                    /* no dt spike when the world wakes up */
+  if (rafId) return;            /* one queued frame is enough */
+  rafId = requestAnimationFrame(frame);
+}
+
+function stopLoop() {
+  loopPaused = true;
+  if (rafId && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(rafId);
+  rafId = 0;
+  lastT = 0;
+}
+
+/* the screen manager calls this on every hand-over: only the game screen runs */
+function setLoopPausedFor(screenName) {
+  if (screenName === 'game') startLoop();
+  else stopLoop();
+}
 
 let screenGuardTimer = 0;
 
@@ -15233,7 +17233,7 @@ function update(dt) {
   screenGuardTimer += dt;
   if (screenGuardTimer >= 0.25) {
     screenGuardTimer = 0;
-    Screens.enforce();
+    enforceScreen();
   }
 
   if (game.screen === 'menu' || game.screen === 'class' || game.screen === 'zones') return;
@@ -15257,6 +17257,7 @@ function update(dt) {
   game.ambientClock += dt;
 
   updatePlayer(sdt);
+  updateClassKit(sdt);
   updateCamera(sdt);
   updateEnemies(sdt);
   updateTurrets(sdt);
@@ -15264,6 +17265,7 @@ function update(dt) {
   updateRift(sdt);
   updateBeams(sdt);
   updateBullets(sdt);
+  updateDiscs(sdt);
   updateEnemyBullets(sdt);
   updateGems(sdt);
   updateBreakables(sdt);
@@ -15287,14 +17289,27 @@ function update(dt) {
 }
 
 function frame(t) {
+  if (loopPaused) { rafId = 0; return; }
   if (!lastT) lastT = t;
   let dt = (t - lastT) / 1000;
   lastT = t;
   if (dt > 0.05) dt = 0.05;
   if (dt < 0) dt = 0;
-  update(dt);
-  render();
-  requestAnimationFrame(frame);
+  /* one bad frame must never take the game down with it: the loop keeps its
+     next frame queued no matter what happens inside this one */
+  try {
+    update(dt);
+    render();
+  } catch (err) {
+    game.frameErrors = (game.frameErrors || 0) + 1;
+    game.lastFrameError = String((err && err.stack) || err);
+    if (game.frameErrors <= 5 && typeof console !== 'undefined' && console.error) {
+      console.error('[SURVIVE] frame error', err);
+    }
+  }
+  /* a screen that opened during update() has paused the loop; never re-arm
+     behind the curtain — the resume path owns the next frame */
+  rafId = loopPaused ? 0 : requestAnimationFrame(frame);
 }
 
 /* ------------------------------ resize + boot ------------------------------ */
@@ -15308,6 +17323,11 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', resize);
+/* a tab that was hidden can come back with a throttled (or dropped) frame
+   pending; a live run always reclaims its loop on return */
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && game.screen === 'playing') startLoop();
+});
 
 (function boot() {
   /* best score + lifetime gems come from the save slot (the old bare keys are
@@ -15324,8 +17344,13 @@ window.addEventListener('orientationchange', resize);
   }
   syncAbilityUnlocks(true);      /* silent: replay anything the frontier implies */
   syncAbilityHud();
+  Shop.load();                   /* the depot reads its levels and satchel first */
+  syncConsumableHud();
   refreshSaveUi();
-  Screens.reset('menu');         /* boot lands on the title screen, only */
+  for (let i = 0; i < UI.classIcons.length; i++) {
+    paintClassIcon(UI.classIcons[i], CLASSES[i].id);   /* markup, painted once */
+  }
+  showScreen('mainMenu');        /* boot lands on the title screen, and only it */
 
   game.player = makePlayer();
   game.fog = new Uint8Array(FOG_COLS * FOG_COLS);
@@ -15337,7 +17362,6 @@ window.addEventListener('orientationchange', resize);
   if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
     document.fonts.ready.then(updateClassHint).catch(function () {});
   }
-  requestAnimationFrame(frame);
 })();
 </script>
 </body>
