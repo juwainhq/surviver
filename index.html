@@ -228,27 +228,66 @@
     position:absolute; left:50%; bottom:16px;
     transform:translateX(-50%);
     display:flex; flex-direction:row; flex-wrap:nowrap;
-    align-items:flex-end; justify-content:center;
-    gap:8px; margin:0; padding:0;
+    align-items:center; justify-content:center;
+    background:#0a0a18; background-color:rgba(10,10,24,.9);
+    border:2px solid #c9a84c; border-radius:12px;
+    padding:8px 16px; margin:0;
     z-index:26; pointer-events:none;
   }
   .ability{
-    position:relative; display:block; flex:0 0 52px;
-    width:52px; height:52px; margin:0; padding:0;
+    position:relative; display:block; flex:0 0 48px;
+    width:48px; height:48px; margin:0 4px; padding:0;
     box-sizing:border-box;
   }
   .ability .ab-btn{
-    position:relative; display:block; overflow:hidden;
-    width:52px; height:52px; margin:0; padding:0;
-    box-sizing:border-box; border-radius:4px;
-    background:linear-gradient(180deg, #121826 0%, #080b13 100%);
-    border:1px solid rgba(232,200,116,.6);
-    box-shadow:0 3px 10px rgba(0,0,0,.55), inset 0 0 12px rgba(232,200,116,.08);
+    position:relative; width:48px; height:48px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    box-sizing:border-box;
+    background:#0d0d1f;
+    border:2px solid transparent;
+    transition:border-color .18s, box-shadow .18s;
   }
-  /* the thin cooldown ring, drawn inside the square */
-  .ability svg.ab-ring{
+  /* Ready state rings and glows */
+  .ability.ready .ab-btn { border-color: var(--ability-color); box-shadow: 0 0 8px var(--ability-color); }
+  /* Cooldown state */
+  .ability.cooling .ab-btn { border-color: #333333; box-shadow: none; }
+  /* Just unlocked pulse */
+  .ability.unlocked .ab-btn { animation: pulseGold 1.5s 3; }
+  @keyframes pulseGold {
+    0% { border-color: #c9a84c; box-shadow: 0 0 0px #c9a84c; }
+    50% { border-color: #fff; box-shadow: 0 0 12px #c9a84c; }
+    100% { border-color: #c9a84c; box-shadow: 0 0 0px #c9a84c; }
+  }
+
+  .ability .ab-ring{
     position:absolute; inset:0; width:100%; height:100%;
-    transform:rotate(-90deg); pointer-events:none;
+    pointer-events:none; display:none;
+  }
+  .ability .ab-sweep{
+    position:absolute; inset:0; width:100%; height:100%;
+    pointer-events:none;
+    background: conic-gradient(rgba(255,255,255,.86) 0deg, transparent 0deg);
+    transition: background .05s linear;
+  }
+  .ability .icon{
+    position:absolute; width:60%; height:60%;
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:none;
+  }
+  .ability .icon svg { width:100%; height:100%; }
+  .ability .key{
+    position:absolute; top:2px; left:2px;
+    font-family:var(--font-head); font-size:8px; color:#c9a84c;
+    pointer-events:none;
+  }
+  .ability .label{
+    position:absolute; bottom:-12px; left:50%; transform:translateX(-50%);
+    font-family:var(--font-stat); font-size:7px; color:#eaf0fa;
+    text-transform:uppercase; white-space:nowrap; overflow:hidden;
+    pointer-events:none;
+    max-width:48px; text-overflow:clip;
+  }
   }
   .ability .ring-bg{ fill:none; stroke:rgba(232,200,116,.14); stroke-width:3; }
   .ability .ring{
@@ -1575,75 +1614,102 @@
     </div>
 
     <div id="abilities" role="group" aria-label="Abilities">
-      <div class="ability" id="abQ">
+      <!-- Q: RIFT/BASH/STORM/RAIL (Gold Clock) -->
+      <div class="ability" id="abQ" style="--ability-color:#c9a84c;">
         <div class="ab-btn">
-          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="#c9a84c" stroke-width="3" aria-hidden="true" focusable="false">
+              <circle cx="24" cy="24" r="18"/>
+              <line x1="24" y1="24" x2="24" y2="12"/>
+            </svg>
+          </span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">Q</span>
           <span class="label" id="qLabel">BASH</span>
           <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
         </div>
       </div>
-      <div class="ability locked" id="abNova">
+      <!-- E: NOVA (White 8-point star) -->
+      <div class="ability locked" id="abNova" style="--ability-color:#ffffff;">
         <div class="ab-btn">
-          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="#ffffff" aria-hidden="true" focusable="false">
+              <polygon points="24,4 27,17 40,17 29,26 33,39 24,30 15,39 19,26 8,17 21,17"/>
+            </svg>
+          </span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">E</span>
           <span class="label">NOVA</span>
           <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
         </div>
       </div>
-      <div class="ability locked" id="abOverdrive">
+      <!-- SHIFT: DASH (Cyan Triangle) -->
+      <div class="ability locked" id="abDash" style="--ability-color:#00ffff;">
         <div class="ab-btn">
-          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true"></span>
-          <span class="cd" aria-hidden="true"></span>
-          <span class="key" aria-hidden="true">Z</span>
-          <span class="label">OVERDRIVE</span>
-          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
-        </div>
-      </div>
-      <div class="ability locked" id="abDash">
-        <div class="ab-btn">
-          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
-          <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="#00ffff" aria-hidden="true" focusable="false">
+              <polygon points="14,12 34,24 14,36"/>
+            </svg>
+          </span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">SHIFT</span>
           <span class="label">DASH</span>
           <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
         </div>
       </div>
-      <div class="ability locked" id="abTurret">
+      <!-- F: TURRET (Green T) -->
+      <div class="ability locked" id="abTurret" style="--ability-color:#00ff88;">
         <div class="ab-btn">
-          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" stroke="#00ff88" stroke-width="4" stroke-linecap="round" fill="none" aria-hidden="true" focusable="false">
+              <line x1="24" y1="10" x2="24" y2="38"/>
+              <line x1="10" y1="10" x2="38" y2="10"/>
+            </svg>
+          </span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">F</span>
           <span class="label">TURRET</span>
           <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
         </div>
       </div>
-      <div class="ability locked" id="abOvercharge">
+      <!-- R: OVERCHARGE (Orange Lightning) -->
+      <div class="ability locked" id="abOvercharge" style="--ability-color:#ff8800;">
         <div class="ab-btn">
-          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="#ff8800" aria-hidden="true" focusable="false">
+              <polygon points="24,4 20,20 28,20 24,36 28,52 20,52 24,36"/>
+            </svg>
+          </span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">R</span>
-          <span class="label">OVERCHARGE</span>
+          <span class="label">OVERCH</span>
           <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
         </div>
       </div>
-      <div class="ability locked" id="abBomb">
+      <!-- X: TIME BOMB (Red Circle + Plus + Dot) -->
+      <div class="ability locked" id="abBomb" style="--ability-color:#ff3333;">
         <div class="ab-btn">
-          <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+          <span class="ab-sweep" aria-hidden="true"></span>
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" stroke="#ff3333" stroke-width="3" fill="none" aria-hidden="true" focusable="false">
+              <circle cx="24" cy="24" r="18"/>
+              <line x1="24" y1="15" x2="24" y2="33"/>
+              <line x1="15" y1="24" x2="33" y2="24"/>
+              <circle cx="24" cy="10" r="2"/>
+            </svg>
+          </span>
+          <span class="cd" aria-hidden="true"></span>
+          <span class="key" aria-hidden="true">X</span>
+          <span class="label">BOMB</span>
+          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+        </div>
+      </div>
+    </div>
           <span class="ab-sweep" aria-hidden="true"></span>
           <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
@@ -7265,26 +7331,63 @@ function grantBossAbility(zoneIndex) {
 
 /* dark grey padlocks on every slot the player has not earned yet */
 function syncAbilityHud() {
-  const map = { nova: 'nova', dash: 'dash', turret: 'turret', overcharge: 'overcharge', bomb: 'bomb' };
-  for (const key in map) {
-    const el = UI.abilities[key];
+  /* sync class ability icon and label */
+  const qLabel = document.getElementById('qLabel');
+  const cls = game.playerClass || 'knight';
+  if (cls === 'knight') { qLabel.textContent = 'BASH'; }
+  else if (cls === 'gunslinger') { qLabel.textContent = 'RIFT'; }
+  else if (cls === 'sniper') { qLabel.textContent = 'STORM'; }
+  else if (cls === 'mage') { qLabel.textContent = 'BASH'; }
+  else if (cls === 'berserker') { qLabel.textContent = 'BASH'; }
+  else if (cls === 'shadow') { qLabel.textContent = 'BASH'; }
+  else if (cls === 'tech') { qLabel.textContent = 'RAIL'; }
+
+  /* sync unlock/ready/cooldown states */
+  const abEls = {
+    q: document.getElementById('abQ'),
+    nova: document.getElementById('abNova'),
+    dash: document.getElementById('abDash'),
+    turret: document.getElementById('abTurret'),
+    overcharge: document.getElementById('abOvercharge'),
+    bomb: document.getElementById('abBomb')
+  };
+
+  for (const [k, el] of Object.entries(abEls)) {
     if (!el) continue;
-    const locked = !hasAbility(map[key]);
-    el.classList.toggle('locked', locked);
-    el.classList.toggle('ready', !locked);
-    if (locked) el.classList.remove('cooling');
-  }
-  /* the class slot is always live */
-  if (UI.abilities.q) UI.abilities.q.classList.remove('locked');
-  /* Overdrive is a shop unlock: the seventh slot only exists once it is bought */
-  if (UI.abilities.overdrive) {
-    const on = hasAbility('overdrive');
-    UI.abilities.overdrive.classList.toggle('show', on);
-    UI.abilities.overdrive.classList.toggle('locked', !on);
-    if (on) UI.abilities.overdrive.classList.remove('cooling');
+    const isUnlocked = game.abilities[k] || (k === 'q');
+    const isReady = isUnlocked && game[`${k}Cd`] <= 0;
+    const isCooling = isUnlocked && game[`${k}Cd`] > 0;
+
+    el.classList.remove('locked', 'ready', 'cooling', 'unlocked');
+    if (!isUnlocked) {
+      el.classList.add('locked');
+    } else if (isReady) {
+      el.classList.add('ready');
+    } else if (isCooling) {
+      el.classList.add('cooling');
+    }
+
+    /* pulse for just unlocked */
+    if (game.justUnlocked === k) {
+      el.classList.add('unlocked');
+      setTimeout(() => el.classList.remove('unlocked'), 4500);
+      game.justUnlocked = null;
+    }
+
+    /* update sweep */
+    const cdSpan = el.querySelector('.cd');
+    const sweepSpan = el.querySelector('.ab-sweep');
+    if (isCooling && cdSpan && sweepSpan) {
+      const cd = game[`${k}Cd`];
+      const maxCd = game[`${k}MaxCd`] || 5;
+      const pct = Math.max(0, Math.min(1, cd / maxCd));
+      const deg = pct * 360;
+      sweepSpan.style.background = `conic-gradient(rgba(255,255,255,.86) ${deg}deg, transparent ${deg}deg)`;
+    } else if (sweepSpan) {
+      sweepSpan.style.background = 'transparent';
+    }
   }
 }
-
 /* entering an arena hands the player a short grace window: enemies are already
    closing in the moment the fight starts, and without it the first contact tick
    landed on the same breath as the arena trigger. */
