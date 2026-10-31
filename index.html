@@ -46,10 +46,13 @@
     width:13px; height:13px; border-radius:50%;
     background:radial-gradient(circle at 35% 30%, #f2fdff, #4cc9ff 55%, #1258a0);
     box-shadow:0 0 11px rgba(56,189,248,.85);
-    transition:background .25s ease, box-shadow .25s ease, transform .25s ease;
+    opacity:1; transform:scale(1);
+    /* losing a heart shrinks and fades the orb over 0.3s instead of popping */
+    transition:opacity .3s ease, background .3s ease, box-shadow .3s ease, transform .3s ease;
   }
   .orb.off{
-    background:rgba(120,142,172,.16); box-shadow:none; transform:scale(.82);
+    background:rgba(120,142,172,.16); box-shadow:none;
+    opacity:0; transform:scale(.1);
   }
   #zoneLine{ display:flex; align-items:baseline; gap:9px; }
   #zoneBadge{
@@ -83,6 +86,8 @@
   .ability .ring{
     fill:none; stroke:var(--gold); stroke-width:3; stroke-linecap:round;
     stroke-dasharray:169.6; stroke-dashoffset:0;
+    /* the dash offset is written every frame; the transition smooths the gaps */
+    transition:stroke-dashoffset .12s linear, stroke .25s ease;
   }
   .ability.ready .ring{ stroke:#8fe8ff; filter:drop-shadow(0 0 6px rgba(143,232,255,.55)); }
   .ability .icon{
@@ -306,13 +311,20 @@
 
   /* ---------------- shared overlay chrome ---------------- */
   .overlay{
-    position:absolute; inset:0; display:none; flex-direction:column;
+    position:absolute; inset:0; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:16px; text-align:center;
     padding:28px; z-index:30;
     background:radial-gradient(ellipse at 50% 45%, rgba(12,18,32,.72), rgba(3,4,8,.94));
     backdrop-filter:blur(2px);
+    /* every screen fades in and out over 0.4s (game over, victory, upgrades,
+       the zone card) — visibility flips only once the fade has finished */
+    opacity:0; visibility:hidden; pointer-events:none;
+    transition:opacity .4s ease, visibility 0s linear .4s;
   }
-  .overlay.show{ display:flex; }
+  .overlay.show{
+    opacity:1; visibility:visible; pointer-events:auto;
+    transition:opacity .4s ease, visibility 0s linear 0s;
+  }
   .overlay h1{
     font-family:var(--font-head); margin:0; font-weight:900;
     letter-spacing:6px; text-transform:uppercase;
@@ -435,14 +447,30 @@
 
   /* ---------------- zone select ---------------- */
   #zoneScreen{
-    position:absolute; inset:0; display:none; flex-direction:column;
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    opacity:0; visibility:hidden; pointer-events:none;
+    transition:opacity .4s ease, visibility 0s linear .4s;
     align-items:center; justify-content:center; gap:14px;
     padding:18px 16px 12px; box-sizing:border-box; overflow:hidden;
     z-index:44; text-align:center;
     background:radial-gradient(ellipse at 50% 40%, rgba(12,20,36,.72), rgba(2,3,7,.96)),
                linear-gradient(180deg, rgba(3,4,8,.92), rgba(3,4,8,.98));
   }
-  #zoneScreen.show{ display:flex; }
+  #zoneScreen.show{
+    opacity:1; visibility:visible; pointer-events:auto;
+    transition:opacity .4s ease, visibility 0s linear 0s;
+  }
+  /* level cards drift in one after another when the map select opens */
+  #zoneScreen.show .zone-card{ animation:cardFadeIn .4s ease-out backwards; }
+  #zoneScreen.show .zone-card:nth-child(1){ animation-delay:0s; }
+  #zoneScreen.show .zone-card:nth-child(2){ animation-delay:.05s; }
+  #zoneScreen.show .zone-card:nth-child(3){ animation-delay:.1s; }
+  #zoneScreen.show .zone-card:nth-child(4){ animation-delay:.15s; }
+  #zoneScreen.show .zone-card:nth-child(5){ animation-delay:.2s; }
+  @keyframes cardFadeIn{
+    from{ opacity:0; transform:translateY(12px) scale(.97); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
+  }
   #zoneScreen .zs-eyebrow{
     font-family:var(--font-head); font-size:9px; line-height:1.2;
     letter-spacing:4.5px; text-transform:uppercase; color:rgba(232,200,116,.62);
@@ -547,8 +575,14 @@
     position:absolute; inset:0; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:14px; z-index:40;
     background:radial-gradient(ellipse at 50% 44%, rgba(8,14,28,.18), rgba(2,3,7,.62));
+    /* the title screen fades out over 0.4s like every other screen */
+    opacity:1; visibility:visible; pointer-events:auto;
+    transition:opacity .4s ease, visibility 0s linear 0s;
   }
-  #menu.hidden{ display:none; }
+  #menu.hidden{
+    opacity:0; visibility:hidden; pointer-events:none;
+    transition:opacity .4s ease, visibility 0s linear .4s;
+  }
   #menuTitle{
     font-family:var(--font-head); font-weight:900; margin:0;
     font-size:clamp(46px,8vw,96px); letter-spacing:.18em;
@@ -577,13 +611,23 @@
   /* the whole screen lives inside the stage: it fits the viewport, no scrolling */
   #classScreen{
     position:absolute; inset:0; width:100%; height:100%; max-height:100%;
-    display:none; flex-direction:column; align-items:center; justify-content:center;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    opacity:0; visibility:hidden; pointer-events:none;
+    transition:opacity .4s ease, visibility 0s linear .4s;
     padding:10px; z-index:45; text-align:center;
     box-sizing:border-box; overflow:hidden;
     background:radial-gradient(ellipse at 50% 38%, rgba(10,16,28,.60), rgba(2,3,7,.95)),
                linear-gradient(180deg, rgba(3,4,8,.92), rgba(3,4,8,.97));
   }
-  #classScreen.show{ display:flex; }
+  #classScreen.show{
+    opacity:1; visibility:visible; pointer-events:auto;
+    transition:opacity .4s ease, visibility 0s linear 0s;
+  }
+  #classScreen.show .class-card{ animation:cardFadeIn .4s ease-out backwards; }
+  #classScreen.show .class-card:nth-child(1){ animation-delay:0s; }
+  #classScreen.show .class-card:nth-child(2){ animation-delay:.05s; }
+  #classScreen.show .class-card:nth-child(3){ animation-delay:.1s; }
+  #classScreen.show .class-card:nth-child(4){ animation-delay:.15s; }
   #classScreen .cs-inner{
     width:100%; max-height:100%; flex:0 1 auto;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -1085,6 +1129,37 @@ const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 const dist2 = (ax, ay, bx, by) => { const dx = ax - bx, dy = ay - by; return dx * dx + dy * dy; };
 const angleTo = (ax, ay, bx, by) => Math.atan2(by - ay, bx - ax);
 const nowMs = () => performance.now();
+
+/* ---------------------------------------------------------------------------
+   Time + easing helpers. Everything that moves is tuned in frames at 60fps and
+   then converted to a per-second rate, so a 30fps phone and a 144fps monitor
+   travel the same distance in the same wall-clock time.
+   --------------------------------------------------------------------------- */
+const FPS_REF = 60;
+
+/* fraction of the remaining distance to cover this frame, given a per-frame
+   factor at 60fps: identical motion at any refresh rate */
+function frameBlend(perFrame, dt) {
+  const frames = Math.max(0, (dt || 1 / FPS_REF) * FPS_REF);
+  return 1 - Math.pow(1 - perFrame, frames);
+}
+
+const easeOutCubic = (t) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+const easeOutQuad = (t) => 1 - (1 - clamp(t, 0, 1)) * (1 - clamp(t, 0, 1));
+
+/* move a scalar toward a target by at most `step` */
+function approach(cur, target, step) {
+  if (cur < target) return Math.min(cur + step, target);
+  return Math.max(cur - step, target);
+}
+
+/* shortest signed angle from a to b */
+function angleDelta(a, b) {
+  let d = b - a;
+  while (d > Math.PI) d -= TAU;
+  while (d < -Math.PI) d += TAU;
+  return d;
+}
 
 /* deterministic rng so zone props are identical every visit */
 function makeRng(seed) {
@@ -1652,11 +1727,13 @@ const DESTRUCTIBLES = [
 ];
 
 /* ------------------------------ enemy table -------------------------------- */
+/* `turn` is how fast a body can swing its heading round, in radians per second:
+   heavy knights bank slowly, ghosts whip around, wizards drift. */
 const ENEMY_DEFS = {
-  knight: { hp: 2, speed: 100, r: 16, color: '#ef4444', score: 12, contact: 1 },
-  archer: { hp: 1, speed: 88, r: 14, color: '#fb923c', score: 14, contact: 1, fire: 2.0 },
-  wizard: { hp: 3, speed: 62, r: 17, color: '#a855f7', score: 20, contact: 1, fire: 3.0 },
-  ghost:  { hp: 1, speed: 156, r: 13, color: '#e2e8f0', score: 10, contact: 1 }
+  knight: { hp: 2, speed: 100, r: 16, color: '#ef4444', score: 12, contact: 1, turn: 4.2 },
+  archer: { hp: 1, speed: 88, r: 14, color: '#fb923c', score: 14, contact: 1, fire: 2.0, turn: 5.2 },
+  wizard: { hp: 3, speed: 62, r: 17, color: '#a855f7', score: 20, contact: 1, fire: 3.0, turn: 3.2 },
+  ghost:  { hp: 1, speed: 156, r: 13, color: '#e2e8f0', score: 10, contact: 1, turn: 8.0 }
 };
 
 /* ------------------------------ upgrades ----------------------------------- */
@@ -1771,6 +1848,8 @@ function makePlayer() {
     hp: cls.hp,
     maxHp: cls.hp,
     speed: cls.speed,
+    vx: 0,              /* live velocity, eased in and out of */
+    vy: 0,
     angle: 0,
     fireTimer: 0,
     fireRate: cls.fireRate,
@@ -1889,6 +1968,8 @@ function loadZone(zoneIndex, opts) {
   const p = game.player;
   p.x = WORLD / 2;
   p.y = WORLD / 2;
+  p.vx = 0;
+  p.vy = 0;
   p.hp = p.maxHp;
   p.invuln = 1.2;
   p.dashTimer = 0;
@@ -2127,12 +2208,15 @@ const viewH = () => VIEW_H / viewZoom();
 function cameraTargetX() { const vw = viewW(); return clamp(game.player.x - vw / 2, 0, WORLD - vw); }
 function cameraTargetY() { const vh = viewH(); return clamp(game.player.y - vh / 2, 0, WORLD - vh); }
 
-function updateCamera() {
+const CAMERA_LERP = 0.06;    /* 6% of the remaining distance per 60fps frame */
+
+function updateCamera(dt) {
   const tx = cameraTargetX();
   const ty = cameraTargetY();
-  /* smooth lerp: 8% of the remaining distance every frame */
-  game.cam.x += (tx - game.cam.x) * 0.08;
-  game.cam.y += (ty - game.cam.y) * 0.08;
+  /* cinematic follow that behaves identically at 30, 60 or 144 fps */
+  const k = frameBlend(CAMERA_LERP, dt);
+  game.cam.x += (tx - game.cam.x) * k;
+  game.cam.y += (ty - game.cam.y) * k;
 }
 
 const toScreenX = (wx) => (wx - game.cam.x) * viewZoom();
@@ -2243,14 +2327,36 @@ function updatePlayer(dt) {
     }
   } else if (p.bashTimer > 0) {
     p.moving = false;      /* the bash drives the movement, not WASD */
+    p.vx = 0;
+    p.vy = 0;
   } else {
+    /* six frames of acceleration, four frames of braking — and because both are
+       expressed in seconds the ramp feels the same on every device */
+    const ACCEL_TIME = 6 / FPS_REF;
+    const DECEL_TIME = 4 / FPS_REF;
     const mv = moveVector();
-    p.moving = mv.x !== 0 || mv.y !== 0;
+    const wantMove = mv.x !== 0 || mv.y !== 0;
+    const tx = mv.x * p.speed;
+    const ty = mv.y * p.speed;
+    const dx = tx - p.vx;
+    const dy = ty - p.vy;
+    const gap = Math.hypot(dx, dy);
+    const rate = (wantMove ? p.speed / ACCEL_TIME : p.speed / DECEL_TIME) * dt;
+    if (gap <= rate || gap < 1e-4) {
+      p.vx = tx;
+      p.vy = ty;
+    } else {
+      p.vx += (dx / gap) * rate;
+      p.vy += (dy / gap) * rate;
+    }
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+
+    const sp = Math.hypot(p.vx, p.vy);
+    p.moving = wantMove || sp > 6;
     if (p.moving) {
-      p.x += mv.x * p.speed * dt;
-      p.y += mv.y * p.speed * dt;
-      p.walk += dt * 12;
-      p.moveAng = Math.atan2(mv.y, mv.x);
+      p.walk += dt * 12 * Math.max(0.4, sp / p.speed);
+      p.moveAng = Math.atan2(p.vy, p.vx);
     }
   }
 
@@ -2274,7 +2380,7 @@ function updatePlayer(dt) {
 
   /* --- footstep trail: one print every ~26px travelled --- */
   if (p.dashTimer <= 0 && p.moving) {
-    p.footAcc += p.speed * dt;
+    p.footAcc += Math.max(p.speed * 0.35, Math.hypot(p.vx, p.vy)) * dt;
     if (p.footAcc >= 26) {
       p.footAcc = 0;
       dropFootprint(p);
@@ -2723,12 +2829,12 @@ function updateSword(dt) {
   /* sparks peeling off the edge while the blade travels */
   if (p.swingT > 0) {
     const k = 1 - p.swingT / SWORD_SWING_TIME;
-    const a = lerp(p.swingFrom, p.swingTo, k);
-    const rr = SWORD_RANGE * 0.74;
-    const tangent = a + (p.swingTo > p.swingFrom ? Math.PI / 2 : -Math.PI / 2);
+    const a = lerp(p.swingFrom, p.swingTo, 1 - Math.pow(1 - k, 2.2));
+    const rr = SWORD_RANGE * rand(0.5, 0.88);
+    const tangent = a + (p.swingTo > p.swingFrom ? Math.PI / 2 : -Math.PI / 2) + rand(-0.5, 0.5);
     spawnParticle(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr,
-      Math.cos(tangent) * rand(90, 200), Math.sin(tangent) * rand(90, 200),
-      0.22, 3.2, swordDef().edge, 4);
+      Math.cos(tangent) * rand(80, 230), Math.sin(tangent) * rand(80, 230),
+      rand(0.16, 0.28), rand(2.2, 4.2), swordDef().edge, 4);
   }
 
   /* hold the button to keep swinging; the cooldown paces it */
@@ -2899,6 +3005,8 @@ function shieldBash() {
   const dir = (mv.x || mv.y) ? mv : { x: Math.cos(p.angle), y: Math.sin(p.angle) };
   p.bashDir = dir;
   p.bashTimer = 0.28;
+  p.vx = 0;
+  p.vy = 0;
   p.invuln = Math.max(p.invuln, 0.34);
   p.trail.length = 0;
   Sound.bash();
@@ -3134,6 +3242,8 @@ function dash() {
   const dir = (mv.x || mv.y) ? mv : { x: Math.cos(p.angle), y: Math.sin(p.angle) };
   p.dashDir = dir;
   p.dashTimer = 0.2;
+  p.vx = 0;
+  p.vy = 0;
   p.dashCd = 5 * cdScale();
   p.invuln = Math.max(p.invuln, 0.34);
   p.trail.length = 0;
@@ -3400,6 +3510,9 @@ function spawnEnemy(type, x, y, arenaIndex) {
     zig: rand(0, TAU),
     dirX: rand(-1, 1),
     dirY: rand(-1, 1),
+    heading: rand(0, TAU),          /* the direction it is actually facing */
+    turnRate: def.turn || 3.4,      /* radians per second it can swing round */
+    throttle: 0,                    /* eased 0..1 of its top speed */
     errTimer: 0,
     contactCd: 0,
     orbit: Math.random() < 0.5 ? 1 : -1
@@ -3450,24 +3563,31 @@ function updateEnemies(dt) {
     const d = dist(e.x, e.y, p.x, p.y);
     const ang = angleTo(e.x, e.y, p.x, p.y);
 
+    /* ------------------------------------------------------------------
+       Where does this enemy WANT to go? Each type picks a direction and a
+       strength; the body then eases its heading toward it instead of snapping.
+       ------------------------------------------------------------------ */
+    let wantX = 0;
+    let wantY = 0;
+
     if (e.type === 'knight') {
       const stop = e.r + p.r + 9;
       if (d > stop + 4) {
-        e.x += Math.cos(ang) * e.speed * dt;
-        e.y += Math.sin(ang) * e.speed * dt;
+        wantX = Math.cos(ang);
+        wantY = Math.sin(ang);
       } else {
         /* circle the player instead of piling into one point */
         const side = ang + e.orbit * 1.35;
-        e.x += Math.cos(side) * e.speed * 0.7 * dt;
-        e.y += Math.sin(side) * e.speed * 0.7 * dt;
+        wantX = Math.cos(side) * 0.7;
+        wantY = Math.sin(side) * 0.7;
       }
     } else if (e.type === 'archer') {
       e.zig += dt * 3.4;
       const want = 250;
       const radial = d > want + 60 ? 1 : (d < want - 70 ? -1 : 0);
       const perp = ang + Math.PI / 2;
-      e.x += (Math.cos(ang) * radial * e.speed + Math.cos(perp) * Math.sin(e.zig) * e.speed * 0.85) * dt;
-      e.y += (Math.sin(ang) * radial * e.speed + Math.sin(perp) * Math.sin(e.zig) * e.speed * 0.85) * dt;
+      wantX = Math.cos(ang) * radial + Math.cos(perp) * Math.sin(e.zig) * 0.85;
+      wantY = Math.sin(ang) * radial + Math.sin(perp) * Math.sin(e.zig) * 0.85;
       e.fireTimer -= dt;
       if (e.fireTimer <= 0 && d < 760) {
         e.fireTimer = ENEMY_DEFS.archer.fire;
@@ -3476,8 +3596,8 @@ function updateEnemies(dt) {
     } else if (e.type === 'wizard') {
       const want = 320;
       const radial = d > want + 50 ? 1 : (d < want - 60 ? -1 : 0);
-      e.x += Math.cos(ang) * radial * e.speed * dt;
-      e.y += Math.sin(ang) * radial * e.speed * dt;
+      wantX = Math.cos(ang) * radial;
+      wantY = Math.sin(ang) * radial;
       e.fireTimer -= dt;
       if (e.fireTimer <= 0 && d < 820) {
         e.fireTimer = ENEMY_DEFS.wizard.fire;
@@ -3485,17 +3605,34 @@ function updateEnemies(dt) {
         b.homing = 1.5;
       }
     } else {
-      /* ghost: fast, erratic, loosely tracking */
+      /* ghost: fast, erratic, loosely tracking — the wander target still has to
+         be steered into, so it banks around corners instead of teleporting */
       e.errTimer -= dt;
       if (e.errTimer <= 0) {
         e.errTimer = rand(0.18, 0.4);
         const jitter = rand(-1.2, 1.2);
-        e.dirX = Math.cos(ang + jitter);
-        e.dirY = Math.sin(ang + jitter);
+        e.wanderA = ang + jitter;
+        e.dirX = Math.cos(e.wanderA);
+        e.dirY = Math.sin(e.wanderA);
       }
-      e.x += e.dirX * e.speed * dt;
-      e.y += e.dirY * e.speed * dt;
+      if (e.wanderA === undefined) e.wanderA = Math.atan2(e.dirY, e.dirX);
+      wantX = Math.cos(e.wanderA);
+      wantY = Math.sin(e.wanderA);
     }
+
+    /* smooth steering: turn toward the wanted direction at a limited rate */
+    const wantLen = Math.hypot(wantX, wantY);
+    if (wantLen > 1e-4) {
+      const wantA = Math.atan2(wantY, wantX);
+      const turn = angleDelta(e.heading, wantA);
+      const maxTurn = e.turnRate * dt;
+      e.heading += clamp(turn, -maxTurn, maxTurn);
+    }
+    /* and ease into (or out of) its stride so nothing lurches */
+    e.throttle = approach(e.throttle, clamp(wantLen, 0, 1), dt * 5.5);
+    const stride = e.speed * e.throttle;
+    e.x += Math.cos(e.heading) * stride * dt;
+    e.y += Math.sin(e.heading) * stride * dt;
 
     collideObstacles(e);
 
@@ -3974,10 +4111,12 @@ function updateBoss(dt) {
       spawnParticle(b.x, b.y, rand(-40, 40), rand(-40, 40), 0.35, 10, b.color, 3);
     }
   } else if (zone !== 1 && zone !== 3) {
-    /* slow pursuit */
+    /* slow pursuit — the boss banks toward you instead of pivoting on a pin */
     if (d > 70) {
-      b.x += Math.cos(ang) * b.speed * dt;
-      b.y += Math.sin(ang) * b.speed * dt;
+      if (b.heading === undefined) b.heading = ang;
+      b.heading += clamp(angleDelta(b.heading, ang), -1.9 * dt, 1.9 * dt);
+      b.x += Math.cos(b.heading) * b.speed * dt;
+      b.y += Math.sin(b.heading) * b.speed * dt;
     }
   } else {
     /* witch / archon hover and drift */
@@ -4328,9 +4467,14 @@ function updateParticles(dt) {
       p.r = lerp(10, p.maxR, t);
       continue;
     }
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    const k = Math.exp(-p.drag * dt);
+    /* ease-out travel: a particle leaves fast and coasts to a stop as it fades.
+       Two curves are stacked — an exponential drag and a life-based ramp — so
+       sparks, dust and blood all settle instead of sliding at a constant speed. */
+    const t = clamp(p.life / p.maxLife, 0, 1);
+    const ease = 1 - t * t;
+    p.x += p.vx * ease * dt;
+    p.y += p.vy * ease * dt;
+    const k = Math.exp(-Math.max(1.6, p.drag || 2) * dt);
     p.vx *= k;
     p.vy *= k;
   }
@@ -7477,7 +7621,7 @@ function drawKnightSword(p, bob) {
 /* the bright silver swoosh left behind by a swing: a tapered crescent that
    sweeps with the blade and dissolves over 0.2 seconds */
 function drawSwordSwoosh() {
-  const R = SWORD_RANGE * 0.95;
+  const R = SWORD_RANGE * 0.86;
 
   for (let i = 0; i < game.swings.length; i++) {
     const sw = game.swings[i];
@@ -7486,8 +7630,9 @@ function drawSwordSwoosh() {
     const fade = Math.min(1, (1 - k) * 1.9);
     if (fade <= 0.01) continue;
 
-    /* the blade is at the head of the ribbon; the tail follows it around */
-    const reveal = Math.min(1, k / 0.42);
+    /* the blade is at the head of the ribbon; it eases from the start of the
+       arc to the end across the full 0.2s of the swing instead of snapping */
+    const reveal = easeOutQuad(k);
     const head = sw.a0 + (sw.a1 - sw.a0) * reveal;
     const span = head - sw.a0;
     if (Math.abs(span) < 0.01) continue;
@@ -10530,7 +10675,7 @@ function update(dt) {
   game.ambientClock += dt;
 
   updatePlayer(sdt);
-  updateCamera();
+  updateCamera(sdt);
   updateEnemies(sdt);
   updateTurrets(sdt);
   updateBombs(sdt);
