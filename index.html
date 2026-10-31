@@ -845,7 +845,7 @@
     letter-spacing:1.6px; color:#ffe7b8; text-transform:uppercase; line-height:1.4;
   }
   .card .desc{ font-size:13.5px; line-height:1.5; color:#b9c8da; }
-  .card .rank{ font-size:10px; letter-spacing:2.6px; color:rgba(232,200,116,.65); text-transform:uppercase; }
+  .card .rank{ margin-top:auto; font-size:10px; letter-spacing:2.6px; color:rgba(232,200,116,.65); text-transform:uppercase; }
 
   /* ---------------- big screens ---------------- */
   #gameOver h1{ font-size:clamp(34px,6vw,64px); color:#ff9d9d; text-shadow:0 0 30px rgba(239,68,68,.5); }
@@ -1930,34 +1930,100 @@ const ENEMY_DEFS = {
   ghost:  { hp: 1, speed: 156, r: 13, color: '#e2e8f0', score: 10, contact: 1, turn: 8.0 }
 };
 
-/* ------------------------------ upgrades ----------------------------------- */
+/* ------------------------------ upgrades -----------------------------------
+   Twenty chips, in four families: offensive, defensive, utility and unique.
+   Every chip carries a gold glyph, a name and one line of flavour text, and the
+   card reads them straight off the definition. `max` is how many ranks of that
+   chip one run may hold — 1 means it is taken once and then leaves the pool. */
 const UPGRADE_POOL = [
-  { id: 'plasma', name: 'Plasma Amplifier', glyph: '⟡', max: 3,
+  /* ------------------------------- offensive ------------------------------- */
+  { id: 'plasma', name: 'Plasma Amplifier', kind: 'Offensive', glyph: '⟡', max: 3,
     desc: 'Super-charged coils. Laser bolts travel 35% faster and strike harder.',
     apply() { game.player.bulletSpeed *= 1.35; game.player.damage += 0.34; } },
-  { id: 'arc', name: 'Arc Cannon', glyph: '⑂', max: 1,
+  { id: 'arc', name: 'Arc Cannon', kind: 'Offensive', glyph: '⑂', max: 1,
     desc: 'Split emitter array. Every shot fires a three-bolt spread.',
     apply() { game.player.arc = true; } },
-  { id: 'shield', name: 'Temporal Shield', glyph: '⛨', max: 2,
+  { id: 'barrel', name: 'Overclocked Barrel', kind: 'Offensive', glyph: '➤', max: 1, needsBullets: true,
+    desc: 'The barrel runs hot. Every bolt leaves half again as fast.',
+    apply() { game.player.bulletSpeed *= 1.5; } },
+  { id: 'explosive', name: 'Explosive Rounds', kind: 'Offensive', glyph: '✸', max: 1, needsBullets: true,
+    desc: 'Every fifth round is packed with volatile chrono-gel and bursts on impact.',
+    apply() { game.player.explosiveRounds = true; } },
+  { id: 'chain', name: 'Chain Lightning', kind: 'Offensive', glyph: '⚡', max: 1,
+    desc: 'A dying enemy arcs a bolt into the nearest of its kin for half the damage.',
+    apply() { game.player.chainLightning = true; } },
+  { id: 'vampiric', name: 'Vampiric Strike', kind: 'Offensive', glyph: '❦', max: 1,
+    desc: 'Every tenth kill bleeds a health orb back into Rael.',
+    apply() { game.player.vampiric = true; } },
+  { id: 'glass', name: 'Glass Cannon', kind: 'Offensive', glyph: '◆', max: 1,
+    desc: 'Double damage, one orb less of life. Hit first, or not at all.',
+    apply() {
+      const p = game.player;
+      p.damage *= 2;
+      p.maxHp = Math.max(1, p.maxHp - 1);
+      p.hp = Math.min(p.hp, p.maxHp);
+      updateHealthOrbs();
+    } },
+  /* ------------------------------- defensive ------------------------------- */
+  { id: 'shield', name: 'Temporal Shield', kind: 'Defensive', glyph: '⛨', max: 2,
     desc: 'A time-locked ward absorbs a single hit, then recharges each arena.',
     apply() { game.player.shield += 1; } },
-  { id: 'boots', name: 'Gravity Boots', glyph: '➤', max: 3,
+  { id: 'phase', name: 'Phase Cloak', kind: 'Defensive', glyph: '☁', max: 1,
+    desc: 'A dash tears you half out of time: one second of untouchable invisibility.',
+    apply() { game.player.phaseCloak = true; } },
+  { id: 'barrier', name: 'Temporal Barrier', kind: 'Defensive', glyph: '◍', max: 1,
+    desc: 'A skin of frozen moments blocks the first hit you take every twenty seconds.',
+    apply() { game.player.temporalBarrier = true; } },
+  { id: 'warshield', name: 'Overclock Shield', kind: 'Defensive', glyph: '❖', max: 1,
+    desc: 'The ward burns four seconds instead of one — and arrives with a charge.',
+    apply() {
+      game.player.overclockShield = true;
+      game.player.shield = Math.max(1, game.player.shield);
+    } },
+  /* -------------------------------- utility -------------------------------- */
+  { id: 'boots', name: 'Gravity Boots', kind: 'Utility', glyph: '➶', max: 3,
     desc: 'Localised gravity shear. Move 14% faster.',
     apply() { game.player.speed *= 1.14; } },
-  { id: 'magnet', name: 'Future Magnet', glyph: '◎', max: 3,
+  { id: 'magnet', name: 'Future Magnet', kind: 'Utility', glyph: '◎', max: 3,
     desc: 'Chrono tether. Pull gems in from 70px further away.',
     apply() { game.player.magnet += 70; } },
-  { id: 'reactor', name: 'Reactor Coils', glyph: '⚡', max: 2,
+  { id: 'magnetPlus', name: 'Gem Magnet+', kind: 'Utility', glyph: '❂', max: 1,
+    desc: 'The tether is tuned three times tighter — gems leap to you from across the field.',
+    apply() { game.player.magnet *= 3; } },
+  { id: 'swift', name: 'Swift Boots', kind: 'Utility', glyph: '»', max: 1,
+    desc: 'Lighter soles, longer strides. Twenty percent faster, for good.',
+    apply() { game.player.speed *= 1.2; } },
+  { id: 'reactor', name: 'Reactor Coils', kind: 'Utility', glyph: '⚡', max: 2,
     desc: 'Ability capacitors recharge 15% faster.',
-    apply() { game.abilityCdScale = Math.max(0.7, 1 - 0.15 * (game.upgradeLevels.reactor || 0)); } },
-  /* the Vanguard Knight's longsword, forged up one tier at a time */
-  { id: 'swordPlasma', name: 'Plasma Edge', glyph: '⚔', max: 1, classOnly: 'knight',
+    apply() { game.abilityCdScale = Math.max(0.7, (game.abilityCdScale || 1) * 0.85); } },
+  { id: 'cooldownModule', name: 'Cooldown Module', kind: 'Utility', glyph: '⏱', max: 1,
+    desc: 'A dedicated timing core shaves 15% off every ability.',
+    apply() { game.cdModule = Math.max(0.4, (game.cdModule || 1) * 0.85); } },
+  { id: 'secondwind', name: 'Second Wind', kind: 'Utility', glyph: '✚', max: 1,
+    desc: 'Once a zone, death is refused: you wake on your last orb instead.',
+    apply() { game.player.secondWind = true; } },
+  /* --------------------------------- unique -------------------------------- */
+  { id: 'berserker', name: 'Berserker Protocol', kind: 'Unique', glyph: '☠', max: 1,
+    desc: 'On your last orb, damage and speed double. Fury is a resource.',
+    apply() { game.player.berserker = true; } },
+  { id: 'chronosurge', name: 'Chrono Surge', kind: 'Unique', glyph: '◷', max: 1,
+    desc: 'Every thirty seconds time stutters: one free second of frozen world.',
+    apply() { game.player.chronoSurge = true; } }
+];
+
+/* class-only chips: they sit beside the twenty and only show up for the class
+   they belong to (the Vanguard Knight's sword, forged up one tier at a time) */
+const CLASS_UPGRADES = [
+  { id: 'swordPlasma', name: 'Plasma Edge', kind: 'Unique', glyph: '⚔', max: 1, classOnly: 'knight',
     desc: 'A sheath of blue plasma. The longsword hits 1 harder and glows at the edge.',
     apply() { game.player.swordTier = Math.max(1, game.player.swordTier | 0); } },
-  { id: 'swordNova', name: 'Nova Sword', glyph: '✷', max: 1, classOnly: 'knight', requires: 'swordPlasma',
+  { id: 'swordNova', name: 'Nova Sword', kind: 'Unique', glyph: '✷', max: 1, classOnly: 'knight', requires: 'swordPlasma',
     desc: 'Star-forged edge. 2 more damage a swing, a red glow, and the swing arc doubles in width.',
     apply() { game.player.swordTier = 2; } }
 ];
+
+/* every chip in the game, in a stable order: the twenty first, class chips after */
+function allUpgrades() { return UPGRADE_POOL.concat(CLASS_UPGRADES); }
 
 /* ------------------------------ game state --------------------------------- */
 const game = {
@@ -2002,6 +2068,8 @@ const game = {
   mouse: { x: W / 2, y: H / 2, down: false },
   keys: Object.create(null),
   abilityCdScale: 1,   /* set by the Reactor Coils upgrade */
+  cdModule: 1,         /* set by the Cooldown Module chip: composes with the above */
+  secondWindUsed: false,  /* Second Wind is once per zone */
   waveDelay: 0,
   pendingWave: null,
   upgradeLevels: {},
@@ -2073,7 +2141,23 @@ function makePlayer() {
     moving: false,
     footAcc: 0,
     footSide: 1,
-    trail: []           /* dash afterimages: { x, y, dir, life } */
+    trail: [],          /* dash afterimages: { x, y, dir, life } */
+    /* --- upgrade chips ------------------------------------------------------
+       flags are set by the chip's apply(); the timers are ticked in updatePlayer */
+    explosiveRounds: false,
+    shotCount: 0,       /* Explosive Rounds: every fifth bullet is volatile */
+    chainLightning: false,
+    vampiric: false,
+    phaseCloak: false,
+    phaseTimer: 0,      /* seconds of invisibility left after a dash */
+    temporalBarrier: false,
+    barrierCd: 0,       /* Temporal Barrier: 20s between blocks */
+    overclockShield: false,
+    secondWind: false,
+    berserker: false,
+    berserkActive: false,
+    chronoSurge: false,
+    chronoSurgeCd: 30   /* Chrono Surge: a free mini freeze every 30s */
   };
 }
 
@@ -2087,6 +2171,7 @@ function resetRun() {
   game.killsThisZone = 0;
   game.upgradeLevels = {};
   game.abilityCdScale = 1;
+  game.cdModule = 1;
   game.player = makePlayer();
   syncClassHud();
   game.timeScale = 1;
@@ -2162,6 +2247,8 @@ function loadZone(zoneIndex, opts) {
   game.slowmo = 0;
   game.killsThisZone = 0;
   game.shake = 0;
+  /* Second Wind is a per-zone mercy: it comes back with every new arena */
+  game.secondWindUsed = false;
 
   if (!game.player || o.freshPlayer) game.player = makePlayer();
   const p = game.player;
@@ -2174,6 +2261,10 @@ function loadZone(zoneIndex, opts) {
   p.dashTimer = 0;
   p.dashCd = 0;
   p.fireTimer = 0;
+  /* chip timers start clean in a new zone */
+  p.phaseTimer = 0;
+  p.barrierCd = 0;
+  p.chronoSurgeCd = 30;
   /* the ward persists across zones, but it is never handed out for free */
   p.swingCd = 0;
   p.swingT = 0;
@@ -2509,10 +2600,24 @@ function updatePlayer(dt) {
   const psy = toScreenY(p.y);
   p.angle = Math.atan2(game.mouse.y - psy, game.mouse.x - psx);
 
+  /* chip timers */
+  if (p.phaseTimer > 0) p.phaseTimer = Math.max(0, p.phaseTimer - dt);
+  if (p.barrierCd > 0) p.barrierCd = Math.max(0, p.barrierCd - dt);
+
   /* dash */
   if (p.dashCd > 0) p.dashCd = Math.max(0, p.dashCd - dt);
+  const wasDashing = p.dashTimer > 0;
   if (p.dashTimer > 0) {
     p.dashTimer = Math.max(0, p.dashTimer - dt);
+    /* Phase Cloak: the moment the dash ends, Rael slips out of phase */
+    if (wasDashing && p.dashTimer === 0 && p.phaseCloak) {
+      p.phaseTimer = 1.0;
+      addText(p.x, p.y - 34, 'PHASE CLOAK', '#bae6fd');
+      for (let i = 0; i < 10; i++) {
+        const a = rand(0, TAU);
+        spawnParticle(p.x, p.y, Math.cos(a) * rand(40, 140), Math.sin(a) * rand(40, 140), 0.3, 5, '#bae6fd', 3);
+      }
+    }
     p.x += p.dashDir.x * p.speed * 3.4 * dt;
     p.y += p.dashDir.y * p.speed * 3.4 * dt;
     if (Math.random() < 0.6) {
@@ -2600,6 +2705,34 @@ function updatePlayer(dt) {
 
   /* the class weapon shoots itself */
   fireClassWeapon(dt);
+
+  /* Berserker Protocol: on the last orb, damage and speed double */
+  if (p.berserker) {
+    const low = p.hp <= 1;
+    if (low !== p.berserkActive) {
+      p.berserkActive = low;
+      const k = low ? 2 : 0.5;
+      p.damage *= k;
+      p.speed *= k;
+      if (low) {
+        addText(p.x, p.y - 46, 'BERSERK', '#f87171');
+        game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 8, maxR: 70, life: 0, maxLife: 0.4, color: '#f87171' });
+      }
+    }
+  }
+
+  /* Chrono Surge: a free one-second mini time freeze every thirty seconds */
+  if (p.chronoSurge) {
+    p.chronoSurgeCd -= dt;
+    if (p.chronoSurgeCd <= 0) {
+      p.chronoSurgeCd = 30;
+      game.slowmo = Math.max(game.slowmo, 1.0);
+      game.timeScale = Math.min(game.timeScale, 0.3);
+      addText(p.x, p.y - 46, 'CHRONO SURGE', '#a5b4fc');
+      game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 10, maxR: 150, life: 0, maxLife: 0.55, color: '#a5b4fc' });
+      Sound.ability();
+    }
+  }
 
   /* shield bash charge */
   if (p.bashTimer > 0) {
@@ -3063,6 +3196,8 @@ function firePistols(charged) {
   const spread = p.arc ? [-0.075, 0, 0.075] : [-0.014, 0.014];
   for (let i = 0; i < spread.length; i++) {
     const a = p.angle + spread[i];
+    p.shotCount = (p.shotCount | 0) + 1;
+    const boom = !!p.explosiveRounds && p.shotCount % 5 === 0;
     const side = (i % 2 === 0 ? -1 : 1) * 6.5;
     game.bullets.push({
       kind: 'pistol',
@@ -3075,6 +3210,7 @@ function firePistols(charged) {
       dmg: p.damage,
       knock: 4,
       pierce: p.pierce || 0,
+      explosive: boom,
       hits: null
     });
   }
@@ -3100,9 +3236,15 @@ function fireSniper(charged) {
     width: charged ? 11 : 7, colour: '#e0f2fe', core: '#ffffff'
   });
   const pad = charged ? 16 : 11;
+  /* where the round lands, for Explosive Rounds: the first body it meets */
+  let landX = p.x + Math.cos(a) * 700;
+  let landY = p.y + Math.sin(a) * 700;
+  let landed = false;
   for (let i = game.enemies.length - 1; i >= 0; i--) {
     const e = game.enemies[i];
-    if (segHitsCircle(x1, y1, x2, y2, e.x, e.y, e.r + pad)) damageEnemy(e, 9999, false);
+    if (!segHitsCircle(x1, y1, x2, y2, e.x, e.y, e.r + pad)) continue;
+    if (!landed) { landX = e.x; landY = e.y; landed = true; }
+    damageEnemy(e, 9999, false);
   }
   if (game.boss && !game.boss.entering &&
       segHitsCircle(x1, y1, x2, y2, game.boss.x, game.boss.y, game.boss.r + pad)) {
@@ -3110,6 +3252,11 @@ function fireSniper(charged) {
   }
   /* one hit per prop, all from the same 40px distance rule */
   hitBreakablesAlong(x1, y1, x2, y2, 'sniper');
+  p.shotCount = (p.shotCount | 0) + 1;
+  if (p.explosiveRounds && p.shotCount % 5 === 0) {
+    /* the fifth rail round carries a charge: it bursts where it lands */
+    explodeAt(landX, landY, p.damage * 0.6, '#fbbf24');
+  }
   Sound.sniperShot();
   game.shake = Math.max(game.shake, 0.3);
   for (let i = 0; i < 10; i++) {
@@ -3124,6 +3271,8 @@ function fireMageOrbs(charged) {
   const n = p.arc ? 4 : 3;
   for (let i = 0; i < n; i++) {
     const a = p.angle + (i - (n - 1) / 2) * 0.42;
+    p.shotCount = (p.shotCount | 0) + 1;
+    const boom = !!p.explosiveRounds && p.shotCount % 5 === 0;
     game.bullets.push({
       kind: 'orb',
       x: p.x + Math.cos(a) * (p.r + 10),
@@ -3134,6 +3283,7 @@ function fireMageOrbs(charged) {
       life: 3.2,
       dmg: p.damage * (charged ? 1.25 : 1),
       knock: 2,
+      explosive: boom,
       homing: true,
       turn: 2.6,
       spin: rand(0, TAU)
@@ -3184,7 +3334,7 @@ const ABILITIES = [
   { id: 'overcharge', key: 'r', name: 'Overcharge', cd: 30 },
   { id: 'bomb', key: 'x', name: 'Time Bomb', cd: 18 }
 ];
-function cdScale() { return game.abilityCdScale || 1; }
+function cdScale() { return (game.abilityCdScale || 1) * (game.cdModule || 1); }
 
 /* ---- Q: the class ability ---- */
 function castClassAbility() {
@@ -3604,6 +3754,36 @@ function explodeBomb(b) {
   game.particles.push({ ring: true, x: b.x, y: b.y, r: 8, maxR: R * 0.6, life: 0, maxLife: 0.3, color: '#fde68a' });
 }
 
+/* --------------------------- explosive rounds ------------------------------ */
+/* the volatile fifth round: a small hot burst where it lands. `skip` is the
+   body the round already hit, so nothing takes the same shot twice. */
+function explodeAt(x, y, dmg, colour, skip) {
+  const R = 92;
+  const col = colour || '#fbbf24';
+  Sound.bombBoom();
+  game.shake = Math.max(game.shake, 0.2);
+  for (let i = game.enemies.length - 1; i >= 0; i--) {
+    const e = game.enemies[i];
+    if (e === skip) continue;
+    if (dist(x, y, e.x, e.y) > R + e.r) continue;
+    const a = Math.atan2(e.y - y, e.x - x);
+    damageEnemy(e, dmg, true, true);
+    if (game.enemies.indexOf(e) < 0) continue;
+    e.x = clamp(e.x + Math.cos(a) * 16, 40, WORLD - 40);
+    e.y = clamp(e.y + Math.sin(a) * 16, 40, WORLD - 40);
+  }
+  if (game.boss && game.boss !== skip && dist(x, y, game.boss.x, game.boss.y) <= R + game.boss.r) {
+    damageBoss(dmg * 0.7);
+  }
+  hitBreakablesAt(x, y, 'bomb');
+  for (let i = 0; i < 16; i++) {
+    const a = rand(0, TAU);
+    spawnParticle(x, y, Math.cos(a) * rand(60, 260), Math.sin(a) * rand(60, 260),
+      rand(0.18, 0.36), rand(4, 9), i % 2 === 0 ? col : '#fde68a', 3);
+  }
+  game.particles.push({ ring: true, x, y, r: 6, maxR: R, life: 0, maxLife: 0.28, color: col });
+}
+
 function updateBombs(dt) {
   for (let i = game.bombs.length - 1; i >= 0; i--) {
     const b = game.bombs[i];
@@ -3652,10 +3832,26 @@ function hurtPlayer(amount) {
   const p = game.player;
   if (game.screen !== 'playing') return;
   if (game.arenaGrace > 0) return;      /* arena entry window: fully invincible */
+  /* Phase Cloak: out of phase, nothing can find him to hit him */
+  if (p.phaseTimer > 0) return;
   if (p.invuln > 0 || p.dashTimer > 0) return;
+  /* Temporal Barrier: the first hit of every twenty seconds is swallowed */
+  if (p.temporalBarrier && p.barrierCd <= 0) {
+    p.barrierCd = 20;
+    p.invuln = Math.max(p.invuln, 0.55);
+    Sound.ability();
+    addText(p.x, p.y - 32, 'BARRIER HELD', '#a5b4fc');
+    game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 10, maxR: 60, life: 0, maxLife: 0.38, color: '#a5b4fc' });
+    for (let i = 0; i < 12; i++) {
+      const a = rand(0, TAU);
+      spawnParticle(p.x, p.y, Math.cos(a) * rand(70, 210), Math.sin(a) * rand(70, 210), 0.3, 6, '#c7d2fe', 3);
+    }
+    return;
+  }
   if (p.shield > 0) {
     p.shield -= 1;
-    p.invuln = 1.0;
+    /* Overclock Shield: the ward burns for four seconds instead of one */
+    p.invuln = p.overclockShield ? 4.0 : 1.0;
     Sound.ability();
     addText(p.x, p.y - 32, 'SHIELD ABSORBED', '#facc15');
     for (let i = 0; i < 16; i++) {
@@ -3685,7 +3881,25 @@ function hurtPlayer(amount) {
   }
   game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 6, maxR: 44, life: 0, maxLife: 0.3, color: '#ff8080' });
   updateHealthOrbs();
-  if (p.hp <= 0) endRun();
+  if (p.hp <= 0) {
+    /* Second Wind: once a zone, death is refused */
+    if (p.secondWind && !game.secondWindUsed) {
+      game.secondWindUsed = true;
+      p.hp = 1;
+      p.invuln = 2.2;
+      p.hitFlash = 0;
+      Sound.ability();
+      addText(p.x, p.y - 46, 'SECOND WIND', '#fde68a');
+      game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 8, maxR: 92, life: 0, maxLife: 0.55, color: '#fde68a' });
+      for (let i = 0; i < 22; i++) {
+        const a = rand(0, TAU);
+        spawnParticle(p.x, p.y, Math.cos(a) * rand(90, 300), Math.sin(a) * rand(90, 300), 0.45, 7, '#ffe9ae', 3);
+      }
+      updateHealthOrbs();
+      return;
+    }
+    endRun();
+  }
 }
 /* =============================================================================
    ENEMIES, BOSSES, PROJECTILES, PARTICLES, GEMS
@@ -3752,6 +3966,9 @@ function countArenaEnemies(arenaIndex) {
 /* ------------------------------ enemy update ------------------------------- */
 function updateEnemies(dt) {
   const p = game.player;
+  /* Phase Cloak: an out-of-phase Rael is not a target. The horde keeps sweeping
+     along its last heading instead of turning to follow him, and nobody shoots. */
+  const canSee = !(p.phaseTimer > 0);
 
   for (let i = game.enemies.length - 1; i >= 0; i--) {
     const e = game.enemies[i];
@@ -3760,7 +3977,10 @@ function updateEnemies(dt) {
     if (e.contactCd > 0) e.contactCd = Math.max(0, e.contactCd - dt);
 
     const d = dist(e.x, e.y, p.x, p.y);
-    const ang = angleTo(e.x, e.y, p.x, p.y);
+    /* where they think he is: himself, or a phantom dead ahead of their heading */
+    const tx = canSee ? p.x : e.x + Math.cos(e.heading) * 320;
+    const ty = canSee ? p.y : e.y + Math.sin(e.heading) * 320;
+    const ang = angleTo(e.x, e.y, tx, ty);
 
     /* ------------------------------------------------------------------
        Where does this enemy WANT to go? Each type picks a direction and a
@@ -3788,7 +4008,7 @@ function updateEnemies(dt) {
       wantX = Math.cos(ang) * radial + Math.cos(perp) * Math.sin(e.zig) * 0.85;
       wantY = Math.sin(ang) * radial + Math.sin(perp) * Math.sin(e.zig) * 0.85;
       e.fireTimer -= dt;
-      if (e.fireTimer <= 0 && d < 760) {
+      if (canSee && e.fireTimer <= 0 && d < 760) {
         e.fireTimer = ENEMY_DEFS.archer.fire;
         fireEnemyBullet(e.x, e.y, ang, 330, 'arrow', 4, 1);
       }
@@ -3798,7 +4018,7 @@ function updateEnemies(dt) {
       wantX = Math.cos(ang) * radial;
       wantY = Math.sin(ang) * radial;
       e.fireTimer -= dt;
-      if (e.fireTimer <= 0 && d < 820) {
+      if (canSee && e.fireTimer <= 0 && d < 820) {
         e.fireTimer = ENEMY_DEFS.wizard.fire;
         const b = fireEnemyBullet(e.x, e.y, ang, 210, 'orb', 8, 1);
         b.homing = 1.5;
@@ -3849,7 +4069,7 @@ function updateEnemies(dt) {
     }
 
     /* contact damage */
-    if (d < e.r + p.r + 2 && e.contactCd <= 0) {
+    if (canSee && d < e.r + p.r + 2 && e.contactCd <= 0) {
       e.contactCd = 0.9;
       hurtPlayer(ENEMY_DEFS[e.type].contact);
     }
@@ -3951,6 +4171,12 @@ function updateBullets(dt) {
       }
     }
 
+    if (b.explosive && (hitKind === 'enemy' || hitKind === 'boss' || hitKind === 'break')) {
+      /* Explosive Rounds: the volatile shot detonates at the point of impact */
+      explodeAt(b.x, b.y, b.dmg * 0.6, '#fbbf24', hitObj);
+      b.explosive = false;
+    }
+
     if (hit) {
       const tint = b.kind === 'orb' ? '#c4b5fd' : (b.kind === 'storm' ? '#a5f3fc' : '#8fe8ff');
       for (let k = 0; k < 5; k++) {
@@ -4035,7 +4261,7 @@ function updateEnemyBullets(dt) {
       game.enemyBullets.splice(i, 1);
       continue;
     }
-    if (dist2(b.x, b.y, p.x, p.y) <= (b.r + p.r) * (b.r + p.r)) {
+    if (p.phaseTimer <= 0 && dist2(b.x, b.y, p.x, p.y) <= (b.r + p.r) * (b.r + p.r)) {
       hurtPlayer(b.dmg || 1);
       game.enemyBullets.splice(i, 1);
     }
@@ -4043,7 +4269,20 @@ function updateEnemyBullets(dt) {
 }
 
 /* ------------------------------ enemy damage ------------------------------- */
-function damageEnemy(e, dmg, silent) {
+function nearestEnemyTo(x, y, range, skip) {
+  let best = null, bestD = range;
+  for (let i = 0; i < game.enemies.length; i++) {
+    const e = game.enemies[i];
+    if (e === skip) continue;
+    const d = dist(x, y, e.x, e.y);
+    if (d < bestD) { bestD = d; best = e; }
+  }
+  return best;
+}
+
+/* `noChain` stops a chain bolt's own kill from arcing again, so the lightning
+   never runs away across the whole arena in one frame. */
+function damageEnemy(e, dmg, silent, noChain) {
   e.hp -= dmg;
   e.hitFlash = 0.12;
   if (e.hp > 0) return;
@@ -4061,6 +4300,31 @@ function damageEnemy(e, dmg, silent) {
     const a = rand(0, TAU);
     spawnParticle(e.x, e.y, Math.cos(a) * rand(50, 220), Math.sin(a) * rand(50, 220),
       rand(0.25, 0.5), rand(4, 9), def.color, 3);
+  }
+
+  /* Chain Lightning: the killing blow arcs to the nearest survivor, half power */
+  const pl = game.player;
+  if (pl && pl.chainLightning && !noChain) {
+    const arc = nearestEnemyTo(e.x, e.y, 460, e);
+    if (arc) {
+      game.beams.push({
+        kind: 'chain', x1: e.x, y1: e.y, x2: arc.x, y2: arc.y,
+        life: 0, maxLife: 0.17, width: 4.5, colour: '#93c5fd', core: '#ecfeff'
+      });
+      for (let i = 0; i < 5; i++) {
+        spawnParticle((e.x + arc.x) / 2, (e.y + arc.y) / 2,
+          rand(-90, 90), rand(-90, 90), 0.2, 4, '#bae6fd', 2);
+      }
+      damageEnemy(arc, Math.max(1, dmg * 0.5), true, true);
+    }
+  }
+
+  /* Vampiric Strike: every tenth kill drinks a health orb back */
+  if (pl && pl.vampiric && game.kills % 10 === 0) {
+    if (pl.hp < pl.maxHp) pl.hp += 1;
+    updateHealthOrbs();
+    addText(pl.x, pl.y - 42, '+1 HP', '#f9a8d4');
+    Sound.ability();
   }
   game.particles.push({ ring: true, x: e.x, y: e.y, r: 4, maxR: e.r * 3, life: 0, maxLife: 0.3, color: def.color });
 
@@ -4983,10 +5247,13 @@ function updateObjective() {
 
 /* ------------------------------ upgrades ----------------------------------- */
 function availableUpgrades() {
-  return UPGRADE_POOL.filter((u) => {
+  const cls = getClass();
+  return allUpgrades().filter((u) => {
     if ((game.upgradeLevels[u.id] || 0) >= u.max) return false;
-    if (u.classOnly && u.classOnly !== game.classId) return false;
+    if (u.classOnly && u.classOnly !== cls.id) return false;
     if (u.requires && !(game.upgradeLevels[u.requires] > 0)) return false;
+    /* a swordsman has no barrel to overclock and no rounds to fill */
+    if (u.needsBullets && cls.weapon === 'blade') return false;
     return true;
   });
 }
@@ -5196,8 +5463,9 @@ const SaveSystem = (function () {
     }
 
     const ups = (raw.upgrades && typeof raw.upgrades === 'object') ? raw.upgrades : {};
-    for (let i = 0; i < UPGRADE_POOL.length; i++) {
-      const up = UPGRADE_POOL[i];
+    const allChips = allUpgrades();
+    for (let i = 0; i < allChips.length; i++) {
+      const up = allChips[i];
       const lvl = Math.round(Number(ups[up.id]) || 0);
       if (lvl > 0) out.upgrades[up.id] = clamp(lvl, 0, up.max);
     }
@@ -5257,8 +5525,9 @@ const SaveSystem = (function () {
     game.player = makePlayer();
 
     game.upgradeLevels = {};
-    for (let i = 0; i < UPGRADE_POOL.length; i++) {
-      const up = UPGRADE_POOL[i];
+    const replay = allUpgrades();
+    for (let i = 0; i < replay.length; i++) {
+      const up = replay[i];
       const lvl = clamp(Math.round(slot.upgrades[up.id] || 0), 0, up.max);
       for (let k = 0; k < lvl; k++) {
         game.upgradeLevels[up.id] = (game.upgradeLevels[up.id] || 0) + 1;
@@ -5761,8 +6030,9 @@ function drawClassCards() {
 function applyUpgradeLevels(levels) {
   game.upgradeLevels = {};
   const map = levels || {};
-  for (let i = 0; i < UPGRADE_POOL.length; i++) {
-    const up = UPGRADE_POOL[i];
+  const allChips = allUpgrades();
+  for (let i = 0; i < allChips.length; i++) {
+    const up = allChips[i];
     const lvl = clamp(Math.round(Number(map[up.id]) || 0), 0, up.max);
     for (let k = 0; k < lvl; k++) {
       game.upgradeLevels[up.id] = (game.upgradeLevels[up.id] || 0) + 1;
@@ -5791,8 +6061,9 @@ function startRun(classId, zoneIndex, opts) {
       upgrades: Object.assign({}, game.upgradeLevels || {})
     };
     /* the knight's sword upgrades do not follow Rael into another doctrine */
-    for (let i = 0; i < UPGRADE_POOL.length; i++) {
-      const up = UPGRADE_POOL[i];
+    const allChips = allUpgrades();
+    for (let i = 0; i < allChips.length; i++) {
+      const up = allChips[i];
       if (up.classOnly && up.classOnly !== classId) delete kept.upgrades[up.id];
     }
   }
