@@ -86,6 +86,13 @@
   #topRight{ position:absolute; top:16px; right:22px; display:flex; gap:20px; align-items:center; }
   /* speedrun read-out: tabular digits so the clock never jitters the row */
   .stat.time{ color:#ffe9b0; font-variant-numeric:tabular-nums; letter-spacing:1.6px; }
+  /* gem multiplier badge: hidden until the first tier is earned */
+  .stat .mult{
+    font-family:var(--font-head); font-size:12px; font-weight:900; letter-spacing:1px;
+    color:#6ee7b7; text-shadow:0 0 14px rgba(110,231,183,.7);
+    opacity:0; transform:translateY(1px); transition:opacity .22s ease, transform .22s ease;
+  }
+  .stat .mult.on{ opacity:.95; transform:translateY(0); }
   .stat.time span{ display:inline-block; min-width:92px; text-align:right; }
   .stat{ display:flex; align-items:center; gap:7px; font-weight:700; font-size:18px; color:#eef4ff; }
   .stat svg{ width:16px; height:16px; }
@@ -910,7 +917,7 @@
 
     <div id="topRight">
       <span class="stat"><svg viewBox="0 0 24 24" fill="#e8c874" aria-hidden="true"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.8-6-3.4-6 3.4 1.3-6.8-5-4.7 6.8-.8z"/></svg><span id="scoreVal">0</span></span>
-      <span class="stat"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg><span id="gemVal">0</span></span>
+      <span class="stat"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg><span id="gemVal">0</span><span id="gemMult" class="mult">×1</span></span>
       <span class="stat time" title="Run time"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c874" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.6 1.7M9 3h6"/></svg><span id="runTime">00:00:00</span></span>
     </div>
 
@@ -1024,12 +1031,11 @@
       <button class="btn ghost" id="btnHowTo">How To Play</button>
     </div>
     <div id="howto">
-      <div class="row"><b>WASD</b> move · <b>MOUSE</b> aim · <b>LEFT CLICK</b> swing the longsword / fire your class weapon</div>
-      <div class="row"><b>Q</b> class ability · always available: Shield Bash, Bullet Storm, Railgun or Temporal Rift</div>
-      <div class="row">The other five are rewards — each zone boss you beat unlocks one:</div>
-      <div class="row"><b>ZONE 1</b> Dash <b>SHIFT</b> · ZONE 2 Nova Blast <b>E</b> · ZONE 3 Turret Drop <b>F</b></div>
-      <div class="row"><b>ZONE 4</b> Overcharge <b>R</b> · ZONE 5 Time Bomb <b>X</b></div>
-      <div class="row">Clear the 3 glowing arenas in each zone to summon its boss.</div>
+      <div class="row"><b>WASD</b> move</div>
+      <div class="row"><b>LEFT CLICK</b> use class weapon</div>
+      <div class="row"><b>Q</b> class ability</div>
+      <div class="row"><b>E</b> Nova Blast · <b>SHIFT</b> Dash · <b>F</b> Turret Drop · <b>R</b> Overcharge · <b>X</b> Time Bomb</div>
+      <div class="row">Nova Blast, Dash, Turret Drop, Overcharge and Time Bomb are unlocked by defeating bosses — one per boss, in that order.</div>
     </div>
     <div id="menuBest">BEST SCORE 0</div>
   </div>
@@ -1576,6 +1582,7 @@ const UI = {
   objective: document.getElementById('objective'),
   scoreVal: document.getElementById('scoreVal'),
   gemVal: document.getElementById('gemVal'),
+  gemMult: document.getElementById('gemMult'),
   hud: document.getElementById('hud'),
   minimap: document.getElementById('minimap'),
   classScreen: document.getElementById('classScreen'),
@@ -1932,6 +1939,8 @@ const game = {
   shake: 0,
   score: 0,
   gems: 0,
+  gemsRun: 0,          /* gems picked up this run: drives the gem multiplier */
+  gemMult: 1,          /* 10 points a kill x this */
   best: 0,
   kills: 0,
   killsThisZone: 0,
@@ -2040,6 +2049,9 @@ function makePlayer() {
 function resetRun() {
   game.score = 0;
   game.gems = 0;
+  game.gemsRun = 0;
+  game.gemMult = 1;
+  syncGemMultHud();
   game.kills = 0;
   game.killsThisZone = 0;
   game.upgradeLevels = {};
@@ -4008,7 +4020,8 @@ function damageEnemy(e, dmg, silent) {
   if (idx >= 0) game.enemies.splice(idx, 1);
 
   const def = ENEMY_DEFS[e.type] || ENEMY_DEFS.knight;
-  game.score += def.score;
+  /* 10 points a kill, lifted by the gem multiplier */
+  addScore(KILL_SCORE * gemMultiplier());
   game.kills += 1;
   game.killsThisZone += 1;
 
@@ -4489,7 +4502,7 @@ function damageBoss(dmg) {
   b.hp -= dmg;
   b.hitFlash = 0.1;
   Sound.bossHit();
-  game.score += 4;
+  addScore(4);   /* chip damage on a boss */
   UI.bossFill.style.width = (clamp(b.hp / b.maxHp, 0, 1) * 100).toFixed(1) + '%';
   if (b.hp <= 0) killBoss();
 }
@@ -4499,7 +4512,7 @@ function killBoss() {
   if (!b) return;
   const bx = b.x, by = b.y;
   game.boss = null;
-  game.score += 2000;
+  addScore(2000);
 
   /* 1 second of slow motion for the kill */
   game.slowmo = 1.0;
@@ -4587,7 +4600,7 @@ function updateGems(dt) {
     }
     if (d < p.r + 12) {
       addGems(1);
-      game.score += 8;
+      addScore(8);
       Sound.gem();
       for (let k = 0; k < 6; k++) {
         const a = rand(0, TAU);
@@ -4862,7 +4875,7 @@ function updateArenas(dt) {
 function clearArena(arena, index) {
   arena.cleared = true;
   arena.active = false;
-  game.score += 300;
+  addScore(300);
   Sound.levelClear();
   game.shake = Math.max(game.shake, 0.25);
   showBanner('ARENA CLEARED');
@@ -4904,7 +4917,7 @@ function updatePortal(dt) {
 function completeZone() {
   if (game.screen !== 'playing') return;
   BossMusic.stop();
-  game.score += 1500;
+  addScore(1500);
   Sound.levelClear();
   if (game.zoneIndex >= ZONES.length - 1) {
     showVictory();
@@ -5085,6 +5098,7 @@ const SaveSystem = (function () {
       })),
       score: Math.max(0, Math.floor(game.score || 0)),
       gems: Math.max(0, game.gems | 0),
+      gemsRun: Math.max(0, game.gemsRun | 0),
       hp: Math.max(0, Math.round(p.hp)),
       maxHp: Math.max(1, Math.round(p.maxHp)),
       bossDefeated: !!game.portal,
@@ -5134,6 +5148,7 @@ const SaveSystem = (function () {
       arenas: [],
       score: Math.max(0, Math.floor(Number(raw.score) || 0)),
       gems: Math.max(0, Math.floor(Number(raw.gems) || 0)),
+      gemsRun: Math.max(0, Math.floor(Number(raw.gemsRun) || 0)),
       hp: Math.max(0, Math.round(Number(raw.hp) || 0)),
       maxHp: Math.max(1, Math.round(Number(raw.maxHp) || 1)),
       bossDefeated: !!raw.bossDefeated,
@@ -5222,6 +5237,8 @@ const SaveSystem = (function () {
 
     game.score = slot.score;
     game.gems = slot.gems;
+    game.gemsRun = Math.max(0, slot.gemsRun | 0);
+    syncGemMultHud();
     game.maxZone = clamp(Math.max(slot.maxZone | 0, slot.zone | 0), 0, ZONES.length - 1);
     game.abilities = { dash: false, nova: false, turret: false, overcharge: false, bomb: false };
     for (let i = 0; i < ABILITY_IDS.length; i++) {
@@ -5329,12 +5346,47 @@ const SaveSystem = (function () {
   };
 }());
 
+/* the gem multiplier: every GEMS_PER_TIER gems picked up in a run raises it by
+   one, and every kill is worth KILL_SCORE x the current tier. It never falls
+   during a run, so collecting is always worth it. */
+const KILL_SCORE = 10;
+const GEMS_PER_TIER = 12;
+const MULT_CAP = 8;
+
+function gemMultiplier() {
+  const tier = 1 + Math.floor((game.gemsRun | 0) / GEMS_PER_TIER);
+  return clamp(tier, 1, MULT_CAP);
+}
+
+/* every point of score goes through here: it keeps the running total a real
+   number even if something ever hands it a bad value, and it refreshes the HUD
+   so the score can never sit at a stale figure */
+function addScore(points) {
+  const add = Number(points);
+  if (!isFinite(add) || add === 0) return game.score;
+  if (!isFinite(game.score)) game.score = 0;
+  game.score += add;
+  if (UI.scoreVal) UI.scoreVal.textContent = String(Math.floor(game.score));
+  return game.score;
+}
+
+function syncGemMultHud() {
+  game.gemMult = gemMultiplier();
+  if (!UI.gemMult) return game.gemMult;
+  const text = '×' + game.gemMult;
+  if (UI.gemMult.textContent !== text) UI.gemMult.textContent = text;
+  UI.gemMult.classList.toggle('on', game.gemMult > 1);
+  return game.gemMult;
+}
+
 /* gems are counted twice: in the run and for the lifetime total */
 function addGems(n) {
   const amount = Math.max(0, Math.floor(n || 0));
   if (!amount) return;
   game.gems += amount;
+  game.gemsRun = Math.max(0, (game.gemsRun | 0) + amount);
   game.lifetimeGems = Math.max(0, game.lifetimeGems | 0) + amount;
+  syncGemMultHud();
 }
 
 /* ------------------------- save slot UI (menu) ----------------------------- */
@@ -5855,8 +5907,9 @@ function updateHud() {
   UI.abilities.bomb.querySelector('.cd').textContent =
     game.bombCd > 0.05 ? String(Math.ceil(game.bombCd)) : '';
 
-  /* speedrun clock, top-right */
+  /* speedrun clock and gem multiplier, top-right */
   RunClock.paint();
+  syncGemMultHud();
 
   /* screen effect */
   UI.overchargeGlow.classList.toggle('on', game.overchargeTimer > 0);
@@ -10752,7 +10805,7 @@ function explodeBarrel(o, source) {
   o.hp = 0;
   Sound.barrelPop();
   game.shake = Math.max(game.shake, 0.22);
-  game.score += 25;
+  addScore(25);
 
   const wood = ['#9a6633', '#7a4f26', '#5c3b1b', '#3f2811', '#b07b40'];
   for (let i = 0; i < 22; i++) {
@@ -10793,7 +10846,7 @@ function breakWall(w) {
   w.broken = true;
   Sound.wallBreak();
   game.shake = Math.max(game.shake, 0.42);
-  game.score += 60;
+  addScore(60);
 
   /* heavy brick debris + dust */
   const bw = w.w, bh = w.h;
@@ -10844,7 +10897,7 @@ function openChest(c, source) {
   c.hitFlash = 0.2;
   Sound.chestPop();
   game.shake = Math.max(game.shake, 0.22);
-  game.score += 120;
+  addScore(120);
 
   /* satisfying gold burst */
   const gold = ['#ffe6a1', '#ffd772', '#f0c264', '#c08a2a', '#fff6d8'];
@@ -10893,7 +10946,7 @@ function grantRandomUpgrade() {
   const pool = availableUpgrades();
   if (!pool.length) {
     addGems(6);
-    game.score += 150;
+    addScore(150);
     addText(p.x, p.y - 46, 'CHIP SALVAGED · +6 GEMS', '#fde68a');
     Sound.gem();
     SaveSystem.save('pickup');
