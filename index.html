@@ -18,10 +18,75 @@
   }
   *{ box-sizing:border-box; }
   html,body{
-    margin:0; padding:0; width:100%; height:100%;
-    background:#04050a; overflow:hidden;
+    margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000;
     font-family:var(--font-stat); color:#eaf0fa;
     user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent;
+  }
+  canvas { display:block; width:100vw; height:100vh; }
+  /* --- MOBILE TOUCH CONTROLS --- */
+  #touchControls {
+    position:fixed; inset:0; pointer-events:none; z-index:2000;
+    display:none; /* shown only on touch devices */
+  }
+  #touchControls.show { display:block; }
+  #joyStick {
+    position:absolute; bottom:safe-area-inset-bottom; left:safe-area-inset-left;
+    width:120px; height:120px; margin:16px;
+    border-radius:50%; background:rgba(0,0,0,.6);
+    pointer-events:auto; touch-action:none;
+    box-sizing:border-box; border:2px solid rgba(255,255,255,.2);
+  }
+  #joyDot {
+    position:absolute; left:50%; top:50%; width:40px; height:40px;
+    margin:-20px 0 0 -20px; border-radius:50%; background:#fff;
+    pointer-events:none; box-shadow:0 0 10px #fff;
+    transition:transform .05s ease;
+  }
+  #fireBtn {
+    position:absolute; bottom:safe-area-inset-bottom; right:safe-area-inset-right;
+    width:80px; height:80px; margin:16px;
+    border-radius:50%; background:rgba(255,50,50,.6);
+    border:2px solid #ff8888; box-shadow:0 0 20px rgba(255,50,50,.5);
+    pointer-events:auto; touch-action:none;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #fireBtn::after {
+    content:''; width:40px; height:40px; border-radius:50%;
+    background:#fff; box-shadow:0 0 15px #fff;
+  }
+  .touch-ability {
+    position:absolute; bottom:calc(80px + safe-area-inset-bottom); right:safe-area-inset-right;
+    width:48px; height:48px; margin:4px;
+    border-radius:8px; background:rgba(50,150,255,.6);
+    border:1px solid #88ccff; box-shadow:0 0 10px rgba(50,150,255,.3);
+    pointer-events:auto; touch-action:none;
+    display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff;
+  }
+  #abilityQ { bottom:calc(160px + safe-area-inset-bottom); }
+  #abilityE { bottom:calc(120px + safe-area-inset-bottom); }
+  #abilityShift { bottom:calc(80px + safe-area-inset-bottom); }
+
+  /* --- CLASS SELECT MOBILE --- */
+  @media (max-width: 767px) {
+    #classGrid {
+      grid-template-columns: 1fr !important;
+      max-width: 100% !important;
+      gap: 16px !important;
+    }
+    .class-card {
+      width: 100% !important; max-width: 100% !important;
+      margin-bottom: 12px;
+    }
+    #classScreen .cs-inner {
+      overflow-y: auto !important;
+      justify-content: flex-start !important;
+    }
+    #classScreen .cs-inner > * { flex: 0 0 auto !important; }
+  }
+
+  /* --- MINIMUM 48PX BUTTON HEIGHT --- */
+  .btn, .ability .ab-btn, #btnResetSave, #btnContinueSave, #btnBegin, #btnShop, #btnHowTo, #btnHowToBack, #btnContinue, #btnVisitShop, #btnNextUniverse, #btnShopClose, #btnClassSkip {
+    min-height: 48px !important;
   }
   /* the stage IS the window: nothing anywhere is given a fixed pixel size */
   #stage{
@@ -201,42 +266,102 @@
   }
   .ability.cooling .ab-sweep{ opacity:1; }
   /* the icon, dead centre */
-  .ability .icon{
-    position:absolute; left:0; right:0; top:11px; height:20px;
-    display:block; text-align:center; line-height:20px;
-    font-family:var(--font-head); font-size:17px; font-weight:700;
-    color:#f7e9c3; text-shadow:0 0 10px rgba(232,200,116,.45);
+    .ability .icon{
+    position:absolute; left:0; right:0; top:0; bottom:0;
+    display:block; text-align:center; line-height:52px;
+    font-family:Rajdhani, sans-serif; font-size:12px; font-weight:700;
     transition:opacity .15s ease;
+    background-size: 32px 32px; background-position: center; background-repeat: no-repeat;
   }
-  .ability.ready .icon{ color:#dff6ff; text-shadow:0 0 12px rgba(143,232,255,.6); }
-  /* the key label, tiny, pinned to the top-left corner */
+  /* Q — Class Ability */
+  #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M26 10 L38 22 L26 34 L14 22 Z' fill='%23fcd34d' stroke='%23f0b45a' stroke-width='2'/></svg>"); }
+  .knight #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M26 10 L38 22 L26 34 L14 22 Z' fill='%23fcd34d' stroke='%23f0b45a' stroke-width='2'/></svg>"); }
+  .gunslinger #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M16 26 L40 26' stroke='%23a5f3fc' stroke-width='4' stroke-linecap='round'/><circle cx='40' cy='26' r='4' fill='%23a5f3fc'/></svg>"); }
+  .sniper #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><line x1='12' y1='26' x2='40' y2='26' stroke='%23c7d2fe' stroke-width='3'/><line x1='35' y1='20' x2='45' y2='26' stroke='%23c7d2fe' stroke-width='3'/><line x1='35' y1='32' x2='45' y2='26' stroke='%23c7d2fe' stroke-width='3'/></svg>"); }
+  .mage #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><circle cx='26' cy='26' r='16' fill='none' stroke='%23a78bfa' stroke-width='3'/><circle cx='26' cy='26' r='8' fill='%23a78bfa'/></svg>"); }
+  .berserker #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M16 16 L36 16 L26 36 Z' fill='%23ff7a45'/><path d='M26 16 L36 36 L16 36 Z' fill='%23ff7a45'/></svg>"); }
+  .shadow #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><circle cx='26' cy='26' r='16' stroke='%23c4b5fd' stroke-width='3' fill='none'/><circle cx='26' cy='26' r='6' fill='%23c4b5fd'/></svg>"); }
+  .tech #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><rect x='18' y='18' width='16' height='16' rx='2' fill='%236ee7b7'/><circle cx='26' cy='26' r='4' fill='%2334d399'/></svg>"); }
+
+  /* E — Nova Blast */
+  #abNova .icon {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M26 6 L26 16 M26 36 L26 46 M6 26 L16 26 M36 26 L46 26 M12 12 L19 19 M33 33 L40 40 M12 40 L19 33 M33 19 L40 12' stroke='%23ffffff' stroke-width='3' stroke-linecap='round'/><circle cx='26' cy='26' r='6' fill='%23ffffff'/></svg>");
+    filter: drop-shadow(0 0 4px #fff);
+  }
+  .ability.ready #abNova .icon { filter: drop-shadow(0 0 8px #fff); }
+  .ability.cooling #abNova .icon { filter: none; opacity: .3; }
+
+  /* Shift — Dash */
+  #abDash .icon {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M18 26 L38 26' stroke='%2306b6d4' stroke-width='4' stroke-linecap='round'/><path d='M38 26 L30 18' stroke='%2306b6d4' stroke-width='3' stroke-linecap='round'/><path d='M38 26 L30 34' stroke='%2306b6d4' stroke-width='3' stroke-linecap='round'/><path d='M30 26 L22 18' stroke='%2306b6d4' stroke-width='2' stroke-linecap='round'/><path d='M30 26 L22 34' stroke='%2306b6d4' stroke-width='2' stroke-linecap='round'/><path d='M22 26 L14 18' stroke='%2306b6d4' stroke-width='1' stroke-linecap='round'/><path d='M22 26 L14 34' stroke='%2306b6d4' stroke-width='1' stroke-linecap='round'/></svg>");
+    filter: drop-shadow(0 0 4px #06b6d4);
+  }
+  .ability.ready #abDash .icon { filter: drop-shadow(0 0 8px #06b6d4); }
+  .ability.cooling #abDash .icon { filter: none; opacity: .3; }
+
+  /* F — Turret Drop */
+  #abTurret .icon {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><rect x='18' y='30' width='16' height='12' rx='2' fill='%234b5563'/><rect x='22' y='22' width='8' height='8' rx='1' fill='%234b5563'/><line x1='26' y1='22' x2='26' y2='10' stroke='%234b5563' stroke-width='2'/><circle cx='26' cy='8' r='2' fill='%2322c55e'/></svg>");
+    filter: drop-shadow(0 0 4px #4b5563);
+  }
+  .ability.ready #abTurret .icon { filter: drop-shadow(0 0 8px #4b5563); }
+  .ability.cooling #abTurret .icon { filter: none; opacity: .3; }
+
+  /* R — Overcharge */
+  #abOvercharge .icon {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M20 10 L32 26 L20 42' stroke='%23f97316' stroke-width='5' stroke-linecap='round'/><path d='M24 14 L30 22' stroke='%23f97316' stroke-width='2'/><path d='M22 30 L28 38' stroke='%23f97316' stroke-width='2'/></svg>");
+    filter: drop-shadow(0 0 4px #f97316);
+  }
+  .ability.ready #abOvercharge .icon { filter: drop-shadow(0 0 8px #f97316); }
+  .ability.cooling #abOvercharge .icon { filter: none; opacity: .3; }
+
+  /* X — Time Bomb */
+  #abBomb .icon {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><circle cx='26' cy='26' r='20' fill='%237f1d1d' stroke='%23991b1b' stroke-width='2'/><line x1='26' y1='16' x2='26' y2='30' stroke='%23ffffff' stroke-width='1'/><line x1='20' y1='22' x2='32' y2='30' stroke='%23ffffff' stroke-width='1'/><path d='M26 6 L26 10' stroke='%23f59e0b' stroke-width='2'/><path d='M25 8 L27 6' stroke='%23f59e0b' stroke-width='1'/><path d='M27 8 L25 6' stroke='%23f59e0b' stroke-width='1'/></svg>");
+    filter: drop-shadow(0 0 4px #7f1d1d);
+  }
+  .ability.ready #abBomb .icon { filter: drop-shadow(0 0 8px #7f1d1d); }
+  .ability.cooling #abBomb .icon { filter: none; opacity: .3; }
+
+  /* Overdrive (Z) — optional 7th slot */
+  #abOverdrive .icon {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M16 26 L36 26' stroke='%23a855f7' stroke-width='4'/><path d='M36 26 L30 20' stroke='%23a855f7' stroke-width='3'/><path d='M36 26 L30 32' stroke='%23a855f7' stroke-width='3'/></svg>");
+    filter: drop-shadow(0 0 4px #a855f7);
+  }
+  .ability.ready #abOverdrive .icon { filter: drop-shadow(0 0 8px #a855f7); }
+  .ability.cooling #abOverdrive .icon { filter: none; opacity: .3; }
+
+  /* Cooldown sweep overlay: clean white arc */
+  .ability .ab-sweep{
+    position:absolute; inset:0; border-radius:50%;
+    background:conic-gradient(rgba(255,255,255,.86) calc(var(--cd, 1) * 360deg), rgba(255,255,255,0) 0);
+    opacity:0; transition:opacity .12s linear;
+    pointer-events:none;
+  }
+
+  /* Key label: tiny gold text in top-left */
   .ability .key{
     position:absolute; top:3px; left:4px;
-    font-family:var(--font-head); font-size:8px; font-weight:700; line-height:1;
-    letter-spacing:.4px; color:rgba(255,223,155,.92);
+    font-family:Rajdhani, sans-serif; font-size:7px; font-weight:700; line-height:1;
+    letter-spacing:.4px; color:#ffd98a;
     text-shadow:0 1px 3px rgba(0,0,0,.9);
     white-space:nowrap;
   }
-  /* the ability name, tiny, under the icon */
+
+  /* Ability name: 8px Rajdhani font below icon */
   .ability .label{
-    position:absolute; left:1px; right:1px; bottom:3px;
+    position:absolute; left:1px; right:1px; bottom:4px;
     display:block; text-align:center;
-    font-size:7px; line-height:1; letter-spacing:.2px;
-    color:rgba(232,200,116,.82);
+    font-family:Rajdhani, sans-serif; font-size:8px; line-height:1; letter-spacing:.2px;
+    color:#e8c874;
     white-space:nowrap; overflow:hidden;
   }
-  /* seconds still on the clock, right over the icon */
-  .ability .cd{
-    position:absolute; inset:0;
-    display:flex; align-items:center; justify-content:center;
-    font-family:var(--font-head); font-size:14px; font-weight:700;
-    color:#e8f4ff; text-shadow:0 0 5px #000, 0 0 12px rgba(0,0,0,.95);
-  }
-  .ability.ready .cd{ display:none; }
-  .ability.cooling .icon{ opacity:.3; }
-  .ability.cooling .label{ color:rgba(232,200,116,.45); }
-  /* a locked slot is a dark grey padlock and nothing else */
-  .ability .lock{
+
+  /* Cooldown text overlay: dark grey when cooling */
+  .ability.cooling .icon { opacity: .3; }
+  .ability.cooling .label { color: #4b5563; }
+  .ability.cooling .key { color: #4b5563; }
+.ability .lock{
     position:absolute; inset:0; display:none;
     align-items:center; justify-content:center;
     color:#4b5563;
@@ -1226,7 +1351,7 @@
   .shop-flash.show{ opacity:1; }
   .shop-flash.bad{ color:#fca5a5; }
 
-  /* ---- consumable satchel: three quick slots, bottom left ---- */
+    /* ---- consumable satchel: three quick slots, bottom left ---- */
   #consumables{
     position:absolute; left:22px; bottom:22px;
     display:flex; flex-direction:column; gap:8px; pointer-events:none;
@@ -1238,14 +1363,12 @@
     border:1px solid rgba(232,200,116,.3); border-radius:3px;
     transition:border-color .18s ease, box-shadow .18s ease, opacity .18s ease;
   }
-  .consumable-slot.empty{ opacity:.3; border-style:dashed; }
   .consumable-slot .key{
     flex:0 0 auto; width:19px; height:19px; border-radius:3px;
     display:flex; align-items:center; justify-content:center;
     font-family:var(--font-head); font-size:10px; font-weight:700; color:#0a0c12;
     background:rgba(232,200,116,.85);
   }
-  .consumable-slot.empty .key{ background:rgba(148,163,184,.4); }
   .consumable-slot .cicon{
     flex:0 0 auto; width:16px; text-align:center;
     font-family:var(--font-head); font-size:15px; color:#ffe4ae;
@@ -1254,9 +1377,7 @@
     font-family:var(--font-head); font-size:10px; letter-spacing:1.5px;
     text-transform:uppercase; color:#ffe7b8; white-space:nowrap; overflow:hidden;
   }
-  .consumable-slot.pop{ border-color:#ffd54a; box-shadow:0 0 24px rgba(255,213,74,.45); }
-
-  /* the seventh ability slot only exists once the Overdrive Core is bought */
+  .consumable-slot.pop{ border-color:#ffd54a; box-shadow:0 0 24px rgba(255,213,74,.45); }/* the seventh ability slot only exists once the Overdrive Core is bought */
   #abOverdrive{ display:none; }
   #abOverdrive.show{ display:block; }
 
@@ -1361,6 +1482,52 @@
   /* the HUD is drawn inside #uiLayer in the 1280x720 base space and scaled to
      the window, so it is deliberately NOT given any width-based tweaks: it
      looks identical on every screen, just bigger or smaller. */
+  /* --- MOBILE PAUSE BUTTON --- */
+  #mobilePauseBtn {
+    position:fixed; top:safe-area-inset-top; right:safe-area-inset-right;
+    width:44px; height:44px; margin:16px;
+    background:rgba(0,0,0,.6); border:1px solid rgba(255,255,255,.3);
+    border-radius:4px; color:#e8c874; font-size:24px; line-height:44px;
+    text-align:center; display:none; pointer-events:auto; touch-action:none;
+    box-shadow:0 0 8px rgba(0,0,0,.5);
+  }
+  #mobilePauseBtn.show { display:block; }
+  #mobilePauseBtn:active { background:rgba(255,255,255,.1); }
+
+  /* --- PAUSE MENU OVERLAY --- */
+  #pauseOverlay {
+    position:fixed; inset:0; z-index:1001;
+    background:rgba(5,5,15,.92); display:none;
+    flex-direction:column; align-items:center; justify-content:center;
+    pointer-events:none;
+  }
+  #pauseOverlay.show { display:flex; pointer-events:auto; }
+  #pauseTitle {
+    font-family:var(--font-head); font-size:48px; font-weight:900;
+    color:#e8c874; text-shadow:0 0 15px rgba(232,200,116,.6);
+    margin-bottom:32px;
+  }
+  .pause-btn {
+    width:280px; height:52px; margin:8px 0;
+    background:linear-gradient(180deg, rgba(8,11,18,.9) 0%, rgba(8,11,18,.4) 100%);
+    border:1px solid rgba(232,200,116,.4); border-radius:4px;
+    color:#eaf0fa; font-family:var(--font-stat); font-size:16px; font-weight:700;
+    cursor:pointer; transition:background .18s, border-color .18s, box-shadow .18s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .pause-btn:hover:not(:disabled) {
+    background:linear-gradient(180deg, rgba(8,11,18,.96) 0%, rgba(8,11,18,.6) 100%);
+    border-color:#e8c874; box-shadow:0 0 12px rgba(232,200,116,.3);
+  }
+  .pause-btn:disabled {
+    opacity:.4; cursor:not-allowed; pointer-events:none;
+  }
+  .pause-tooltip {
+    position:absolute; bottom:-28px; left:50%; transform:translateX(-50%);
+    background:#000; color:#ff8888; font-size:11px; padding:3px 8px;
+    border-radius:3px; white-space:nowrap; opacity:0; transition:opacity .18s;
+  }
+  .pause-btn:disabled:hover .pause-tooltip { opacity:1; }
 </style>
 </head>
 <body>
@@ -1373,6 +1540,17 @@
 
   <!-- the HUD and all in-stage effects live in one scaled layer -->
   <div id="uiLayer">
+
+  /* --- MOBILE PAUSE BUTTON --- */
+  <div id="mobilePauseBtn" aria-label="Pause">☰</div>
+  <!-- ==================== MOBILE TOUCH CONTROLS ==================== -->
+  <div id="touchControls">
+    <div id="joyStick"><div id="joyDot"></div></div>
+    <div id="fireBtn"></div>
+    <div id="abilityQ" class="touch-ability">Q</div>
+    <div id="abilityE" class="touch-ability">E</div>
+    <div id="abilityShift" class="touch-ability">SHIFT</div>
+  </div>
 
   <!-- ==================== HUD ==================== -->
   <div id="overchargeGlow"></div>
@@ -1401,7 +1579,7 @@
         <div class="ab-btn">
           <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" id="qIcon" aria-hidden="true">⚔</span>
+          <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">Q</span>
           <span class="label" id="qLabel">BASH</span>
@@ -1412,7 +1590,7 @@
         <div class="ab-btn">
           <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">✦</span>
+          <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">E</span>
           <span class="label">NOVA</span>
@@ -1423,7 +1601,7 @@
         <div class="ab-btn">
           <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">⇉</span>
+          <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">Z</span>
           <span class="label">OVERDRIVE</span>
@@ -1434,7 +1612,7 @@
         <div class="ab-btn">
           <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">➤</span>
+          <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">SHIFT</span>
           <span class="label">DASH</span>
@@ -1445,7 +1623,7 @@
         <div class="ab-btn">
           <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">⌖</span>
+          <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">F</span>
           <span class="label">TURRET</span>
@@ -1456,7 +1634,7 @@
         <div class="ab-btn">
           <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">⚡</span>
+          <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">R</span>
           <span class="label">OVERCHARGE</span>
@@ -1467,7 +1645,7 @@
         <div class="ab-btn">
           <svg class="ab-ring" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">◉</span>
+          <span class="icon" aria-hidden="true"></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">X</span>
           <span class="label">TIME BOMB</span>
@@ -1528,11 +1706,23 @@
   </div><!-- /#uiLayer -->
 </div>
 
-<!-- ==================== OVERLAY SCREENS ====================
+  <!-- ==================== PAUSE MENU OVERLAY ==================== -->
+  <div id="pauseOverlay">
+    <h1 id="pauseTitle">PAUSED</h1>
+    <button class="pause-btn" id="btnResumePause">RESUME</button>
+    <button class="pause-btn" id="btnVisitShopPause">VISIT SHOP</button>
+    <button class="pause-btn" id="btnChangeClassPause">CHANGE CLASS
+      <span class="pause-tooltip">finish the current arena first</span>
+    </button>
+    <button class="pause-btn" id="btnLeaveMenuPause">LEAVE TO MENU</button>
+  </div>
+
+<!-- ==================== OVERLAY SCREENS ==================== -->
      Every menu, card, shop and result screen is a plain HTML layer that
      is pinned over the whole viewport at z-index 1000. Nothing here is
      drawn on the game canvas: while one of them is open the canvas is
      paused outright.
+
      ========================================================= -->
 <div id="overlays">
   <!-- ==================== MAIN MENU ==================== -->
@@ -1840,7 +2030,9 @@ const WORLD = 3000;          // every zone map is 3000 x 3000
    picture is identical on every screen: only bigger or smaller. */
 const BASE_W = W;
 const BASE_H = H;
-let viewScale = 1;           // device pixels per base pixel
+let viewScale = 1;           // device pixels per base pixel (aspect-preserving)
+let viewScaleX = 1;          // canvas.width/1280 for X
+let viewScaleY = 1;          // canvas.height/720 for Y
 let viewOffX = 0;            // letterbox offset of the base box, device pixels
 let viewOffY = 0;
 let viewDpr = 1;             // backing-store pixels per CSS pixel
@@ -3676,8 +3868,8 @@ function pointerToWorldScreen(e) {
      cursor lands on the same world point at any window size */
   const kx = r.width > 0 ? UI.canvas.width / r.width : 1;
   const ky = r.height > 0 ? UI.canvas.height / r.height : 1;
-  const sx = ((e.clientX - r.left) * kx - viewOffX) / viewScale;
-  const sy = ((e.clientY - r.top) * ky - viewOffY) / viewScale;
+  const sx = ((e.clientX - r.left) * kx - viewOffX) / viewScaleX;
+  const sy = ((e.clientY - r.top) * ky - viewOffY) / viewScaleY;
   return { x: sx, y: sy };
 }
 
@@ -4127,10 +4319,15 @@ function swordDamage() {
 function syncClassHud() {
   const c = getClass();
   UI.className.textContent = c.name;
-  UI.qIcon.textContent = c.q.glyph;
+  // UI.qIcon.textContent = c.q.glyph;  <-- removed, icon is CSS background
   UI.qLabel.textContent = c.q.label;
-  UI.abilities.q.style.color = c.q.colour;
+  // UI.abilities.q.style.color = c.q.colour; <-- removed, color is CSS background
   paintClassIcon(UI.badgeIcon, c.id);
+  // Apply class ID to HUD for CSS selectors (.knight #abQ .icon, etc.)
+  const hud = document.getElementById('hud');
+  if (hud) {
+    hud.className = 'screen ' + c.id;
+  }
 }
 
 /* =============================================================================
@@ -8353,14 +8550,22 @@ function syncConsumableHud() {
   if (!host) return;
   Shop.ensure();
   const inv = Shop.state.inventory;
+  const count = inv.length;
+  if (count === 0) {
+    host.classList.add('hide');
+    host.innerHTML = '';
+    return;
+  }
+  host.classList.remove('hide');
   let html = '';
-  for (let i = 0; i < CONSUMABLE_SLOTS; i++) {
+  for (let i = 0; i < count; i++) {
     const id = inv[i];
-    const def = id ? SHOP_CONSUMABLES.find((c) => c.id === id) : null;
-    html += '<div class="consumable-slot' + (def ? '' : ' empty') + '" data-slot="' + i + '">' +
+    const def = SHOP_CONSUMABLES.find((c) => c.id === id);
+    if (!def) continue;
+    html += '<div class="consumable-slot" data-slot="' + i + '">' +
       '<span class="key">' + (i + 1) + '</span>' +
-      '<span class="cicon">' + (def ? def.glyph : '·') + '</span>' +
-      '<span class="cname">' + (def ? def.name : 'Empty') + '</span></div>';
+      '<span class="cicon">' + def.glyph + '</span>' +
+      '<span class="cname">' + def.name + '</span></div>';
   }
   host.innerHTML = html;
 }
@@ -19086,10 +19291,14 @@ function update(dt) {
     game.slowmo = Math.max(0, game.slowmo - dt);
     if (game.slowmo === 0) game.timeScale = 1;
   }
-  const sdt = dt * game.timeScale;
+  // PAUSE SYSTEM: if paused, timeScale is 0, so sdt is 0.
+  // We also stop the speedrun timer (game.time) and all cooldowns (sdt = 0).
+  const sdt = (isPaused ? 0 : dt) * game.timeScale;
 
-  game.time += sdt;
-  game.ambientClock += dt;
+  if (!isPaused) {
+    game.time += sdt;
+    game.ambientClock += dt;
+  }
 
   updatePlayer(sdt);
   updatePet(sdt);
@@ -19158,7 +19367,7 @@ function frame(t) {
 function viewportSize() {
   const de = document.documentElement || {};
   const vw = window.innerWidth || de.clientWidth || BASE_W;
-  const vh = window.innerHeight || de.clientHeight || BASE_H;
+  const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight || de.clientHeight || BASE_H;
   return { w: Math.max(1, vw), h: Math.max(1, vh) };
 }
 
@@ -19170,7 +19379,7 @@ function paintBackdrop() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = '#04050a';
   ctx.fillRect(0, 0, cv.width, cv.height);
-  ctx.setTransform(viewScale, 0, 0, viewScale, viewOffX, viewOffY);
+  ctx.setTransform(viewScaleX, 0, 0, viewScaleY, viewOffX, viewOffY);
 }
 
 function resize() {
@@ -19187,8 +19396,10 @@ function resize() {
   }
   const cw = cv ? cv.width : bw;
   const ch = cv ? cv.height : bh;
-  /* THE scale factor: 1280x720 base space -> this window, aspect preserved */
-  viewScale = Math.min(cw / BASE_W, ch / BASE_H) || 1;
+  /* THE scale factors: canvas.width/1280 for X and canvas.height/720 for Y */
+  const scaleX = cw / BASE_W || 1;
+  const scaleY = ch / BASE_H || 1;
+  viewScale = Math.min(scaleX, scaleY); /* keep aspect ratio for the transform */
   viewOffX = (cw - BASE_W * viewScale) / 2;
   viewOffY = (ch - BASE_H * viewScale) / 2;
   /* the HUD sits in a 1280x720 CSS-pixel box scaled by exactly the same factor */
@@ -19197,6 +19408,9 @@ function resize() {
     UI.uiLayer.style.transform =
       'translate(' + (viewOffX / dpr) + 'px,' + (viewOffY / dpr) + 'px) scale(' + cssScale + ')';
   }
+  /* store the independent ratios for the game elements */
+  viewScaleX = scaleX;
+  viewScaleY = scaleY;
   paintBackdrop();
 }
 window.addEventListener('resize', resize);
@@ -19214,6 +19428,197 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('pagehide', () => flushSaveGame(true));
 window.addEventListener('beforeunload', () => flushSaveGame(true));
+
+/* --- TOUCH CONTROLS INITIALIZATION --- */
+function initTouchControls() {
+  const isTouch = 'ontouchstart' in window || (window.navigator.maxTouchPoints || 0) > 0;
+  const controls = document.getElementById('touchControls');
+  if (controls) controls.classList.toggle('show', isTouch);
+  if (!isTouch) return;
+
+  const joy = document.getElementById('joyStick');
+  const dot = document.getElementById('joyDot');
+  const fire = document.getElementById('fireBtn');
+  const abQ = document.getElementById('abilityQ');
+  const abE = document.getElementById('abilityE');
+  const abShift = document.getElementById('abilityShift');
+
+  let joyActive = false, joyX = 0, joyY = 0;
+  let lastFire = 0;
+
+  function getTouchPos(e) {
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX, y: t.clientY };
+  }
+
+  function handleJoyStart(e) {
+    const pos = getTouchPos(e);
+    const rect = joy.getBoundingClientRect();
+    joyActive = true;
+    updateJoy(pos.x - (rect.left + rect.width/2), pos.y - (rect.top + rect.height/2));
+    e.preventDefault();
+  }
+  function handleJoyMove(e) {
+    if (!joyActive) return;
+    const pos = getTouchPos(e);
+    const rect = joy.getBoundingClientRect();
+    const dx = pos.x - (rect.left + rect.width/2);
+    const dy = pos.y - (rect.top + rect.height/2);
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const max = 60;
+    if (dist > max) {
+      joyX = (dx / dist) * max;
+      joyY = (dy / dist) * max;
+    } else {
+      joyX = dx; joyY = dy;
+    }
+    updateJoy(joyX, joyY);
+    e.preventDefault();
+  }
+  function handleJoyEnd() {
+    joyActive = false;
+    updateJoy(0, 0);
+  }
+  function updateJoy(x, y) {
+    dot.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+    if (game) {
+      const dist = Math.sqrt(x*x + y*y);
+      game.joyX = dist > 10 ? x / 60 : 0;
+      game.joyY = dist > 10 ? y / 60 : 0;
+    }
+  }
+
+  joy.addEventListener('touchstart', handleJoyStart, { passive: false });
+  joy.addEventListener('touchmove', handleJoyMove, { passive: false });
+  joy.addEventListener('touchend', handleJoyEnd, { passive: false });
+  joy.addEventListener('touchcancel', handleJoyEnd, { passive: false });
+
+  function fireWeapon() {
+    if (!game || game.screen !== 'playing') return;
+    const now = nowMs();
+    if (now - lastFire < 100) return; // debounce
+    lastFire = now;
+    const cls = game.classId || 'knight';
+    if (cls === 'knight') { game.qCd = 0; }
+    else if (cls === 'gunslinger') { game.novaCd = 0; }
+    else if (cls === 'berserker') { game.dashCd = 0; }
+    game.keys.Space = true;
+  }
+  fire.addEventListener('touchstart', (e) => { fireWeapon(); e.preventDefault(); }, { passive: false });
+  fire.addEventListener('touchend', (e) => { e.preventDefault(); }, { passive: false });
+
+  function triggerAbility(id) {
+    if (!game || game.screen !== 'playing') return;
+    if (id === 'Q') game.qCd = 0;
+    else if (id === 'E') game.novaCd = 0;
+    else if (id === 'Shift') game.dashCd = 0;
+  }
+  abQ.addEventListener('touchstart', (e) => { triggerAbility('Q'); e.preventDefault(); }, { passive: false });
+  abE.addEventListener('touchstart', (e) => { triggerAbility('E'); e.preventDefault(); }, { passive: false });
+  abShift.addEventListener('touchstart', (e) => { triggerAbility('Shift'); e.preventDefault(); }, { passive: false });
+}
+/* --- PAUSE SYSTEM --- */
+let isPaused = false;
+function togglePause() {
+  if (!game || game.screen !== 'playing') return;
+  isPaused = !isPaused;
+  const overlay = document.getElementById('pauseOverlay');
+  const btnChange = document.getElementById('btnChangeClassPause');
+  if (isPaused) {
+    overlay.classList.add('show');
+    stopLoop();
+    // Check if mid-fight (arenas list not empty or boss active)
+    const midFight = game.arenas.length > 0 || game.boss || game.bossFight;
+    if (midFight) {
+      btnChange.disabled = true;
+      btnChange.querySelector('.pause-tooltip').style.opacity = '1';
+    } else {
+      btnChange.disabled = false;
+      btnChange.querySelector('.pause-tooltip').style.opacity = '0';
+    }
+    game.timeScale = 0;
+  } else {
+    overlay.classList.remove('show');
+    startLoop();
+    game.timeScale = 1;
+  }
+}
+
+function initPauseSystem() {
+  // Keyboard
+  window.addEventListener('keydown', (e) => {
+    if ((e.key === 'Escape' || e.key === 'p' || e.key === 'P') && game && game.screen === 'playing') {
+      togglePause();
+      e.preventDefault();
+    }
+  });
+
+  // Mobile button
+  const mobileBtn = document.getElementById('mobilePauseBtn');
+  if (mobileBtn) {
+    mobileBtn.addEventListener('touchstart', (e) => {
+      if (game && game.screen === 'playing') {
+        togglePause();
+        e.preventDefault();
+      }
+    }, { passive: false });
+  }
+
+  // Pause menu buttons
+  const btnResume = document.getElementById('btnResumePause');
+  if (btnResume) btnResume.addEventListener('click', togglePause);
+
+  const btnShop = document.getElementById('btnVisitShopPause');
+  if (btnShop) btnShop.addEventListener('click', () => {
+    if (isPaused) {
+      togglePause(); // unpause first
+      showScreen('shopOverlay');
+    }
+  });
+
+  const btnClass = document.getElementById('btnChangeClassPause');
+  if (btnClass) btnClass.addEventListener('click', () => {
+    if (isPaused && !btnClass.disabled) {
+      togglePause(); // unpause first
+      showScreen('class');
+    }
+  });
+
+  const btnLeave = document.getElementById('btnLeaveMenuPause');
+  if (btnLeave) btnLeave.addEventListener('click', () => {
+    if (!isPaused) return;
+    // Show confirmation popup
+    const confirmHtml = `
+      <div id="pauseConfirm" style="position:absolute; inset:0; background:rgba(0,0,0,.8); display:flex; align-items:center; justify-content:center; z-index:1002;">
+        <div style="background:#080b13; border:1px solid #e8c874; padding:24px; border-radius:6px; text-align:center; width:360px;">
+          <h2 style="font-family:Cinzel; color:#e8c874; margin-top:0;">Leave this zone?</h2>
+          <p style="font-family:Rajdhani; color:#eaf0fa; margin:12px 0;">Progress in this arena will be lost but your upgrades and zone progress are saved.</p>
+          <div style="display:flex; gap:16px; justify-content:center; margin-top:24px;">
+            <button class="pause-btn" style="width:120px; margin:0;" id="btnConfirmLeave">CONFIRM</button>
+            <button class="pause-btn" style="width:120px; margin:0;" id="btnCancelLeave">CANCEL</button>
+          </div>
+        </div>
+      </div>
+    `;
+    const container = document.createElement('div');
+    container.innerHTML = confirmHtml;
+    const overlay = document.getElementById('pauseOverlay');
+    overlay.appendChild(container.firstChild);
+
+    const btnConfirm = document.getElementById('btnConfirmLeave');
+    const btnCancel = document.getElementById('btnCancelLeave');
+    if (btnConfirm) btnConfirm.addEventListener('click', () => {
+      SaveSystem.save('pause-leave');
+      showScreen('menu');
+      togglePause();
+      container.remove();
+    });
+    if (btnCancel) btnCancel.addEventListener('click', () => {
+      container.remove();
+    });
+  });
+}
+window.addEventListener('load', initPauseSystem);
 
 (function boot() {
   /* the saved run is read BEFORE the title screen paints, so the menu line
@@ -19238,6 +19643,7 @@ window.addEventListener('beforeunload', () => flushSaveGame(true));
 
   resize();
   updateHealthOrbs();
+  resize();                                     /* fire resize on page load */
   if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
     document.fonts.ready.then(() => {}).catch(function () {});
   }
