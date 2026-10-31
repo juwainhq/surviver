@@ -959,6 +959,36 @@
   .shop-flash.show{ opacity:1; }
   .shop-flash.bad{ color:#fca5a5; }
 
+  /* ---- consumable satchel: three quick slots, bottom left ---- */
+  #consumables{
+    position:absolute; left:22px; bottom:22px;
+    display:flex; flex-direction:column; gap:8px; pointer-events:none;
+  }
+  #consumables.hide{ display:none; }
+  .consumable-slot{
+    width:196px; height:38px; display:flex; align-items:center; gap:9px; padding:0 11px;
+    background:linear-gradient(90deg, rgba(8,11,18,.86), rgba(8,11,18,.3));
+    border:1px solid rgba(232,200,116,.3); border-radius:3px;
+    transition:border-color .18s ease, box-shadow .18s ease, opacity .18s ease;
+  }
+  .consumable-slot.empty{ opacity:.3; border-style:dashed; }
+  .consumable-slot .key{
+    flex:0 0 auto; width:19px; height:19px; border-radius:3px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-head); font-size:10px; font-weight:700; color:#0a0c12;
+    background:rgba(232,200,116,.85);
+  }
+  .consumable-slot.empty .key{ background:rgba(148,163,184,.4); }
+  .consumable-slot .cicon{
+    flex:0 0 auto; width:16px; text-align:center;
+    font-family:var(--font-head); font-size:15px; color:#ffe4ae;
+  }
+  .consumable-slot .cname{
+    font-family:var(--font-head); font-size:10px; letter-spacing:1.5px;
+    text-transform:uppercase; color:#ffe7b8; white-space:nowrap; overflow:hidden;
+  }
+  .consumable-slot.pop{ border-color:#ffd54a; box-shadow:0 0 24px rgba(255,213,74,.45); }
+
   /* the seventh ability slot only exists once the Overdrive Core is bought */
   #abOverdrive{ display:none; }
   #abOverdrive.show{ display:flex; }
@@ -1129,6 +1159,8 @@
         <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
       </div>
     </div>
+
+    <div id="consumables" aria-label="Consumables"></div>
 
     <div id="classBadge">
       <canvas id="badgeIcon" width="52" height="52"></canvas>
@@ -1938,6 +1970,7 @@ const UI = {
   shopGems: document.getElementById('shopGems'),
   shopFlash: document.getElementById('shopFlash'),
   shopNote: document.getElementById('shopNote'),
+  consumables: document.getElementById('consumables'),
   btnChangeClass: document.getElementById('btnChangeClass')
 };
 const ctx = UI.canvas.getContext('2d');
@@ -2627,6 +2660,10 @@ const game = {
   gemCarry: 0,         /* Gem Processor remainder */
   overdriveCd: 0,
   overdriveTimer: 0,
+  /* --- consumable effects -------------------------------------------------- */
+  speedBuffT: 0,       /* Speed Serum */
+  damageBuffT: 0,      /* Damage Shard */
+  decoy: null,         /* Decoy Drone: { x, y, t, maxT, spin } */
   cdModule: 1,         /* set by the Cooldown Module chip: composes with the above */
   secondWindUsed: false,  /* Second Wind is once per zone */
   waveDelay: 0,
@@ -2754,6 +2791,9 @@ function resetRun() {
   game.arenaGrace = 0;
   game.overdriveCd = 0;
   game.overdriveTimer = 0;
+  game.speedBuffT = 0;
+  game.damageBuffT = 0;
+  game.decoy = null;
   game.gemCarry = 0;
   game.shopGemMult = 1;
   game.shopCdScale = 1;
@@ -2818,6 +2858,9 @@ function loadZone(zoneIndex, opts) {
   game.arenaGrace = 0;
   game.overdriveCd = 0;
   game.overdriveTimer = 0;
+  game.speedBuffT = 0;
+  game.damageBuffT = 0;
+  game.decoy = null;
   game.rift = null;
   game.beams.length = 0;
   game.turrets.length = 0;
@@ -3190,6 +3233,9 @@ window.addEventListener('keydown', (e) => {
   if (k === 'r' && hasAbility('overcharge')) startOvercharge();
   if (k === 'x' && hasAbility('bomb')) throwBomb();
   if (k === 'z' && hasAbility('overdrive')) startOverdrive();
+  if (k === '1') useConsumableSlot(0);
+  if (k === '2') useConsumableSlot(1);
+  if (k === '3') useConsumableSlot(2);
   if (k === 'Shift' && hasAbility('dash')) dash();
 });
 window.addEventListener('keyup', (e) => {
@@ -3238,6 +3284,26 @@ function updatePlayer(dt) {
     }
   }
 
+  /* Golden Legend: a drifting gold mote aura (visual only) */
+  if (p.cosmetic === 'golden' && Math.random() < 0.16) {
+    spawnParticle(p.x + rand(-15, 15), p.y + rand(-4, 20),
+      rand(-14, 14), rand(-46, -15), rand(0.45, 0.85), rand(2, 4), '#ffd54a', 1.5);
+  }
+  /* Speed Serum: a light wake behind his boots */
+  if (game.speedBuffT > 0 && p.moving && Math.random() < 0.5) {
+    spawnParticle(p.x + rand(-8, 8), p.y + rand(14, 22), rand(-20, 20), rand(10, 40),
+      0.3, rand(2, 4), '#7dd3fc', 2);
+  }
+
+  /* consumable buffs */
+  if (game.speedBuffT > 0) game.speedBuffT = Math.max(0, game.speedBuffT - dt);
+  if (game.damageBuffT > 0) game.damageBuffT = Math.max(0, game.damageBuffT - dt);
+  if (game.decoy) {
+    game.decoy.t -= dt;
+    game.decoy.spin += dt * 3.4;
+    if (game.decoy.t <= 0) game.decoy = null;
+  }
+
   /* Overdrive: the buff burns down, the cooldown behind it keeps running */
   if (game.overdriveCd > 0) game.overdriveCd = Math.max(0, game.overdriveCd - dt);
   if (game.overdriveTimer > 0) {
@@ -3282,7 +3348,7 @@ function updatePlayer(dt) {
     const mv = moveVector();
     const wantMove = mv.x !== 0 || mv.y !== 0;
     /* a sand mummy's grip: 45% of his stride while the wraps are on him */
-    const walkSpeed = p.speed * (p.slowT > 0 ? 0.55 : 1) * odm();
+    const walkSpeed = p.speed * (p.slowT > 0 ? 0.55 : 1) * odm() * speedBuffMult();
     const tx = mv.x * walkSpeed;
     const ty = mv.y * walkSpeed;
     const dx = tx - p.vx;
@@ -3739,7 +3805,7 @@ function swingSword() {
   p.swingFrom = p.angle - half * dir;
   p.swingTo = p.angle + half * dir;
 
-  const dmg = swordDamage() * odm();
+  const dmg = buffedDamage(swordDamage()) * odm();
   let hits = 0;
 
   for (let i = game.enemies.length - 1; i >= 0; i--) {
@@ -3851,7 +3917,7 @@ function firePistols(charged) {
       vy: Math.sin(a) * p.bulletSpeed,
       r: charged ? 6 : 3.6,
       life: 0.72,
-      dmg: p.damage,
+      dmg: buffedDamage(p.damage),
       knock: 4,
       pierce: p.pierce || 0,
       explosive: boom,
@@ -3892,14 +3958,14 @@ function fireSniper(charged) {
   }
   if (game.boss && !game.boss.entering &&
       segHitsCircle(x1, y1, x2, y2, game.boss.x, game.boss.y, game.boss.r + pad)) {
-    damageBoss(p.damage * (charged ? 1.35 : 1));
+    damageBoss(buffedDamage(p.damage * (charged ? 1.35 : 1)));
   }
   /* one hit per prop, all from the same 40px distance rule */
   hitBreakablesAlong(x1, y1, x2, y2, 'sniper');
   p.shotCount = (p.shotCount | 0) + 1;
   if (p.explosiveRounds && p.shotCount % 5 === 0) {
     /* the fifth rail round carries a charge: it bursts where it lands */
-    explodeAt(landX, landY, p.damage * 0.6, '#fbbf24');
+    explodeAt(landX, landY, buffedDamage(p.damage * 0.6), '#fbbf24');
   }
   Sound.sniperShot();
   game.shake = Math.max(game.shake, 0.3);
@@ -3925,7 +3991,7 @@ function fireMageOrbs(charged) {
       vy: Math.sin(a) * p.bulletSpeed,
       r: charged ? 10 : 7,
       life: 3.2,
-      dmg: p.damage * (charged ? 1.25 : 1),
+      dmg: buffedDamage(p.damage * (charged ? 1.25 : 1)),
       knock: 2,
       explosive: boom,
       homing: true,
@@ -4919,11 +4985,22 @@ function updateEnemies(dt) {
     e.t += dt;
     if (e.hitFlash > 0) e.hitFlash = Math.max(0, e.hitFlash - dt);
     if (e.contactCd > 0) e.contactCd = Math.max(0, e.contactCd - dt);
+    /* Freeze Grenade: a frozen body holds perfectly still and hits nothing */
+    if (e.freeze > 0) {
+      e.freeze = Math.max(0, e.freeze - dt);
+      e.throttle = approach(e.throttle, 0, dt * 6);
+      if (Math.random() < 0.06) {
+        spawnParticle(e.x + rand(-e.r, e.r), e.y + rand(-e.r, e.r),
+          rand(-20, 20), rand(-40, -10), 0.4, 4, '#bae6fd', 2);
+      }
+      continue;
+    }
 
     const d = dist(e.x, e.y, p.x, p.y);
-    /* where they think he is: himself, or a phantom dead ahead of their heading */
-    const tx = canSee ? p.x : e.x + Math.cos(e.heading) * 320;
-    const ty = canSee ? p.y : e.y + Math.sin(e.heading) * 320;
+    /* where they think he is: the decoy first, then Rael, then a phantom heading */
+    const lure = game.decoy;
+    const tx = lure ? lure.x : (canSee ? p.x : e.x + Math.cos(e.heading) * 320);
+    const ty = lure ? lure.y : (canSee ? p.y : e.y + Math.sin(e.heading) * 320);
     const ang = angleTo(e.x, e.y, tx, ty);
 
     /* ------------------------------------------------------------------
@@ -6829,24 +6906,81 @@ const SHOP_UPGRADES = [
     desc: 'Unlocks the 7th ability — OVERDRIVE: all stats doubled for 5s, 60s cooldown, key Z.' }
 ];
 
-/* one-shot supplies, used the moment they are bought */
+/* one-shot supplies: bought into a three-slot satchel, fired from the HUD with
+   1 / 2 / 3 while a run is live */
 const SHOP_CONSUMABLES = [
-  { id: 'medkit', name: 'Field Medkit', glyph: '✚', cost: 30,
-    desc: 'Restore 1 health orb right now. Mid-run only.' },
-  { id: 'charge', name: 'Chrono Charge', glyph: '◷', cost: 40,
-    desc: 'Every ability cooldown clears instantly. Mid-run only.' },
-  { id: 'aegis', name: 'Aegis Plate', glyph: '⛨', cost: 60,
-    desc: 'Add 1 shield charge to this run. Mid-run only.' }
+  { id: 'vial', name: 'Health Vial', glyph: '✚', cost: 15,
+    desc: 'Instantly restores 2 health orbs.' },
+  { id: 'serum', name: 'Speed Serum', glyph: '➤', cost: 20,
+    desc: '+50% movement speed for 10 seconds.' },
+  { id: 'shard', name: 'Damage Shard', glyph: '✷', cost: 25,
+    desc: 'Doubles your damage for 8 seconds, with a red battle glow.' },
+  { id: 'freeze', name: 'Freeze Grenade', glyph: '❄', cost: 30,
+    desc: 'Freezes every enemy on screen for 4 seconds.' },
+  { id: 'magnet', name: 'Gem Magnet', glyph: '◈', cost: 20,
+    desc: 'Pulls every gem on screen straight into your hands.' },
+  { id: 'decoy', name: 'Decoy Drone', glyph: '⌖', cost: 35,
+    desc: 'Drops a hologram that distracts every enemy for 6 seconds.' }
 ];
+const CONSUMABLE_SLOTS = 3;
 
-/* paint jobs for Rael's visor, aura and dash trail */
+/* ---- paint jobs: purely visual, and saved with the rest of the shop -------
+   Each one swaps Rael's whole plate palette, his visor and glow, his dash trail
+   and, for a few, a cosmetic flourish (boot flames, gold motes, void cracks). */
 const SHOP_COSMETICS = [
-  { id: 'crimson', name: 'Crimson Vow', glyph: '✦', cost: 120, colour: '#ff5566',
-    desc: 'Ember-red field glow and visor. The 1347 look.' },
-  { id: 'verdant', name: 'Verdant Oath', glyph: '❖', cost: 150, colour: '#4ade80',
-    desc: 'Forest-green glow and visor. Something from the deep woods.' },
-  { id: 'violet', name: 'Void Bloom', glyph: '◈', cost: 200, colour: '#c084fc',
-    desc: 'Purple glow and visor, torn from the end of time.' }
+  {
+    id: 'crimson', name: 'Crimson Commander', glyph: '✦', cost: 100,
+    desc: 'Red and black plate with a burning red visor.',
+    visor: '#ff3b3b', glow: '#ff2b2b', trail: '#ff5a5a', wisp: '#ff7a7a',
+    armor: {
+      helmet: '#40101a', helmetLit: '#7a1626', helmetDark: '#1c0509',
+      navy: '#7d1020', navyLit: '#b81c2e', navyDark: '#2c0509',
+      silver: '#2a0a11', silverDark: '#16040a', leg: '#170409', boot: '#26070d'
+    }
+  },
+  {
+    id: 'ghost', name: 'Ghost Protocol', glyph: '❖', cost: 150,
+    desc: 'White translucent armour with a white visor and a white glow.',
+    visor: '#ffffff', glow: '#dff6ff', trail: '#eaf9ff', wisp: '#ffffff', alpha: 0.62,
+    armor: {
+      helmet: '#c7d5e2', helmetLit: '#f2f8ff', helmetDark: '#93a5b6',
+      navy: '#dae6f1', navyLit: '#ffffff', navyDark: '#9aacbd',
+      silver: '#ffffff', silverDark: '#c3d2df', leg: '#b4c3d1', boot: '#d6e3ee'
+    }
+  },
+  {
+    id: 'inferno', name: 'Inferno Knight', glyph: '✷', cost: 200,
+    desc: 'Orange and black plate, with a flame trail pouring off the boots.',
+    visor: '#ffb347', glow: '#ff7a18', trail: '#ff9d3d', wisp: '#ffb066',
+    flames: true,
+    armor: {
+      helmet: '#241203', helmetLit: '#4d2608', helmetDark: '#0f0702',
+      navy: '#1a0d04', navyLit: '#3d1b06', navyDark: '#090402',
+      silver: '#d2601a', silverDark: '#8a3a0c', leg: '#140a03', boot: '#2a1406'
+    }
+  },
+  {
+    id: 'void', name: 'Void Walker', glyph: '◈', cost: 300,
+    desc: 'Pure black armour split by purple energy cracks.',
+    visor: '#b06bff', glow: '#a855f7', trail: '#8b5cf6', wisp: '#c084fc',
+    cracks: true,
+    armor: {
+      helmet: '#0a0a12', helmetLit: '#16162e', helmetDark: '#03030a',
+      navy: '#06060e', navyLit: '#14142c', navyDark: '#010104',
+      silver: '#2a1550', silverDark: '#180a30', leg: '#04040a', boot: '#0a0a16'
+    }
+  },
+  {
+    id: 'golden', name: 'Golden Legend', glyph: '✧', cost: 500,
+    desc: 'Gold plate wrapped in a drifting golden particle aura.',
+    visor: '#fff3c4', glow: '#ffd54a', trail: '#ffdf7a', wisp: '#ffe9a8',
+    aura: true,
+    armor: {
+      helmet: '#8a6a1f', helmetLit: '#d9ad3e', helmetDark: '#4a3610',
+      navy: '#c9a227', navyLit: '#ffe08a', navyDark: '#6d5412',
+      silver: '#ffe08a', silverDark: '#b8912f', leg: '#6d5412', boot: '#a8842d'
+    }
+  }
 ];
 
 /* permanent doctrine perks, one per class */
@@ -6864,7 +6998,7 @@ const SHOP_CLASSES = [
 const GEM_ICON = '<svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>';
 
 const Shop = (function () {
-  const state = { levels: {}, classes: {}, cosmetics: {}, cosmetic: null };
+  const state = { levels: {}, classes: {}, cosmetics: {}, cosmetic: null, inventory: [] };
   let loaded = false;
 
   function store() {
@@ -6877,6 +7011,7 @@ const Shop = (function () {
     state.classes = {};
     state.cosmetics = {};
     state.cosmetic = null;
+    state.inventory = [];
     const s = store();
     if (!s) return state;
     let raw = null;
@@ -6900,6 +7035,11 @@ const Shop = (function () {
       state.cosmetic = raw.cosmetic;
       state.cosmetics[raw.cosmetic] = true;   /* wearing something means owning it */
     }
+    /* the satchel: at most three supplies, oldest first */
+    const inv = Array.isArray(raw.inventory) ? raw.inventory : [];
+    for (let i = 0; i < inv.length && state.inventory.length < CONSUMABLE_SLOTS; i++) {
+      if (SHOP_CONSUMABLES.some((c) => c.id === inv[i])) state.inventory.push(inv[i]);
+    }
     return state;
   }
 
@@ -6909,7 +7049,8 @@ const Shop = (function () {
     try {
       s.setItem(SHOP_KEY, JSON.stringify({
         v: SHOP_VERSION, levels: state.levels, classes: state.classes,
-        cosmetics: state.cosmetics, cosmetic: state.cosmetic
+        cosmetics: state.cosmetics, cosmetic: state.cosmetic,
+        inventory: state.inventory.slice(0, CONSUMABLE_SLOTS)
       }));
       return true;
     } catch (e) { return false; }
@@ -6922,17 +7063,22 @@ const Shop = (function () {
     return !!def && level(id) >= def.max;
   }
   function classOwned(id) { ensure(); return !!state.classes[id]; }
-  function cosmeticColour() {
+  function cosmeticSkin() {
     ensure();
     if (!state.cosmetic) return null;
-    const c = SHOP_COSMETICS.find((k) => k.id === state.cosmetic);
-    return c ? c.colour : null;
+    return SHOP_COSMETICS.find((k) => k.id === state.cosmetic) || null;
   }
+  function cosmeticColour() {
+    const skin = cosmeticSkin();
+    return skin ? skin.glow : null;
+  }
+  function inventory() { ensure(); return state.inventory.slice(); }
 
   return {
     load: load, save: save, ensure: ensure,
     level: level, maxed: maxed,
-    classOwned: classOwned, cosmeticColour: cosmeticColour,
+    classOwned: classOwned, cosmeticColour: cosmeticColour, cosmeticSkin: cosmeticSkin,
+    inventory: inventory,
     state: state,
     /* what the bank holds right now */
     gems: function () {
@@ -6942,12 +7088,142 @@ const Shop = (function () {
   };
 }());
 
+/* ------------------------- the consumable satchel -------------------------
+   Three quick slots, bottom left. Anything bought in the CONSUMABLES tab lands
+   here, keys 1 / 2 / 3 fire it, and the item is gone when it is used. */
+function syncConsumableHud() {
+  const host = UI.consumables;
+  if (!host) return;
+  Shop.ensure();
+  const inv = Shop.state.inventory;
+  let html = '';
+  for (let i = 0; i < CONSUMABLE_SLOTS; i++) {
+    const id = inv[i];
+    const def = id ? SHOP_CONSUMABLES.find((c) => c.id === id) : null;
+    html += '<div class="consumable-slot' + (def ? '' : ' empty') + '" data-slot="' + i + '">' +
+      '<span class="key">' + (i + 1) + '</span>' +
+      '<span class="cicon">' + (def ? def.glyph : '·') + '</span>' +
+      '<span class="cname">' + (def ? def.name : 'Empty') + '</span></div>';
+  }
+  host.innerHTML = html;
+}
+
+function useConsumableSlot(slot) {
+  if (game.screen !== 'playing') return false;
+  Shop.ensure();
+  const inv = Shop.state.inventory;
+  if (slot < 0 || slot >= CONSUMABLE_SLOTS) return false;
+  const id = inv[slot];
+  if (!id) return false;
+  const p = game.player;
+  if (!p) return false;
+  applyConsumable(id, p);
+  inv.splice(slot, 1);
+  Shop.save();
+  syncConsumableHud();
+  return true;
+}
+
+function collectAllGems() {
+  const p = game.player;
+  if (!p) return 0;
+  let n = 0;
+  for (let i = game.gemsList.length - 1; i >= 0; i--) {
+    const g = game.gemsList[i];
+    addGems(1);
+    addScore(8);
+    n++;
+    for (let k = 0; k < 5; k++) {
+      const a = rand(0, TAU);
+      spawnParticle(g.x, g.y, Math.cos(a) * rand(40, 130), Math.sin(a) * rand(40, 130), 0.3, 5, '#6ee7b7', 2);
+    }
+    game.gemsList.splice(i, 1);
+  }
+  if (n) Sound.gem();
+  return n;
+}
+
+function applyConsumable(id, p) {
+  if (id === 'vial') {
+    p.hp = Math.min(p.maxHp, p.hp + 2);
+    updateHealthOrbs();
+    addText(p.x, p.y - 44, '+2 HEALTH', '#6ee7b7');
+    for (let i = 0; i < 16; i++) {
+      const a = rand(0, TAU);
+      spawnParticle(p.x, p.y, Math.cos(a) * rand(50, 180), Math.sin(a) * rand(50, 180), 0.4, 6, '#6ee7b7', 3);
+    }
+  } else if (id === 'serum') {
+    game.speedBuffT = 10;
+    addText(p.x, p.y - 44, 'SPEED SERUM', '#a5f3fc');
+    for (let i = 0; i < 18; i++) {
+      const a = rand(0, TAU);
+      spawnParticle(p.x, p.y, Math.cos(a) * rand(90, 260), Math.sin(a) * rand(90, 260), 0.36, 6, '#7dd3fc', 3);
+    }
+    game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 8, maxR: 80, life: 0, maxLife: 0.4, color: '#7dd3fc' });
+  } else if (id === 'shard') {
+    game.damageBuffT = 8;
+    addText(p.x, p.y - 44, 'DAMAGE SHARD', '#ff6b6b');
+    game.flashTimer = 0.18;
+    game.flashColor = '#ff6b6b';
+    for (let i = 0; i < 20; i++) {
+      const a = rand(0, TAU);
+      spawnParticle(p.x, p.y, Math.cos(a) * rand(80, 240), Math.sin(a) * rand(80, 240), 0.4, 6, '#f87171', 3);
+    }
+    game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 8, maxR: 96, life: 0, maxLife: 0.45, color: '#f87171' });
+  } else if (id === 'freeze') {
+    let frozen = 0;
+    for (let i = 0; i < game.enemies.length; i++) {
+      const e = game.enemies[i];
+      const sx = toScreenX(e.x), sy = toScreenY(e.y);
+      if (sx < -40 || sx > W + 40 || sy < SKY_H - 40 || sy > H + 40) continue;
+      e.freeze = 4;
+      frozen++;
+      for (let k = 0; k < 6; k++) {
+        const a = rand(0, TAU);
+        spawnParticle(e.x, e.y, Math.cos(a) * rand(30, 120), Math.sin(a) * rand(30, 120), 0.4, 5, '#bae6fd', 2);
+      }
+    }
+    addText(p.x, p.y - 44, frozen ? 'FROZEN · ' + frozen : 'NOTHING IN RANGE', '#bae6fd');
+    game.flashTimer = 0.2;
+    game.flashColor = '#bae6fd';
+    game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 12, maxR: 520, life: 0, maxLife: 0.5, color: '#bae6fd' });
+  } else if (id === 'magnet') {
+    const n = collectAllGems();
+    addText(p.x, p.y - 44, n ? 'GEMS PULLED · ' + n : 'NO GEMS NEARBY', '#6ee7b7');
+    game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 10, maxR: 300, life: 0, maxLife: 0.45, color: '#6ee7b7' });
+  } else if (id === 'decoy') {
+    game.decoy = {
+      x: p.x + Math.cos(p.angle) * 64,
+      y: p.y + Math.sin(p.angle) * 64,
+      t: 6, maxT: 6, spin: 0
+    };
+    addText(p.x, p.y - 44, 'DECOY DEPLOYED', '#67e8f9');
+    for (let i = 0; i < 16; i++) {
+      const a = rand(0, TAU);
+      spawnParticle(game.decoy.x, game.decoy.y, Math.cos(a) * rand(50, 200), Math.sin(a) * rand(50, 200), 0.4, 6, '#67e8f9', 3);
+    }
+  }
+  Sound.ability();
+  updateHealthOrbs();
+}
+
+/* the worn paint job, stamped onto a player (palette + trail + flourish) */
+function applyCosmeticToPlayer(p) {
+  const skin = Shop.cosmeticSkin();
+  p.cosmetic = skin ? skin.id : null;
+  p.cosmeticAlpha = skin && skin.alpha ? skin.alpha : 1;
+}
+
 /* the permanent numbers, read straight off the shop each run */
 function shopLevel(id) { return Shop.level(id); }
 function shopBlastMult() { return 1 + 0.20 * shopLevel('blast'); }
 /* Overdrive: every stat doubles, so the multipliers below are 2x while it runs */
 function odm() { return (game.overdriveTimer || 0) > 0 ? 2 : 1; }
 function shopFireBoost() { return (1 + 0.15 * shopLevel('magazine')) * odm(); }
+/* Damage Shard: every shot fired while it burns hits twice as hard */
+function buffedDamage(v) { return v * ((game.damageBuffT || 0) > 0 ? 2 : 1); }
+/* Speed Serum: half again as fast on foot while it lasts */
+function speedBuffMult() { return (game.speedBuffT || 0) > 0 ? 1.5 : 1; }
 function shopMagazineMult() { return 1 + 0.15 * shopLevel('magazine'); }
 
 /* The gold flash a critical hit leaves behind */
@@ -6990,7 +7266,8 @@ function applyShopUpgrades() {
   game.ironWillUsed = {};
   if (!game.abilities) game.abilities = {};
   game.abilities.overdrive = shopLevel('overdrive') > 0;
-  p.cosmetic = Shop.cosmeticColour();
+  applyCosmeticToPlayer(p);
+  syncConsumableHud();
   updateHealthOrbs();
   syncAbilityHud();
 }
@@ -7038,13 +7315,13 @@ function shopItemState(tab, it) {
   }
   if (tab === 'cosmetics') {
     Shop.ensure();
-    const owned = Shop.state.cosmetic === it.id;
+    const worn = Shop.state.cosmetic === it.id;
     const has = shopCosmeticOwned(it.id);
     return {
-      level: has ? 1 : 0, max: 1, full: has,
+      level: has ? 1 : 0, max: 1, full: worn,
       cost: it.cost,
-      disabled: has || gems < it.cost,
-      label: owned ? 'Worn' : (has ? 'Wear' : 'Buy')
+      disabled: worn || (!has && gems < it.cost),
+      label: worn ? 'Equipped' : (has ? 'Equip' : 'Buy')
     };
   }
   if (tab === 'classes') {
@@ -7056,11 +7333,15 @@ function shopItemState(tab, it) {
       label: owned ? 'Owned' : 'Buy'
     };
   }
-  /* consumables never run out: they are bought over and over */
+  /* supplies fill the three-slot satchel; a full satchel blocks the sale */
+  Shop.ensure();
+  const held = Shop.state.inventory.filter((k) => k === it.id).length;
+  const satchelFull = Shop.state.inventory.length >= CONSUMABLE_SLOTS;
   return {
-    level: 0, max: 0, full: false, cost: it.cost,
-    disabled: !shopRunActive() || gems < it.cost,
-    label: shopRunActive() ? 'Buy' : 'In Run'
+    level: 0, max: 0, full: satchelFull, cost: it.cost,
+    held: held,
+    disabled: satchelFull || gems < it.cost,
+    label: satchelFull ? 'Satchel Full' : 'Buy'
   };
 }
 
@@ -7078,8 +7359,9 @@ function shopStars(lvl, max) {
 
 function shotShopCard(tab, it) {
   const st = shopItemState(tab, it);
+  const carried = Shop.ensure() && Shop.state.inventory.length;
   const stars = tab === 'consumables'
-    ? '<div class="sc-stars"><span class="off">SINGLE USE</span></div>'
+    ? '<div class="sc-stars"><span class="off">HELD ' + (st.held | 0) + ' · SATCHEL ' + carried + '/' + CONSUMABLE_SLOTS + '</span></div>'
     : '<div class="sc-stars">' + shopStars(st.level, st.max) + '</div>';
   return '<div class="shop-card' + (st.full ? ' maxed' : '') + (st.level > 0 ? ' owned' : '') +
     '" data-item="' + it.id + '">' +
@@ -7134,22 +7416,30 @@ function shopBuy(tab, id) {
   }
 
   if (tab === 'consumables') {
-    if (!shopRunActive()) { shopSay('Only while a run is live', true); return false; }
+    Shop.ensure();
+    if (Shop.state.inventory.length >= CONSUMABLE_SLOTS) {
+      shopSay('Satchel full — use one first', true);
+      return false;
+    }
     if (gems < it.cost) { shopSay('Not enough gems', true); return false; }
     if (SaveSystem.spendGems(it.cost) < 0) { shopSay('Not enough gems', true); return false; }
-    useConsumable(it.id);
+    Shop.state.inventory.push(id);
+    Shop.save();
+    Sound.gem();
+    shopSay(it.name + ' stowed · ' + Shop.state.inventory.length + '/' + CONSUMABLE_SLOTS);
+    syncConsumableHud();
     renderShop();
     return true;
   }
 
   if (tab === 'cosmetics') {
     if (shopCosmeticOwned(id)) {
-      /* already bought: clicking wears it */
-      Shop.state.cosmetic = (Shop.state.cosmetic === id) ? null : id;
+      /* EQUIP simply replaces the current look */
+      Shop.state.cosmetic = id;
       Shop.save();
-      if (game.player) game.player.cosmetic = Shop.cosmeticColour();
+      if (game.player) applyCosmeticToPlayer(game.player);
       Sound.ability();
-      shopSay(Shop.state.cosmetic ? it.name + ' equipped' : 'Paint stripped back to standard');
+      shopSay(it.name + ' equipped');
       renderShop();
       return true;
     }
@@ -7158,9 +7448,9 @@ function shopBuy(tab, id) {
     Shop.state.cosmetics[id] = true;
     Shop.state.cosmetic = id;
     Shop.save();
-    if (game.player) game.player.cosmetic = Shop.cosmeticColour();
+    if (game.player) applyCosmeticToPlayer(game.player);
     Sound.ability();
-    shopSay(it.name + ' equipped');
+    shopSay(it.name + ' bought and equipped');
     renderShop();
     return true;
   }
@@ -9359,6 +9649,9 @@ function drawRaelBody(p, bob, flash, mirror) {
   const t = game.time;
   const g = soldierGlow(p);
   const F = (v) => (flash || v);
+  /* the worn paint job swaps the whole plate palette */
+  const P = raelPalette(p);
+  const skinA = (p.cosmeticAlpha || 1);
 
   /* legs alternate left-right every 0.15s (p.walk runs at 12 rad/s, so 1.75x
      puts one foot forward every 0.15s) */
@@ -9374,6 +9667,7 @@ function drawRaelBody(p, bob, flash, mirror) {
   ctx.translate(p.x + sway, p.y + (bob || 0) + idle);
   /* mirror about the body itself, so the turn squash stays centred on him */
   ctx.scale(mirror === undefined ? 1 : mirror, 1);
+  if (skinA < 1) ctx.globalAlpha = skinA;
 
   /* ---- boot glow pooling on the floor ---- */
   for (let i = 0; i < 2; i++) {
@@ -9389,14 +9683,14 @@ function drawRaelBody(p, bob, flash, mirror) {
   }
 
   /* ---- legs: two short dark rectangles with a gap ---- */
-  block(-8.4, 4 + liftL * 0.4, 7, 12, 2.2, F(RAEL.leg));
-  block(1.4, 4 + liftR * 0.4, 7, 12, 2.2, F(RAEL.leg));
+  block(-8.4, 4 + liftL * 0.4, 7, 12, 2.2, F(P.leg));
+  block(1.4, 4 + liftR * 0.4, 7, 12, 2.2, F(P.leg));
 
   /* ---- boots, wider than the legs ---- */
   for (let i = 0; i < 2; i++) {
     const lift = i === 0 ? liftL : liftR;
     const bx = i === 0 ? -10.2 : 0.6;
-    block(bx, 13.4 + lift, 9.6, 8.6, 2.8, F(RAEL.boot));
+    block(bx, 13.4 + lift, 9.6, 8.6, 2.8, F(P.boot));
     /* the electric strip along the sole */
     ctx.fillStyle = F(g.glow);
     ctx.globalAlpha = flash ? 0.5 : 0.9;
@@ -9407,9 +9701,9 @@ function drawRaelBody(p, bob, flash, mirror) {
 
   /* ---- torso: wide barrel chest in dark navy ---- */
   const chest = ctx.createLinearGradient(0, -8, 0, 7);
-  chest.addColorStop(0, F(RAEL.navyLit));
-  chest.addColorStop(0.55, F(RAEL.navy));
-  chest.addColorStop(1, F(RAEL.navyDark));
+  chest.addColorStop(0, F(P.navyLit));
+  chest.addColorStop(0.55, F(P.navy));
+  chest.addColorStop(1, F(P.navyDark));
   ctx.fillStyle = F(chest);
   roundRect(ctx, -13, -8, 26, 15, 4.5);
   ctx.fill();
@@ -9422,8 +9716,8 @@ function drawRaelBody(p, bob, flash, mirror) {
   for (let i = 0; i < 2; i++) {
     const side = i === 0 ? -1 : 1;
     const px = side > 0 ? 10.6 : -18.6;
-    block(px, -7.4, 8, 8.2, 2.2, F(RAEL.silver));
-    ctx.strokeStyle = F(RAEL.silverDark);
+    block(px, -7.4, 8, 8.2, 2.2, F(P.silver));
+    ctx.strokeStyle = F(P.silverDark);
     ctx.lineWidth = 1;
     roundRect(ctx, px + 0.5, -6.9, 7, 7.2, 2);
     ctx.stroke();
@@ -9446,15 +9740,34 @@ function drawRaelBody(p, bob, flash, mirror) {
   ctx.fill();
   ctx.restore();
 
+  /* Void Walker: purple energy cracks running through the black plate */
+  if (g.cracks) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(168,85,247,0.9)';
+    ctx.shadowColor = '#a855f7';
+    ctx.shadowBlur = 8;
+    ctx.lineWidth = 1.1;
+    for (let i = 0; i < 3; i++) {
+      const y0 = -6 + i * 4.4;
+      ctx.beginPath();
+      ctx.moveTo(-10 + i * 2, y0);
+      ctx.lineTo(-3 + i * 1.5, y0 + 2.2);
+      ctx.lineTo(2 + i * 1.2, y0 - 1.4);
+      ctx.lineTo(11 - i * 1.6, y0 + 1.8);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   /* ---- head: large rounded helmet ---- */
-  ctx.fillStyle = F(RAEL.helmet);
+  ctx.fillStyle = F(P.helmet);
   roundRect(ctx, -9, -22, 18, 14.5, 5.5);
   ctx.fill();
   /* lit crown + dark jaw give the helmet its roundness */
-  ctx.fillStyle = F(RAEL.helmetLit);
+  ctx.fillStyle = F(P.helmetLit);
   roundRect(ctx, -7.4, -21, 14.8, 5, 2.6);
   ctx.fill();
-  ctx.fillStyle = F(RAEL.helmetDark);
+  ctx.fillStyle = F(P.helmetDark);
   roundRect(ctx, -7.6, -11.2, 15.2, 3.2, 1.5);
   ctx.fill();
   ctx.strokeStyle = 'rgba(9,14,22,0.9)';
@@ -9476,7 +9789,7 @@ function drawRaelBody(p, bob, flash, mirror) {
   ctx.restore();
 
   /* ---- antenna on the top right ---- */
-  ctx.fillStyle = F(RAEL.silverDark);
+  ctx.fillStyle = F(P.silverDark);
   ctx.fillRect(6.2, -28, 1.7, 6.4);
   ctx.fillStyle = F(g.visor);
   ctx.beginPath();
@@ -9500,6 +9813,7 @@ function drawRaelWeapon(p, bob, flash) {
   const sx = Math.cos(p.angle) >= 0 ? 1 : -1;
 
   ctx.save();
+  if (p.cosmeticAlpha && p.cosmeticAlpha < 1) ctx.globalAlpha = p.cosmeticAlpha;
   ctx.translate(p.x + sx * 3, p.y + (bob || 0) + idle - 3);
   ctx.rotate(p.angle);
   if (Math.cos(p.angle) < 0) ctx.scale(1, -1);
@@ -12254,19 +12568,40 @@ function hexTriplet(hex) {
   return ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255);
 }
 
+/* the plate palette for the worn paint job (falls back to the standard RAEL) */
+function raelPalette(p) {
+  if (!p || !p.cosmetic) return RAEL;
+  const id = p.cosmetic;
+  if (p._skinId === id && p._skinPlate) return p._skinPlate;
+  const skin = Shop.cosmeticSkin();
+  p._skinId = id;
+  p._skinPlate = (skin && skin.armor) ? skin.armor : RAEL;
+  return p._skinPlate;
+}
+
+function raelSkinOf(p) {
+  if (!p || !p.cosmetic) return null;
+  return Shop.cosmeticSkin();
+}
+
 /* one place that decides what colour the trooper's glow is right now */
 function soldierGlow(p) {
   const low = p.hp <= 1 && p.hp > 0;
   /* a shop paint job recolours the visor, the aura and the dash trail */
-  if (!low && p.cosmetic) {
-    const rgb = hexTriplet(p.cosmetic);
+  const skin = low ? null : raelSkinOf(p);
+  if (skin) {
     return {
-      low: false, flick: 1, cosmetic: true,
-      rgb: rgb,
-      glow: p.cosmetic,
-      visor: '#ffffff',
+      low: false, flick: 1, cosmetic: true, skin: skin,
+      rgb: hexTriplet(skin.glow),
+      glow: skin.glow,
+      visor: skin.visor,
       visorHot: 'rgba(255,255,255,0.97)',
-      visorGlow: hexToRgba(p.cosmetic, 0.95)
+      visorGlow: hexToRgba(skin.visor, 0.95),
+      trail: skin.trail || skin.glow,
+      wisp: skin.wisp || skin.glow,
+      flames: !!skin.flames,
+      aura: !!skin.aura,
+      cracks: !!skin.cracks
     };
   }
   const t = game.time;
@@ -12355,6 +12690,18 @@ function drawThrusters(p, g, bob, dir) {
     const len = (17 + jitter * 9) * (g.low ? 1.1 : 1);
     const wid = 3 + jitter * 1.1;
     drawFlame(p.x + dir * side * bx, p.y + bob + by, ang, len, wid, g, 0.55 + jitter * 0.22);
+  }
+}
+
+/* Inferno Knight: a live flame licking off both boots, even standing still */
+function drawBootFlames(p, bob, dir, g) {
+  const t = game.time;
+  for (let i = 0; i < 2; i++) {
+    const side = i === 0 ? -1 : 1;
+    const flick = Math.sin(t * 17 + i * 2.3) * 0.5 + 0.5;
+    drawFlame(p.x + dir * side * 6.4, p.y + (bob || 0) + 22.4,
+      Math.PI / 2 + Math.sin(t * 9 + i) * 0.18,
+      11 + flick * 9, 2.4 + flick * 1.4, g, 0.5 + flick * 0.3);
   }
 }
 
@@ -12573,6 +12920,39 @@ function drawSwordSwoosh() {
   }
 }
 
+/* Decoy Drone: a cyan hologram of Rael that every enemy would rather chase */
+function drawDecoy() {
+  const d = game.decoy;
+  if (!d) return;
+  const fade = clamp(d.t / 0.6, 0, 1);
+  const bob = Math.sin(game.time * 6) * 2.2;
+  ctx.save();
+  ctx.globalAlpha = fade * (0.5 + 0.2 * Math.sin(game.time * 12));
+  ctx.shadowColor = '#22d3ee';
+  ctx.shadowBlur = 18;
+  ctx.strokeStyle = 'rgba(103,232,249,0.85)';
+  ctx.lineWidth = 1.6;
+  /* the holo body: the same 40x44 silhouette, hollow */
+  roundRect(ctx, d.x - 12, d.y - 22 + bob, 24, 32, 7);
+  ctx.stroke();
+  roundRect(ctx, d.x - 9, d.y - 22 + bob, 18, 9, 4.5);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(103,232,249,0.18)';
+  roundRect(ctx, d.x - 12, d.y - 22 + bob, 24, 32, 7);
+  ctx.fill();
+  /* rotating projector ring at the emitter */
+  ctx.globalAlpha = fade * 0.7;
+  ctx.beginPath();
+  ctx.ellipse(d.x, d.y + 16, 16, 6, 0, 0, TAU);
+  ctx.stroke();
+  ctx.setLineDash([5, 5]);
+  ctx.lineDashOffset = -game.time * 40;
+  ctx.beginPath();
+  ctx.ellipse(d.x, d.y + 16, 22, 8, 0, 0, TAU);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawPlayer() {
   const p = game.player;
   if (!p) return;
@@ -12661,8 +13041,25 @@ function drawPlayer() {
     ctx.restore();
   }
 
+  /* Damage Shard: a red battle halo for as long as the shard burns */
+  if (game.damageBuffT > 0) {
+    const k = 0.55 + 0.45 * Math.sin(game.time * 10);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,80,80,' + (0.4 + 0.3 * k).toFixed(3) + ')';
+    ctx.lineWidth = 2.6;
+    ctx.shadowColor = 'rgba(255,70,70,0.95)';
+    ctx.shadowBlur = 18;
+    ctx.setLineDash([9, 6]);
+    ctx.lineDashOffset = game.time * 46;
+    ctx.beginPath(); ctx.arc(p.x, p.y + 4, p.r + 26, 0, TAU); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 0.16 + 0.12 * k;
+    ctx.fillStyle = '#ff5555';
+    ctx.beginPath(); ctx.arc(p.x, p.y + 4, p.r + 26, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+
   if (game.overchargeTimer > 0) {
-    /* roaring red reactor halo */
     const k = 0.55 + 0.45 * Math.sin(game.time * 12);
     ctx.save();
     ctx.strokeStyle = 'rgba(248,113,113,' + (0.45 + 0.3 * k).toFixed(3) + ')';
@@ -12684,11 +13081,11 @@ function drawPlayer() {
       ctx.globalAlpha = a * 0.30;
       ctx.translate(t.x, t.y);
       ctx.scale(t.dir, 1);
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillStyle = g.trail || '#38bdf8';
       roundRect(ctx, -10, -22, 20, 44, 8);
       ctx.fill();
       ctx.globalAlpha = a * 0.5;
-      ctx.fillStyle = '#a5f3fc';
+      ctx.fillStyle = g.wisp || '#a5f3fc';
       roundRect(ctx, -7, -17.6, 14, 5, 2.3);
       ctx.fill();
       ctx.restore();
@@ -12728,6 +13125,7 @@ function drawPlayer() {
     if (behind) drawGun();
     drawBody();
     drawThrusters(p, g, bob, dir);
+    if (g.flames) drawBootFlames(p, bob, dir, g);
     if (!behind) drawGun();
 
     /* ---- took a hit: flash red ---- */
@@ -15997,6 +16395,7 @@ function render() {
   drawBeams();
   drawParticles();
   drawPlayer();
+  drawDecoy();
 
   /* collision boxes on top of everything in the world, still in world space */
   drawBreakableHitboxes(zoom);
@@ -16113,6 +16512,8 @@ window.addEventListener('orientationchange', resize);
   }
   syncAbilityUnlocks(true);      /* silent: replay anything the frontier implies */
   syncAbilityHud();
+  Shop.load();                   /* the depot reads its levels and satchel first */
+  syncConsumableHud();
   refreshSaveUi();
   Screens.reset('menu');         /* boot lands on the title screen, only */
 
