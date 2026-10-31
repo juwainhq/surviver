@@ -29,24 +29,63 @@
     box-shadow:0 0 90px rgba(0,0,0,.9);
   }
   #game{ display:block; width:100%; height:100%; }
+  .cicon-art{ display:block; width:100%; height:100%; }
 
-  /* ---------------- screen layers ----------------
-     The menu, zone select, class select, HUD, upgrade cards, zone card, game
-     over and victory are eight separate layers stacked inside #stage. Every one
-     of them is display:none until the screen manager makes it the single active
-     layer, so two screens can never be on screen at the same time. */
-  .screen{ display:none !important; }
-  /* an inactive layer is not merely transparent — it is out of the layout, so
-     there is no state in which two screens can share the screen */
+  /* ---------------- overlay screens ----------------
+     Every menu, card, shop and result screen is a plain HTML layer pinned over
+     the whole viewport at z-index 1000 with an opaque backdrop, so the game
+     canvas can never be seen through it. They live in #overlays (a sibling of
+     #stage, outside its transform), are display:none until the screen manager
+     reveals exactly one of them, and are built from HTML and CSS only — no
+     canvas, no drawing code. */
+  #overlays{
+    position:fixed; inset:0; z-index:1000; pointer-events:none;
+  }
+  .screen{
+    position:fixed !important; inset:0 !important;
+    top:0 !important; left:0 !important;
+    width:100% !important; height:100% !important;
+    max-width:none !important; max-height:none !important;
+    margin:0 !important; border-radius:0 !important;
+    z-index:1000 !important;
+    background:rgba(5,5,15,0.97) !important;
+    display:none !important;
+    opacity:1 !important; visibility:visible !important;
+    transform:none !important;
+    transition:none !important;
+    box-sizing:border-box;
+  }
+  /* an inactive layer is out of the layout entirely, so two screens can never
+     share the screen */
   .screen:not(.show){ display:none !important; }
   .screen.show{
-    display:flex !important;
-    animation:screenIn .34s ease-out both;
+    display:flex !important; flex-direction:column;
+    pointer-events:auto;
+    animation:screenIn .28s ease-out both;
   }
   @keyframes screenIn{
     from{ opacity:0; }
     to{ opacity:1; }
   }
+  /* four screens kept the legacy .overlay class for their layout; strip the
+     blur and the gradient so nothing half-transparent survives on top */
+  .overlay.screen{
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    transition:none !important;
+  }
+  /* the HUD is the one layer that is NOT an overlay: it rides inside the stage
+     on top of the canvas, has no backdrop and lets the mouse through */
+  #hud.screen{
+    position:absolute !important; inset:0 !important;
+    width:auto !important; height:auto !important;
+    max-width:none !important; max-height:none !important;
+    z-index:20 !important;
+    background:none !important;
+    pointer-events:none !important;
+    animation:none !important;
+  }
+  #hud.screen.show{ display:block !important; }
 
   /* ---------------- generic floating type ---------------- */
   .shadow{ text-shadow:0 2px 10px rgba(0,0,0,.92); }
@@ -156,7 +195,7 @@
     position:absolute; left:22px; bottom:20px; display:flex; align-items:center; gap:9px;
     pointer-events:none;
   }
-  #classBadge canvas{ width:26px; height:26px; filter:drop-shadow(0 0 8px rgba(232,200,116,.45)); }
+  #classBadge .badge-icon{ width:26px; height:26px; flex:0 0 auto; filter:drop-shadow(0 0 8px rgba(232,200,116,.45)); }
   #className{
     font-family:var(--font-head); font-size:13px; font-weight:700;
     letter-spacing:2.8px; text-transform:uppercase; color:#ffe0a4;
@@ -462,10 +501,25 @@
     #settingsBtn{ top:10px; right:10px; width:34px; height:34px; font-size:16px; }
   }
 
-  /* ---------------- main menu starfield ---------------- */
-  #menuStars{
-    position:absolute; inset:0; width:100%; height:100%; display:block;
-    pointer-events:none; z-index:0;
+  /* ---------------- main menu backdrop (pure CSS) ----------------
+     The title screen used to paint a starfield on a canvas. It is a stack of
+     CSS gradients now, so nothing behind the overlay can bleed through. */
+  #menu{
+    background-color:rgba(5,5,15,0.97) !important;
+    background-image:
+      radial-gradient(1.6px 1.6px at 12% 18%, rgba(255,255,255,.85), rgba(255,255,255,0) 60%),
+      radial-gradient(1.3px 1.3px at 28% 62%, rgba(214,232,255,.7), rgba(214,232,255,0) 60%),
+      radial-gradient(1.1px 1.1px at 41% 27%, rgba(255,255,255,.6), rgba(255,255,255,0) 60%),
+      radial-gradient(1.7px 1.7px at 58% 71%, rgba(255,244,214,.8), rgba(255,244,214,0) 60%),
+      radial-gradient(1.2px 1.2px at 67% 22%, rgba(255,255,255,.7), rgba(255,255,255,0) 60%),
+      radial-gradient(1.4px 1.4px at 79% 48%, rgba(198,222,255,.75), rgba(198,222,255,0) 60%),
+      radial-gradient(1.1px 1.1px at 88% 78%, rgba(255,255,255,.6), rgba(255,255,255,0) 60%),
+      radial-gradient(1.5px 1.5px at 21% 84%, rgba(255,231,184,.7), rgba(255,231,184,0) 60%),
+      radial-gradient(1.2px 1.2px at 47% 92%, rgba(255,255,255,.55), rgba(255,255,255,0) 60%),
+      radial-gradient(1.3px 1.3px at 93% 34%, rgba(255,255,255,.6), rgba(255,255,255,0) 60%),
+      radial-gradient(ellipse 60% 44% at 30% 62%, rgba(56,89,190,.16), rgba(56,89,190,0) 70%),
+      radial-gradient(ellipse 52% 40% at 74% 34%, rgba(120,70,180,.14), rgba(120,70,180,0) 70%),
+      radial-gradient(ellipse at 50% 40%, rgba(16,30,58,.85), rgba(3,4,10,.98) 72%) !important;
   }
   #menuTitle, #menuSub, #howto, #menuBest{ position:relative; z-index:2; }
   #menu .btn-row{ position:relative; z-index:2; }
@@ -600,7 +654,7 @@
   #menu{
     position:absolute; inset:0; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:14px; z-index:40;
-    background:radial-gradient(ellipse at 50% 44%, rgba(8,14,28,.18), rgba(2,3,7,.62));
+    /* the paint lives in the #menu rule above: an opaque CSS starfield */
     opacity:1; visibility:visible; pointer-events:auto;
   }
   #menuTitle{
@@ -628,7 +682,8 @@
   #howto .row{ display:flex; gap:10px; align-items:baseline; justify-content:center; flex-wrap:wrap; }
 
   /* ---------------- class selection ---------------- */
-  /* the whole screen lives inside the stage: it fits the viewport, no scrolling */
+  /* a viewport-sized overlay: seven cards plus the depot tile, four across on
+     a wide window, and the picker only scrolls when the window is too short */
   #classScreen{
     position:absolute; inset:0; width:100%; height:100%; max-height:100%;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -686,10 +741,11 @@
     transform:translateY(-4px); border-color:var(--gold-bright); outline:none;
     box-shadow:0 0 30px rgba(232,200,116,.3), inset 0 0 26px rgba(232,200,116,.06);
   }
-  .class-card canvas.cicon{
+  .class-card .cicon{
     width:60px; height:60px; display:block; flex:0 0 auto;
     filter:drop-shadow(0 0 10px rgba(232,200,116,.28));
   }
+  .class-card .cicon svg{ width:100%; height:100%; display:block; }
   .class-card .cname{
     font-family:var(--font-head); font-size:13px; font-weight:700;
     letter-spacing:1.4px; text-transform:uppercase; color:#ffe7b8; line-height:1.2;
@@ -737,7 +793,7 @@
   .class-card .cprice svg{ width:10px; height:10px; display:block; }
   .class-card.locked .cprice{ display:flex; }
   .class-card.locked{ border-color:rgba(110,231,183,.28); }
-  .class-card.locked canvas.cicon{ filter:grayscale(.8) brightness(.7); opacity:.8; }
+  .class-card.locked .cicon{ filter:grayscale(.8) brightness(.7); opacity:.8; }
   .class-card.locked .cname{ color:#a8bccd; }
   .class-card.locked .cdesc, .class-card.locked .cpassive{ color:rgba(159,179,200,.6); }
   .class-card.locked:hover, .class-card.locked:focus-visible{
@@ -891,8 +947,8 @@
   /* ---------------- gem shop ---------------- */
   #shopScreen{
     justify-content:center; align-items:center; padding:0;
-    background:radial-gradient(ellipse at 50% 45%, rgba(6,8,14,.93), rgba(2,3,7,.985));
-    backdrop-filter:blur(3px);
+    background:rgba(5,5,15,.97);
+    backdrop-filter:none;
   }
   .shop-wrap{
     width:min(1180px,96vw); height:min(790px,94vh); margin:auto;
@@ -967,6 +1023,7 @@
   .shop-card.sc-class{ align-items:stretch; }
   .sc-portrait{
     width:88px; height:88px; align-self:center; display:block;
+    padding:10px; box-sizing:border-box;
     border-radius:50%;
     background:radial-gradient(circle at 50% 42%, rgba(232,200,116,.16), rgba(6,8,13,.96) 72%);
     border:1px solid rgba(232,200,116,.26);
@@ -975,6 +1032,7 @@
   }
   .shop-card.sc-class .sc-name{ text-align:center; }
   .shop-card.sc-class .sc-desc{ min-height:44px; }
+  .sc-portrait svg{ width:100%; height:100%; display:block; }
   .sc-q{
     font-size:10.5px; line-height:1.4; letter-spacing:.6px;
     text-transform:uppercase; color:rgba(255,217,138,.86);
@@ -1218,7 +1276,7 @@
     <div id="consumables" aria-label="Consumables"></div>
 
     <div id="classBadge">
-      <canvas id="badgeIcon" width="52" height="52"></canvas>
+      <div id="badgeIcon" class="badge-icon" aria-hidden="true"></div>
       <span id="className">Vanguard Knight</span>
     </div>
 
@@ -1265,9 +1323,18 @@
     <div class="b-objective" id="briefObjective">Clear <b>3 arenas</b> to unlock the boss</div>
   </div>
 
+
+</div>
+
+<!-- ==================== OVERLAY SCREENS ====================
+     Every menu, card, shop and result screen is a plain HTML layer that
+     is pinned over the whole viewport at z-index 1000. Nothing here is
+     drawn on the game canvas: while one of them is open the canvas is
+     paused outright.
+     ========================================================= -->
+<div id="overlays">
   <!-- ==================== MAIN MENU ==================== -->
   <div id="menu" class="screen show">
-    <canvas id="menuStars" width="1280" height="720" aria-hidden="true"></canvas>
     <h1 id="menuTitle">SURVIVE</h1>
     <div id="menuSub">1347 AD · Commander Rael</div>
 
@@ -1311,7 +1378,7 @@
     <h1 id="classTitle">Choose Your Combat Style</h1>
     <div id="classGrid">
       <div class="class-card" id="cardKnight" data-class="knight" role="button" tabindex="0">
-        <canvas class="cicon" id="iconKnight" width="184" height="184"></canvas>
+        <div class="cicon" id="iconKnight" aria-hidden="true"></div>
         <div class="cname">Vanguard Knight</div>
         <div class="cdesc">A long silver longsword carves a wide arc through everything in front of him.</div>
         <div class="cstats">
@@ -1323,7 +1390,7 @@
         <div class="cpassive">Passive · 7 health orbs</div>
       </div>
       <div class="class-card" id="cardGunslinger" data-class="gunslinger" role="button" tabindex="0">
-        <canvas class="cicon" id="iconGunslinger" width="184" height="184"></canvas>
+        <div class="cicon" id="iconGunslinger" aria-hidden="true"></div>
         <div class="cname">Gunslinger</div>
         <div class="cdesc">Twin pistols pour out a storm of bolts that punch through the crowd.</div>
         <div class="cstats">
@@ -1335,7 +1402,7 @@
         <div class="cpassive">Passive · bolts pierce 2 enemies</div>
       </div>
       <div class="class-card" id="cardSniper" data-class="sniper" role="button" tabindex="0">
-        <canvas class="cicon" id="iconSniper" width="184" height="184"></canvas>
+        <div class="cicon" id="iconSniper" aria-hidden="true"></div>
         <div class="cname">Sniper</div>
         <div class="cdesc">One shot, one kill. A rail of light crosses the entire screen.</div>
         <div class="cstats">
@@ -1347,7 +1414,7 @@
         <div class="cpassive">Passive · sees much further</div>
       </div>
       <div class="class-card" id="cardMage" data-class="mage" role="button" tabindex="0">
-        <canvas class="cicon" id="iconMage" width="184" height="184"></canvas>
+        <div class="cicon" id="iconMage" aria-hidden="true"></div>
         <div class="cname">Chrono Mage</div>
         <div class="cdesc">Three slow orbs hunt their prey down on their own.</div>
         <div class="cstats">
@@ -1360,7 +1427,7 @@
       </div>
       <div class="class-card locked" id="cardBerserker" data-class="berserker" role="button" tabindex="0">
         <div class="cprice"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>300</div>
-        <canvas class="cicon" id="iconBerserker" width="184" height="184"></canvas>
+        <div class="cicon" id="iconBerserker" aria-hidden="true"></div>
         <div class="cname">Berserker</div>
         <div class="cdesc">No armour and only three orbs, but every blow lands three times as hard.</div>
         <div class="cstats">
@@ -1373,7 +1440,7 @@
       </div>
       <div class="class-card locked" id="cardShadow" data-class="shadow" role="button" tabindex="0">
         <div class="cprice"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>400</div>
-        <canvas class="cicon" id="iconShadow" width="184" height="184"></canvas>
+        <div class="cicon" id="iconShadow" aria-hidden="true"></div>
         <div class="cname">Shadow Assassin</div>
         <div class="cdesc">Permanently cloaked past 120 px. Shadow daggers hit like a hammer.</div>
         <div class="cstats">
@@ -1386,7 +1453,7 @@
       </div>
       <div class="class-card locked" id="cardTech" data-class="tech" role="button" tabindex="0">
         <div class="cprice"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>500</div>
-        <canvas class="cicon" id="iconTech" width="184" height="184"></canvas>
+        <div class="cicon" id="iconTech" aria-hidden="true"></div>
         <div class="cname">Tech Specialist</div>
         <div class="cdesc">A bouncing disc and two standing turrets that never stop firing.</div>
         <div class="cstats">
@@ -2006,7 +2073,6 @@ const UI = {
   menu: document.getElementById('menu'),
   menuBest: document.getElementById('menuBest'),
   howto: document.getElementById('howto'),
-  menuStars: document.getElementById('menuStars'),
   zoneScreen: document.getElementById('zoneScreen'),
   zoneRow: document.getElementById('zoneRow'),
   zoneTitle: document.getElementById('zoneTitle'),
@@ -2131,6 +2197,7 @@ const Screens = {
       if (el.style) el.style.display = 'none';
     }
     if (this.current === name) this.current = null;
+    if (this.current === null) setLoopPausedFor(null);
   },
 
   /* hide everything else first, then reveal exactly one layer */
@@ -2153,6 +2220,8 @@ const Screens = {
     void next.offsetWidth;
     next.classList.add('show');
     this.current = name;
+    /* only the HUD lets the world run: every other layer stops the loop */
+    setLoopPausedFor(name);
     return next;
   },
 
@@ -3767,298 +3836,122 @@ function syncClassHud() {
   UI.qIcon.textContent = c.q.glyph;
   UI.qLabel.textContent = c.q.label;
   UI.abilities.q.style.color = c.q.colour;
-  drawClassIcon(UI.badgeIcon, c.id, 52);
+  paintClassIcon(UI.badgeIcon, c.id);
 }
 
-/* every class icon is painted with the 2D canvas api, never an image file */
-function drawClassIcon(canvas, id, size) {
-  if (!canvas || !canvas.getContext) return;
-  const S = size || canvas.width || 96;
-  const g = canvas.getContext('2d');
-  if (!g) return;
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.clearRect(0, 0, canvas.width || S, canvas.height || S);
-  g.save();
-  g.translate((canvas.width || S) / 2, (canvas.height || S) / 2);
-  g.scale((canvas.width || S) / 100, (canvas.height || S) / 100);
-  g.lineCap = 'round';
-  g.lineJoin = 'round';
-  if (id === 'knight') {
-    /* kite shield */
-    const face = g.createLinearGradient(-18, -26, 18, 30);
-    face.addColorStop(0, '#2c3f58');
-    face.addColorStop(1, '#0d1622');
-    g.fillStyle = face;
-    g.strokeStyle = '#ffd98a';
-    g.lineWidth = 3.4;
-    g.beginPath();
-    g.moveTo(-18, -25); g.lineTo(18, -25); g.lineTo(18, 2);
-    g.lineTo(0, 29); g.lineTo(-18, 2);
-    g.closePath(); g.fill(); g.stroke();
-    /* seam + boss */
-    g.strokeStyle = 'rgba(255,217,138,0.7)';
-    g.lineWidth = 2;
-    g.beginPath(); g.moveTo(0, -22); g.lineTo(0, 24); g.stroke();
-    g.fillStyle = 'rgba(255,217,138,0.95)';
-    g.beginPath(); g.arc(0, -4, 4.6, 0, TAU); g.fill();
-    g.fillStyle = 'rgba(24,36,54,0.9)';
-    g.beginPath(); g.arc(0, -4, 1.8, 0, TAU); g.fill();
-    /* cyan rim light */
-    g.strokeStyle = 'rgba(147,224,255,0.8)';
-    g.lineWidth = 2;
-    g.beginPath(); g.moveTo(-18, 2); g.lineTo(0, 29); g.lineTo(18, 2); g.stroke();
+/* =============================================================================
+   CLASS EMBLEMS — inline SVG, built with markup only.
+   The whole interface is HTML and CSS: nothing the player clicks or reads is
+   ever drawn on a canvas, so no game frame can bleed through a screen.
+   ========================================================================== */
+const CLASS_ICONS = {
+  knight:
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<defs><linearGradient id="ciKnightPlate" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="#2c3f58"/><stop offset="1" stop-color="#0d1622"/></linearGradient></defs>' +
+    '<path d="M32 22h36v26c0 16-12 26-18 30-6-4-18-14-18-30z" fill="url(#ciKnightPlate)" ' +
+    'stroke="#ffd98a" stroke-width="3.2" stroke-linejoin="round"/>' +
+    '<path d="M50 24v50" stroke="#ffd98a" stroke-opacity=".5" stroke-width="2"/>' +
+    '<circle cx="50" cy="41" r="4.4" fill="#ffd98a"/><circle cx="50" cy="41" r="1.7" fill="#182436"/>' +
+    '<g transform="rotate(26 50 50)">' +
+    '<path d="M50 8l5.4 10v30H44.6V18z" fill="#eef4ff"/>' +
+    '<path d="M50 8l5.4 10v30H50z" fill="#b9c8da"/>' +
+    '<path d="M36 48h28l-3.4 7.6H39.4z" fill="#f0c46a"/>' +
+    '<rect x="46.4" y="55.6" width="7.2" height="16" rx="2" fill="#3a2414"/>' +
+    '<circle cx="50" cy="75" r="4.6" fill="#e0b455"/>' +
+    '</g></svg>',
+  gunslinger:
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<g transform="rotate(-30 50 50)">' +
+    '<rect x="16" y="43" width="48" height="9" rx="2.4" fill="#dfe9f5"/>' +
+    '<rect x="16" y="41" width="30" height="3" fill="#a9bccd"/>' +
+    '<path d="M32 52h14l-3.4 17h-11z" fill="#8fa4b8"/>' +
+    '<path d="M45 52h6l-1.6 12h-3.4z" fill="#e0b455"/>' +
+    '<circle cx="68" cy="47.5" r="5" fill="#7dd3fc" opacity=".4"/>' +
+    '<circle cx="68" cy="47.5" r="2.2" fill="#7dd3fc"/>' +
+    '</g>' +
+    '<g transform="rotate(30 50 50)">' +
+    '<rect x="16" y="48" width="48" height="9" rx="2.4" fill="#c9d6e4"/>' +
+    '<rect x="16" y="46" width="30" height="3" fill="#93a5bb"/>' +
+    '<path d="M32 57h14l-3.4 17h-11z" fill="#7d92a8"/>' +
+    '<path d="M45 57h6l-1.6 12h-3.4z" fill="#e0b455"/>' +
+    '<circle cx="68" cy="52.5" r="5" fill="#7dd3fc" opacity=".4"/>' +
+    '<circle cx="68" cy="52.5" r="2.2" fill="#7dd3fc"/>' +
+    '</g></svg>',
+  sniper:
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<g transform="rotate(-26 50 50)">' +
+    '<path d="M12 54l20-8 6 8-20 10z" fill="#9fb0c2"/>' +
+    '<rect x="26" y="45" width="52" height="8" rx="2" fill="#e6eef8"/>' +
+    '<rect x="62" y="47.4" width="22" height="3.2" rx="1.4" fill="#c9d6e4"/>' +
+    '<rect x="30" y="53" width="9" height="14" rx="2" fill="#8fa4b8"/>' +
+    '<rect x="26" y="35" width="24" height="7" rx="2" fill="#3c4d61"/>' +
+    '<circle cx="38" cy="38.5" r="5.4" fill="none" stroke="#ffd98a" stroke-width="2"/>' +
+    '<circle cx="38" cy="38.5" r="2" fill="#c7d2fe"/>' +
+    '<rect x="84" y="46" width="5" height="6" rx="1.4" fill="#ffd98a"/>' +
+    '<path d="M89 49h7" stroke="#c7d2fe" stroke-width="2" opacity=".55"/>' +
+    '</g></svg>',
+  mage:
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<defs><radialGradient id="ciMageGlow">' +
+    '<stop offset="0" stop-color="#f7f2ff"/><stop offset=".45" stop-color="#a78bfa"/>' +
+    '<stop offset="1" stop-color="#6d28d9" stop-opacity="0"/></radialGradient></defs>' +
+    '<circle cx="50" cy="50" r="30" fill="url(#ciMageGlow)"/>' +
+    '<circle cx="50" cy="50" r="13.4" fill="#f5f3ff"/>' +
+    '<circle cx="50" cy="50" r="9.6" fill="none" stroke="#8b5cf6" stroke-width="1.8"/>' +
+    '<path d="M50 50V41.4M50 50l6 4" stroke="#6d28d9" stroke-width="2.6" stroke-linecap="round"/>' +
+    '<circle cx="50" cy="50" r="27" fill="none" stroke="#ffd98a" stroke-width="2.2"/>' +
+    '<g fill="none" stroke="#ffd98a" stroke-width="2.2" stroke-linecap="round">' +
+    '<path d="M77 50a4 4 0 0 1 4 4"/><path d="M23 50a4 4 0 0 0-4 4"/>' +
+    '<path d="M50 77a4 4 0 0 1-4 4"/><path d="M50 23a4 4 0 0 1 4-4"/>' +
+    '</g></svg>',
+  berserker:
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<g transform="rotate(40 50 50)">' +
+    '<rect x="24" y="47" width="46" height="5" rx="2.4" fill="#6b4a2c"/>' +
+    '<path d="M64 29l18-7 7 21-16 6-9-9z" fill="#ffb27a" stroke="#ffe7b8" stroke-width="2" stroke-linejoin="round"/>' +
+    '</g>' +
+    '<g transform="rotate(-40 50 50)">' +
+    '<rect x="24" y="47" width="46" height="5" rx="2.4" fill="#6b4a2c"/>' +
+    '<path d="M64 29l18-7 7 21-16 6-9-9z" fill="#ff8a5c" stroke="#ffe7b8" stroke-width="2" stroke-linejoin="round"/>' +
+    '</g>' +
+    '<circle cx="50" cy="52" r="5.4" fill="#ffd6a5"/>' +
+    '<circle cx="50" cy="52" r="2" fill="#7a3a1a"/></svg>',
+  shadow:
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<defs><radialGradient id="ciShadowGlow">' +
+    '<stop offset="0" stop-color="#a78bfa" stop-opacity=".5"/>' +
+    '<stop offset="1" stop-color="#4c1d95" stop-opacity="0"/></radialGradient></defs>' +
+    '<circle cx="50" cy="50" r="34" fill="url(#ciShadowGlow)"/>' +
+    '<g transform="rotate(28 50 50)"><path d="M50 12l4.4 16-3 6h-2.8l-3-6z" fill="#c4b5fd"/>' +
+    '<rect x="45.6" y="34" width="8.8" height="12" rx="2" fill="#1b1229"/></g>' +
+    '<g transform="rotate(-28 50 50)"><path d="M50 12l4.4 16-3 6h-2.8l-3-6z" fill="#a78bfa"/>' +
+    '<rect x="45.6" y="34" width="8.8" height="12" rx="2" fill="#1b1229"/></g>' +
+    '<path d="M50 34c13 4 19 16 16 30-6 8-26 8-32 0-3-14 3-26 16-30z" fill="#160f24" ' +
+    'stroke="#a78bfa" stroke-width="2" stroke-linejoin="round"/>' +
+    '<ellipse cx="44" cy="56" rx="3.4" ry="2.2" fill="#e9d5ff"/>' +
+    '<ellipse cx="56" cy="56" rx="3.4" ry="2.2" fill="#e9d5ff"/></svg>',
+  tech:
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<circle cx="50" cy="54" r="29" fill="none" stroke="#6ee7b7" stroke-opacity=".32" stroke-width="2"/>' +
+    '<g stroke="#33473f" stroke-width="5" stroke-linecap="round">' +
+    '<path d="M50 62l-15 13"/><path d="M50 62l15 13"/><path d="M50 62v18"/></g>' +
+    '<circle cx="50" cy="56" r="11" fill="#1f3b34" stroke="#6ee7b7" stroke-width="2.4"/>' +
+    '<rect x="47" y="27" width="6" height="23" rx="3" fill="#a7f3d0"/>' +
+    '<circle cx="50" cy="25" r="4.6" fill="#6ee7b7" fill-opacity=".9"/>' +
+    '<path d="M73 54a23 23 0 0 1-11 19" fill="none" stroke="#d1fae5" stroke-width="3" stroke-linecap="round"/>' +
+    '<path d="M27 54a23 23 0 0 0 11 19" fill="none" stroke="#d1fae5" stroke-width="3" stroke-linecap="round"/></svg>'
+};
 
-    /* the longsword, laid point-up across the shield */
-    g.save();
-    g.rotate(0.5);
-    g.translate(0, 8);
-    g.shadowColor = 'rgba(232,242,255,0.9)';
-    g.shadowBlur = 12;
-    const steel = g.createLinearGradient(-7, 0, 7, 0);
-    steel.addColorStop(0, '#8fa0b6');
-    steel.addColorStop(0.45, '#ffffff');
-    steel.addColorStop(1, '#93a5bb');
-    g.fillStyle = steel;
-    g.beginPath();
-    g.moveTo(0, -49);
-    g.lineTo(7, -35);
-    g.lineTo(7, 2);
-    g.lineTo(-7, 2);
-    g.lineTo(-7, -35);
-    g.closePath();
-    g.fill();
-    /* fuller */
-    g.strokeStyle = 'rgba(255,255,255,0.75)';
-    g.lineWidth = 1.6;
-    g.beginPath(); g.moveTo(0, -38); g.lineTo(0, -2); g.stroke();
-    /* gold crossguard */
-    const guard = g.createLinearGradient(0, 2, 0, 11);
-    guard.addColorStop(0, '#ffe9b0');
-    guard.addColorStop(1, '#b8862f');
-    g.fillStyle = guard;
-    g.beginPath();
-    g.moveTo(-21, 1); g.lineTo(21, 1); g.lineTo(17, 10); g.lineTo(-17, 10);
-    g.closePath(); g.fill();
-    g.shadowBlur = 0;
-    /* grip */
-    g.fillStyle = '#3a2414';
-    g.fillRect(-5, 10, 10, 20);
-    g.strokeStyle = 'rgba(255,214,150,0.4)';
-    g.lineWidth = 1.4;
-    for (let i = 0; i < 4; i++) {
-      g.beginPath(); g.moveTo(-5, 13 + i * 4); g.lineTo(5, 16 + i * 4); g.stroke();
-    }
-    /* pommel */
-    g.fillStyle = '#e0b455';
-    g.beginPath(); g.arc(0, 33, 5, 0, TAU); g.fill();
-    g.restore();
-  } else if (id === 'gunslinger') {
-    /* twin pistols, crossed like a duellist's crest */
-    const pistol = function () {
-      /* slide / barrel */
-      g.fillStyle = '#dfe9f5';
-      g.beginPath();
-      g.moveTo(-26, -5); g.lineTo(12, -5); g.lineTo(16, -1); g.lineTo(16, 4);
-      g.lineTo(-26, 4);
-      g.closePath(); g.fill();
-      /* top rib + rear sight */
-      g.fillStyle = '#a9bccd';
-      g.fillRect(-24, -4.6, 32, 2.4);
-      g.fillRect(-24, -8, 5, 3.4);
-      /* grip */
-      g.fillStyle = '#8fa4b8';
-      g.beginPath();
-      g.moveTo(-11, 3); g.lineTo(-1, 3); g.lineTo(3, 22); g.lineTo(-10, 22);
-      g.closePath(); g.fill();
-      /* trigger guard */
-      g.strokeStyle = 'rgba(255,217,138,0.95)'; g.lineWidth = 2.2;
-      g.beginPath(); g.arc(-1, 7, 4.4, 0.1, 1.5); g.stroke();
-      /* muzzle glow */
-      g.fillStyle = 'rgba(125,211,252,0.45)';
-      g.beginPath(); g.arc(17, -1, 8, 0, TAU); g.fill();
-      g.fillStyle = '#7dd3fc';
-      g.beginPath(); g.arc(17, -1, 3.4, 0, TAU); g.fill();
-    };
-    g.save();
-    g.rotate(-0.62);
-    g.translate(-6, 10);
-    pistol();
-    g.restore();
-    g.save();
-    g.scale(-1, 1);
-    g.rotate(-0.62);
-    g.translate(-6, 10);
-    pistol();
-    g.restore();
-  } else if (id === 'sniper') {
-    /* long rifle with a scope, pointed up-right */
-    g.rotate(-0.62);
-    /* stock */
-    g.fillStyle = '#9fb0c2';
-    g.beginPath();
-    g.moveTo(-38, 4); g.lineTo(-18, -3); g.lineTo(-14, 4); g.lineTo(-34, 12);
-    g.closePath(); g.fill();
-    /* body + long barrel */
-    g.fillStyle = '#e6eef8';
-    g.fillRect(-20, -3.2, 54, 6.2);
-    g.fillStyle = '#c9d6e4';
-    g.fillRect(18, -1.8, 18, 3.4);
-    /* grip and mag */
-    g.fillStyle = '#8fa4b8';
-    g.fillRect(-6, 3, 9, 12);
-    g.fillRect(-18, 3, 8, 8);
-    /* scope */
-    g.fillStyle = '#3c4d61';
-    g.fillRect(-8, -13, 22, 6);
-    g.fillStyle = '#ffd98a';
-    g.fillRect(-10, -12.4, 3, 4.8);
-    g.fillRect(14, -12.4, 3, 4.8);
-    g.strokeStyle = 'rgba(255,217,138,0.9)'; g.lineWidth = 2;
-    g.beginPath(); g.arc(3, -10, 4.8, 0, TAU); g.stroke();
-    g.fillStyle = 'rgba(199,210,254,0.95)';
-    g.beginPath(); g.arc(3, -10, 2.2, 0, TAU); g.fill();
-    /* muzzle flash + tracer */
-    g.fillStyle = '#ffd98a';
-    g.fillRect(35, -3.6, 4.4, 7.2);
-    g.strokeStyle = 'rgba(199,210,254,0.55)'; g.lineWidth = 1.8;
-    g.beginPath(); g.moveTo(41, 0); g.lineTo(50, 0); g.stroke();
-  } else if (id === 'berserker') {
-    /* a crossed pair of plasma axes */
-    const axe = function () {
-      g.strokeStyle = '#6b4a2c';
-      g.lineWidth = 5;
-      g.beginPath(); g.moveTo(-26, 26); g.lineTo(12, -16); g.stroke();
-      g.shadowColor = '#ff8a4c';
-      g.shadowBlur = 16;
-      const head = g.createLinearGradient(4, -30, 30, -4);
-      head.addColorStop(0, '#ffe0b8');
-      head.addColorStop(1, '#ff6b3d');
-      g.fillStyle = head;
-      g.beginPath();
-      g.moveTo(8, -26); g.lineTo(26, -34); g.lineTo(34, -14); g.lineTo(20, -8); g.lineTo(10, -15);
-      g.closePath();
-      g.fill();
-      g.strokeStyle = 'rgba(255,231,184,0.9)';
-      g.lineWidth = 2;
-      g.stroke();
-      g.shadowBlur = 0;
-    };
-    axe();
-    g.save(); g.scale(-1, 1); axe(); g.restore();
-  } else if (id === 'shadow') {
-    /* a hooded silhouette with two violet blades */
-    const aura = g.createRadialGradient(0, 0, 4, 0, 0, 46);
-    aura.addColorStop(0, 'rgba(196,181,253,0.5)');
-    aura.addColorStop(1, 'rgba(76,29,149,0)');
-    g.fillStyle = aura;
-    g.beginPath(); g.arc(0, 0, 46, 0, TAU); g.fill();
-    /* the two daggers, crossed behind him */
-    g.save();
-    g.rotate(0.75);
-    g.fillStyle = '#c4b5fd';
-    g.beginPath();
-    g.moveTo(0, -46); g.lineTo(5, -26); g.lineTo(2, -18); g.lineTo(-2, -18); g.lineTo(-5, -26);
-    g.closePath(); g.fill();
-    g.fillStyle = '#1b1229';
-    g.fillRect(-4, -18, 8, 14);
-    g.restore();
-    g.save();
-    g.rotate(-0.75);
-    g.fillStyle = '#a78bfa';
-    g.beginPath();
-    g.moveTo(0, -46); g.lineTo(5, -26); g.lineTo(2, -18); g.lineTo(-2, -18); g.lineTo(-5, -26);
-    g.closePath(); g.fill();
-    g.fillStyle = '#1b1229';
-    g.fillRect(-4, -18, 8, 14);
-    g.restore();
-    /* hood */
-    g.fillStyle = '#160f24';
-    g.beginPath();
-    g.moveTo(0, -30);
-    g.quadraticCurveTo(23, -18, 19, 16);
-    g.quadraticCurveTo(0, 30, -19, 16);
-    g.quadraticCurveTo(-23, -18, 0, -30);
-    g.closePath();
-    g.fill();
-    g.strokeStyle = 'rgba(167,139,250,0.9)';
-    g.lineWidth = 2.2;
-    g.stroke();
-    /* two points of light in the dark */
-    g.fillStyle = '#e9d5ff';
-    g.shadowColor = '#a78bfa';
-    g.shadowBlur = 10;
-    g.beginPath(); g.ellipse(-6.2, -8, 3.4, 2.2, -0.2, 0, TAU); g.fill();
-    g.beginPath(); g.ellipse(6.2, -8, 3.4, 2.2, 0.2, 0, TAU); g.fill();
-    g.shadowBlur = 0;
-  } else if (id === 'tech') {
-    /* a standing turret with a live disc orbiting it */
-    g.strokeStyle = 'rgba(110,231,183,0.32)';
-    g.lineWidth = 2;
-    g.beginPath(); g.arc(0, 8, 34, 0, TAU); g.stroke();
-    g.strokeStyle = '#33473f';
-    g.lineWidth = 6;
-    for (let i = 0; i < 3; i++) {
-      const a = -Math.PI / 2 + i * (TAU / 3) + 0.4;
-      g.beginPath();
-      g.moveTo(0, 14);
-      g.lineTo(Math.cos(a) * 19, 16 + Math.sin(a) * 11);
-      g.stroke();
-    }
-    g.fillStyle = '#1f3b34';
-    g.beginPath(); g.arc(0, 8, 13, 0, TAU); g.fill();
-    g.strokeStyle = '#6ee7b7';
-    g.lineWidth = 2.4;
-    g.stroke();
-    g.fillStyle = '#a7f3d0';
-    g.fillRect(-3, -26, 6, 26);
-    g.shadowColor = '#34d399';
-    g.shadowBlur = 12;
-    g.fillStyle = '#6ee7b7';
-    g.beginPath(); g.arc(0, -28, 4.6, 0, TAU); g.fill();
-    g.shadowBlur = 0;
-    g.strokeStyle = '#d1fae5';
-    g.lineWidth = 3;
-    g.beginPath(); g.arc(0, 8, 27, 0.45, 2.35); g.stroke();
-    g.beginPath(); g.arc(0, 8, 27, 0.45 + Math.PI, 2.35 + Math.PI); g.stroke();
-  } else {
-    /* a glowing orb held in a rune circle */
-    const glow = g.createRadialGradient(0, 0, 3, 0, 0, 42);
-    glow.addColorStop(0, 'rgba(237,233,254,0.98)');
-    glow.addColorStop(0.34, 'rgba(167,139,250,0.8)');
-    glow.addColorStop(1, 'rgba(109,40,217,0)');
-    g.fillStyle = glow;
-    g.beginPath(); g.arc(0, 0, 42, 0, TAU); g.fill();
-    g.fillStyle = '#f5f3ff';
-    g.beginPath(); g.arc(0, 0, 16, 0, TAU); g.fill();
-    /* a clock face floating in the orb */
-    g.strokeStyle = 'rgba(139,92,246,0.75)'; g.lineWidth = 1.8;
-    g.beginPath(); g.arc(0, 0, 11.4, 0, TAU); g.stroke();
-    g.lineWidth = 1.4;
-    for (let i = 0; i < 4; i++) {
-      const a = (i / 4) * TAU;
-      g.beginPath();
-      g.moveTo(Math.cos(a) * 8.6, Math.sin(a) * 8.6);
-      g.lineTo(Math.cos(a) * 11.2, Math.sin(a) * 11.2);
-      g.stroke();
-    }
-    g.strokeStyle = 'rgba(109,40,217,0.98)';
-    g.lineWidth = 2.6;
-    g.beginPath(); g.moveTo(0, 1.2); g.lineTo(0, -7.6); g.stroke();
-    g.beginPath(); g.moveTo(0, 1.2); g.lineTo(6.6, 4.2); g.stroke();
-    g.fillStyle = 'rgba(109,40,217,0.98)';
-    g.beginPath(); g.arc(0, 1.2, 1.9, 0, TAU); g.fill();
-    /* gold rune ring */
-    g.strokeStyle = 'rgba(255,217,138,0.95)'; g.lineWidth = 2.4;
-    g.beginPath(); g.arc(0, 0, 31, 0, TAU); g.stroke();
-    g.lineWidth = 2.6;
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * TAU + 0.26;
-      g.beginPath();
-      g.arc(Math.cos(a) * 38, Math.sin(a) * 38, 4.6, a, a + 1.5);
-      g.stroke();
-    }
-  }
-  g.restore();
+/* the emblem markup for one class id */
+function classIconSVG(id) {
+  return CLASS_ICONS[id] || CLASS_ICONS.knight;
+}
+
+/* drop the emblem into any element that carries a class id */
+function paintClassIcon(el, id) {
+  if (!el) return;
+  el.innerHTML = classIconSVG(id);
 }
 
 /* ------------------------------ knight sword -------------------------------
@@ -8094,7 +7987,7 @@ function shotShopClassCard(it) {
   const cls = CLASSES.find((c) => c.id === it.id) || null;
   const line = cls ? ('Q · ' + cls.q.name + ' · ' + cls.passive) : '';
   return '<div class="shop-card sc-class' + (st.full ? ' maxed' : '') + '" data-item="' + it.id + '">' +
-    '<canvas class="sc-portrait" width="96" height="96" data-icon="' + it.id + '"></canvas>' +
+    '<div class="sc-portrait" aria-hidden="true">' + classIconSVG(it.id) + '</div>' +
     '<div class="sc-name">' + it.name + '</div>' +
     '<div class="sc-desc">' + it.desc + '</div>' +
     '<div class="sc-q">' + line + '</div>' +
@@ -8108,11 +8001,6 @@ function renderShop() {
   if (!UI.shopGrid) return;
   UI.shopGrid.innerHTML = SHOP_TABS[tab].items.map((it) =>
     tab === 'classes' ? shotShopClassCard(it) : shotShopCard(tab, it)).join('');
-  if (tab === 'classes' && UI.shopGrid.querySelectorAll) {
-    /* each class card carries the same painted portrait as the class screen */
-    const heads = UI.shopGrid.querySelectorAll('canvas[data-icon]');
-    for (let i = 0; i < heads.length; i++) drawClassIcon(heads[i], heads[i].getAttribute('data-icon'), 96);
-  }
   if (UI.shopNote) UI.shopNote.textContent = SHOP_TABS[tab].note;
   if (UI.shopGems) UI.shopGems.textContent = String(Shop.gems());
   if (UI.shopTabs) {
@@ -8655,9 +8543,9 @@ function updateClassHint() {
 
 function drawClassCards() {
   for (let i = 0; i < UI.classIcons.length; i++) {
-    drawClassIcon(UI.classIcons[i], CLASSES[i].id, 184);
+    paintClassIcon(UI.classIcons[i], CLASSES[i].id);
   }
-  drawClassIcon(UI.badgeIcon, getClass().id, 52);
+  paintClassIcon(UI.badgeIcon, getClass().id);
   syncClassCardLocks();
 }
 
@@ -16047,162 +15935,6 @@ const starfield = (function () {
   return { stars: layers, shoot: -1, shootAt: 3.2 };
 }());
 
-let starCtx = null;
-
-function drawMenuStarfield() {
-  const cvs = UI.menuStars;
-  if (!cvs || !cvs.getContext) return;
-  if (!starCtx) {
-    starCtx = cvs.getContext('2d');
-    if (!starCtx) return;
-  }
-  const g = starCtx;
-  const cw = cvs.width || W;
-  const ch = cvs.height || H;
-  const t = game.menuTime || 0;
-
-  /* deep space, darker at the edges */
-  const bg = g.createRadialGradient(cw * 0.5, ch * 0.42, 40, cw * 0.5, ch * 0.5, Math.hypot(cw, ch) * 0.62);
-  bg.addColorStop(0, '#0c1730');
-  bg.addColorStop(0.55, '#060b17');
-  bg.addColorStop(1, '#02030a');
-  g.fillStyle = bg;
-  g.fillRect(0, 0, cw, ch);
-
-  /* two nebula clouds drifting very slowly */
-  const clouds = [
-    { x: 0.30 + Math.sin(t * 0.05) * 0.02, y: 0.62 + Math.cos(t * 0.04) * 0.015, r: 0.42, c: 'rgba(58,92,190,0.13)' },
-    { x: 0.72 + Math.cos(t * 0.037) * 0.02, y: 0.34 + Math.sin(t * 0.045) * 0.018, r: 0.36, c: 'rgba(120,70,180,0.12)' }
-  ];
-  for (let i = 0; i < clouds.length; i++) {
-    const cl = clouds[i];
-    const rad = g.createRadialGradient(cw * cl.x, ch * cl.y, 10, cw * cl.x, ch * cl.y, ch * cl.r);
-    rad.addColorStop(0, cl.c);
-    rad.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = rad;
-    g.fillRect(0, 0, cw, ch);
-  }
-
-  /* the stars themselves: drift up, wrap, twinkle */
-  for (let i = 0; i < starfield.stars.length; i++) {
-    const st = starfield.stars[i];
-    let y = (st.y - t * st.sp) % ch;
-    if (y < 0) y += ch;
-    const tw = 0.55 + 0.45 * Math.sin(t * st.tws + st.tw);
-    const a = clamp(st.a * tw, 0, 1);
-    if (a < 0.02) continue;
-    if (st.r > 1.9) {
-      /* the brightest few get a soft halo, added on top of the sky */
-      const halo = g.createRadialGradient(st.x, y, 0, st.x, y, st.r * 5);
-      halo.addColorStop(0, 'rgba(255,255,255,' + (0.5 * a).toFixed(3) + ')');
-      halo.addColorStop(0.35, 'rgba(196,224,255,' + (0.2 * a).toFixed(3) + ')');
-      halo.addColorStop(1, 'rgba(196,224,255,0)');
-      g.globalAlpha = 1;
-      g.globalCompositeOperation = 'lighter';
-      g.fillStyle = halo;
-      g.beginPath();
-      g.arc(st.x, y, st.r * 5, 0, TAU);
-      g.fill();
-      g.globalCompositeOperation = 'source-over';
-    }
-    g.globalAlpha = a;
-    g.fillStyle = st.tint;
-    g.beginPath();
-    g.arc(st.x, y, st.r, 0, TAU);
-    g.fill();
-  }
-  g.globalAlpha = 1;
-
-  /* a gentle vignette keeps the title and buttons readable */
-  const vg = g.createRadialGradient(cw * 0.5, ch * 0.5, ch * 0.28, cw * 0.5, ch * 0.5, ch * 0.95);
-  vg.addColorStop(0, 'rgba(0,0,0,0)');
-  vg.addColorStop(1, 'rgba(0,0,0,0.55)');
-  g.fillStyle = vg;
-  g.fillRect(0, 0, cw, ch);
-
-  /* a shooting star every few seconds */
-  starfield.shootAt -= 1 / 60;
-  if (starfield.shoot < 0 && starfield.shootAt <= 0) {
-    starfield.shoot = 0;
-    starfield.shootAt = 5.5 + Math.random() * 5;
-    starfield.shootX = 120 + Math.random() * (cw - 340);
-    starfield.shootY = 60 + Math.random() * (ch * 0.45);
-    starfield.shootA = 0.45 + Math.random() * 0.35;
-  }
-  if (starfield.shoot >= 0) {
-    starfield.shoot += 1 / 60;
-    const k = starfield.shoot / 0.9;
-    if (k >= 1) {
-      starfield.shoot = -1;
-    } else {
-      const hx = starfield.shootX + k * 260;
-      const hy = starfield.shootY + k * 150;
-      const tx = hx - Math.cos(starfield.shootA) * 120;
-      const ty = hy - Math.sin(starfield.shootA) * 120;
-      const fade = Math.sin(k * Math.PI);
-      const lg = g.createLinearGradient(tx, ty, hx, hy);
-      lg.addColorStop(0, 'rgba(180,220,255,0)');
-      lg.addColorStop(1, 'rgba(226,240,255,' + (0.85 * fade).toFixed(3) + ')');
-      g.strokeStyle = lg;
-      g.lineWidth = 2;
-      g.lineCap = 'round';
-      g.beginPath();
-      g.moveTo(tx, ty);
-      g.lineTo(hx, hy);
-      g.stroke();
-      g.globalAlpha = fade;
-      g.fillStyle = '#ffffff';
-      g.beginPath();
-      g.arc(hx, hy, 1.8, 0, TAU);
-      g.fill();
-      g.globalAlpha = 1;
-    }
-  }
-}
-
-/* ------------------------------ menu backdrop ------------------------------ */
-const menuStars = (function () {
-  const arr = [];
-  const rng = makeRng(777);
-  for (let i = 0; i < 190; i++) {
-    arr.push({
-      x: rng() * W, y: rng() * H,
-      r: rng() > 0.9 ? 2 : 1,
-      a: 0.2 + rng() * 0.7,
-      sp: 3 + rng() * 14,
-      tw: rng() * TAU
-    });
-  }
-  return arr;
-})();
-
-function drawMenuBackdrop() {
-  const g = ctx.createRadialGradient(W * 0.5, H * 0.42, 60, W * 0.5, H * 0.5, Math.hypot(W, H) * 0.7);
-  g.addColorStop(0, '#0d1a30');
-  g.addColorStop(0.55, '#070c18');
-  g.addColorStop(1, '#020308');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
-
-  /* drifting nebula */
-  const neb = ctx.createRadialGradient(W * 0.32, H * 0.62, 20, W * 0.32, H * 0.62, 420);
-  neb.addColorStop(0, 'rgba(56,89,190,0.10)');
-  neb.addColorStop(1, 'rgba(56,89,190,0)');
-  ctx.fillStyle = neb;
-  ctx.fillRect(0, 0, W, H);
-
-  const t = game.menuTime;
-  for (let i = 0; i < menuStars.length; i++) {
-    const s = menuStars[i];
-    const y = (s.y + t * s.sp) % H;
-    const tw = 0.55 + 0.45 * Math.sin(t * 1.6 + s.tw);
-    ctx.globalAlpha = clamp(s.a * tw, 0, 1);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(s.x, y, s.r, s.r);
-  }
-  ctx.globalAlpha = 1;
-}
-
 /* ------------------------------ minimap ------------------------------------ */
 let mmFog = null;
 function rebuildFogCanvas() {
@@ -17277,9 +17009,9 @@ function drawMinimapPath(k) {
 function render() {
   ctx.clearRect(0, 0, W, H);
 
+  /* menu, class and zone screens are opaque HTML layers — the loop is paused
+     while one of them is open, so this is only a safety net */
   if (game.screen === 'menu' || game.screen === 'class' || game.screen === 'zones') {
-    drawMenuBackdrop();
-    if (game.screen === 'menu') drawMenuStarfield();
     return;
   }
 
@@ -17339,8 +17071,35 @@ function render() {
   drawMinimap();
 }
 
-/* ------------------------------ main loop ---------------------------------- */
+/* ------------------------------ main loop ----------------------------------
+   The canvas only ever runs while the HUD is the active layer. Every other
+   screen is an HTML overlay and parks the loop outright — no update, no
+   render, no requestAnimationFrame — so nothing in the world can move (or
+   even be repainted) behind a menu, a card, the shop or a result screen.
+   ------------------------------------------------------------------------- */
 let lastT = 0;
+let rafId = 0;
+let loopPaused = true;          /* the title screen owns the screen at boot */
+
+function startLoop() {
+  if (rafId) return;
+  loopPaused = false;
+  lastT = 0;                    /* no dt spike when the world wakes up */
+  rafId = requestAnimationFrame(frame);
+}
+
+function stopLoop() {
+  loopPaused = true;
+  if (rafId && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(rafId);
+  rafId = 0;
+  lastT = 0;
+}
+
+/* the screen manager calls this every time a layer changes hands */
+function setLoopPausedFor(screenName) {
+  if (screenName === 'hud') startLoop();
+  else stopLoop();
+}
 
 let screenGuardTimer = 0;
 
@@ -17408,6 +17167,7 @@ function update(dt) {
 }
 
 function frame(t) {
+  if (loopPaused) { rafId = 0; return; }
   if (!lastT) lastT = t;
   let dt = (t - lastT) / 1000;
   lastT = t;
@@ -17415,7 +17175,7 @@ function frame(t) {
   if (dt < 0) dt = 0;
   update(dt);
   render();
-  requestAnimationFrame(frame);
+  rafId = requestAnimationFrame(frame);
 }
 
 /* ------------------------------ resize + boot ------------------------------ */
@@ -17448,6 +17208,9 @@ window.addEventListener('orientationchange', resize);
   Shop.load();                   /* the depot reads its levels and satchel first */
   syncConsumableHud();
   refreshSaveUi();
+  for (let i = 0; i < UI.classIcons.length; i++) {
+    paintClassIcon(UI.classIcons[i], CLASSES[i].id);   /* markup, painted once */
+  }
   Screens.reset('menu');         /* boot lands on the title screen, only */
 
   game.player = makePlayer();
@@ -17460,7 +17223,7 @@ window.addEventListener('orientationchange', resize);
   if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
     document.fonts.ready.then(updateClassHint).catch(function () {});
   }
-  requestAnimationFrame(frame);
+  setLoopPausedFor(Screens.current || 'menu');
 })();
 </script>
 </body>
