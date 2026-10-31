@@ -18,11 +18,11 @@
   }
   *{ box-sizing:border-box; }
   html,body{
-    margin:0; padding:0; width:100%; height:100%;
-    background:#04050a; overflow:hidden;
+    margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000;
     font-family:var(--font-stat); color:#eaf0fa;
     user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent;
   }
+  canvas { display:block; width:100vw; height:100vh; }
   /* the stage IS the window: nothing anywhere is given a fixed pixel size */
   #stage{
     position:fixed; inset:0; width:100%; height:100%;
@@ -1840,7 +1840,9 @@ const WORLD = 3000;          // every zone map is 3000 x 3000
    picture is identical on every screen: only bigger or smaller. */
 const BASE_W = W;
 const BASE_H = H;
-let viewScale = 1;           // device pixels per base pixel
+let viewScale = 1;           // device pixels per base pixel (aspect-preserving)
+let viewScaleX = 1;          // canvas.width/1280 for X
+let viewScaleY = 1;          // canvas.height/720 for Y
 let viewOffX = 0;            // letterbox offset of the base box, device pixels
 let viewOffY = 0;
 let viewDpr = 1;             // backing-store pixels per CSS pixel
@@ -3676,8 +3678,8 @@ function pointerToWorldScreen(e) {
      cursor lands on the same world point at any window size */
   const kx = r.width > 0 ? UI.canvas.width / r.width : 1;
   const ky = r.height > 0 ? UI.canvas.height / r.height : 1;
-  const sx = ((e.clientX - r.left) * kx - viewOffX) / viewScale;
-  const sy = ((e.clientY - r.top) * ky - viewOffY) / viewScale;
+  const sx = ((e.clientX - r.left) * kx - viewOffX) / viewScaleX;
+  const sy = ((e.clientY - r.top) * ky - viewOffY) / viewScaleY;
   return { x: sx, y: sy };
 }
 
@@ -19158,7 +19160,7 @@ function frame(t) {
 function viewportSize() {
   const de = document.documentElement || {};
   const vw = window.innerWidth || de.clientWidth || BASE_W;
-  const vh = window.innerHeight || de.clientHeight || BASE_H;
+  const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight || de.clientHeight || BASE_H;
   return { w: Math.max(1, vw), h: Math.max(1, vh) };
 }
 
@@ -19170,7 +19172,7 @@ function paintBackdrop() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = '#04050a';
   ctx.fillRect(0, 0, cv.width, cv.height);
-  ctx.setTransform(viewScale, 0, 0, viewScale, viewOffX, viewOffY);
+  ctx.setTransform(viewScaleX, 0, 0, viewScaleY, viewOffX, viewOffY);
 }
 
 function resize() {
@@ -19187,8 +19189,10 @@ function resize() {
   }
   const cw = cv ? cv.width : bw;
   const ch = cv ? cv.height : bh;
-  /* THE scale factor: 1280x720 base space -> this window, aspect preserved */
-  viewScale = Math.min(cw / BASE_W, ch / BASE_H) || 1;
+  /* THE scale factors: canvas.width/1280 for X and canvas.height/720 for Y */
+  const scaleX = cw / BASE_W || 1;
+  const scaleY = ch / BASE_H || 1;
+  viewScale = Math.min(scaleX, scaleY); /* keep aspect ratio for the transform */
   viewOffX = (cw - BASE_W * viewScale) / 2;
   viewOffY = (ch - BASE_H * viewScale) / 2;
   /* the HUD sits in a 1280x720 CSS-pixel box scaled by exactly the same factor */
@@ -19197,6 +19201,9 @@ function resize() {
     UI.uiLayer.style.transform =
       'translate(' + (viewOffX / dpr) + 'px,' + (viewOffY / dpr) + 'px) scale(' + cssScale + ')';
   }
+  /* store the independent ratios for the game elements */
+  viewScaleX = scaleX;
+  viewScaleY = scaleY;
   paintBackdrop();
 }
 window.addEventListener('resize', resize);
@@ -19238,6 +19245,7 @@ window.addEventListener('beforeunload', () => flushSaveGame(true));
 
   resize();
   updateHealthOrbs();
+  resize();                                     /* fire resize on page load */
   if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
     document.fonts.ready.then(() => {}).catch(function () {});
   }
