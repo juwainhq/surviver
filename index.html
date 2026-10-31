@@ -1295,6 +1295,7 @@ const game = {
   overchargeTimer: 0,
   overchargeCd: 0,
   bombCd: 0,
+  arenaGrace: 0,       /* brief invincibility granted on first entering an arena */
   stormTimer: 0,       /* gunslinger Bullet Storm */
   stormFire: 0,
   rift: null,          /* mage Temporal Rift */
@@ -1369,6 +1370,7 @@ function resetRun() {
   game.bombCd = 0;
   game.stormTimer = 0;
   game.stormFire = 0;
+  game.arenaGrace = 0;
   game.rift = null;
   game.beams.length = 0;
   game.turrets.length = 0;
@@ -1410,6 +1412,7 @@ function loadZone(zoneIndex, opts) {
   game.bombCd = 0;
   game.stormTimer = 0;
   game.stormFire = 0;
+  game.arenaGrace = 0;
   game.rift = null;
   game.beams.length = 0;
   game.turrets.length = 0;
@@ -1728,6 +1731,7 @@ function updatePlayer(dt) {
 
   if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
   if (p.hitFlash > 0) p.hitFlash = Math.max(0, p.hitFlash - dt);
+  if (game.arenaGrace > 0) game.arenaGrace = Math.max(0, game.arenaGrace - dt);
 
   /* age the dash afterimages */
   for (let i = p.trail.length - 1; i >= 0; i--) {
@@ -2672,6 +2676,7 @@ function updateBombs(dt) {
 function hurtPlayer(amount) {
   const p = game.player;
   if (game.screen !== 'playing') return;
+  if (game.arenaGrace > 0) return;      /* arena entry window: fully invincible */
   if (p.invuln > 0 || p.dashTimer > 0) return;
   if (p.shield > 0) {
     p.shield -= 1;
@@ -2744,13 +2749,10 @@ function spawnWave(arena, arenaIndex, waveIndex) {
   const count = wave.count;
   for (let i = 0; i < count; i++) {
     const a = (i / count) * TAU + rand(-0.2, 0.2);
-    let rr = arena.r * rand(0.6, 0.92);
-    /* never drop an enemy straight onto the player */
-    if (dist(arena.x + Math.cos(a) * rr, arena.y + Math.sin(a) * rr, game.player.x, game.player.y) < 110) {
-      rr = arena.r * 0.98;
-    }
-    const x = clamp(arena.x + Math.cos(a) * rr, 30, WORLD - 30);
-    const y = clamp(arena.y + Math.sin(a) * rr, 30, WORLD - 30);
+    /* every enemy of a new wave arrives at least 300px from the player */
+    const spot = waveSpawnPoint(arena, a);
+    const x = spot.x;
+    const y = spot.y;
     spawnEnemy(pick(types), x, y, arenaIndex);
     for (let k = 0; k < 6; k++) {
       const pa = rand(0, TAU);
@@ -3692,6 +3694,54 @@ function updateParticles(dt) {
    ARENAS, PROGRESSION, UPGRADES, SCREENS
    ============================================================================= */
 
+/* entering an arena hands the player a short grace window: enemies are already
+   closing in the moment the fight starts, and without it the first contact tick
+   landed on the same breath as the arena trigger. */
+const ARENA_GRACE = 1.5;          /* seconds of invincibility on arena entry */
+const WAVE_SPAWN_MIN_DIST = 300;  /* enemies never appear closer than this */
+
+/* pick a spawn point for one enemy of a new wave. The classic ring inside the
+   arena is tried first; if that point sits too close to the player we swing to
+   the far side of the arena and push the ring out until a clean 300px gap
+   opens, so a wave can never drop an enemy into contact range. */
+function waveSpawnPoint(arena, baseAngle) {
+  const p = game.player;
+  let a = baseAngle;
+  let rr = arena.r * rand(0.6, 0.92);
+  let x = clamp(arena.x + Math.cos(a) * rr, 30, WORLD - 30);
+  let y = clamp(arena.y + Math.sin(a) * rr, 30, WORLD - 30);
+
+  if (dist(x, y, p.x, p.y) < WAVE_SPAWN_MIN_DIST) {
+    /* far side of the arena, fanned out around the away-from-player ray */
+    const away = angleTo(p.x, p.y, arena.x, arena.y);
+    a = away + (((baseAngle % TAU) + TAU) % TAU - Math.PI) * 0.12;
+    rr = arena.r * rand(0.7, 0.95);
+    x = clamp(arena.x + Math.cos(a) * rr, 30, WORLD - 30);
+    y = clamp(arena.y + Math.sin(a) * rr, 30, WORLD - 30);
+    for (let guard = 0; guard < 12; guard++) {
+      const d = dist(x, y, p.x, p.y);
+      if (d >= WAVE_SPAWN_MIN_DIST) break;
+      rr += (WAVE_SPAWN_MIN_DIST - d) + 4;
+      x = clamp(arena.x + Math.cos(a) * rr, 30, WORLD - 30);
+      y = clamp(arena.y + Math.sin(a) * rr, 30, WORLD - 30);
+    }
+  }
+  return { x: x, y: y };
+}
+
+function grantArenaGrace(reason) {
+  const p = game.player;
+  game.arenaGrace = ARENA_GRACE;
+  p.invuln = Math.max(p.invuln, ARENA_GRACE);   /* the trooper blinks while it runs */
+  if (reason) addText(p.x, p.y - 44, reason, '#a5f3fc');
+  for (let i = 0; i < 18; i++) {
+    const a = (i / 18) * TAU;
+    spawnParticle(p.x + Math.cos(a) * 16, p.y + Math.sin(a) * 10,
+      Math.cos(a) * rand(120, 210), Math.sin(a) * rand(90, 150), 0.45, 6, i % 2 ? '#a5f3fc' : '#e0fbff', 3);
+  }
+  game.particles.push({ ring: true, x: p.x, y: p.y, r: 10, maxR: 62, life: 0, maxLife: 0.45, color: '#a5f3fc' });
+}
+
 function updateArenas(dt) {
   const p = game.player;
   const waveCount = ZONES[game.zoneIndex].waves.length;
@@ -3705,6 +3755,8 @@ function updateArenas(dt) {
         a.active = true;
         a.wave = 0;
         game.arenaIndexActive = i;
+        /* 1.5s of grace before anything can touch the player */
+        grantArenaGrace('INVULNERABLE');
         spawnWave(a, i, 0);
         addText(a.x, a.y - 110, 'ARENA ENGAGED', '#fca5a5');
         updateObjective();
@@ -5339,6 +5391,31 @@ function drawPlayer() {
   ctx.fill();
   ctx.restore();
   drawSoldierAura(p, g);
+
+  /* arena entry: a cyan ward that pulses while the 1.5s grace window runs */
+  if (game.arenaGrace > 0) {
+    const t = game.arenaGrace;
+    const pulse = 0.55 + 0.45 * Math.sin(game.time * 18);
+    const grow = clamp(1 - t / ARENA_GRACE, 0, 1);
+    ctx.save();
+    ctx.globalAlpha = 0.35 + 0.4 * pulse;
+    ctx.strokeStyle = '#a5f3fc';
+    ctx.lineWidth = 2.2;
+    ctx.shadowColor = '#22d3ee';
+    ctx.shadowBlur = 16;
+    ctx.setLineDash([12, 8]);
+    ctx.lineDashOffset = -game.time * 60;
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y + 6, p.r + 20 + grow * 8, (p.r + 20 + grow * 8) * 0.62, 0, 0, TAU);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 0.12 + 0.16 * pulse;
+    ctx.fillStyle = '#a5f3fc';
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y + 6, p.r + 20 + grow * 8, (p.r + 20 + grow * 8) * 0.62, 0, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+  }
 
   if (p.shield > 0) {
     ctx.save();
