@@ -46,10 +46,13 @@
     width:13px; height:13px; border-radius:50%;
     background:radial-gradient(circle at 35% 30%, #f2fdff, #4cc9ff 55%, #1258a0);
     box-shadow:0 0 11px rgba(56,189,248,.85);
-    transition:background .25s ease, box-shadow .25s ease, transform .25s ease;
+    opacity:1; transform:scale(1);
+    /* losing a heart shrinks and fades the orb over 0.3s instead of popping */
+    transition:opacity .3s ease, background .3s ease, box-shadow .3s ease, transform .3s ease;
   }
   .orb.off{
-    background:rgba(120,142,172,.16); box-shadow:none; transform:scale(.82);
+    background:rgba(120,142,172,.16); box-shadow:none;
+    opacity:0; transform:scale(.1);
   }
   #zoneLine{ display:flex; align-items:baseline; gap:9px; }
   #zoneBadge{
@@ -83,6 +86,8 @@
   .ability .ring{
     fill:none; stroke:var(--gold); stroke-width:3; stroke-linecap:round;
     stroke-dasharray:169.6; stroke-dashoffset:0;
+    /* the dash offset is written every frame; the transition smooths the gaps */
+    transition:stroke-dashoffset .12s linear, stroke .25s ease;
   }
   .ability.ready .ring{ stroke:#8fe8ff; filter:drop-shadow(0 0 6px rgba(143,232,255,.55)); }
   .ability .icon{
@@ -306,13 +311,20 @@
 
   /* ---------------- shared overlay chrome ---------------- */
   .overlay{
-    position:absolute; inset:0; display:none; flex-direction:column;
+    position:absolute; inset:0; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:16px; text-align:center;
     padding:28px; z-index:30;
     background:radial-gradient(ellipse at 50% 45%, rgba(12,18,32,.72), rgba(3,4,8,.94));
     backdrop-filter:blur(2px);
+    /* every screen fades in and out over 0.4s (game over, victory, upgrades,
+       the zone card) — visibility flips only once the fade has finished */
+    opacity:0; visibility:hidden; pointer-events:none;
+    transition:opacity .4s ease, visibility 0s linear .4s;
   }
-  .overlay.show{ display:flex; }
+  .overlay.show{
+    opacity:1; visibility:visible; pointer-events:auto;
+    transition:opacity .4s ease, visibility 0s linear 0s;
+  }
   .overlay h1{
     font-family:var(--font-head); margin:0; font-weight:900;
     letter-spacing:6px; text-transform:uppercase;
@@ -435,14 +447,30 @@
 
   /* ---------------- zone select ---------------- */
   #zoneScreen{
-    position:absolute; inset:0; display:none; flex-direction:column;
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    opacity:0; visibility:hidden; pointer-events:none;
+    transition:opacity .4s ease, visibility 0s linear .4s;
     align-items:center; justify-content:center; gap:14px;
     padding:18px 16px 12px; box-sizing:border-box; overflow:hidden;
     z-index:44; text-align:center;
     background:radial-gradient(ellipse at 50% 40%, rgba(12,20,36,.72), rgba(2,3,7,.96)),
                linear-gradient(180deg, rgba(3,4,8,.92), rgba(3,4,8,.98));
   }
-  #zoneScreen.show{ display:flex; }
+  #zoneScreen.show{
+    opacity:1; visibility:visible; pointer-events:auto;
+    transition:opacity .4s ease, visibility 0s linear 0s;
+  }
+  /* level cards drift in one after another when the map select opens */
+  #zoneScreen.show .zone-card{ animation:cardFadeIn .4s ease-out backwards; }
+  #zoneScreen.show .zone-card:nth-child(1){ animation-delay:0s; }
+  #zoneScreen.show .zone-card:nth-child(2){ animation-delay:.05s; }
+  #zoneScreen.show .zone-card:nth-child(3){ animation-delay:.1s; }
+  #zoneScreen.show .zone-card:nth-child(4){ animation-delay:.15s; }
+  #zoneScreen.show .zone-card:nth-child(5){ animation-delay:.2s; }
+  @keyframes cardFadeIn{
+    from{ opacity:0; transform:translateY(12px) scale(.97); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
+  }
   #zoneScreen .zs-eyebrow{
     font-family:var(--font-head); font-size:9px; line-height:1.2;
     letter-spacing:4.5px; text-transform:uppercase; color:rgba(232,200,116,.62);
@@ -547,8 +575,14 @@
     position:absolute; inset:0; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:14px; z-index:40;
     background:radial-gradient(ellipse at 50% 44%, rgba(8,14,28,.18), rgba(2,3,7,.62));
+    /* the title screen fades out over 0.4s like every other screen */
+    opacity:1; visibility:visible; pointer-events:auto;
+    transition:opacity .4s ease, visibility 0s linear 0s;
   }
-  #menu.hidden{ display:none; }
+  #menu.hidden{
+    opacity:0; visibility:hidden; pointer-events:none;
+    transition:opacity .4s ease, visibility 0s linear .4s;
+  }
   #menuTitle{
     font-family:var(--font-head); font-weight:900; margin:0;
     font-size:clamp(46px,8vw,96px); letter-spacing:.18em;
@@ -577,13 +611,23 @@
   /* the whole screen lives inside the stage: it fits the viewport, no scrolling */
   #classScreen{
     position:absolute; inset:0; width:100%; height:100%; max-height:100%;
-    display:none; flex-direction:column; align-items:center; justify-content:center;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    opacity:0; visibility:hidden; pointer-events:none;
+    transition:opacity .4s ease, visibility 0s linear .4s;
     padding:10px; z-index:45; text-align:center;
     box-sizing:border-box; overflow:hidden;
     background:radial-gradient(ellipse at 50% 38%, rgba(10,16,28,.60), rgba(2,3,7,.95)),
                linear-gradient(180deg, rgba(3,4,8,.92), rgba(3,4,8,.97));
   }
-  #classScreen.show{ display:flex; }
+  #classScreen.show{
+    opacity:1; visibility:visible; pointer-events:auto;
+    transition:opacity .4s ease, visibility 0s linear 0s;
+  }
+  #classScreen.show .class-card{ animation:cardFadeIn .4s ease-out backwards; }
+  #classScreen.show .class-card:nth-child(1){ animation-delay:0s; }
+  #classScreen.show .class-card:nth-child(2){ animation-delay:.05s; }
+  #classScreen.show .class-card:nth-child(3){ animation-delay:.1s; }
+  #classScreen.show .class-card:nth-child(4){ animation-delay:.15s; }
   #classScreen .cs-inner{
     width:100%; max-height:100%; flex:0 1 auto;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -1086,6 +1130,37 @@ const dist2 = (ax, ay, bx, by) => { const dx = ax - bx, dy = ay - by; return dx 
 const angleTo = (ax, ay, bx, by) => Math.atan2(by - ay, bx - ax);
 const nowMs = () => performance.now();
 
+/* ---------------------------------------------------------------------------
+   Time + easing helpers. Everything that moves is tuned in frames at 60fps and
+   then converted to a per-second rate, so a 30fps phone and a 144fps monitor
+   travel the same distance in the same wall-clock time.
+   --------------------------------------------------------------------------- */
+const FPS_REF = 60;
+
+/* fraction of the remaining distance to cover this frame, given a per-frame
+   factor at 60fps: identical motion at any refresh rate */
+function frameBlend(perFrame, dt) {
+  const frames = Math.max(0, (dt || 1 / FPS_REF) * FPS_REF);
+  return 1 - Math.pow(1 - perFrame, frames);
+}
+
+const easeOutCubic = (t) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+const easeOutQuad = (t) => 1 - (1 - clamp(t, 0, 1)) * (1 - clamp(t, 0, 1));
+
+/* move a scalar toward a target by at most `step` */
+function approach(cur, target, step) {
+  if (cur < target) return Math.min(cur + step, target);
+  return Math.max(cur - step, target);
+}
+
+/* shortest signed angle from a to b */
+function angleDelta(a, b) {
+  let d = b - a;
+  while (d > Math.PI) d -= TAU;
+  while (d < -Math.PI) d += TAU;
+  return d;
+}
+
 /* deterministic rng so zone props are identical every visit */
 function makeRng(seed) {
   let a = seed >>> 0;
@@ -1214,6 +1289,18 @@ const Sound = (function () {
     chest()      {
       [784, 988, 1319].forEach((f, i) => tone({ freq: f, dur: 0.2, type: 'triangle', vol: 0.05, delay: i * 0.06 }));
       noise({ freq: 2400, dur: 0.18, vol: 0.028 });
+    },
+    /* short, dry, upward pop — the lid flying off */
+    chestPop() {
+      tone({ freq: 300, to: 980, dur: 0.11, type: 'triangle', vol: 0.06 });
+      tone({ freq: 900, to: 1560, dur: 0.07, type: 'sine', vol: 0.035, delay: 0.05 });
+      noise({ freq: 2600, dur: 0.09, vol: 0.03 });
+    },
+    /* hollow wooden crack */
+    barrelPop() {
+      noise({ freq: 900, dur: 0.16, vol: 0.07 });
+      tone({ freq: 220, to: 96, dur: 0.16, type: 'square', vol: 0.05 });
+      tone({ freq: 1320, to: 520, dur: 0.09, type: 'triangle', vol: 0.03, delay: 0.02 });
     },
     /* ---- one voice per class weapon ---- */
     pistol() {
@@ -1640,11 +1727,13 @@ const DESTRUCTIBLES = [
 ];
 
 /* ------------------------------ enemy table -------------------------------- */
+/* `turn` is how fast a body can swing its heading round, in radians per second:
+   heavy knights bank slowly, ghosts whip around, wizards drift. */
 const ENEMY_DEFS = {
-  knight: { hp: 2, speed: 100, r: 16, color: '#ef4444', score: 12, contact: 1 },
-  archer: { hp: 1, speed: 88, r: 14, color: '#fb923c', score: 14, contact: 1, fire: 2.0 },
-  wizard: { hp: 3, speed: 62, r: 17, color: '#a855f7', score: 20, contact: 1, fire: 3.0 },
-  ghost:  { hp: 1, speed: 156, r: 13, color: '#e2e8f0', score: 10, contact: 1 }
+  knight: { hp: 2, speed: 100, r: 16, color: '#ef4444', score: 12, contact: 1, turn: 4.2 },
+  archer: { hp: 1, speed: 88, r: 14, color: '#fb923c', score: 14, contact: 1, fire: 2.0, turn: 5.2 },
+  wizard: { hp: 3, speed: 62, r: 17, color: '#a855f7', score: 20, contact: 1, fire: 3.0, turn: 3.2 },
+  ghost:  { hp: 1, speed: 156, r: 13, color: '#e2e8f0', score: 10, contact: 1, turn: 8.0 }
 };
 
 /* ------------------------------ upgrades ----------------------------------- */
@@ -1759,6 +1848,8 @@ function makePlayer() {
     hp: cls.hp,
     maxHp: cls.hp,
     speed: cls.speed,
+    vx: 0,              /* live velocity, eased in and out of */
+    vy: 0,
     angle: 0,
     fireTimer: 0,
     fireRate: cls.fireRate,
@@ -1877,6 +1968,8 @@ function loadZone(zoneIndex, opts) {
   const p = game.player;
   p.x = WORLD / 2;
   p.y = WORLD / 2;
+  p.vx = 0;
+  p.vy = 0;
   p.hp = p.maxHp;
   p.invuln = 1.2;
   p.dashTimer = 0;
@@ -1979,7 +2072,7 @@ function buildObstacles(zoneIndex) {
   avoid.push([z.bossPos[0], z.bossPos[1], 260]);
 
   let guard = 0;
-  while (list.length < 32 && guard++ < 2200) {
+  while (list.length < 56 && guard++ < 4200) {
     const x = 150 + rng() * (WORLD - 300);
     const y = 150 + rng() * (WORLD - 300);
     if (avoid.some((a) => dist(x, y, a[0], a[1]) < a[2])) continue;
@@ -1990,6 +2083,8 @@ function buildObstacles(zoneIndex) {
     if (list.some((o) => dist(x, y, o.x, o.y) < reach + (o.ext || o.r) + 96)) continue;
 
     const o = { x, y, kind: def.kind, r: def.r, rot, variant: rng(), ext: reach };
+    /* barrels are the one prop you can smash open */
+    if (def.kind === 'barrel') { o.hp = 1; o.maxHp = 1; o.broken = false; }
     if (def.len) {
       o.len = def.len;
       o.parts = buildObstacleParts(o);
@@ -2020,7 +2115,7 @@ function buildDestructibles(zoneIndex) {
   });
 
   game.chests = cfg.chests.map(function (c, i) {
-    return { x: c[0], y: c[1], opened: false, hitFlash: 0, t: i * 1.3 };
+    return { x: c[0], y: c[1], opened: false, hp: 1, maxHp: 1, hitFlash: 0, t: i * 1.3 };
   });
 
   game.pickups = [];
@@ -2113,12 +2208,15 @@ const viewH = () => VIEW_H / viewZoom();
 function cameraTargetX() { const vw = viewW(); return clamp(game.player.x - vw / 2, 0, WORLD - vw); }
 function cameraTargetY() { const vh = viewH(); return clamp(game.player.y - vh / 2, 0, WORLD - vh); }
 
-function updateCamera() {
+const CAMERA_LERP = 0.06;    /* 6% of the remaining distance per 60fps frame */
+
+function updateCamera(dt) {
   const tx = cameraTargetX();
   const ty = cameraTargetY();
-  /* smooth lerp: 8% of the remaining distance every frame */
-  game.cam.x += (tx - game.cam.x) * 0.08;
-  game.cam.y += (ty - game.cam.y) * 0.08;
+  /* cinematic follow that behaves identically at 30, 60 or 144 fps */
+  const k = frameBlend(CAMERA_LERP, dt);
+  game.cam.x += (tx - game.cam.x) * k;
+  game.cam.y += (ty - game.cam.y) * k;
 }
 
 const toScreenX = (wx) => (wx - game.cam.x) * viewZoom();
@@ -2229,14 +2327,36 @@ function updatePlayer(dt) {
     }
   } else if (p.bashTimer > 0) {
     p.moving = false;      /* the bash drives the movement, not WASD */
+    p.vx = 0;
+    p.vy = 0;
   } else {
+    /* six frames of acceleration, four frames of braking — and because both are
+       expressed in seconds the ramp feels the same on every device */
+    const ACCEL_TIME = 6 / FPS_REF;
+    const DECEL_TIME = 4 / FPS_REF;
     const mv = moveVector();
-    p.moving = mv.x !== 0 || mv.y !== 0;
+    const wantMove = mv.x !== 0 || mv.y !== 0;
+    const tx = mv.x * p.speed;
+    const ty = mv.y * p.speed;
+    const dx = tx - p.vx;
+    const dy = ty - p.vy;
+    const gap = Math.hypot(dx, dy);
+    const rate = (wantMove ? p.speed / ACCEL_TIME : p.speed / DECEL_TIME) * dt;
+    if (gap <= rate || gap < 1e-4) {
+      p.vx = tx;
+      p.vy = ty;
+    } else {
+      p.vx += (dx / gap) * rate;
+      p.vy += (dy / gap) * rate;
+    }
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+
+    const sp = Math.hypot(p.vx, p.vy);
+    p.moving = wantMove || sp > 6;
     if (p.moving) {
-      p.x += mv.x * p.speed * dt;
-      p.y += mv.y * p.speed * dt;
-      p.walk += dt * 12;
-      p.moveAng = Math.atan2(mv.y, mv.x);
+      p.walk += dt * 12 * Math.max(0.4, sp / p.speed);
+      p.moveAng = Math.atan2(p.vy, p.vx);
     }
   }
 
@@ -2260,7 +2380,7 @@ function updatePlayer(dt) {
 
   /* --- footstep trail: one print every ~26px travelled --- */
   if (p.dashTimer <= 0 && p.moving) {
-    p.footAcc += p.speed * dt;
+    p.footAcc += Math.max(p.speed * 0.35, Math.hypot(p.vx, p.vy)) * dt;
     if (p.footAcc >= 26) {
       p.footAcc = 0;
       dropFootprint(p);
@@ -2666,6 +2786,17 @@ function swingSword() {
     hits++;
   }
 
+  /* the blade itself: every sample along the sweep uses the same 40px rule,
+     and the `already` set means one swing can never hit a prop twice */
+  const swung = new Set();
+  const bladeSteps = 7;
+  for (let s2 = 0; s2 <= bladeSteps; s2++) {
+    const a = p.swingFrom + (p.swingTo - p.swingFrom) * (s2 / bladeSteps);
+    for (let r = 0; r <= SWORD_RANGE; r += 24) {
+      hits += hitBreakablesAt(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 'sword', swung);
+    }
+  }
+
   game.swings.push({
     x: p.x, y: p.y, a0: p.swingFrom, a1: p.swingTo,
     life: 0, maxLife: SWORD_SWING_TIME, tier: swordTier()
@@ -2698,12 +2829,12 @@ function updateSword(dt) {
   /* sparks peeling off the edge while the blade travels */
   if (p.swingT > 0) {
     const k = 1 - p.swingT / SWORD_SWING_TIME;
-    const a = lerp(p.swingFrom, p.swingTo, k);
-    const rr = SWORD_RANGE * 0.74;
-    const tangent = a + (p.swingTo > p.swingFrom ? Math.PI / 2 : -Math.PI / 2);
+    const a = lerp(p.swingFrom, p.swingTo, 1 - Math.pow(1 - k, 2.2));
+    const rr = SWORD_RANGE * rand(0.5, 0.88);
+    const tangent = a + (p.swingTo > p.swingFrom ? Math.PI / 2 : -Math.PI / 2) + rand(-0.5, 0.5);
     spawnParticle(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr,
-      Math.cos(tangent) * rand(90, 200), Math.sin(tangent) * rand(90, 200),
-      0.22, 3.2, swordDef().edge, 4);
+      Math.cos(tangent) * rand(80, 230), Math.sin(tangent) * rand(80, 230),
+      rand(0.16, 0.28), rand(2.2, 4.2), swordDef().edge, 4);
   }
 
   /* hold the button to keep swinging; the cooldown paces it */
@@ -2778,13 +2909,8 @@ function fireSniper(charged) {
       segHitsCircle(x1, y1, x2, y2, game.boss.x, game.boss.y, game.boss.r + pad)) {
     damageBoss(p.damage * (charged ? 1.35 : 1));
   }
-  for (let i = 0; i < game.breakables.length; i++) {
-    const w = game.breakables[i];
-    if (w.broken) continue;
-    if (segAabbT(x1, y1, x2, y2, w.x - w.w / 2, w.y - w.h / 2, w.x + w.w / 2, w.y + w.h / 2) !== null) {
-      damageBreakable(w);
-    }
-  }
+  /* one hit per prop, all from the same 40px distance rule */
+  hitBreakablesAlong(x1, y1, x2, y2, 'sniper');
   Sound.sniperShot();
   game.shake = Math.max(game.shake, 0.3);
   for (let i = 0; i < 10; i++) {
@@ -2879,6 +3005,8 @@ function shieldBash() {
   const dir = (mv.x || mv.y) ? mv : { x: Math.cos(p.angle), y: Math.sin(p.angle) };
   p.bashDir = dir;
   p.bashTimer = 0.28;
+  p.vx = 0;
+  p.vy = 0;
   p.invuln = Math.max(p.invuln, 0.34);
   p.trail.length = 0;
   Sound.bash();
@@ -2982,15 +3110,7 @@ function railgun() {
       segHitsCircle(x1, y1, x2, y2, game.boss.x, game.boss.y, game.boss.r + pad)) {
     damageBoss(20);
   }
-  for (let i = 0; i < game.breakables.length; i++) {
-    const w = game.breakables[i];
-    if (w.broken) continue;
-    if (segAabbT(x1, y1, x2, y2, w.x - w.w / 2, w.y - w.h / 2, w.x + w.w / 2, w.y + w.h / 2) !== null) {
-      damageBreakable(w);
-      damageBreakable(w);
-      damageBreakable(w);
-    }
-  }
+  hitBreakablesAlong(x1, y1, x2, y2, 'railgun');
   Sound.railgun();
   game.shake = Math.max(game.shake, 1.15);
   game.flashTimer = Math.max(game.flashTimer, 0.24);
@@ -3122,6 +3242,8 @@ function dash() {
   const dir = (mv.x || mv.y) ? mv : { x: Math.cos(p.angle), y: Math.sin(p.angle) };
   p.dashDir = dir;
   p.dashTimer = 0.2;
+  p.vx = 0;
+  p.vy = 0;
   p.dashCd = 5 * cdScale();
   p.invuln = Math.max(p.invuln, 0.34);
   p.trail.length = 0;
@@ -3269,9 +3391,10 @@ function explodeBomb(b) {
   if (game.boss && dist(b.x, b.y, game.boss.x, game.boss.y) <= R + game.boss.r) {
     damageBoss(10);
   }
-  for (let i = 0; i < game.breakables.length; i++) {
-    const w = game.breakables[i];
-    if (!w.broken && dist(b.x, b.y, w.x, w.y) <= R + 52) damageBreakable(w);
+  /* the blast origin is one point: everything within 40px of it takes a hit */
+  hitBreakablesAt(b.x, b.y, 'bomb');
+  if (typeof console !== 'undefined' && console.log) {
+    console.log('[BLAST] bomb at (' + Math.round(b.x) + ', ' + Math.round(b.y) + ') — breakables checked');
   }
   for (let i = 0; i < 34; i++) {
     const a = rand(0, TAU);
@@ -3387,6 +3510,9 @@ function spawnEnemy(type, x, y, arenaIndex) {
     zig: rand(0, TAU),
     dirX: rand(-1, 1),
     dirY: rand(-1, 1),
+    heading: rand(0, TAU),          /* the direction it is actually facing */
+    turnRate: def.turn || 3.4,      /* radians per second it can swing round */
+    throttle: 0,                    /* eased 0..1 of its top speed */
     errTimer: 0,
     contactCd: 0,
     orbit: Math.random() < 0.5 ? 1 : -1
@@ -3437,24 +3563,31 @@ function updateEnemies(dt) {
     const d = dist(e.x, e.y, p.x, p.y);
     const ang = angleTo(e.x, e.y, p.x, p.y);
 
+    /* ------------------------------------------------------------------
+       Where does this enemy WANT to go? Each type picks a direction and a
+       strength; the body then eases its heading toward it instead of snapping.
+       ------------------------------------------------------------------ */
+    let wantX = 0;
+    let wantY = 0;
+
     if (e.type === 'knight') {
       const stop = e.r + p.r + 9;
       if (d > stop + 4) {
-        e.x += Math.cos(ang) * e.speed * dt;
-        e.y += Math.sin(ang) * e.speed * dt;
+        wantX = Math.cos(ang);
+        wantY = Math.sin(ang);
       } else {
         /* circle the player instead of piling into one point */
         const side = ang + e.orbit * 1.35;
-        e.x += Math.cos(side) * e.speed * 0.7 * dt;
-        e.y += Math.sin(side) * e.speed * 0.7 * dt;
+        wantX = Math.cos(side) * 0.7;
+        wantY = Math.sin(side) * 0.7;
       }
     } else if (e.type === 'archer') {
       e.zig += dt * 3.4;
       const want = 250;
       const radial = d > want + 60 ? 1 : (d < want - 70 ? -1 : 0);
       const perp = ang + Math.PI / 2;
-      e.x += (Math.cos(ang) * radial * e.speed + Math.cos(perp) * Math.sin(e.zig) * e.speed * 0.85) * dt;
-      e.y += (Math.sin(ang) * radial * e.speed + Math.sin(perp) * Math.sin(e.zig) * e.speed * 0.85) * dt;
+      wantX = Math.cos(ang) * radial + Math.cos(perp) * Math.sin(e.zig) * 0.85;
+      wantY = Math.sin(ang) * radial + Math.sin(perp) * Math.sin(e.zig) * 0.85;
       e.fireTimer -= dt;
       if (e.fireTimer <= 0 && d < 760) {
         e.fireTimer = ENEMY_DEFS.archer.fire;
@@ -3463,8 +3596,8 @@ function updateEnemies(dt) {
     } else if (e.type === 'wizard') {
       const want = 320;
       const radial = d > want + 50 ? 1 : (d < want - 60 ? -1 : 0);
-      e.x += Math.cos(ang) * radial * e.speed * dt;
-      e.y += Math.sin(ang) * radial * e.speed * dt;
+      wantX = Math.cos(ang) * radial;
+      wantY = Math.sin(ang) * radial;
       e.fireTimer -= dt;
       if (e.fireTimer <= 0 && d < 820) {
         e.fireTimer = ENEMY_DEFS.wizard.fire;
@@ -3472,17 +3605,34 @@ function updateEnemies(dt) {
         b.homing = 1.5;
       }
     } else {
-      /* ghost: fast, erratic, loosely tracking */
+      /* ghost: fast, erratic, loosely tracking — the wander target still has to
+         be steered into, so it banks around corners instead of teleporting */
       e.errTimer -= dt;
       if (e.errTimer <= 0) {
         e.errTimer = rand(0.18, 0.4);
         const jitter = rand(-1.2, 1.2);
-        e.dirX = Math.cos(ang + jitter);
-        e.dirY = Math.sin(ang + jitter);
+        e.wanderA = ang + jitter;
+        e.dirX = Math.cos(e.wanderA);
+        e.dirY = Math.sin(e.wanderA);
       }
-      e.x += e.dirX * e.speed * dt;
-      e.y += e.dirY * e.speed * dt;
+      if (e.wanderA === undefined) e.wanderA = Math.atan2(e.dirY, e.dirX);
+      wantX = Math.cos(e.wanderA);
+      wantY = Math.sin(e.wanderA);
     }
+
+    /* smooth steering: turn toward the wanted direction at a limited rate */
+    const wantLen = Math.hypot(wantX, wantY);
+    if (wantLen > 1e-4) {
+      const wantA = Math.atan2(wantY, wantX);
+      const turn = angleDelta(e.heading, wantA);
+      const maxTurn = e.turnRate * dt;
+      e.heading += clamp(turn, -maxTurn, maxTurn);
+    }
+    /* and ease into (or out of) its stride so nothing lurches */
+    e.throttle = approach(e.throttle, clamp(wantLen, 0, 1), dt * 5.5);
+    const stride = e.speed * e.throttle;
+    e.x += Math.cos(e.heading) * stride * dt;
+    e.y += Math.sin(e.heading) * stride * dt;
 
     collideObstacles(e);
 
@@ -3517,37 +3667,6 @@ function segHitsCircle(x1, y1, x2, y2, cx, cy, rad) {
   return dist2(px, py, cx, cy) <= rad * rad;
 }
 
-/* nearest hit along a segment, used so a bolt can never pass through a wall */
-function segCircleT(x1, y1, x2, y2, cx, cy, rad) {
-  const dx = x2 - x1, dy = y2 - y1;
-  const len2 = dx * dx + dy * dy;
-  let t = len2 > 0.000001 ? ((cx - x1) * dx + (cy - y1) * dy) / len2 : 0;
-  t = clamp(t, 0, 1);
-  const px = x1 + dx * t, py = y1 + dy * t;
-  return dist2(px, py, cx, cy) <= rad * rad ? t : null;
-}
-
-function segAabbT(x1, y1, x2, y2, minx, miny, maxx, maxy) {
-  let t0 = 0, t1 = 1;
-  const dx = x2 - x1, dy = y2 - y1;
-  if (Math.abs(dx) < 0.000001) {
-    if (x1 < minx || x1 > maxx) return null;
-  } else {
-    let ta = (minx - x1) / dx, tb = (maxx - x1) / dx;
-    if (ta > tb) { const tmp = ta; ta = tb; tb = tmp; }
-    t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
-    if (t0 > t1) return null;
-  }
-  if (Math.abs(dy) < 0.000001) {
-    if (y1 < miny || y1 > maxy) return null;
-  } else {
-    let ta = (miny - y1) / dy, tb = (maxy - y1) / dy;
-    if (ta > tb) { const tmp = ta; ta = tb; tb = tmp; }
-    t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
-    if (t0 > t1) return null;
-  }
-  return t0;
-}
 
 function updateBullets(dt) {
   for (let i = game.bullets.length - 1; i >= 0; i--) {
@@ -3583,6 +3702,7 @@ function updateBullets(dt) {
     let bestT = 2;
     let hitKind = null;
     let hitObj = null;
+    let hitBreakKind = null;
 
     for (let j = 0; j < game.enemies.length; j++) {
       const e = game.enemies[j];
@@ -3594,22 +3714,10 @@ function updateBullets(dt) {
       const t = segCircleT(px, py, b.x, b.y, game.boss.x, game.boss.y, b.r + game.boss.r);
       if (t !== null && t < bestT) { bestT = t; hitKind = 'boss'; hitObj = game.boss; }
     }
-    /* brick walls stop laser fire — three hits bring them down */
-    for (let j = 0; j < game.breakables.length; j++) {
-      const w = game.breakables[j];
-      if (w.broken) continue;
-      const t = segAabbT(px, py, b.x, b.y,
-        w.x - w.w / 2 - b.r, w.y - w.h / 2 - b.r,
-        w.x + w.w / 2 + b.r, w.y + w.h / 2 + b.r);
-      if (t !== null && t < bestT) { bestT = t; hitKind = 'wall'; hitObj = w; }
-    }
-    for (let j = 0; j < game.chests.length; j++) {
-      const c = game.chests[j];
-      if (c.opened) continue;
-      const t = segAabbT(px, py, b.x, b.y,
-        c.x - 24 - b.r, c.y - 20 - b.r, c.x + 24 + b.r, c.y + 20 + b.r);
-      if (t !== null && t < bestT) { bestT = t; hitKind = 'chest'; hitObj = c; }
-    }
+    /* chests, barrels and walls: the same 40px-from-centre rule, sampled along
+       the bolt's flight so a fast shot cannot skip past a prop */
+    const brk = nearestBreakableOnPath(px, py, b.x, b.y, b.hits);
+    if (brk && brk.t < bestT) { bestT = brk.t; hitKind = 'break'; hitObj = brk.obj; hitBreakKind = brk.kind; }
 
     if (hitKind === 'enemy') {
       damageEnemy(hitObj, b.dmg, false);
@@ -3632,8 +3740,17 @@ function updateBullets(dt) {
       }
     }
     else if (hitKind === 'boss') { damageBoss(b.dmg); hit = true; }
-    else if (hitKind === 'wall') { damageBreakable(hitObj); hit = true; }
-    else if (hitKind === 'chest') { openChest(hitObj); hit = true; }
+    else if (hitKind === 'break') {
+      damageBreakableObject(hitObj, hitBreakKind, b.kind || 'bullet', b.x, b.y);
+      hit = true;
+      if (b.pierce > 0) {
+        /* piercing bolts carry on through the prop, but only hit it once */
+        b.pierce -= 1;
+        b.hits = b.hits || [];
+        b.hits.push(hitObj);
+        hit = false;
+      }
+    }
 
     if (hit) {
       const tint = b.kind === 'orb' ? '#c4b5fd' : (b.kind === 'storm' ? '#a5f3fc' : '#8fe8ff');
@@ -3654,6 +3771,16 @@ function solidWallAt(x, y, r) {
         y > w.y - w.h / 2 - r && y < w.y + w.h / 2 + r) return w;
   }
   return null;
+}
+
+/* nearest hit along a segment, used so a bolt can never pass through a crowd */
+function segCircleT(x1, y1, x2, y2, cx, cy, rad) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 > 0.000001 ? ((cx - x1) * dx + (cy - y1) * dy) / len2 : 0;
+  t = clamp(t, 0, 1);
+  const px = x1 + dx * t, py = y1 + dy * t;
+  return dist2(px, py, cx, cy) <= rad * rad ? t : null;
 }
 
 function fireEnemyBullet(x, y, angle, speed, kind, r, dmg) {
@@ -3984,10 +4111,12 @@ function updateBoss(dt) {
       spawnParticle(b.x, b.y, rand(-40, 40), rand(-40, 40), 0.35, 10, b.color, 3);
     }
   } else if (zone !== 1 && zone !== 3) {
-    /* slow pursuit */
+    /* slow pursuit — the boss banks toward you instead of pivoting on a pin */
     if (d > 70) {
-      b.x += Math.cos(ang) * b.speed * dt;
-      b.y += Math.sin(ang) * b.speed * dt;
+      if (b.heading === undefined) b.heading = ang;
+      b.heading += clamp(angleDelta(b.heading, ang), -1.9 * dt, 1.9 * dt);
+      b.x += Math.cos(b.heading) * b.speed * dt;
+      b.y += Math.sin(b.heading) * b.speed * dt;
     }
   } else {
     /* witch / archon hover and drift */
@@ -4288,6 +4417,10 @@ function updateGems(dt) {
     g.y += g.vy * dt;
     g.vx *= Math.exp(-3 * dt);
     g.vy *= Math.exp(-3 * dt);
+    /* a freshly popped chest bursts its gems outward for a moment before they
+       become collectable, so the reward is actually visible */
+    if (g.delay > 0) { g.delay -= dt; g.life -= dt * 0.5; }
+    if (g.delay > 0) continue;
 
     const d = dist(g.x, g.y, p.x, p.y);
     if (d < p.magnet + 40) {
@@ -4334,9 +4467,14 @@ function updateParticles(dt) {
       p.r = lerp(10, p.maxR, t);
       continue;
     }
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    const k = Math.exp(-p.drag * dt);
+    /* ease-out travel: a particle leaves fast and coasts to a stop as it fades.
+       Two curves are stacked — an exponential drag and a life-based ramp — so
+       sparks, dust and blood all settle instead of sliding at a constant speed. */
+    const t = clamp(p.life / p.maxLife, 0, 1);
+    const ease = 1 - t * t;
+    p.x += p.vx * ease * dt;
+    p.y += p.vy * ease * dt;
+    const k = Math.exp(-Math.max(1.6, p.drag || 2) * dt);
     p.vx *= k;
     p.vy *= k;
   }
@@ -5510,6 +5648,84 @@ function stoneBlob(g, cx, cy, rx, ry, rot, rng, wob) {
   g.closePath();
 }
 
+/* rounded variant of stoneBlob: the control points are joined through their
+   midpoints, so cut flagstones read as worn slabs instead of flat octagons */
+function slabPoints(cx, cy, rx, ry, rot, rng, wob) {
+  const n = 7 + Math.floor(rng() * 3);
+  const c = Math.cos(rot), s = Math.sin(rot);
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * TAU;
+    const k = 1 - wob + rng() * wob * 2;
+    const lx = Math.cos(a) * rx * k;
+    const ly = Math.sin(a) * ry * k;
+    pts.push([cx + lx * c - ly * s, cy + lx * s + ly * c]);
+  }
+  return pts;
+}
+
+function slabPath(g, pts, dx, dy) {
+  const n = pts.length;
+  dx = dx || 0; dy = dy || 0;
+  const mid = (a, b) => [(a[0] + b[0]) / 2 + dx, (a[1] + b[1]) / 2 + dy];
+  g.beginPath();
+  const m0 = mid(pts[n - 1], pts[0]);
+  g.moveTo(m0[0], m0[1]);
+  for (let i = 0; i < n; i++) {
+    const cur = pts[i];
+    const m = mid(cur, pts[(i + 1) % n]);
+    g.quadraticCurveTo(cur[0] + dx, cur[1] + dy, m[0], m[1]);
+  }
+  g.closePath();
+}
+
+/* stroke a slab, repeated across the tile border like fillSlab */
+function strokeSlab(g, pts, S) {
+  let minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9;
+  for (let i = 0; i < pts.length; i++) {
+    if (pts[i][0] < minx) minx = pts[i][0];
+    if (pts[i][0] > maxx) maxx = pts[i][0];
+    if (pts[i][1] < miny) miny = pts[i][1];
+    if (pts[i][1] > maxy) maxy = pts[i][1];
+  }
+  const xs = [0];
+  if (minx < 0) xs.push(S);
+  if (maxx > S) xs.push(-S);
+  const ys = [0];
+  if (miny < 0) ys.push(S);
+  if (maxy > S) ys.push(-S);
+  for (let i = 0; i < xs.length; i++) {
+    for (let k = 0; k < ys.length; k++) {
+      slabPath(g, pts, xs[i], ys[k]);
+      g.stroke();
+    }
+  }
+}
+
+/* fill a slab, repeating it across the tile border so the 256px texture is
+   seamless when the floor pattern repeats */
+function fillSlab(g, pts, S) {
+  let minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9;
+  for (let i = 0; i < pts.length; i++) {
+    if (pts[i][0] < minx) minx = pts[i][0];
+    if (pts[i][0] > maxx) maxx = pts[i][0];
+    if (pts[i][1] < miny) miny = pts[i][1];
+    if (pts[i][1] > maxy) maxy = pts[i][1];
+  }
+  const xs = [0];
+  if (minx < 0) xs.push(S);
+  if (maxx > S) xs.push(-S);
+  const ys = [0];
+  if (miny < 0) ys.push(S);
+  if (maxy > S) ys.push(-S);
+  for (let i = 0; i < xs.length; i++) {
+    for (let k = 0; k < ys.length; k++) {
+      slabPath(g, pts, xs[i], ys[k]);
+      g.fill();
+    }
+  }
+}
+
 function groundTileFor(zoneIndex) {
   const z = ZONES[zoneIndex];
   const S = 256;
@@ -5590,84 +5806,117 @@ function groundTileFor(zoneIndex) {
     }
   } else if (z.tile === 'stone') {
     /* ---- Zone 3 · The Castle Gates: rain-wet flagstones, water in the seams ---- */
-    g.fillStyle = '#0f1216';
+    g.fillStyle = '#1b2027';
     g.fillRect(0, 0, S, S);
-    const cols = 4, rows = 6;
+    const cols = 5, rows = 7;
     const sw = S / cols, sh = S / rows;
-    for (let row = -1; row <= rows; row++) {
-      for (let col = -1; col <= cols; col++) {
-        const bx = col * sw + sw / 2 + (row % 2 ? sw * 0.22 : 0) + (rng() - 0.5) * 4;
-        const by = row * sh + sh / 2 + (rng() - 0.5) * 3;
-        const rx = sw * (0.46 + rng() * 0.08);
-        const ry = sh * (0.45 + rng() * 0.07);
-        const rot = (rng() - 0.5) * 0.05;
-        g.fillStyle = 'rgba(0,0,0,0.5)';
-        stoneBlob(g, bx + 1, by + 2, rx, ry, rot, rng, 0.05);
-        g.fill();
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const bx = col * sw + sw / 2 + (row % 2 ? sw * 0.5 : 0) + (rng() - 0.5) * 3;
+        const by = row * sh + sh / 2 + (rng() - 0.5) * 2.4;
+        const rx = sw * (0.505 + rng() * 0.03);
+        const ry = sh * (0.5 + rng() * 0.03);
+        const rot = (rng() - 0.5) * 0.06;
+        const pts = slabPoints(bx, by, rx, ry, rot, rng, 0.045);
         const t = rng();
-        g.fillStyle = t > 0.76 ? '#3c424b' : (t > 0.5 ? '#333941'
-          : (t > 0.24 ? '#2c3139' : '#272c33'));
-        stoneBlob(g, bx, by, rx, ry, rot, rng, 0.05);
-        g.fill();
-        /* rain sheen across the slab */
-        g.fillStyle = 'rgba(206,224,248,' + (0.015 + t * 0.03).toFixed(3) + ')';
-        stoneBlob(g, bx, by - ry * 0.2, rx * 0.9, ry * 0.62, rot, rng, 0.05);
-        g.fill();
-        if (t > 0.84) {
-          g.strokeStyle = 'rgba(9,11,15,0.5)';
+
+        /* mortar shadow, tight enough that the slabs almost meet */
+        g.fillStyle = 'rgba(0,0,0,0.42)';
+        const shPts = pts.map((q) => [q[0] + 1, q[1] + 1.6]);
+        fillSlab(g, shPts, S);
+        g.fillStyle = t > 0.78 ? '#565f6b' : (t > 0.52 ? '#4b545f'
+          : (t > 0.26 ? '#434b55' : '#3a414a'));
+        fillSlab(g, pts, S);
+
+        /* rain sheen pooling on the crown of the slab */
+        g.fillStyle = 'rgba(214,232,252,' + (0.02 + t * 0.035).toFixed(3) + ')';
+        fillSlab(g, slabPoints(bx, by - ry * 0.22, rx * 0.86, ry * 0.58, rot, rng, 0.05), S);
+
+        /* hairline crack in the oldest slabs */
+        if (t > 0.86) {
+          g.strokeStyle = 'rgba(11,14,19,0.55)';
           g.lineWidth = 1;
           g.beginPath();
-          g.moveTo(bx - rx * 0.4, by - ry * 0.7);
-          g.lineTo(bx + rx * 0.1, by + ry * 0.1);
-          g.lineTo(bx - rx * 0.2, by + ry * 0.8);
+          g.moveTo(bx - rx * 0.45, by - ry * 0.6);
+          g.lineTo(bx + rx * 0.08, by + ry * 0.05);
+          g.lineTo(bx - rx * 0.18, by + ry * 0.72);
+          g.stroke();
+        }
+        /* wet seam: a thin blue film where the rain has collected */
+        if (t > 0.55) {
+          g.strokeStyle = 'rgba(126,164,206,' + (0.05 + (t - 0.55) * 0.13).toFixed(3) + ')';
+          g.lineWidth = 1;
+          g.beginPath();
+          g.ellipse(bx + rx * 0.1, by + ry * 0.62, rx * 0.55, ry * 0.16, rot, 0, TAU);
           g.stroke();
         }
       }
     }
-    /* mud and standing water pooled over the stones — the darker patches */
-    for (let i = 0; i < 7; i++) {
-      const px = rng() * S, py = rng() * S;
-      const rx = 16 + rng() * 26, ry = 9 + rng() * 13;
+    /* mud and standing water pooled over the stones — the darker patches.
+       kept clear of the tile border so the repeating texture has no cut edges */
+    for (let i = 0; i < 5; i++) {
+      const rx = 18 + rng() * 30, ry = 10 + rng() * 15;
+      const px = rx + 3 + rng() * (S - rx * 2 - 6);
+      const py = ry + 3 + rng() * (S - ry * 2 - 6);
       const rot = rng() * TAU;
-      g.fillStyle = 'rgba(12,18,25,0.5)';
+      /* muddy silt at the bottom of the hollow */
+      g.fillStyle = 'rgba(24,30,38,0.36)';
       g.beginPath(); g.ellipse(px, py, rx, ry, rot, 0, TAU); g.fill();
-      g.fillStyle = 'rgba(30,28,22,0.28)';
-      g.beginPath(); g.ellipse(px + rx * 0.18, py + ry * 0.16, rx * 0.66, ry * 0.62, rot, 0, TAU); g.fill();
-      g.strokeStyle = 'rgba(160,182,208,0.09)';
+      /* thin film of rain water sitting in it */
+      g.fillStyle = 'rgba(86,112,144,0.20)';
+      g.beginPath(); g.ellipse(px - rx * 0.06, py - ry * 0.12, rx * 0.7, ry * 0.6, rot, 0, TAU); g.fill();
+      g.strokeStyle = 'rgba(186,212,242,0.13)';
       g.lineWidth = 1;
-      g.beginPath(); g.ellipse(px, py, rx * 0.84, ry * 0.84, rot, 0, TAU); g.stroke();
+      g.beginPath(); g.ellipse(px, py, rx * 0.9, ry * 0.88, rot, 0.25, Math.PI - 0.25); g.stroke();
     }
   } else if (z.tile === 'crack') {
     /* ---- Zone 4 · The Sorcerer's Tower: cracked violet marble with veins ---- */
-    g.fillStyle = '#120c1e';
+    g.fillStyle = '#0f0a1b';
     g.fillRect(0, 0, S, S);
     const cols = 3, rows = 4;
     const mw = S / cols, mh = S / rows;
-    for (let row = -1; row <= rows; row++) {
-      for (let col = -1; col <= cols; col++) {
-        const bx = col * mw + mw / 2 + (row % 2 ? mw * 0.18 : 0);
-        const by = row * mh + mh / 2;
-        const rx = mw * 0.5, ry = mh * 0.5;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const bx = col * mw + mw / 2 + (row % 2 ? mw * 0.34 : 0) + (rng() - 0.5) * 3;
+        const by = row * mh + mh / 2 + (rng() - 0.5) * 2.5;
+        const rx = mw * (0.5 + rng() * 0.03), ry = mh * (0.5 + rng() * 0.03);
         const t = rng();
-        g.fillStyle = t > 0.7 ? '#20163a' : (t > 0.4 ? '#1b1231' : (t > 0.18 ? '#170f29' : '#130d21'));
-        stoneBlob(g, bx, by, rx - 1.5, ry - 1.5, 0, rng, 0.035);
-        g.fill();
+        const pts = slabPoints(bx, by, rx, ry, 0.02, rng, 0.05);
+
+        g.fillStyle = 'rgba(0,0,0,0.4)';
+        fillSlab(g, pts.map((q) => [q[0] + 1, q[1] + 1.5]), S);
+        g.fillStyle = t > 0.7 ? '#332552' : (t > 0.4 ? '#2b1e46' : (t > 0.18 ? '#241a3b' : '#1d1530'));
+        fillSlab(g, pts, S);
+
         /* marble veining, faintly lit by the tower's own magic */
-        g.strokeStyle = 'rgba(142,100,220,' + (0.05 + rng() * 0.09).toFixed(3) + ')';
+        g.strokeStyle = 'rgba(168,124,246,' + (0.07 + rng() * 0.11).toFixed(3) + ')';
         g.lineWidth = 1 + rng() * 1.8;
         const vy = by - ry * 0.5 + rng() * ry;
         g.beginPath();
-        g.moveTo(bx - rx + 3, vy);
+        g.moveTo(bx - rx + 4, vy);
         g.bezierCurveTo(
-          bx - rx * 0.4, vy + (rng() - 0.5) * 30,
-          bx + rx * 0.4, vy + (rng() - 0.5) * 30,
-          bx + rx - 3, vy + (rng() - 0.5) * 16
+          bx - rx * 0.4, vy + (rng() - 0.5) * 26,
+          bx + rx * 0.4, vy + (rng() - 0.5) * 26,
+          bx + rx - 4, vy + (rng() - 0.5) * 14
         );
         g.stroke();
+        /* polished highlight along the top edge */
+        g.strokeStyle = 'rgba(206,178,255,' + (0.03 + t * 0.04).toFixed(3) + ')';
+        g.lineWidth = 1.4;
+        g.beginPath();
+        g.ellipse(bx, by - ry * 0.42, rx * 0.66, ry * 0.2, 0, Math.PI, TAU);
+        g.stroke();
+        /* a thread of rune light caught in the joints between the slabs */
+        g.strokeStyle = 'rgba(9,5,18,0.85)';
+        g.lineWidth = 2.4;
+        strokeSlab(g, pts, S);
+        g.strokeStyle = 'rgba(178,126,255,' + (0.06 + t * 0.11).toFixed(3) + ')';
+        g.lineWidth = 0.9;
+        strokeSlab(g, pts, S);
       }
     }
     /* fracture seams with a thread of rune light caught inside */
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 12; i++) {
       let x = rng() * S, y = rng() * S;
       const a0 = rng() * TAU;
       const pts = [[x, y]];
@@ -5676,13 +5925,13 @@ function groundTileFor(zoneIndex) {
         y += Math.sin(a0 + (rng() - 0.5) * 1.2) * (10 + rng() * 18);
         pts.push([x, y]);
       }
-      g.strokeStyle = 'rgba(12,7,22,0.75)';
+      g.strokeStyle = 'rgba(10,6,20,0.7)';
       g.lineWidth = 1.4 + rng();
       g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
       for (let k = 1; k < pts.length; k++) g.lineTo(pts[k][0], pts[k][1]);
       g.stroke();
-      g.strokeStyle = 'rgba(186,132,252,0.14)';
-      g.lineWidth = 0.8;
+      g.strokeStyle = 'rgba(196,146,255,0.16)';
+      g.lineWidth = 0.9;
       g.stroke();
     }
     for (let i = 0; i < 40; i++) {
@@ -5784,10 +6033,10 @@ function buildFloorArt(zoneIndex) {
       if (s) art.mushrooms.push({ x: s.x, y: s.y, s: 0.65 + rng() * 0.85, ph: rng() * TAU, n: 2 + Math.floor(rng() * 3) });
     }
   } else if (art.kind === 'stone') {
-    for (let i = 0; i < 58; i++) {
-      const rx = 22 + rng() * 34;
+    for (let i = 0; i < 22; i++) {
+      const rx = 40 + rng() * 46;
       art.puddles.push({
-        x: px(), y: py(), rx: rx, ry: rx * (0.46 + rng() * 0.24),
+        x: px(), y: py(), rx: rx, ry: rx * (0.42 + rng() * 0.2),
         rot: rng() * TAU, ph: rng()
       });
     }
@@ -5959,29 +6208,31 @@ function artRootVein(v) {
   ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  const trace = () => {
+  const trace = (dy) => {
     ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
+    ctx.moveTo(pts[0].x, pts[0].y + (dy || 0));
     for (let i = 1; i < pts.length - 1; i++) {
       const mx = (pts[i].x + pts[i + 1].x) / 2;
-      const my = (pts[i].y + pts[i + 1].y) / 2;
-      ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+      const my = (pts[i].y + pts[i + 1].y) / 2 + (dy || 0);
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y + (dy || 0), mx, my);
     }
-    ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+    ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y + (dy || 0));
   };
-  ctx.strokeStyle = 'rgba(30,20,11,0.92)';
-  ctx.lineWidth = v.w + 2.2;
+  /* the hollow the root has pressed into the earth */
+  ctx.strokeStyle = 'rgba(10,7,4,0.85)';
+  ctx.lineWidth = v.w + 3.4;
   trace(); ctx.stroke();
-  ctx.strokeStyle = 'rgba(96,74,48,0.26)';
-  ctx.lineWidth = Math.max(1, v.w * 0.34);
+  /* the root itself — bark catching what little light reaches the floor */
+  ctx.strokeStyle = 'rgba(84,62,40,0.7)';
+  ctx.lineWidth = v.w * 0.72;
   trace(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(138,108,68,0.34)';
+  ctx.lineWidth = Math.max(1, v.w * 0.3);
+  trace(-v.w * 0.16); ctx.stroke();
   /* moss creeping along one flank */
-  ctx.strokeStyle = 'rgba(52,104,62,0.28)';
-  ctx.lineWidth = Math.max(1, v.w * 0.46);
-  ctx.beginPath();
-  ctx.moveTo(pts[0].x, pts[0].y - 2);
-  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y - 2.4);
-  ctx.stroke();
+  ctx.strokeStyle = 'rgba(58,98,60,0.42)';
+  ctx.lineWidth = Math.max(1, v.w * 0.34);
+  trace(-v.w * 0.44); ctx.stroke();
   ctx.restore();
 }
 
@@ -6018,39 +6269,42 @@ function artMudPuddle(pd, t) {
   ctx.translate(pd.x, pd.y);
   ctx.rotate(pd.rot);
 
-  const halo = ctx.createRadialGradient(0, 0, pd.rx * 0.2, 0, 0, pd.rx * 1.35);
-  halo.addColorStop(0, 'rgba(10,14,20,0.45)');
-  halo.addColorStop(1, 'rgba(10,14,20,0)');
+  /* damp stone soaking outward from the pool */
+  const halo = ctx.createRadialGradient(0, 0, pd.rx * 0.6, 0, 0, pd.rx * 1.45);
+  halo.addColorStop(0, 'rgba(7,10,15,0.3)');
+  halo.addColorStop(1, 'rgba(7,10,15,0)');
   ctx.fillStyle = halo;
-  ctx.beginPath(); ctx.ellipse(0, 0, pd.rx * 1.35, pd.ry * 1.5, 0, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0, 0, pd.rx * 1.45, pd.ry * 1.55, 0, 0, TAU); ctx.fill();
 
+  /* the pool: dark mud at the rim, the night sky caught in the middle */
   const wet = ctx.createLinearGradient(0, -pd.ry, 0, pd.ry);
-  wet.addColorStop(0, 'rgba(38,36,30,0.72)');
-  wet.addColorStop(0.45, 'rgba(22,23,22,0.78)');
-  wet.addColorStop(0.75, 'rgba(30,33,36,0.7)');
-  wet.addColorStop(1, 'rgba(41,39,32,0.62)');
+  wet.addColorStop(0, 'rgba(116,148,184,0.78)');
+  wet.addColorStop(0.38, 'rgba(62,84,110,0.86)');
+  wet.addColorStop(0.78, 'rgba(28,39,53,0.92)');
+  wet.addColorStop(1, 'rgba(17,23,31,0.94)');
   ctx.fillStyle = wet;
   ctx.beginPath(); ctx.ellipse(0, 0, pd.rx, pd.ry, 0, 0, TAU); ctx.fill();
 
-  /* far edge catches the sky, near edge keeps the skyline's reflection */
-  ctx.fillStyle = 'rgba(132,158,192,0.10)';
-  ctx.beginPath(); ctx.ellipse(0, -pd.ry * 0.32, pd.rx * 0.72, pd.ry * 0.34, 0, 0, TAU); ctx.fill();
-  ctx.fillStyle = 'rgba(196,214,236,0.07)';
-  ctx.beginPath(); ctx.ellipse(pd.rx * 0.18, -pd.ry * 0.1, pd.rx * 0.3, pd.ry * 0.18, 0, 0, TAU); ctx.fill();
-  ctx.strokeStyle = 'rgba(178,198,224,0.2)';
-  ctx.lineWidth = 1.2;
+  /* moon and skyline shimmer riding on the surface */
+  ctx.fillStyle = 'rgba(206,226,250,0.20)';
+  ctx.beginPath(); ctx.ellipse(0, -pd.ry * 0.34, pd.rx * 0.68, pd.ry * 0.3, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = 'rgba(236,246,255,0.16)';
+  ctx.beginPath(); ctx.ellipse(pd.rx * 0.16, -pd.ry * 0.16, pd.rx * 0.26, pd.ry * 0.14, 0, 0, TAU); ctx.fill();
+
+  /* bright wet rim where the waterline cuts the stone */
+  ctx.strokeStyle = 'rgba(212,232,255,0.34)';
+  ctx.lineWidth = 1.4;
   ctx.beginPath(); ctx.ellipse(0, 0, pd.rx, pd.ry, 0, 0, TAU); ctx.stroke();
 
-  /* rain finding its way across the surface */
-  const k = (t * 0.3 + pd.ph) % 1;
-  ctx.strokeStyle = 'rgba(190,212,240,' + (0.11 * (1 - k)).toFixed(3) + ')';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, pd.rx * (0.28 + k * 0.68), pd.ry * (0.28 + k * 0.68), 0, 0, TAU);
-  ctx.stroke();
-
-  ctx.fillStyle = 'rgba(150,178,214,0.06)';
-  ctx.beginPath(); ctx.ellipse(-pd.rx * 0.28, -pd.ry * 0.3, pd.rx * 0.34, pd.ry * 0.24, 0, 0, TAU); ctx.fill();
+  /* rain rings drifting across the surface */
+  for (let r = 0; r < 2; r++) {
+    const k = (t * 0.3 + pd.ph + r * 0.5) % 1;
+    ctx.strokeStyle = 'rgba(214,234,255,' + (0.24 * (1 - k)).toFixed(3) + ')';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, pd.rx * (0.24 + k * 0.7), pd.ry * (0.24 + k * 0.7), 0, 0, TAU);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -6326,175 +6580,1326 @@ function puddleAt(x, y) {
   return null;
 }
 
-function drawEnemy(e) {
-  const t = game.time;
-  const flash = e.hitFlash > 0;
-  const r = e.r;
-  const bob = Math.sin(e.t * 6) * (e.type === 'ghost' ? 3 : 1.2);
+/* ============================================================================
+   CHARACTER ART — every body in the game, drawn from scratch on the canvas.
 
+   One shared style so the cast reads as one family:
+     · a strong, readable silhouette (each class is identifiable by outline)
+     · three or four flat colour zones, never more
+     · an oversized head, a weapon with an obvious shape
+     · subtle idle motion and a walk cycle that alternates the legs
+     · bodies that turn to face where they go — the mirror eases through the
+       edge-on squash instead of snapping between two drawings
+   ============================================================================ */
+
+/* design boxes, in world pixels. Every body is centred on its collision point,
+   so y runs from -h/2 (top of the head) to +h/2 (soles). */
+const CHAR = {
+  rael:   { w: 40, h: 44 },
+  knight: { w: 36, h: 40 },
+  archer: { w: 32, h: 38 },
+  wizard: { w: 34, h: 42 },
+  ghost:  { w: 24, h: 28 },
+  bossMelee: { w: 64, h: 70 },
+  bossRobe:  { w: 60, h: 66 }
+};
+
+/* draw code has no dt of its own; derive one from the game clock so the
+   render-only easing below still runs at the right speed on any refresh rate */
+function charDt(ent) {
+  const now = game.time;
+  const prev = ent._faceT === undefined ? now - 1 / 60 : ent._faceT;
+  ent._faceT = now;
+  return clamp(now - prev, 0, 0.05);
+}
+
+/* A character turns by squashing through edge-on (width 1 → 0 → -1) instead of
+   flipping between two drawings in a single frame. */
+function charTurn(ent, wantSign) {
+  const dt = charDt(ent);
+  let v = ent._faceX;
+  if (v === undefined) v = wantSign;
+  v += (wantSign - v) * (1 - Math.exp(-18 * dt));
+  if (Math.abs(v) < 0.18) v = 0.18 * (wantSign >= 0 ? 1 : -1);
+  ent._faceX = v;
+  return v;
+}
+
+/* Which way should the body face? Enemies look along their heading, but a body
+   travelling straight up or down keeps the side it already had so it does not
+   flicker left and right while circling. */
+function charSide(ent, ang) {
+  const c = Math.cos(ang);
+  let s = ent._side;
+  if (s === undefined || Math.abs(c) > 0.35) s = c >= 0 ? 1 : -1;
+  ent._side = s;
+  return s;
+}
+
+/* a filled rounded block in one flat colour */
+function block(x, y, w, h, r, fill) {
+  ctx.fillStyle = fill;
+  roundRect(ctx, x, y, w, h, r);
+  ctx.fill();
+}
+
+/* ---- Commander Rael ---------------------------------------------------------
+   40 x 44. Metallic dark-grey helmet with a bright cyan visor band and a small
+   antenna, a wide barrel chest in dark navy, silver shoulder-pad rectangles
+   sticking out on both sides, a glowing blue chest panel, two short dark leg
+   rectangles with a gap between them and boots wider than the legs that spill
+   electric blue light on the floor. Every class shares this body; only the
+   weapon on top changes. */
+const RAEL = {
+  helmet: '#2b3443',
+  helmetLit: '#3d4a5c',
+  helmetDark: '#151b24',
+  navy: '#16233c',
+  navyLit: '#233651',
+  navyDark: '#0b1220',
+  silver: '#b8c4d4',
+  silverDark: '#75849a',
+  leg: '#111a26',
+  boot: '#1c2734'
+};
+
+function drawRaelBody(p, bob, flash, mirror) {
+  const t = game.time;
+  const g = soldierGlow(p);
+  const F = (v) => (flash || v);
+
+  /* legs alternate left-right every 0.15s (p.walk runs at 12 rad/s, so 1.75x
+     puts one foot forward every 0.15s) */
+  const stepping = p.moving && p.dashTimer <= 0;
+  const step = stepping ? Math.sin(p.walk * 1.75) : 0;
+  const liftL = step * 1.7;
+  const liftR = -step * 1.7;
+  /* idle: a gentle 2px rise and fall on a 1.2s cycle */
+  const idle = stepping ? 0 : Math.sin(t * (TAU / 1.2)) * 1;
+  const sway = stepping ? Math.cos(p.walk * 0.875) * 0.5 : 0;
+
+  ctx.save();
+  ctx.translate(p.x + sway, p.y + (bob || 0) + idle);
+  /* mirror about the body itself, so the turn squash stays centred on him */
+  ctx.scale(mirror === undefined ? 1 : mirror, 1);
+
+  /* ---- boot glow pooling on the floor ---- */
+  for (let i = 0; i < 2; i++) {
+    const bx = i === 0 ? -5.4 : 5.4;
+    const lift = i === 0 ? liftL : liftR;
+    const glow = ctx.createRadialGradient(bx, 19 + lift * 0.4, 1, bx, 19 + lift * 0.4, 14);
+    glow.addColorStop(0, 'rgba(' + g.rgb + ',' + (0.30 + 0.10 * Math.sin(t * 2.4 + i)).toFixed(3) + ')');
+    glow.addColorStop(1, 'rgba(' + g.rgb + ',0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.ellipse(bx, 19 + lift * 0.4, 14, 5, 0, 0, TAU);
+    ctx.fill();
+  }
+
+  /* ---- legs: two short dark rectangles with a gap ---- */
+  block(-8.4, 4 + liftL * 0.4, 7, 12, 2.2, F(RAEL.leg));
+  block(1.4, 4 + liftR * 0.4, 7, 12, 2.2, F(RAEL.leg));
+
+  /* ---- boots, wider than the legs ---- */
+  for (let i = 0; i < 2; i++) {
+    const lift = i === 0 ? liftL : liftR;
+    const bx = i === 0 ? -10.2 : 0.6;
+    block(bx, 13.4 + lift, 9.6, 8.6, 2.8, F(RAEL.boot));
+    /* the electric strip along the sole */
+    ctx.fillStyle = F(g.glow);
+    ctx.globalAlpha = flash ? 0.5 : 0.9;
+    roundRect(ctx, bx + 1.5, 19.4 + lift, 6.6, 1.6, 0.8);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  /* ---- torso: wide barrel chest in dark navy ---- */
+  const chest = ctx.createLinearGradient(0, -8, 0, 7);
+  chest.addColorStop(0, F(RAEL.navyLit));
+  chest.addColorStop(0.55, F(RAEL.navy));
+  chest.addColorStop(1, F(RAEL.navyDark));
+  ctx.fillStyle = F(chest);
+  roundRect(ctx, -13, -8, 26, 15, 4.5);
+  ctx.fill();
+  /* a dark seam under the chest so the belt reads */
+  ctx.fillStyle = 'rgba(4,8,14,0.6)';
+  roundRect(ctx, -12.4, 4.4, 24.8, 3.4, 1.6);
+  ctx.fill();
+
+  /* ---- silver shoulder pads, protruding on each side ---- */
+  for (let i = 0; i < 2; i++) {
+    const side = i === 0 ? -1 : 1;
+    const px = side > 0 ? 10.6 : -18.6;
+    block(px, -7.4, 8, 8.2, 2.2, F(RAEL.silver));
+    ctx.strokeStyle = F(RAEL.silverDark);
+    ctx.lineWidth = 1;
+    roundRect(ctx, px + 0.5, -6.9, 7, 7.2, 2);
+    ctx.stroke();
+    /* a navy seam along the inner edge marks the pad as a separate plate */
+    ctx.fillStyle = 'rgba(10,18,30,0.55)';
+    ctx.fillRect(side > 0 ? px : px + 6.7, -6.9, 1.3, 7.2);
+  }
+
+  /* ---- glowing blue chest panel ---- */
+  const pulse = 0.7 + 0.3 * Math.sin(t * 3.4);
+  ctx.save();
+  ctx.shadowColor = g.glow;
+  ctx.shadowBlur = 9 * pulse;
+  ctx.fillStyle = F(g.glow);
+  roundRect(ctx, -5.6, -5, 11.2, 6.6, 1.8);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(232,253,255,' + (0.45 + 0.4 * pulse).toFixed(2) + ')';
+  roundRect(ctx, -3.8, -3.8, 7.6, 2.4, 1);
+  ctx.fill();
+  ctx.restore();
+
+  /* ---- head: large rounded helmet ---- */
+  ctx.fillStyle = F(RAEL.helmet);
+  roundRect(ctx, -9, -22, 18, 14.5, 5.5);
+  ctx.fill();
+  /* lit crown + dark jaw give the helmet its roundness */
+  ctx.fillStyle = F(RAEL.helmetLit);
+  roundRect(ctx, -7.4, -21, 14.8, 5, 2.6);
+  ctx.fill();
+  ctx.fillStyle = F(RAEL.helmetDark);
+  roundRect(ctx, -7.6, -11.2, 15.2, 3.2, 1.5);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(9,14,22,0.9)';
+  ctx.lineWidth = 1.2;
+  roundRect(ctx, -9, -22, 18, 14.5, 5.5);
+  ctx.stroke();
+
+  /* ---- visor: bright cyan band across the middle of the head ---- */
+  ctx.save();
+  ctx.shadowColor = g.visor;
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = F(g.visor);
+  roundRect(ctx, -7, -17.6, 14, 5, 2.3);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(240,255,255,0.7)';
+  roundRect(ctx, -5.8, -16.7, 5.6, 1.6, 0.8);
+  ctx.fill();
+  ctx.restore();
+
+  /* ---- antenna on the top right ---- */
+  ctx.fillStyle = F(RAEL.silverDark);
+  ctx.fillRect(6.2, -28, 1.7, 6.4);
+  ctx.fillStyle = F(g.visor);
+  ctx.beginPath();
+  ctx.arc(7.05, -28.6, 2, 0, TAU);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/* ---- Commander Rael's weapons ----------------------------------------------
+   Each weapon is drawn in world space, pivoting on the shoulder, so it always
+   points at the cursor no matter which way the body is facing. */
+function drawRaelWeapon(p, bob, flash) {
+  const cls = getClass();
+  const t = game.time;
+  const g = soldierGlow(p);
+  const F = (v) => (flash || v);
+  if (cls.weapon === 'blade') return;      /* the longsword is drawn separately */
+
+  const idle = p.moving ? 0 : Math.sin(t * (TAU / 1.2)) * 1;
+  const sx = Math.cos(p.angle) >= 0 ? 1 : -1;
+
+  ctx.save();
+  ctx.translate(p.x + sx * 3, p.y + (bob || 0) + idle - 3);
+  ctx.rotate(p.angle);
+  if (Math.cos(p.angle) < 0) ctx.scale(1, -1);
+
+  /* the gauntlet that holds the weapon */
+  ctx.fillStyle = F('#22304a');
+  roundRect(ctx, -3, -3.2, 8.4, 6.4, 3);
+  ctx.fill();
+  ctx.fillStyle = F('#a9b7c6');
+  roundRect(ctx, -3.6, -2.6, 4.6, 5.2, 2);
+  ctx.fill();
+
+  if (cls.weapon === 'pistols') {
+    /* two small silver pistols: one aimed, the off-hand one held lower */
+    ctx.scale(1.12, 1.12);
+    for (let i = 0; i < 2; i++) {
+      const dy = i === 0 ? -4.4 : 4.4;
+      const len = i === 0 ? 10 : 8;
+      ctx.save();
+      ctx.translate(i === 0 ? 1.4 : -2, dy);
+      ctx.rotate(i === 0 ? 0 : 0.16);
+      ctx.fillStyle = F('#33475c');
+      roundRect(ctx, -1.8, -1.8, 5.2, 3.6, 1.4);
+      ctx.fill();
+      const steel = ctx.createLinearGradient(0, -2, 0, 2);
+      steel.addColorStop(0, F('#e8eef6'));
+      steel.addColorStop(1, F('#8fa2b8'));
+      ctx.fillStyle = F(steel);
+      roundRect(ctx, 2.4, -2, len, 4, 1.2);
+      ctx.fill();
+      ctx.fillStyle = F('#22d3ee');
+      ctx.fillRect(2.4, -1.7, len * 0.5, 0.9);
+      /* muzzle spark */
+      ctx.shadowColor = g.visor;
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = F(g.visor);
+      ctx.beginPath();
+      ctx.arc(2.4 + len, 0, 1.3, 0, TAU);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+  } else if (cls.weapon === 'rail') {
+    /* one long rifle barrel with a glowing rail and a bright muzzle */
+    ctx.scale(1.08, 1.08);
+    ctx.fillStyle = F('#26303d');
+    roundRect(ctx, 2, -3.4, 12, 6.4, 2);
+    ctx.fill();
+    const steel = ctx.createLinearGradient(0, -2.4, 0, 2.4);
+    steel.addColorStop(0, F('#c9d6e4'));
+    steel.addColorStop(1, F('#6f8296'));
+    ctx.fillStyle = F(steel);
+    roundRect(ctx, 12, -2.4, 21, 4.8, 1.6);
+    ctx.fill();
+    ctx.save();
+    ctx.shadowColor = g.visor;
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = 'rgba(' + g.rgb + ',0.95)';
+    ctx.fillRect(14.5, -0.9, 16, 1.8);
+    ctx.fillStyle = F('#eafcff');
+    ctx.beginPath();
+    ctx.arc(33, 0, 2.4, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+    /* scope + magazine */
+    ctx.fillStyle = F('#111a24');
+    roundRect(ctx, 5.5, -6.4, 6.4, 2.2, 1);
+    ctx.fill();
+    roundRect(ctx, 5.5, 2.4, 3.4, 5, 1);
+    ctx.fill();
+  } else {
+    /* the arcane focus: a purple orb riding above the gauntlet */
+    const lift = Math.sin(t * 2.2) * 2;
+    ctx.rotate(-0.3);
+    ctx.fillStyle = F('#3b2f56');
+    roundRect(ctx, 1, -1.8, 11, 3.6, 1.8);
+    ctx.fill();
+    const orb = ctx.createRadialGradient(14, lift - 5, 1, 14, lift - 5, 9);
+    orb.addColorStop(0, 'rgba(252,248,255,0.98)');
+    orb.addColorStop(0.4, 'rgba(196,150,255,0.9)');
+    orb.addColorStop(1, 'rgba(124,58,237,0)');
+    ctx.fillStyle = F(orb);
+    ctx.beginPath();
+    ctx.arc(14, lift - 5, 9, 0, TAU);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(233,213,255,0.85)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(14, lift - 5, 5.2, t * 2.4, t * 2.4 + 2.2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ---- red damage flash: the same body, flat red ---------------------------- */
+function drawRaelFlash(p, bob, alpha, mirror) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  drawRaelBody(p, bob, '#ff4d4d', mirror);
+  if (getClass().weapon !== 'blade') drawRaelWeapon(p, bob, '#ff4d4d');
+  ctx.restore();
+}
+
+/* ---- ENEMY: the knight -----------------------------------------------------
+   36 x 40. Dark iron plate with gold trim lines, a wide shoulder line, a big
+   round helmet with a narrow glowing red visor slit, and a sword pushed
+   forward in the right hand. Heavy stomp: the body drops 3px on every step. */
+const KNIGHT_PAL = {
+  plate: '#4a4a4a',
+  plateDark: '#2a2a2a',
+  plateLit: '#6b6b6b',
+  trim: '#c9a84c',
+  visor: '#ff3333'
+};
+
+function drawEnemyKnight(e, flash) {
+  const F = (v) => (flash || v);
+  const sx = charTurn(e, charSide(e, e.heading));
+  const aim = angleTo(e.x, e.y, game.player.x, game.player.y);
+  /* heavy stomp: 3px drop on every step */
+  const stomp = Math.abs(Math.sin(e.t * 5.2)) * 3;
+
+  ctx.save();
+  ctx.translate(e.x, e.y + stomp);
+  ctx.scale(sx, 1);
+
+  /* ---- legs + sabatons ---- */
+  block(-10, 7, 8, 9, 2, F(KNIGHT_PAL.plateDark));
+  block(2, 7, 8, 9, 2, F(KNIGHT_PAL.plateDark));
+  block(-11.4, 15, 10.6, 5, 2, F('#3a3a3a'));
+  block(0.8, 15, 10.6, 5, 2, F('#3a3a3a'));
+
+  /* ---- hip plate ---- */
+  block(-10.5, 4, 21, 5, 1.6, F(KNIGHT_PAL.plateDark));
+
+  /* ---- torso plate ---- */
+  const plate = ctx.createLinearGradient(0, -8, 0, 6);
+  plate.addColorStop(0, F(KNIGHT_PAL.plateLit));
+  plate.addColorStop(0.6, F(KNIGHT_PAL.plate));
+  plate.addColorStop(1, F(KNIGHT_PAL.plateDark));
+  ctx.fillStyle = F(plate);
+  roundRect(ctx, -11, -9, 22, 15, 3);
+  ctx.fill();
+  /* gold trim lines */
+  ctx.strokeStyle = F(KNIGHT_PAL.trim);
+  ctx.lineWidth = 1.1;
+  roundRect(ctx, -10.1, -8.2, 20.2, 13.4, 2.6);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0, -7.4);
+  ctx.lineTo(0, 4.2);
+  ctx.stroke();
+
+  /* ---- wide shoulders ---- */
+  block(-18, -9.6, 9, 8.4, 2.2, F(KNIGHT_PAL.plate));
+  block(9, -9.6, 9, 8.4, 2.2, F(KNIGHT_PAL.plate));
+  ctx.strokeStyle = F(KNIGHT_PAL.trim);
+  ctx.lineWidth = 1;
+  roundRect(ctx, -17.4, -9, 7.8, 7.2, 1.8);
+  ctx.stroke();
+  roundRect(ctx, 9.6, -9, 7.8, 7.2, 1.8);
+  ctx.stroke();
+
+  /* ---- large round helmet ---- */
+  const helm = ctx.createRadialGradient(-3, -17, 2, 0, -14, 10);
+  helm.addColorStop(0, F('#5e5e5e'));
+  helm.addColorStop(0.65, F('#3c3c3c'));
+  helm.addColorStop(1, F('#232323'));
+  ctx.fillStyle = F(helm);
+  ctx.beginPath();
+  ctx.arc(0, -14, 8.6, 0, TAU);
+  ctx.fill();
+  ctx.strokeStyle = F(KNIGHT_PAL.trim);
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.arc(0, -14, 8.6, 0, TAU);
+  ctx.stroke();
+  /* crest ridge over the crown */
+  ctx.strokeStyle = F('#2a2a2a');
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.moveTo(0, -22.6);
+  ctx.lineTo(0, -18);
+  ctx.stroke();
+  /* narrow glowing visor slit */
+  ctx.save();
+  ctx.shadowColor = KNIGHT_PAL.visor;
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = F(KNIGHT_PAL.visor);
+  roundRect(ctx, -6, -15.8, 12, 2.4, 1.2);
+  ctx.fill();
+  ctx.restore();
+  ctx.restore();
+
+  /* ---- the sword, pushed forward at the target ---- */
+  ctx.save();
+  ctx.translate(e.x + Math.cos(aim) * 8 + Math.cos(aim + Math.PI / 2) * 4,
+    e.y + stomp - 2 + Math.sin(aim) * 8 + Math.sin(aim + Math.PI / 2) * 4);
+  ctx.rotate(aim);
+  if (Math.cos(aim) < 0) ctx.scale(1, -1);
+  /* grip + gold guard */
+  ctx.fillStyle = F('#8a6a24');
+  roundRect(ctx, 0, -1.6, 9, 3.2, 1.4);
+  ctx.fill();
+  ctx.fillStyle = F('#c9a84c');
+  roundRect(ctx, 8, -4.6, 3, 9.2, 1.4);
+  ctx.fill();
+  /* blade */
+  const blade = ctx.createLinearGradient(0, -2, 0, 2);
+  blade.addColorStop(0, F('#eef4ff'));
+  blade.addColorStop(0.5, F('#b9c6d6'));
+  blade.addColorStop(1, F('#7e8b9c'));
+  ctx.fillStyle = F(blade);
+  ctx.beginPath();
+  ctx.moveTo(11, -2.2);
+  ctx.lineTo(27, -1.4);
+  ctx.lineTo(31, 0);
+  ctx.lineTo(27, 1.4);
+  ctx.lineTo(11, 2.2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ---- ENEMY: the archer -----------------------------------------------------
+   32 x 38. Dark forest-green cloak, a big round hood swallowing the head, two
+   small amber eyes, a slender body, and a short bow in the left hand with the
+   right hand drawing a silver arrow. Light quick steps, body tilting as it
+   goes. */
+const ARCHER_PAL = {
+  deep: '#1a3320',
+  mid: '#2d5a3d',
+  lit: '#3f7350',
+  eyes: '#ffaa00',
+  arrow: '#aaaaaa'
+};
+
+function drawEnemyArcher(e, flash) {
+  const F = (v) => (flash || v);
+  const sx = charTurn(e, charSide(e, e.heading));
+  const aim = angleTo(e.x, e.y, game.player.x, game.player.y);
+  /* light quick steps: a small hop plus a side-to-side tilt */
+  const hop = Math.abs(Math.sin(e.t * 7.2)) * 1.6;
+  const rock = Math.sin(e.t * 7.2) * 0.05;
+
+  ctx.save();
+  ctx.translate(e.x, e.y - hop);
+  ctx.scale(sx, 1);
+  ctx.rotate(rock);
+
+  /* ---- cloak: a long teardrop with a ragged hem ---- */
+  const cloak = ctx.createLinearGradient(0, -18, 0, 19);
+  cloak.addColorStop(0, F(ARCHER_PAL.mid));
+  cloak.addColorStop(1, F(ARCHER_PAL.deep));
+  ctx.fillStyle = F(cloak);
+  ctx.beginPath();
+  ctx.moveTo(0, -17);
+  ctx.quadraticCurveTo(9.5, -12, 9, 6);
+  ctx.quadraticCurveTo(8, 17.4, 3, 18.2);
+  ctx.quadraticCurveTo(0, 19.4, -3, 18.2);
+  ctx.quadraticCurveTo(-8, 17.4, -9, 6);
+  ctx.quadraticCurveTo(-9.5, -12, 0, -17);
+  ctx.closePath();
+  ctx.fill();
+  /* the lighter tunic down the front */
+  ctx.fillStyle = F(ARCHER_PAL.lit);
+  ctx.beginPath();
+  ctx.moveTo(0, -13);
+  ctx.quadraticCurveTo(4.6, -9, 4, 9);
+  ctx.quadraticCurveTo(0, 11, -4, 9);
+  ctx.quadraticCurveTo(-4.6, -9, 0, -13);
+  ctx.closePath();
+  ctx.fill();
+  /* hem shadow */
+  ctx.fillStyle = 'rgba(4,12,8,0.45)';
+  roundRect(ctx, -8.6, 15.4, 17.2, 3.2, 1.6);
+  ctx.fill();
+
+  /* ---- quiver peeking over the shoulder ---- */
+  ctx.save();
+  ctx.rotate(-0.5);
+  block(4.6, -12, 4.2, 11, 1.6, F('#3a2a16'));
+  ctx.fillStyle = F(ARCHER_PAL.arrow);
+  ctx.fillRect(5.4, -14.4, 1.1, 3.2);
+  ctx.fillRect(7, -14.4, 1.1, 3.2);
+  ctx.restore();
+
+  /* ---- hood: large and round, swallowing the head ---- */
+  const hood = ctx.createRadialGradient(-2, -13, 2, 0, -10, 11);
+  hood.addColorStop(0, F(ARCHER_PAL.lit));
+  hood.addColorStop(0.55, F(ARCHER_PAL.mid));
+  hood.addColorStop(1, F(ARCHER_PAL.deep));
+  ctx.fillStyle = F(hood);
+  ctx.beginPath();
+  ctx.ellipse(0, -10, 9.6, 9.6, 0, 0, TAU);
+  ctx.fill();
+  /* the cowl falls to a point behind */
+  ctx.beginPath();
+  ctx.moveTo(-7.4, -6);
+  ctx.quadraticCurveTo(-12, 0, -6, 1);
+  ctx.closePath();
+  ctx.fill();
+  /* dark face opening */
+  ctx.fillStyle = F('#07130c');
+  ctx.beginPath();
+  ctx.ellipse(0.6, -9.6, 5.8, 5.4, 0, 0, TAU);
+  ctx.fill();
+  /* amber eyes under the hood */
+  ctx.save();
+  ctx.shadowColor = ARCHER_PAL.eyes;
+  ctx.shadowBlur = 6;
+  ctx.fillStyle = F(ARCHER_PAL.eyes);
+  ctx.beginPath();
+  ctx.ellipse(-1.9, -9.6, 1.4, 1.8, 0, 0, TAU);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(2.9, -9.6, 1.4, 1.8, 0, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+  ctx.restore();
+
+  /* ---- bow drawn back, pointed at the player ---- */
+  ctx.save();
+  ctx.translate(e.x + Math.cos(aim) * 7, e.y - hop + Math.sin(aim) * 7);
+  ctx.rotate(aim);
+  if (Math.cos(aim) < 0) ctx.scale(1, -1);
+  ctx.strokeStyle = F('#6b4a24');
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(0, 0, 10, -1.15, 1.15);
+  ctx.stroke();
+  /* the string, pulled back by the right hand */
+  ctx.strokeStyle = 'rgba(226,232,240,0.7)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(Math.cos(-1.15) * 10, Math.sin(-1.15) * 10);
+  ctx.lineTo(-4, 0);
+  ctx.lineTo(Math.cos(1.15) * 10, Math.sin(1.15) * 10);
+  ctx.stroke();
+  /* silver arrow */
+  ctx.strokeStyle = F(ARCHER_PAL.arrow);
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(-4.5, 0);
+  ctx.lineTo(11, 0);
+  ctx.stroke();
+  ctx.fillStyle = F('#dbe4ee');
+  ctx.beginPath();
+  ctx.moveTo(11, 0);
+  ctx.lineTo(7.2, -2.2);
+  ctx.lineTo(7.2, 2.2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = F(ARCHER_PAL.lit);
+  ctx.beginPath();
+  ctx.moveTo(-4.5, 0);
+  ctx.lineTo(-7.6, -2.4);
+  ctx.lineTo(-7.6, 2.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ---- ENEMY: the wizard -----------------------------------------------------
+   34 x 42. Tall pointed hat in deep purple sprinkled with gold stars, a long
+   rippling robe, a pale face with glowing white eyes, and a gnarled staff held
+   up with a purple orb. Floats 4px off the floor on a slow sine. */
+const WIZ_PAL = {
+  deep: '#2d0a4e',
+  mid: '#6b21a8',
+  lit: '#a855f7',
+  star: '#c9a84c',
+  face: '#cfc9d8'
+};
+
+function drawEnemyWizard(e, flash) {
+  const F = (v) => (flash || v);
+  const sx = charTurn(e, charSide(e, e.heading));
+  const float = 4 + Math.sin(e.t * 1.6) * 2.4;
+  const ripple = Math.sin(e.t * 2.6) * 1.8;
+
+  ctx.save();
+  ctx.translate(e.x, e.y - float);
+  ctx.scale(sx, 1);
+
+  /* ---- robe: wide at the hem, rippling, narrowing to the shoulders ---- */
+  const robe = ctx.createLinearGradient(0, -4, 0, 21);
+  robe.addColorStop(0, F(WIZ_PAL.mid));
+  robe.addColorStop(0.5, F('#4b1580'));
+  robe.addColorStop(1, F(WIZ_PAL.deep));
+  ctx.fillStyle = F(robe);
+  ctx.beginPath();
+  ctx.moveTo(-6, -5);
+  ctx.quadraticCurveTo(-14, 5, -12.4 + ripple, 19.4);
+  ctx.quadraticCurveTo(-6, 22, 0, 20);
+  ctx.quadraticCurveTo(6, 22, 12.4 + ripple, 19.4);
+  ctx.quadraticCurveTo(14, 5, 6, -5);
+  ctx.closePath();
+  ctx.fill();
+  /* the lit front of the robe */
+  ctx.fillStyle = F(WIZ_PAL.lit);
+  ctx.globalAlpha = 0.3;
+  ctx.beginPath();
+  ctx.moveTo(-3.2, -3);
+  ctx.quadraticCurveTo(-6, 7, -3, 19);
+  ctx.quadraticCurveTo(0, 20, 3, 19);
+  ctx.quadraticCurveTo(6, 7, 3.2, -3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  /* hem trim */
+  ctx.strokeStyle = F('#c084fc');
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(-12.4 + ripple, 19.4);
+  ctx.quadraticCurveTo(0, 22, 12.4 + ripple, 19.4);
+  ctx.stroke();
+  /* a collar of darker cloth around the neck */
+  ctx.fillStyle = F(WIZ_PAL.deep);
+  ctx.beginPath();
+  ctx.ellipse(0, -4, 7.4, 2.8, 0, 0, TAU);
+  ctx.fill();
+
+  /* ---- pale face, sitting low under the brim ---- */
+  ctx.fillStyle = F(WIZ_PAL.face);
+  ctx.beginPath();
+  ctx.ellipse(0, -8.4, 6.2, 6.4, 0, 0, TAU);
+  ctx.fill();
+  /* sunken cheeks + chin shadow so the pale face has some form */
+  ctx.fillStyle = 'rgba(30,16,48,0.38)';
+  ctx.beginPath();
+  ctx.ellipse(0, -4.8, 4.6, 2.4, 0, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(30,16,48,0.5)';
+  ctx.beginPath();
+  ctx.ellipse(-4.4, -7.6, 1.6, 3, 0, 0, TAU);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(4.4, -7.6, 1.6, 3, 0, 0, TAU);
+  ctx.fill();
+  /* dark sockets, then the two burning white eyes */
+  ctx.fillStyle = F('#150a26');
+  ctx.beginPath();
+  ctx.ellipse(-2.4, -9, 2.5, 2.7, 0, 0, TAU);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(2.4, -9, 2.5, 2.7, 0, 0, TAU);
+  ctx.fill();
+  ctx.save();
+  ctx.shadowColor = '#ffffff';
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = F('#ffffff');
+  ctx.beginPath();
+  ctx.ellipse(-2.4, -9, 1.8, 2.1, 0, 0, TAU);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(2.4, -9, 1.8, 2.1, 0, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+
+  /* ---- tall pointed hat: cone first, then the brim laid over its base so
+     the point stays long and unmistakable ---- */
+  const hat = ctx.createLinearGradient(0, -21.4, 0, -11);
+  hat.addColorStop(0, F('#9333ea'));
+  hat.addColorStop(0.4, F(WIZ_PAL.mid));
+  hat.addColorStop(1, F(WIZ_PAL.deep));
+  ctx.fillStyle = F(hat);
+  ctx.beginPath();
+  ctx.moveTo(0.4, -21.4);
+  ctx.quadraticCurveTo(1.6, -17, 6.2, -11.2);
+  ctx.quadraticCurveTo(0, -9.4, -6.2, -11.2);
+  ctx.quadraticCurveTo(-1.6, -17, 0.4, -21.4);
+  ctx.closePath();
+  ctx.fill();
+  /* the tip flops over */
+  ctx.fillStyle = F('#7c22bd');
+  ctx.beginPath();
+  ctx.moveTo(0.4, -21.4);
+  ctx.quadraticCurveTo(3.6, -21.8, 3.4, -19.4);
+  ctx.quadraticCurveTo(1.6, -19.8, 0.4, -21.4);
+  ctx.closePath();
+  ctx.fill();
+  /* wide brim */
+  ctx.fillStyle = F(WIZ_PAL.deep);
+  ctx.beginPath();
+  ctx.ellipse(0, -11.2, 9.4, 2.7, 0, 0, TAU);
+  ctx.fill();
+  ctx.strokeStyle = F(WIZ_PAL.lit);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.ellipse(0, -11.2, 9.4, 2.7, 0, 0, TAU);
+  ctx.stroke();
+  /* gold stars up the cone */
+  ctx.fillStyle = F(WIZ_PAL.star);
+  const stars = [[-0.4, -19.4, 1.5], [2.6, -16.4, 1.2], [-2.4, -14.6, 1.1], [0.6, -13, 0.9]];
+  for (let i = 0; i < stars.length; i++) {
+    const sxp = stars[i][0], syp = stars[i][1], sr = stars[i][2];
+    ctx.beginPath();
+    ctx.moveTo(sxp, syp - sr);
+    ctx.lineTo(sxp + sr * 0.66, syp);
+    ctx.lineTo(sxp, syp + sr);
+    ctx.lineTo(sxp - sr * 0.66, syp);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+
+  /* ---- gnarled staff with a glowing orb ---- */
+  ctx.save();
+  ctx.translate(e.x + 12.5, e.y - float + 3);
+  ctx.rotate(Math.sin(e.t * 1.9) * 0.05);
+  ctx.strokeStyle = F('#4a3520');
+  ctx.lineWidth = 2.6;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(0, 16);
+  ctx.quadraticCurveTo(-2.6, -2, 0.6, -15);
+  ctx.quadraticCurveTo(2.4, -19, 0, -21);
+  ctx.stroke();
+  const orb = ctx.createRadialGradient(0, -22, 1, 0, -22, 9.5);
+  orb.addColorStop(0, 'rgba(252,248,255,0.98)');
+  orb.addColorStop(0.35, 'rgba(196,150,255,0.9)');
+  orb.addColorStop(1, 'rgba(124,58,237,0)');
+  ctx.fillStyle = F(orb);
+  ctx.beginPath();
+  ctx.arc(0, -22, 9.5, 0, TAU);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(233,213,255,0.8)';
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.arc(0, -22, 4.8, e.t * 2, e.t * 2 + 2.4);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* ---- ENEMY: the ghost ------------------------------------------------------
+   24 x 28. A translucent white teardrop at 60% opacity, two small hollow black
+   eyes, a wispy tail trailing opposite its direction, a constant wobble and
+   faint white wisps rising off it. */
+function drawEnemyGhost(e, flash) {
+  const F = (v) => (flash || v);
+  const wobble = Math.sin(e.t * 3.4) * 1.5;
+  const sway = Math.sin(e.t * 2.1) * 2.2;
+  const t = game.time;
+
+  /* faint wisps drifting up */
+  for (let i = 0; i < 3; i++) {
+    const k = ((t * 0.55 + i * 0.33) % 1);
+    ctx.globalAlpha = 0.3 * (1 - k);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(e.x + Math.sin(t * 2 + i * 2.1) * 5 + (i - 1) * 4.5, e.y - 6 - k * 24, 1.5 + k * 1.6, 0, TAU);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.save();
+  ctx.translate(e.x + sway, e.y + wobble);
+  ctx.globalAlpha = flash ? 1 : 0.6;
+
+  /* the tail is dragged opposite to the way it travels */
+  const tx = -Math.cos(e.heading || 0) * 3.2;
+  const ty = -Math.sin(e.heading || 0) * 2.2;
+
+  const body = ctx.createLinearGradient(0, -14, 0, 12);
+  body.addColorStop(0, F('#ffffff'));
+  body.addColorStop(0.65, F('#e8eef7'));
+  body.addColorStop(1, 'rgba(214,224,238,0.5)');
+  ctx.fillStyle = F(body);
+  ctx.beginPath();
+  ctx.moveTo(0, -14);
+  ctx.bezierCurveTo(8.4, -13, 9.6, -3, 7.6, 5 + ty * 0.5);
+  ctx.quadraticCurveTo(5.6, 10.4 + ty, 2.4 + tx, 7.6 + ty);
+  ctx.quadraticCurveTo(0, 12.6 + ty, -2.4 + tx, 7.6 + ty);
+  ctx.quadraticCurveTo(-5.6, 10.4 + ty, -7.6, 5 + ty * 0.5);
+  ctx.bezierCurveTo(-9.6, -3, -8.4, -13, 0, -14);
+  ctx.closePath();
+  ctx.fill();
+  /* three thin wisps curling off the tail, dragged behind it */
+  ctx.strokeStyle = F('rgba(238,244,252,0.5)');
+  ctx.lineWidth = 1.6;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 3; i++) {
+    const wx = (i - 1) * 3.6 + tx;
+    const len = 6 + i * 1.6;
+    ctx.beginPath();
+    ctx.moveTo(wx, 5 + ty);
+    ctx.quadraticCurveTo(wx - 2 + Math.sin(t * 3.4 + i) * 2, 5 + ty + len * 0.7,
+      wx - 3.4 + tx + Math.sin(t * 3.4 + i * 2) * 2.6, 5 + ty + len);
+    ctx.stroke();
+  }
+
+  /* a soft inner light so it reads as translucent */
+  const inner = ctx.createRadialGradient(0, -6, 1, 0, -4, 10);
+  inner.addColorStop(0, 'rgba(255,255,255,0.5)');
+  inner.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = inner;
+  ctx.beginPath();
+  ctx.arc(0, -4, 10, 0, TAU);
+  ctx.fill();
+
+  /* hollow black eyes */
+  ctx.globalAlpha = flash ? 0.9 : 0.8;
+  ctx.fillStyle = F('#000000');
+  ctx.beginPath();
+  ctx.ellipse(-3.1, -7, 1.8, 2.5, 0.12, 0, TAU);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(3.1, -7, 1.8, 2.5, -0.12, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+/* ---- BOSS: armoured giants -------------------------------------------------
+   Black Knight, Siege Commander and Time Tyrant share one 64 x 70 design whose
+   scale is set so the art fills the boss's hit circle. */
+const BOSS_PAL = {
+  black: {
+    plate: '#141414', plateDark: '#0a0a0a', plateLit: '#262626',
+    trim: '#4a1610', rune: '#ff2200', glow: '#cc0000',
+    cape: '#241a1c', eye: '#ff2200', steel: '#b9c4d2'
+  },
+  siege: {
+    plate: '#49515d', plateDark: '#272d36', plateLit: '#6d7786',
+    trim: '#c9a84c', rune: '#93c5fd', glow: '#60a5fa',
+    cape: '#3b1414', eye: '#dbeafe', steel: '#e2e8f0'
+  },
+  tyrant: {
+    plate: '#16212f', plateDark: '#0a111c', plateLit: '#26405c',
+    trim: '#38bdf8', rune: '#38bdf8', glow: '#22d3ee',
+    cape: '#0b1622', eye: '#a5f3fc', steel: '#dbeafe'
+  }
+};
+
+function drawArmouredGiant(b, pal, flash) {
+  const F = (v) => (flash || v);
+  const t = game.time;
+  const aim = b.angle;
+  const sx = charTurn(b, charSide(b, b.heading === undefined ? aim : b.heading));
+  const scale = (b.r * 2) / CHAR.bossMelee.w;
+  /* slow heavy stomp that rattles the ground */
+  const stomp = Math.abs(Math.sin(b.t * 3.1)) * 4;
+  const capeWave = Math.sin(t * 1.8) * 3;
+
+  /* ---- tattered cape behind the body ---- */
+  ctx.save();
+  ctx.translate(0, stomp * 0.4);
+  ctx.scale(sx * scale, scale);
+  ctx.fillStyle = F(pal.cape);
+  ctx.beginPath();
+  ctx.moveTo(-15, -28);
+  ctx.quadraticCurveTo(-40, -8, -36 + capeWave, 36);
+  ctx.lineTo(-26 + capeWave * 0.4, 25);
+  ctx.lineTo(-16 + capeWave * 0.7, 38);
+  ctx.lineTo(-5, 26);
+  ctx.lineTo(5, 37);
+  ctx.lineTo(16 + capeWave * 0.7, 25);
+  ctx.lineTo(27 + capeWave * 0.4, 37);
+  ctx.lineTo(36 + capeWave, 27);
+  ctx.quadraticCurveTo(40, -8, 15, -28);
+  ctx.closePath();
+  ctx.fill();
+  /* a rim of dying ember light along the tatters */
+  ctx.strokeStyle = 'rgba(204,0,0,0.28)';
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+  ctx.restore();
+
+  /* ---- the armoured body ---- */
+  ctx.save();
+  ctx.translate(0, stomp);
+  ctx.scale(sx * scale, scale);
+
+  /* legs */
+  block(-15, 10, 12, 22, 2.4, F(pal.plateDark));
+  block(3, 10, 12, 22, 2.4, F(pal.plateDark));
+  block(-17.5, 26, 15, 9, 2.6, F(pal.plate));
+  block(2.5, 26, 15, 9, 2.6, F(pal.plate));
+
+  /* torso */
+  const plate = ctx.createLinearGradient(0, -16, 0, 12);
+  plate.addColorStop(0, F(pal.plateLit));
+  plate.addColorStop(0.55, F(pal.plate));
+  plate.addColorStop(1, F(pal.plateDark));
+  ctx.fillStyle = F(plate);
+  roundRect(ctx, -20, -16, 40, 28, 6);
+  ctx.fill();
+  ctx.strokeStyle = F(pal.trim);
+  ctx.lineWidth = 1.6;
+  roundRect(ctx, -18.6, -14.6, 37.2, 25.2, 5);
+  ctx.stroke();
+  /* rim light along the top edge, otherwise black on black loses the shape */
+  ctx.strokeStyle = 'rgba(150,160,175,0.32)';
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.moveTo(-17, -14.2);
+  ctx.lineTo(17, -14.2);
+  ctx.stroke();
+
+  /* chest runes */
+  ctx.save();
+  ctx.shadowColor = pal.glow;
+  ctx.shadowBlur = 12;
+  ctx.strokeStyle = F(pal.rune);
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, -11);
+  ctx.lineTo(0, 6);
+  ctx.moveTo(-8, -6);
+  ctx.lineTo(0, 0);
+  ctx.lineTo(8, -6);
+  ctx.moveTo(-5, 5);
+  ctx.lineTo(5, 5);
+  ctx.stroke();
+  ctx.fillStyle = F(pal.rune);
+  ctx.beginPath();
+  ctx.arc(0, -3, 2.6, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+
+  /* pauldrons with a spike jutting sideways */
+  for (let i = 0; i < 2; i++) {
+    const side = i === 0 ? -1 : 1;
+    const px = side > 0 ? 20 : -34;
+    block(px, -20, 14, 14, 3.4, F(pal.plate));
+    ctx.strokeStyle = F(pal.trim);
+    ctx.lineWidth = 1.4;
+    roundRect(ctx, px + 0.7, -19.3, 12.6, 12.6, 3);
+    ctx.stroke();
+    ctx.fillStyle = F(pal.plateDark);
+    ctx.beginPath();
+    ctx.moveTo(px + (side > 0 ? 13.4 : 0.6), -18);
+    ctx.lineTo(px + (side > 0 ? 27 : -13), -14);
+    ctx.lineTo(px + (side > 0 ? 13.4 : 0.6), -10);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /* helmet */
+  const helm = ctx.createLinearGradient(0, -35, 0, -13);
+  helm.addColorStop(0, F(pal.plateLit));
+  helm.addColorStop(0.6, F(pal.plate));
+  helm.addColorStop(1, F(pal.plateDark));
+  ctx.fillStyle = F(helm);
+  roundRect(ctx, -13, -35, 26, 21, 6);
+  ctx.fill();
+  ctx.strokeStyle = F(pal.trim);
+  ctx.lineWidth = 1.6;
+  roundRect(ctx, -13, -35, 26, 21, 6);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(150,160,175,0.34)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(-11.4, -34.2);
+  ctx.lineTo(11.4, -34.2);
+  ctx.stroke();
+  /* crown ridge */
+  ctx.fillStyle = F(pal.plateDark);
+  roundRect(ctx, -2.6, -37, 5.2, 6, 2);
+  ctx.fill();
+  /* two glowing eye slits */
+  ctx.save();
+  ctx.shadowColor = pal.eye;
+  ctx.shadowBlur = 13;
+  ctx.fillStyle = F(pal.eye);
+  roundRect(ctx, -9.4, -26, 6.6, 3.2, 1.4);
+  ctx.fill();
+  roundRect(ctx, 2.8, -26, 6.6, 3.2, 1.4);
+  ctx.fill();
+  ctx.restore();
+  /* jaw guard */
+  ctx.fillStyle = F(pal.plateDark);
+  roundRect(ctx, -8.4, -20, 16.8, 5, 2);
+  ctx.fill();
+  /* two great horns sweeping back off the helm */
+  for (let i = 0; i < 2; i++) {
+    const side = i === 0 ? -1 : 1;
+    ctx.fillStyle = F('#241d16');
+    ctx.beginPath();
+    ctx.moveTo(side * 7, -34);
+    ctx.quadraticCurveTo(side * 21, -44, side * 27, -33);
+    ctx.quadraticCurveTo(side * 17, -37.5, side * 7.6, -28);
+    ctx.closePath();
+    ctx.fill();
+    /* lighter inner face of the horn */
+    ctx.fillStyle = F('#3a2f24');
+    ctx.beginPath();
+    ctx.moveTo(side * 8, -33);
+    ctx.quadraticCurveTo(side * 18, -40, side * 23, -34);
+    ctx.quadraticCurveTo(side * 14, -35, side * 8, -30);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+
+  /* ---- the greatsword, held forward in both hands ---- */
+  ctx.save();
+  ctx.translate(Math.cos(aim) * b.r * 0.62, Math.sin(aim) * b.r * 0.62 + stomp * 0.5);
+  ctx.rotate(aim);
+  if (Math.cos(aim) < 0) ctx.scale(1, -1);
+  ctx.scale(scale, scale);
+  /* pommel + grip */
+  ctx.fillStyle = F('#1c1c1c');
+  roundRect(ctx, -18, -3, 16, 6, 2.4);
+  ctx.fill();
+  ctx.fillStyle = F(pal.trim);
+  ctx.beginPath();
+  ctx.arc(-20, 0, 3.4, 0, TAU);
+  ctx.fill();
+  /* crossguard */
+  ctx.fillStyle = F('#3a352f');
+  roundRect(ctx, -4, -12, 6, 24, 2.4);
+  ctx.fill();
+  ctx.fillStyle = F(pal.trim);
+  roundRect(ctx, -3.4, -11, 2, 22, 1);
+  ctx.fill();
+  /* blade */
+  const steel = ctx.createLinearGradient(0, -6, 0, 6);
+  steel.addColorStop(0, F('#e6edf7'));
+  steel.addColorStop(0.45, F(pal.steel));
+  steel.addColorStop(1, F('#6d7a8a'));
+  ctx.fillStyle = F(steel);
+  ctx.beginPath();
+  ctx.moveTo(2, -6.4);
+  ctx.lineTo(44, -5);
+  ctx.lineTo(52, 0);
+  ctx.lineTo(44, 5);
+  ctx.lineTo(2, 6.4);
+  ctx.closePath();
+  ctx.fill();
+  /* the rune channel burning down the middle of the blade */
+  ctx.save();
+  ctx.shadowColor = pal.glow;
+  ctx.shadowBlur = 10;
+  ctx.strokeStyle = F(pal.rune);
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(8, 0);
+  ctx.lineTo(40, 0);
+  ctx.stroke();
+  ctx.restore();
+  ctx.restore();
+}
+
+/* ---- BOSS: robed giants ----------------------------------------------------
+   The Forest Witch and the Archon share one 60 x 66 design. */
+const ROBE_PAL = {
+  witch: {
+    robe: '#0a0a0a', robeMid: '#1a3a1a', trim: '#2f6b32',
+    orb: '#00ff44', eye: '#ffee00', hair: '#f4f4f4', skin: '#5f8f5a'
+  },
+  archon: {
+    robe: '#140a24', robeMid: '#2d0a4e', trim: '#7c3aed',
+    orb: '#a855f7', eye: '#e9d5ff', hair: '#e2e8f0', skin: '#b9a7cf'
+  }
+};
+
+function drawRobedGiant(b, pal, flash) {
+  const F = (v) => (flash || v);
+  const t = game.time;
+  const scale = (b.r * 2) / CHAR.bossRobe.w;
+  const float = 5 + Math.sin(t * 1.3) * 3;
+  const hem = Math.sin(t * 2.2) * 3;
+  const sway = Math.sin(t * 1.1) * 0.04;
+
+  /* the green particle trail she leaves behind */
+  for (let i = 0; i < 4; i++) {
+    const k = ((t * 0.6 + i * 0.25) % 1);
+    ctx.globalAlpha = (1 - k) * 0.26;
+    ctx.fillStyle = pal.orb;
+    ctx.beginPath();
+    ctx.arc(Math.sin(t * 1.6 + i) * 16, b.r * 0.5 + k * 28, 3 + (1 - k) * 4, 0, TAU);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.save();
+  ctx.translate(0, -float);
+  /* she swings round through the same eased squash as everyone else */
+  ctx.scale(scale * charTurn(b, charSide(b, b.angle)), scale);
+  ctx.rotate(sway);
+
+  /* ---- wild hair, thrown out behind the head ---- */
+  ctx.lineCap = 'round';
+  const strands = [
+    [-2.62, 22], [-2.15, 18], [-1.72, 16], [-1.25, 14], [-0.8, 15],
+    [-0.35, 13], [0.1, 16], [0.55, 13], [1.0, 17], [1.45, 15],
+    [1.95, 19], [2.5, 16]
+  ];
+  for (let pass = 0; pass < 2; pass++) {
+    ctx.strokeStyle = pass === 0 ? 'rgba(16,22,16,0.9)' : F(pal.hair);
+    ctx.lineWidth = pass === 0 ? 6 : 3.6;
+    for (let i = 0; i < strands.length; i++) {
+      const a = strands[i][0] + Math.sin(t * 1.9 + i) * 0.07;
+      const len = strands[i][1] + Math.sin(t * 2.4 + i * 1.7) * 2.4;
+      const sy = -27 + Math.sin(a) * 2;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * 6, sy);
+      ctx.quadraticCurveTo(Math.cos(a) * len * 0.66, sy + Math.sin(a) * len * 0.55 - 2,
+        Math.cos(a) * len, sy + Math.sin(a) * len * 0.85 + 3);
+      ctx.stroke();
+    }
+  }
+
+  /* ---- ragged robe ---- */
+  const robe = ctx.createLinearGradient(0, -18, 0, 33);
+  robe.addColorStop(0, F(pal.robeMid));
+  robe.addColorStop(1, F(pal.robe));
+  ctx.fillStyle = F(robe);
+  ctx.beginPath();
+  ctx.moveTo(-11, -18);
+  ctx.quadraticCurveTo(-27, 6, -23 + hem, 32);
+  ctx.lineTo(-15, 24);
+  ctx.lineTo(-9 + hem * 0.6, 33);
+  ctx.lineTo(-2, 23);
+  ctx.lineTo(4, 34);
+  ctx.lineTo(10 + hem * 0.6, 24);
+  ctx.lineTo(17, 31);
+  ctx.quadraticCurveTo(27, 6, 11, -18);
+  ctx.closePath();
+  ctx.fill();
+
+  /* folds, so the robe is cloth and not a cone */
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx.lineWidth = 1.8;
+  for (let i = -1; i <= 1; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * 5.5, -14);
+    ctx.quadraticCurveTo(i * 13, 8, i * 9.5 + hem * 0.3, 29);
+    ctx.stroke();
+  }
+  /* the lit front of the robe */
+  ctx.fillStyle = F(pal.trim);
+  ctx.globalAlpha = 0.26;
+  ctx.beginPath();
+  ctx.moveTo(-4, -14);
+  ctx.quadraticCurveTo(-8, 10, -3.5, 30);
+  ctx.quadraticCurveTo(0, 32, 3.5, 30);
+  ctx.quadraticCurveTo(8, 10, 4, -14);
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  /* stitched hem */
+  ctx.strokeStyle = F(pal.trim);
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(-23 + hem, 32);
+  ctx.quadraticCurveTo(0, 38, 23 + hem, 32);
+  ctx.stroke();
+
+  /* ---- hunched mantle over the shoulders ---- */
+  ctx.fillStyle = F(pal.robe);
+  ctx.beginPath();
+  ctx.moveTo(-19, -20);
+  ctx.quadraticCurveTo(-13, -8, -5, -10);
+  ctx.quadraticCurveTo(0, -5, 5, -10);
+  ctx.quadraticCurveTo(13, -8, 19, -20);
+  ctx.quadraticCurveTo(9, -15, 0, -15);
+  ctx.quadraticCurveTo(-9, -15, -19, -20);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = F(pal.trim);
+  ctx.globalAlpha = 0.55;
+  ctx.lineWidth = 1.3;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  /* two bony shoulders pushing the mantle up */
+  block(-16, -19, 9, 8, 3.4, F(pal.robeMid));
+  block(7, -19, 9, 8, 3.4, F(pal.robeMid));
+
+  /* ---- the face ---- */
+  ctx.fillStyle = F(pal.skin);
+  ctx.beginPath();
+  ctx.ellipse(0, -24.5, 10.5, 11.5, 0, 0, TAU);
+  ctx.fill();
+  /* brow shadow under the hair */
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(0, -33, 10, 4.6, 0, 0, TAU);
+  ctx.fill();
+  /* large crooked nose */
+  ctx.fillStyle = F(pal.skin);
+  ctx.beginPath();
+  ctx.moveTo(-1.6, -28);
+  ctx.quadraticCurveTo(4.6, -25, 6.2, -19.6);
+  ctx.quadraticCurveTo(2.4, -18.4, -3.2, -20.6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(10,26,10,0.55)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.beginPath();
+  ctx.ellipse(2.4, -23, 1.6, 3.4, -0.5, 0, TAU);
+  ctx.fill();
+  /* piercing eyes */
+  ctx.save();
+  ctx.shadowColor = pal.eye;
+  ctx.shadowBlur = 11;
+  ctx.fillStyle = F(pal.eye);
+  ctx.beginPath();
+  ctx.ellipse(-4.4, -27.4, 2.2, 2.5, 0.1, 0, TAU);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(4.4, -27.4, 2.2, 2.5, -0.1, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+  /* narrow dark pupils so the eyes look alive */
+  ctx.fillStyle = F('#1a2410');
+  ctx.beginPath();
+  ctx.ellipse(-4.2, -27.4, 0.8, 2.1, 0, 0, TAU);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(4.6, -27.4, 0.8, 2.1, 0, 0, TAU);
+  ctx.fill();
+  /* a thin grin, no teeth, all spite */
+  ctx.strokeStyle = 'rgba(6,16,6,0.7)';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.arc(0.6, -21.6, 4.2, 0.55, Math.PI - 0.6);
+  ctx.stroke();
+  ctx.restore();
+
+  /* ---- staff with the bubbling orb, held out to one side so it never
+     covers her face ---- */
+  ctx.save();
+  ctx.translate(b.r * 0.62, b.r * 0.1);
+  ctx.rotate(-0.1 + Math.sin(t * 1.7) * 0.04);
+  ctx.strokeStyle = F('#2b1d10');
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(2, b.r * 0.7);
+  ctx.quadraticCurveTo(-5, 0, 2, -b.r * 0.42);
+  ctx.quadraticCurveTo(6, -b.r * 0.6, 1, -b.r * 0.7);
+  ctx.stroke();
+  /* the claw of the staff cradling the orb */
+  ctx.strokeStyle = F('#3c2a18');
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(1, -b.r * 0.7);
+  ctx.quadraticCurveTo(-6, -b.r * 0.86, -1, -b.r * 0.98);
+  ctx.moveTo(1, -b.r * 0.7);
+  ctx.quadraticCurveTo(8, -b.r * 0.86, 3, -b.r * 0.99);
+  ctx.stroke();
+  /* bubbling orb */
+  const orbY = -b.r * 0.88;
+  const orb = ctx.createRadialGradient(1, orbY, 2, 1, orbY, b.r * 0.44);
+  orb.addColorStop(0, 'rgba(255,255,255,0.95)');
+  orb.addColorStop(0.35, hexToRgba(pal.orb, 0.85));
+  orb.addColorStop(1, hexToRgba(pal.orb, 0));
+  ctx.fillStyle = F(orb);
+  ctx.beginPath();
+  ctx.arc(1, orbY, b.r * 0.44, 0, TAU);
+  ctx.fill();
+  /* bubbles rising inside the orb */
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  for (let i = 0; i < 3; i++) {
+    const k = ((t * 0.9 + i * 0.33) % 1);
+    ctx.beginPath();
+    ctx.arc(1 + Math.sin(t * 3 + i * 2) * 3, orbY + b.r * 0.16 - k * b.r * 0.3, 1.4 + (1 - k) * 1.6, 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawEnemy(e) {
+  const r = e.r;
+  const flash = e.hitFlash > 0 ? '#ffffff' : null;
+  const box = CHAR[e.type] || CHAR.knight;
+
+  /* a grounded shadow under the feet, so nothing floats without a contact point */
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.34)';
   ctx.beginPath();
-  ctx.ellipse(e.x, e.y + r * 0.78, r * 0.95, r * 0.38, 0, 0, TAU);
+  ctx.ellipse(e.x, e.y + box.h * 0.36, r * 0.95, r * 0.36, 0, 0, TAU);
   ctx.fill();
-
-  ctx.translate(e.x, e.y + bob);
-
-  if (e.type === 'knight') {
-    const face = angleTo(e.x, e.y, game.player.x, game.player.y);
-    ctx.save();
-    ctx.rotate(face);
-    /* cloak */
-    ctx.fillStyle = flash ? '#ffffff' : '#4a0f10';
-    ctx.beginPath();
-    ctx.ellipse(-r * 0.35, 0, r * 0.95, r * 0.7, 0, 0, TAU);
-    ctx.fill();
-    /* torso */
-    const bg = ctx.createLinearGradient(-r * 0.6, 0, r * 0.7, 0);
-    bg.addColorStop(0, '#5c1512');
-    bg.addColorStop(1, '#b91c1c');
-    ctx.fillStyle = flash ? '#ffffff' : bg;
-    roundRect(ctx, -r * 0.55, -r * 0.52, r * 1.1, r * 1.04, 6);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(12,8,8,0.85)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    /* pauldrons */
-    ctx.fillStyle = flash ? '#ffffff' : '#8b98a8';
-    ctx.beginPath(); ctx.arc(-r * 0.1, -r * 0.68, r * 0.3, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(-r * 0.1, r * 0.68, r * 0.3, 0, TAU); ctx.fill();
-    ctx.strokeStyle = 'rgba(20,26,34,0.8)';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.arc(-r * 0.1, -r * 0.68, r * 0.3, 0, TAU); ctx.stroke();
-    ctx.beginPath(); ctx.arc(-r * 0.1, r * 0.68, r * 0.3, 0, TAU); ctx.stroke();
-    /* helm */
-    ctx.fillStyle = flash ? '#ffffff' : '#cbd5e1';
-    ctx.beginPath(); ctx.arc(r * 0.3, 0, r * 0.38, 0, TAU); ctx.fill();
-    ctx.strokeStyle = 'rgba(20,26,34,0.9)'; ctx.lineWidth = 1.6; ctx.stroke();
-    ctx.fillStyle = '#131a24';
-    ctx.fillRect(r * 0.3, -r * 0.15, r * 0.36, r * 0.3);
-    ctx.fillStyle = 'rgba(255,120,90,0.9)';
-    ctx.fillRect(r * 0.44, -r * 0.08, r * 0.14, r * 0.16);
-    /* sword */
-    ctx.strokeStyle = 'rgba(15,18,22,0.9)';
-    ctx.lineWidth = 4.4;
-    ctx.beginPath(); ctx.moveTo(r * 0.35, r * 0.6); ctx.lineTo(r * 1.4, r * 0.95); ctx.stroke();
-    ctx.strokeStyle = flash ? '#ffffff' : '#e5eaf2';
-    ctx.lineWidth = 2.6;
-    ctx.beginPath(); ctx.moveTo(r * 0.35, r * 0.6); ctx.lineTo(r * 1.4, r * 0.95); ctx.stroke();
-    ctx.restore();
-  } else if (e.type === 'archer') {
-    const face = angleTo(e.x, e.y, game.player.x, game.player.y);
-    ctx.save();
-    ctx.rotate(face);
-    /* cloak */
-    ctx.fillStyle = flash ? '#ffffff' : '#8a4a11';
-    ctx.beginPath();
-    ctx.moveTo(r * 0.85, 0);
-    ctx.lineTo(-r * 0.75, r * 0.8);
-    ctx.quadraticCurveTo(-r * 1.05, 0, -r * 0.75, -r * 0.8);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(28,16,6,0.8)';
-    ctx.lineWidth = 1.8;
-    ctx.stroke();
-    /* hood + face */
-    ctx.fillStyle = flash ? '#ffffff' : '#b45309';
-    ctx.beginPath(); ctx.arc(r * 0.12, 0, r * 0.42, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#2a1a08';
-    ctx.beginPath(); ctx.arc(r * 0.2, 0, r * 0.26, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#fde68a';
-    ctx.beginPath(); ctx.arc(r * 0.3, -r * 0.11, 1.8, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(r * 0.3, r * 0.11, 1.8, 0, TAU); ctx.fill();
-    /* bow */
-    ctx.strokeStyle = '#7c4a1a';
-    ctx.lineWidth = 2.6;
-    ctx.beginPath(); ctx.arc(r * 0.55, 0, r * 0.72, -1.15, 1.15); ctx.stroke();
-    ctx.strokeStyle = 'rgba(253,230,138,0.55)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(r * 0.55 + Math.cos(-1.15) * r * 0.72, Math.sin(-1.15) * r * 0.72);
-    ctx.lineTo(r * 0.55 + Math.cos(1.15) * r * 0.72, Math.sin(1.15) * r * 0.72);
-    ctx.stroke();
-    ctx.restore();
-  } else if (e.type === 'wizard') {
-    /* upright robed figure */
-    const sway = Math.sin(e.t * 2.2) * r * 0.08;
-    ctx.fillStyle = flash ? '#ffffff' : '#4c1d95';
-    ctx.beginPath();
-    ctx.moveTo(r * 0.4, -r * 0.55);
-    ctx.quadraticCurveTo(r * 0.85 + sway, r * 0.35, r * 0.2 + sway, r * 1.0);
-    ctx.quadraticCurveTo(-r * 0.45, r * 1.1, -r * 0.7 + sway, r * 0.45);
-    ctx.quadraticCurveTo(-r * 0.85, -r * 0.2, -r * 0.3, -r * 0.6);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(24,12,44,0.9)';
-    ctx.lineWidth = 1.8;
-    ctx.stroke();
-    /* hood */
-    ctx.fillStyle = flash ? '#ffffff' : '#6d28d9';
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.42, -r * 0.45);
-    ctx.quadraticCurveTo(0, -r * 1.25, r * 0.42, -r * 0.45);
-    ctx.quadraticCurveTo(0, -r * 0.2, -r * 0.42, -r * 0.45);
-    ctx.fill();
-    ctx.fillStyle = '#0b0614';
-    ctx.beginPath(); ctx.ellipse(0, -r * 0.42, r * 0.26, r * 0.2, 0, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#e9d5ff';
-    ctx.shadowColor = '#a855f7';
-    ctx.shadowBlur = 8;
-    ctx.beginPath(); ctx.arc(-r * 0.1, -r * 0.44, 1.8, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(r * 0.12, -r * 0.44, 1.8, 0, TAU); ctx.fill();
-    ctx.shadowBlur = 0;
-    /* staff with orb */
-    ctx.strokeStyle = '#3b2a1a';
-    ctx.lineWidth = 2.6;
-    ctx.beginPath(); ctx.moveTo(r * 0.95, r * 0.6); ctx.lineTo(r * 0.95, -r * 1.05); ctx.stroke();
-    const og = ctx.createRadialGradient(r * 0.95, -r * 1.15, 1, r * 0.95, -r * 1.15, r * 0.55);
-    og.addColorStop(0, 'rgba(246,232,255,0.95)');
-    og.addColorStop(0.4, 'rgba(168,85,247,0.75)');
-    og.addColorStop(1, 'rgba(168,85,247,0)');
-    ctx.fillStyle = og;
-    ctx.beginPath(); ctx.arc(r * 0.95, -r * 1.15, r * 0.55, 0, TAU); ctx.fill();
-  } else {
-    /* ghost */
-    ctx.globalAlpha = 0.66 + 0.18 * Math.sin(t * 4 + e.t);
-    ctx.fillStyle = flash ? '#ffffff' : '#dbe4f0';
-    ctx.beginPath();
-    ctx.arc(0, -r * 0.15, r * 0.78, Math.PI, 0);
-    ctx.lineTo(r * 0.78, r * 0.72);
-    for (let k = 0; k < 3; k++) {
-      const x = r * 0.78 - (k + 0.5) * (r * 0.52);
-      ctx.quadraticCurveTo(x, r * 0.4, x - r * 0.26, r * 0.72);
-    }
-    ctx.lineTo(-r * 0.78, r * 0.72);
-    ctx.closePath();
-    ctx.fill();
-    ctx.globalAlpha = 1;
-    /* trailing wisps */
-    ctx.fillStyle = 'rgba(226,232,240,0.4)';
-    for (let i = 0; i < 2; i++) {
-      const a = e.t * 2 + i * Math.PI;
-      ctx.beginPath();
-      ctx.arc(Math.cos(a) * r * 0.9, Math.sin(a) * r * 0.7 + r * 0.4, 2.6, 0, TAU);
-      ctx.fill();
-    }
-    ctx.fillStyle = '#111827';
-    ctx.beginPath(); ctx.arc(-r * 0.22, -r * 0.24, 2.2, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(r * 0.22, -r * 0.24, 2.2, 0, TAU); ctx.fill();
-    ctx.fillStyle = 'rgba(96,165,250,0.9)';
-    ctx.beginPath(); ctx.arc(-r * 0.22, -r * 0.26, 1.1, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(r * 0.22, -r * 0.26, 1.1, 0, TAU); ctx.fill();
-  }
-
   ctx.restore();
+
+  if (e.type === 'knight') drawEnemyKnight(e, flash);
+  else if (e.type === 'archer') drawEnemyArcher(e, flash);
+  else if (e.type === 'wizard') drawEnemyWizard(e, flash);
+  else drawEnemyGhost(e, flash);
 
   if (e.maxHp > 1 && e.hp < e.maxHp) {
     const w = Math.max(22, r * 1.4);
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.fillRect(e.x - w / 2, e.y - r - 15, w, 4);
+    ctx.fillRect(e.x - w / 2, e.y - box.h * 0.62, w, 4);
     ctx.fillStyle = '#f87171';
-    ctx.fillRect(e.x - w / 2, e.y - r - 15, w * clamp(e.hp / e.maxHp, 0, 1), 4);
+    ctx.fillRect(e.x - w / 2, e.y - box.h * 0.62, w * clamp(e.hp / e.maxHp, 0, 1), 4);
   }
 }
 
@@ -6521,134 +7926,12 @@ function drawBoss() {
 
   ctx.translate(b.x, b.y);
 
+  /* zone 0 rides an armoured giant, zone 1 a robed one; the other three keep
+     their own bespoke rigs below */
   if (zone === 0) {
-    /* ---- The Black Knight ---- */
-    ctx.rotate(face);
-    const bob = Math.sin(t * 2.4) * 1.6;
-    ctx.translate(0, bob);
-    /* cape */
-    ctx.fillStyle = flash ? 'rgba(255,255,255,0.85)' : 'rgba(26,10,10,0.9)';
-    ctx.beginPath();
-    ctx.ellipse(-r * 0.55, 0, r * 0.72, r * 0.58, 0, 0, TAU);
-    ctx.fill();
-    /* torso plate */
-    const armour = ctx.createLinearGradient(-r * 0.7, -r * 0.7, r * 0.6, r * 0.7);
-    armour.addColorStop(0, '#0c0e13');
-    armour.addColorStop(0.55, '#1b2130');
-    armour.addColorStop(1, '#2c3444');
-    ctx.fillStyle = flash ? '#ffffff' : armour;
-    roundRect(ctx, -r * 0.62, -r * 0.62, r * 1.24, r * 1.24, 10);
-    ctx.fill();
-    ctx.strokeStyle = flash ? '#fff' : '#f97316';
-    ctx.lineWidth = 2.4;
-    ctx.stroke();
-    /* chest core */
-    ctx.fillStyle = '#f97316';
-    ctx.shadowColor = '#f97316';
-    ctx.shadowBlur = 20;
-    ctx.beginPath(); ctx.arc(r * 0.1, 0, r * 0.16, 0, TAU); ctx.fill();
-    ctx.shadowBlur = 0;
-    /* pauldrons with spikes */
-    ctx.fillStyle = flash ? '#fff' : '#141a26';
-    for (const sy of [-1, 1]) {
-      ctx.beginPath(); ctx.arc(-r * 0.2, sy * r * 0.78, r * 0.36, 0, TAU); ctx.fill();
-      ctx.strokeStyle = flash ? '#fff' : '#f97316';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(-r * 0.2, sy * r * 0.78, r * 0.36, 0, TAU); ctx.stroke();
-      ctx.fillStyle = flash ? '#fff' : '#2c3444';
-      ctx.beginPath();
-      ctx.moveTo(-r * 0.2, sy * r * 0.95);
-      ctx.lineTo(-r * 0.75, sy * r * 1.5);
-      ctx.lineTo(-r * 0.05, sy * r * 1.05);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = flash ? '#fff' : '#141a26';
-    }
-    /* helm */
-    ctx.fillStyle = flash ? '#fff' : '#20283a';
-    ctx.beginPath(); ctx.arc(r * 0.34, 0, r * 0.42, 0, TAU); ctx.fill();
-    ctx.strokeStyle = '#f97316';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    /* horns */
-    ctx.fillStyle = flash ? '#fff' : '#e2e8f0';
-    ctx.beginPath();
-    ctx.moveTo(r * 0.2, -r * 0.35);
-    ctx.lineTo(r * 0.1, -r * 0.95);
-    ctx.lineTo(r * 0.5, -r * 0.4);
-    ctx.closePath(); ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(r * 0.2, r * 0.35);
-    ctx.lineTo(r * 0.1, r * 0.95);
-    ctx.lineTo(r * 0.5, r * 0.4);
-    ctx.closePath(); ctx.fill();
-    /* visor */
-    ctx.fillStyle = '#ff8a3d';
-    ctx.shadowColor = '#f97316';
-    ctx.shadowBlur = 16;
-    ctx.fillRect(r * 0.36, -r * 0.13, r * 0.3, r * 0.26);
-    ctx.shadowBlur = 0;
-    /* greatsword */
-    ctx.strokeStyle = 'rgba(8,10,14,0.9)';
-    ctx.lineWidth = 9;
-    ctx.beginPath(); ctx.moveTo(r * 0.4, r * 0.72); ctx.lineTo(r * 1.62, r * 1.05); ctx.stroke();
-    ctx.strokeStyle = flash ? '#fff' : '#cdd6e4';
-    ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.moveTo(r * 0.4, r * 0.72); ctx.lineTo(r * 1.62, r * 1.05); ctx.stroke();
-    ctx.strokeStyle = '#f97316';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(r * 0.35, r * 0.55); ctx.lineTo(r * 0.5, r * 0.9); ctx.stroke();
+    drawArmouredGiant(b, BOSS_PAL.black, flash ? '#ffffff' : null);
   } else if (zone === 1) {
-    /* ---- The Forest Witch ---- */
-    const sway = Math.sin(t * 1.6) * r * 0.06;
-    /* cloak */
-    ctx.fillStyle = flash ? '#ffffff' : '#0f3d22';
-    ctx.beginPath();
-    ctx.moveTo(r * 0.25, -r * 0.6);
-    ctx.quadraticCurveTo(r * 0.95 + sway, r * 0.4, r * 0.25 + sway, r * 1.15);
-    ctx.quadraticCurveTo(-r * 0.5, r * 1.25, -r * 0.85 + sway, r * 0.45);
-    ctx.quadraticCurveTo(-r * 0.95, -r * 0.3, -r * 0.2, -r * 0.7);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(6,24,12,0.9)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    /* hood */
-    ctx.fillStyle = flash ? '#fff' : '#14532d';
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.5, -r * 0.55);
-    ctx.quadraticCurveTo(0, -r * 1.4, r * 0.5, -r * 0.55);
-    ctx.quadraticCurveTo(0, -r * 0.25, -r * 0.5, -r * 0.55);
-    ctx.fill();
-    /* hat */
-    ctx.fillStyle = flash ? '#fff' : '#166534';
-    ctx.beginPath();
-    ctx.ellipse(0, -r * 0.72, r * 0.92, r * 0.2, 0, 0, TAU);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.42, -r * 0.78);
-    ctx.lineTo(r * 0.05, -r * 1.62);
-    ctx.lineTo(r * 0.44, -r * 0.78);
-    ctx.closePath();
-    ctx.fill();
-    /* face */
-    ctx.fillStyle = '#04140a';
-    ctx.beginPath(); ctx.ellipse(0, -r * 0.5, r * 0.24, r * 0.19, 0, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#a7f3d0';
-    ctx.shadowColor = '#22c55e';
-    ctx.shadowBlur = 12;
-    ctx.beginPath(); ctx.arc(-r * 0.09, -r * 0.52, 2, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(r * 0.09, -r * 0.52, 2, 0, TAU); ctx.fill();
-    ctx.shadowBlur = 0;
-    /* staff + lantern */
-    ctx.strokeStyle = '#2f2418';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(r * 1.15, r * 0.85); ctx.lineTo(r * 1.05, -r * 0.55); ctx.stroke();
-    const lg = ctx.createRadialGradient(r * 1.02, -r * 0.75, 1, r * 1.02, -r * 0.75, r * 0.5);
-    lg.addColorStop(0, 'rgba(220,252,231,0.95)');
-    lg.addColorStop(0.45, 'rgba(34,197,94,0.7)');
-    lg.addColorStop(1, 'rgba(34,197,94,0)');
-    ctx.fillStyle = lg;
-    ctx.beginPath(); ctx.arc(r * 1.02, -r * 0.75, r * 0.5, 0, TAU); ctx.fill();
+    drawRobedGiant(b, ROBE_PAL.witch, flash ? '#ffffff' : null);
   } else if (zone === 2) {
     /* ---- Siege Commander on horseback ---- */
     ctx.rotate(face);
@@ -6827,12 +8110,12 @@ function drawBoss() {
   ctx.restore();
 }
 /* ------------------------------ the player --------------------------------- */
-/* A futuristic trooper drawn at 48 x 56 px: dark navy torso, silver shoulder
+/* A futuristic trooper drawn at 40 x 44 px: dark navy torso, silver shoulder
    pads, a dark grey helmet with a bright cyan visor, blocky legs and boots with
-   thruster flames. The sprite mirrors to face the cursor, the rifle pivots on
+   thruster flames. The sprite mirrors to face the cursor, the weapon pivots on
    the shoulder so it always points at it, and a slow aura ring pulses underfoot.
    With one orb left every glow turns a flickering red. */
-const SOLDIER = { w: 48, h: 56, scale: 1.4, feet: 26.6 };
+const SOLDIER = { w: 40, h: 44, scale: 1, feet: 22 };
 
 /* one place that decides what colour the trooper's glow is right now */
 function soldierGlow(p) {
@@ -6915,335 +8198,15 @@ function drawThrusters(p, g, bob, dir) {
   const back = (p.moveAng === undefined ? Math.PI / 2 : p.moveAng) + Math.PI;
   /* trail opposite to travel, but never shoot flames up through the trooper */
   const ang = Math.atan2(Math.max(0.4, Math.sin(back)), Math.cos(back));
-  const bx = 4.5 * SOLDIER.scale;
-  const by = 20.4 * SOLDIER.scale;
+  const bx = 7.2;
+  const by = 23.4;
   for (let i = 0; i < 2; i++) {
     const side = i === 0 ? -1 : 1;
     const jitter = Math.sin(game.time * 41 + i * 2.1) * 0.5 + 0.5;
     const len = (17 + jitter * 9) * (g.low ? 1.1 : 1);
     const wid = 3 + jitter * 1.1;
-    drawFlame(p.x + dir * side * bx, p.y + bob + by, ang, len, wid, g, 0.75 + jitter * 0.25);
+    drawFlame(p.x + dir * side * bx, p.y + bob + by, ang, len, wid, g, 0.55 + jitter * 0.22);
   }
-}
-
-/* ---- the body itself, drawn in 32x40 design units (scaled 1.4 by caller) ---- */
-function drawSoldierBody(p, g, dir, stride) {
-  /* ---- boots: glow spilling onto the ground ---- */
-  ctx.save();
-  ctx.shadowColor = g.glow;
-  ctx.shadowBlur = 9;
-  ctx.fillStyle = 'rgba(' + g.rgb + ',0.26)';
-  ctx.beginPath();
-  ctx.ellipse(-4, 19, 6.2, 2.1, 0, 0, TAU);
-  ctx.ellipse(4, 19, 6.2, 2.1, 0, 0, TAU);
-  ctx.fill();
-  ctx.restore();
-
-  /* ---- legs: two small dark rectangles ---- */
-  ctx.fillStyle = '#101a2c';
-  roundRect(ctx, -6.4, 6 + stride, 5.2, 8.6, 1.6);
-  ctx.fill();
-  roundRect(ctx, 1.2, 6 - stride, 5.2, 8.6, 1.6);
-  ctx.fill();
-
-  /* ---- boots: slightly wider rectangles ---- */
-  ctx.fillStyle = '#1e3552';
-  roundRect(ctx, -7.8, 14 + stride, 7.4, 5, 1.8);
-  ctx.fill();
-  roundRect(ctx, 0.4, 14 - stride, 7.4, 5, 1.8);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(' + g.rgb + ',0.75)';
-  ctx.fillRect(-7.4, 14 + stride, 6.6, 1.2);
-  ctx.fillRect(0.8, 14 - stride, 6.6, 1.2);
-
-  /* ---- torso: dark navy blue rectangle ---- */
-  const torso = ctx.createLinearGradient(0, -9, 0, 7);
-  torso.addColorStop(0, '#283a5c');
-  torso.addColorStop(0.55, '#1a2740');
-  torso.addColorStop(1, '#121d33');
-  ctx.fillStyle = torso;
-  roundRect(ctx, -9, -9, 18, 15, 3.4);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(125,170,215,0.45)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  /* chest seam + collar shadow */
-  ctx.fillStyle = 'rgba(125,170,215,0.3)';
-  ctx.fillRect(-6.5, 1.6, 13, 1.4);
-  ctx.fillStyle = 'rgba(8,14,26,0.55)';
-  ctx.fillRect(-4.5, -8, 9, 1.2);
-
-  /* ---- shoulder pads: silver rectangles on each side ---- */
-  const pad = ctx.createLinearGradient(0, -8.6, 0, 0.4);
-  pad.addColorStop(0, '#cdd7e2');
-  pad.addColorStop(0.4, '#a9b7c6');
-  pad.addColorStop(1, '#77899c');
-  const pads = [-17, 8.8];
-  for (let i = 0; i < 2; i++) {
-    const px = pads[i];
-    const pw = i === 0 ? 8.2 : 8.2;
-    ctx.fillStyle = pad;
-    roundRect(ctx, px, -8.6, pw, 9, 1.7);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(24,32,44,0.55)';
-    ctx.lineWidth = 0.8;
-    roundRect(ctx, px, -8.6, pw, 9, 1.7);
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.fillRect(px + 1.4, -7.6, 4.2, 1);
-  }
-
-  /* ---- head: rounded rectangle helmet, dark grey ---- */
-  const headX = dir * 0.9;   /* leans a touch toward whatever it is facing */
-  const helm = ctx.createLinearGradient(0, -22.5, 0, -8.5);
-  helm.addColorStop(0, '#565b63');
-  helm.addColorStop(0.5, '#3a3f47');
-  helm.addColorStop(1, '#282c33');
-  ctx.fillStyle = helm;
-  roundRect(ctx, -7.2 + headX, -22.5, 14.4, 13.6, 5);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(16,20,26,0.75)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  /* chin guard */
-  ctx.fillStyle = 'rgba(10,16,26,0.6)';
-  roundRect(ctx, -5 + headX, -11.6, 10, 2.4, 1.2);
-  ctx.fill();
-
-  /* ---- visor: bright glowing cyan stripe across the middle ---- */
-  ctx.save();
-  ctx.globalAlpha = 0.55 + 0.45 * g.flick;
-  ctx.shadowColor = g.visorGlow;
-  ctx.shadowBlur = 22;
-  ctx.fillStyle = g.visor;
-  roundRect(ctx, -5.8 + headX, -17.6, 11.6, 4.4, 2.1);
-  ctx.fill();
-  ctx.fill();
-  ctx.shadowBlur = 9;
-  ctx.fillStyle = g.visorHot;
-  roundRect(ctx, -4.4 + headX, -16.6, 8.8, 1.9, 0.95);
-  ctx.fill();
-  ctx.restore();
-
-  /* ---- small lens flare on the visor ---- */
-  const fx = headX + 4.4, fy = -15.4;
-  ctx.save();
-  ctx.globalAlpha = (0.55 + 0.25 * Math.sin(game.time * 2.6)) * g.flick;
-  const flare = ctx.createRadialGradient(fx, fy, 0, fx, fy, 5.4);
-  flare.addColorStop(0, 'rgba(255,255,255,0.95)');
-  flare.addColorStop(0.35, g.visor);
-  flare.addColorStop(1, 'rgba(' + g.rgb + ',0)');
-  ctx.fillStyle = flare;
-  ctx.beginPath(); ctx.arc(fx, fy, 5.4, 0, TAU); ctx.fill();
-
-  ctx.strokeStyle = g.visor;
-  ctx.lineWidth = 0.9;
-  ctx.beginPath();
-  ctx.moveTo(fx - 8, fy); ctx.lineTo(fx + 6, fy);
-  ctx.moveTo(fx, fy - 5); ctx.lineTo(fx, fy + 5);
-  ctx.stroke();
-  ctx.restore();
-}
-
-/* ---- arm + rifle: long barrel, glowing blue tip ---- */
-/* what the soldier is holding depends on the class he picked */
-function drawHeldWeapon(p, g) {
-  const cls = getClass();
-  if (cls.weapon === 'rail') { drawSoldierRifle(p, g); return; }
-  if (cls.weapon === 'pistols') { drawSoldierPistols(p, g); return; }
-  if (cls.weapon === 'orbs') { drawSoldierStaff(p, g); return; }
-  drawSoldierShield(p, g);
-}
-
-/* a kite shield held out on the forearm — the vanguard knight */
-function drawSoldierShield(p, g) {
-  /* arm sleeve + gauntlet */
-  ctx.fillStyle = '#22304a';
-  roundRect(ctx, -1.4, -2.9, 9.4, 5.8, 2.8);
-  ctx.fill();
-  ctx.fillStyle = '#a9b7c6';
-  roundRect(ctx, -2.2, -3.4, 4.6, 6.8, 2.2);
-  ctx.fill();
-  /* shield face, angled forward so it covers the chest, not the head */
-  ctx.save();
-  ctx.translate(10, -1);
-  ctx.rotate(0.1);
-  const grad = ctx.createLinearGradient(-8, -9, 9, 10);
-  grad.addColorStop(0, '#33465f');
-  grad.addColorStop(1, '#0d1622');
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.moveTo(-7.5, -6);
-  ctx.lineTo(7.5, -6);
-  ctx.lineTo(7.5, 3);
-  ctx.lineTo(0, 9.5);
-  ctx.lineTo(-7.5, 3);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = '#ffd98a';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  /* gold bands + boss */
-  ctx.strokeStyle = 'rgba(255,217,138,0.7)';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(-6.6, -0.2); ctx.lineTo(6.6, -0.2); ctx.stroke();
-  ctx.fillStyle = 'rgba(255,217,138,0.95)';
-  ctx.beginPath(); ctx.arc(0, -2.6, 2.2, 0, TAU); ctx.fill();
-  /* energy shimmer along the rim */
-  ctx.shadowColor = g.glow;
-  ctx.shadowBlur = 8;
-  ctx.strokeStyle = 'rgba(' + g.rgb + ',0.55)';
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.moveTo(-7.5, 3); ctx.lineTo(0, 9.5); ctx.lineTo(7.5, 3);
-  ctx.stroke();
-  ctx.restore();
-}
-
-/* two stubby pistols, one in each hand */
-function drawSoldierPistols(p, g) {
-  for (let i = 0; i < 2; i++) {
-    const dy = i === 0 ? -3.2 : 3.2;
-    const len = i === 0 ? 1 : 0.82;
-    ctx.save();
-    ctx.translate(-1, dy);
-    /* grip + knuckle */
-    ctx.fillStyle = '#1b2740';
-    roundRect(ctx, -1.6, -1.9, 6.4, 3.8, 1.7);
-    ctx.fill();
-    ctx.fillStyle = '#c2cfdd';
-    roundRect(ctx, -1, -2.1, 4, 4.2, 1.7);
-    ctx.fill();
-    /* slide / barrel */
-    ctx.fillStyle = '#93a7bb';
-    roundRect(ctx, 2.6, -1.6, 10.6 * len, 3.2, 1.1);
-    ctx.fill();
-    ctx.fillStyle = '#33475c';
-    roundRect(ctx, 2.6, -1.6, 10.6 * len, 1.1, 0.55);
-    ctx.fill();
-    /* glowing muzzle */
-    ctx.save();
-    ctx.shadowColor = g.glow;
-    ctx.shadowBlur = 9;
-    ctx.fillStyle = 'rgba(' + g.rgb + ',0.95)';
-    ctx.beginPath(); ctx.arc(3.2 + 10.2 * len, 0, 1.5, 0, TAU); ctx.fill();
-    ctx.restore();
-    ctx.restore();
-  }
-}
-
-/* a long staff with a floating time orb */
-function drawSoldierStaff(p, g) {
-  ctx.fillStyle = '#22304a';
-  roundRect(ctx, -1.4, -2.9, 8.2, 5.8, 2.8);
-  ctx.fill();
-  ctx.fillStyle = '#3b2f56';
-  roundRect(ctx, 2, -1.8, 22, 3.6, 1.8);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(196,181,253,0.85)';
-  ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.moveTo(8, -1.6); ctx.lineTo(8, 1.6); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(15, -1.6); ctx.lineTo(15, 1.6); ctx.stroke();
-  const orb = ctx.createRadialGradient(27, 0, 1, 27, 0, 8);
-  orb.addColorStop(0, 'rgba(250,248,255,0.98)');
-  orb.addColorStop(0.45, 'rgba(196,181,253,0.9)');
-  orb.addColorStop(1, 'rgba(124,58,237,0)');
-  ctx.fillStyle = orb;
-  ctx.beginPath(); ctx.arc(27, 0, 8, 0, TAU); ctx.fill();
-  ctx.strokeStyle = 'rgba(233,213,255,0.8)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(27, 0, 5.4, game.time * 2.2, game.time * 2.2 + 2.1);
-  ctx.stroke();
-}
-
-function drawSoldierRifle(p, g) {
-  /* arm sleeve */
-  ctx.fillStyle = '#22304a';
-  roundRect(ctx, -1.4, -2.9, 8.2, 5.8, 2.8);
-  ctx.fill();
-  ctx.fillStyle = '#a9b7c6';
-  roundRect(ctx, -2.2, -3.4, 4.6, 6.8, 2.2);
-  ctx.fill();
-
-  /* receiver */
-  ctx.fillStyle = '#26303d';
-  roundRect(ctx, 6.4, -3.2, 11.5, 5.4, 1.6);
-  ctx.fill();
-  /* top rail */
-  ctx.fillStyle = '#5f7688';
-  ctx.fillRect(8.4, -3.9, 8.4, 1.5);
-  /* long barrel */
-  ctx.fillStyle = '#3c4d61';
-  roundRect(ctx, 16.5, -2.1, 15, 4.2, 1.5);
-  ctx.fill();
-  /* energy conduit along the barrel */
-  const idle = false;
-  ctx.save();
-  ctx.shadowColor = g.glow;
-  ctx.shadowBlur = idle ? 0 : 10;
-  ctx.fillStyle = idle ? 'rgba(120,150,180,0.3)' : 'rgba(' + g.rgb + ',0.9)';
-  ctx.fillRect(18, -0.7, 12.5, 1.5);
-  /* muzzle: glowing tip */
-  const tip = ctx.createRadialGradient(30.8, 0, 0, 30.8, 0, 5.4);
-  tip.addColorStop(0, idle ? 'rgba(200,214,228,0.5)' : 'rgba(255,255,255,0.95)');
-  tip.addColorStop(0.42, idle ? 'rgba(148,163,184,0.3)' : 'rgba(' + g.rgb + ',0.7)');
-  tip.addColorStop(1, idle ? 'rgba(148,163,184,0)' : 'rgba(' + g.rgb + ',0)');
-  ctx.fillStyle = tip;
-  ctx.beginPath(); ctx.arc(30.8, 0, 5.4, 0, TAU); ctx.fill();
-  ctx.fillStyle = idle ? '#9aa7b5' : '#eafcff';
-  roundRect(ctx, 28.6, -2, 3.6, 4, 1.9);
-  ctx.fill();
-  ctx.restore();
-  /* magazine + grip */
-  ctx.fillStyle = '#1d2733';
-  roundRect(ctx, 9.6, 1.7, 3.4, 4.6, 1);
-  ctx.fill();
-  roundRect(ctx, 5.4, 1.5, 3.2, 4, 1);
-  ctx.fill();
-  /* sight */
-  ctx.fillStyle = '#111a24';
-  ctx.fillRect(12, -5.2, 2.6, 1.8);
-}
-
-/* ---- red damage flash: a flat silhouette over the troop ---- */
-function drawSoldierFlash(dir, stride, alpha, gunAng) {
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.translate(game.player.x, game.player.y);
-  ctx.scale(SOLDIER.scale * dir, SOLDIER.scale);
-  ctx.fillStyle = '#ff4d4d';
-  roundRect(ctx, -7.2, -22.5, 14.4, 13.6, 5);
-  ctx.fill();
-  roundRect(ctx, -17, -8.6, 8.2, 9, 1.7);
-  ctx.fill();
-  roundRect(ctx, 8.8, -8.6, 8.2, 9, 1.7);
-  ctx.fill();
-  roundRect(ctx, -9, -9, 18, 15, 3.4);
-  ctx.fill();
-  roundRect(ctx, -6.4, 6 + stride, 5.2, 8.6, 1.6);
-  ctx.fill();
-  roundRect(ctx, 1.2, 6 - stride, 5.2, 8.6, 1.6);
-  ctx.fill();
-  roundRect(ctx, -7.8, 14 + stride, 7.4, 5, 1.8);
-  ctx.fill();
-  roundRect(ctx, 0.4, 14 - stride, 7.4, 5, 1.8);
-  ctx.fill();
-  ctx.restore();
-
-  /* the rifle flashes too */
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.translate(game.player.x + dir * 6.5 * SOLDIER.scale, game.player.y - 4.5 * SOLDIER.scale);
-  ctx.rotate(gunAng);
-  if (Math.cos(gunAng) < 0) ctx.scale(1, -1);
-  ctx.scale(SOLDIER.scale, SOLDIER.scale);
-  ctx.fillStyle = '#ff4d4d';
-  roundRect(ctx, 5.4, -3.2, 26, 5.4, 1.6);
-  ctx.fill();
-  ctx.restore();
 }
 
 /* the longsword itself: always in his hand, always pointed at the cursor */
@@ -7260,12 +8223,14 @@ function drawKnightSword(p, bob) {
 
   /* the blade is held out on the leading hand, not across the chest */
   const side = Math.cos(p.angle) >= 0 ? 1 : -1;
-  const hx = p.x + Math.cos(ang) * 7 + Math.cos(ang + Math.PI / 2) * side * 6;
-  const hy = p.y + (bob || 0) + Math.sin(ang) * 7 + Math.sin(ang + Math.PI / 2) * side * 6 - 3;
+  const hx = p.x + Math.cos(ang) * 10 + Math.cos(ang + Math.PI / 2) * side * 6;
+  const hy = p.y + (bob || 0) + Math.sin(ang) * 10 + Math.sin(ang + Math.PI / 2) * side * 6 - 5;
 
   ctx.save();
   ctx.translate(hx, hy);
   ctx.rotate(ang);
+  /* the sword is scaled to the 40x44 body so it reads as a held blade */
+  ctx.scale(0.85, 0.85);
 
   /* --- pommel + grip --- */
   ctx.fillStyle = '#c9a23c';
@@ -7367,7 +8332,7 @@ function drawKnightSword(p, bob) {
 /* the bright silver swoosh left behind by a swing: a tapered crescent that
    sweeps with the blade and dissolves over 0.2 seconds */
 function drawSwordSwoosh() {
-  const R = SWORD_RANGE * 0.95;
+  const R = SWORD_RANGE * 0.86;
 
   for (let i = 0; i < game.swings.length; i++) {
     const sw = game.swings[i];
@@ -7376,8 +8341,9 @@ function drawSwordSwoosh() {
     const fade = Math.min(1, (1 - k) * 1.9);
     if (fade <= 0.01) continue;
 
-    /* the blade is at the head of the ribbon; the tail follows it around */
-    const reveal = Math.min(1, k / 0.42);
+    /* the blade is at the head of the ribbon; it eases from the start of the
+       arc to the end across the full 0.2s of the swing instead of snapping */
+    const reveal = easeOutQuad(k);
     const head = sw.a0 + (sw.a1 - sw.a0) * reveal;
     const span = head - sw.a0;
     if (Math.abs(span) < 0.01) continue;
@@ -7472,13 +8438,12 @@ function drawPlayer() {
   const bob = dashing ? 0
     : p.moving ? Math.sin(p.walk) * 1.15
       : Math.sin(game.time * 2) * 0.35;
-  const stride = (p.moving && !dashing) ? Math.sin(p.walk) * 1.1 : 0;
 
   /* ground shadow + aura ring */
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.42)';
   ctx.beginPath();
-  ctx.ellipse(p.x, p.y + SOLDIER.feet, 19.5, 7, 0, 0, TAU);
+  ctx.ellipse(p.x, p.y + SOLDIER.feet, 18, 6.4, 0, 0, TAU);
   ctx.fill();
   ctx.restore();
   drawSoldierAura(p, g);
@@ -7569,13 +8534,13 @@ function drawPlayer() {
       ctx.save();
       ctx.globalAlpha = a * 0.30;
       ctx.translate(t.x, t.y);
-      ctx.scale(t.dir * 0.96 * SOLDIER.scale, 0.96 * SOLDIER.scale);
+      ctx.scale(t.dir, 1);
       ctx.fillStyle = '#38bdf8';
-      roundRect(ctx, -8.5, -22, 17, 38, 7.5);
+      roundRect(ctx, -10, -22, 20, 44, 8);
       ctx.fill();
       ctx.globalAlpha = a * 0.5;
       ctx.fillStyle = '#a5f3fc';
-      roundRect(ctx, -5.5, -18, 11, 3.6, 1.8);
+      roundRect(ctx, -7, -17.6, 14, 5, 2.3);
       ctx.fill();
       ctx.restore();
     }
@@ -7597,32 +8562,19 @@ function drawPlayer() {
   }
 
   if (!blink) {
+    /* the body squashes through edge-on when the aim flips side to side */
+    const sx = charTurn(p, dir);
     const drawBody = function () {
-      ctx.save();
-      ctx.translate(p.x, p.y + bob);
-      ctx.scale(SOLDIER.scale * dir, SOLDIER.scale);
-      drawSoldierBody(p, g, dir, stride);
-      ctx.restore();
+      drawRaelBody(p, bob, null, sx);
     };
-    /* arm + rifle, pivoting at the shoulder so it always aims at the cursor */
+    /* arm + weapon, pivoting at the shoulder so it always aims at the cursor */
     const bladeClass = getClass().weapon === 'blade';
     const drawGun = function () {
       ctx.save();
-      if (bladeClass) {
-        /* the shield rides on the hip and mirrors with the facing — it never
-           swings up over the helmet when the knight aims skyward */
-        ctx.translate(p.x + dir * 4 * SOLDIER.scale, p.y + bob + 3 * SOLDIER.scale);
-        ctx.scale(SOLDIER.scale * dir, SOLDIER.scale);
-      } else {
-        ctx.translate(p.x + dir * 6.5 * SOLDIER.scale, p.y + bob - 4.5 * SOLDIER.scale);
-        ctx.rotate(p.angle);
-        if (Math.cos(p.angle) < 0) ctx.scale(1, -1);   /* keep the rifle upright */
-        ctx.scale(SOLDIER.scale, SOLDIER.scale);
-      }
-      drawHeldWeapon(p, g);
+      drawRaelWeapon(p, bob, null);
       ctx.restore();
     };
-    /* aiming up? the rifle passes behind the soldier instead of through him */
+    /* aiming up? the weapon passes behind the soldier instead of through him */
     const behind = !bladeClass && Math.sin(p.angle) < -0.15;
     if (behind) drawGun();
     drawBody();
@@ -7631,7 +8583,7 @@ function drawPlayer() {
 
     /* ---- took a hit: flash red ---- */
     if (p.hitFlash > 0) {
-      drawSoldierFlash(dir, stride, Math.min(1, p.hitFlash / 0.22) * 0.62, p.angle);
+      drawRaelFlash(p, bob, Math.min(1, p.hitFlash / 0.22) * 0.6, sx);
     }
   }
 
@@ -9384,8 +10336,131 @@ function drawMinimap() {
    DESTRUCTIBLE ENVIRONMENT  (breakable walls + golden chests)
    ============================================================================= */
 
+/* =============================================================================
+   BREAKABLE HIT REGISTRATION — one plain distance rule for every object
+   -----------------------------------------------------------------------------
+   If a bullet path, a sword sweep or an explosion origin comes within
+   BREAK_HIT_RADIUS of a chest / barrel / wall centre, that object takes exactly
+   one damage. There is no polygon test, no path test and no canvas query in the
+   hitting code any more: it is Math.hypot and a comparison.
+   ============================================================================= */
+const BREAK_HIT_RADIUS = 40;
+
+/* every breakable still standing, snapshotted so removing one mid-sweep is safe */
+function eachBreakable(fn) {
+  const walls = game.breakables.slice();
+  for (let i = 0; i < walls.length; i++) {
+    if (!walls[i].broken) fn(walls[i], 'wall');
+  }
+  const chests = game.chests.slice();
+  for (let i = 0; i < chests.length; i++) {
+    if (!chests[i].opened && (chests[i].hp === undefined || chests[i].hp > 0)) fn(chests[i], 'chest');
+  }
+  const props = game.obstacles.slice();
+  for (let i = 0; i < props.length; i++) {
+    const o = props[i];
+    if (o.kind === 'barrel' && !o.broken) fn(o, 'barrel');
+  }
+}
+
+/* one point against everything: the whole hit test */
+function hitBreakablesAt(x, y, source, already) {
+  let count = 0;
+  eachBreakable(function (obj, kind) {
+    if (already && already.has(obj)) return;
+    if (dist(x, y, obj.x, obj.y) > BREAK_HIT_RADIUS) return;
+    if (already) already.add(obj);
+    damageBreakableObject(obj, kind, source, x, y);
+    count++;
+  });
+  return count;
+}
+
+/* a moving path is sampled and each sample uses the same 40px rule, which is
+   how fast bolts and instant beams avoid tunnelling between two frames */
+function hitBreakablesAlong(x1, y1, x2, y2, source) {
+  const steps = Math.max(1, Math.ceil(dist(x1, y1, x2, y2) / 24));
+  const already = new Set();
+  let count = 0;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    count += hitBreakablesAt(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, source, already);
+  }
+  return count;
+}
+
+/* the closest breakable along a moving path (bullets, beams), distance only */
+function nearestBreakableOnPath(x1, y1, x2, y2, skip) {
+  const steps = Math.max(1, Math.ceil(dist(x1, y1, x2, y2) / 24));
+  let best = null;
+  eachBreakable(function (obj, kind) {
+    if (skip && skip.indexOf(obj) >= 0) return;
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      if (dist(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, obj.x, obj.y) <= BREAK_HIT_RADIUS) {
+        if (!best || t < best.t) best = { obj: obj, kind: kind, t: t };
+        break;
+      }
+    }
+  });
+  return best;
+}
+
+/* the single place a breakable loses health, so every hit is logged */
+function damageBreakableObject(obj, kind, source, fromX, fromY) {
+  if (!obj) return;
+  if (kind === 'chest' && obj.opened) return;
+  if (kind === 'barrel' && obj.broken) return;
+  if (kind === 'wall' && obj.broken) return;
+
+  const before = obj.hp === undefined ? 1 : obj.hp;
+  const from = source || 'unknown';
+  if (typeof console !== 'undefined' && console.log) {
+    console.log('[BREAKABLE HIT] ' + kind.toUpperCase() + ' at (' + Math.round(obj.x) + ', ' + Math.round(obj.y) +
+      ') from ' + from + ' at (' + Math.round(fromX) + ', ' + Math.round(fromY) +
+      ') — hp ' + before + ' → ' + Math.max(0, before - 1));
+  }
+
+  if (kind === 'chest') {
+    obj.hp = 0;
+    obj.hitFlash = 0.2;
+    openChest(obj, from);
+    return;
+  }
+  if (kind === 'barrel') {
+    obj.hp = 0;
+    explodeBarrel(obj, from);
+    return;
+  }
+  damageBreakable(obj, from);
+}
+
+/* a barrel takes one hit and goes to pieces */
+function explodeBarrel(o, source) {
+  if (o.broken) return;
+  o.broken = true;
+  o.hp = 0;
+  Sound.barrelPop();
+  game.shake = Math.max(game.shake, 0.22);
+  game.score += 25;
+
+  const wood = ['#9a6633', '#7a4f26', '#5c3b1b', '#3f2811', '#b07b40'];
+  for (let i = 0; i < 22; i++) {
+    const a = rand(0, TAU);
+    const sp = rand(70, 300);
+    spawnParticle(o.x + rand(-o.r * 0.5, o.r * 0.5), o.y + rand(-o.r * 0.5, o.r * 0.5),
+      Math.cos(a) * sp, Math.sin(a) * sp, rand(0.35, 0.8), rand(3, 7), wood[i % wood.length], 2.8);
+  }
+  game.particles.push({ ring: true, x: o.x, y: o.y, r: 6, maxR: o.r * 2.6, life: 0, maxLife: 0.36, color: '#d6a465' });
+  addText(o.x, o.y - 26, 'BARREL SMASHED', '#fbbf24');
+
+  /* the prop stops being solid the moment it bursts */
+  const idx = game.obstacles.indexOf(o);
+  if (idx >= 0) game.obstacles.splice(idx, 1);
+}
+
 /* ------------------------------ breakable walls ---------------------------- */
-function damageBreakable(w) {
+function damageBreakable(w, source) {
   if (!w || w.broken) return;
   w.hp -= 1;
   w.hitFlash = 0.16;
@@ -9452,11 +10527,12 @@ function breakWall(w) {
 }
 
 /* ------------------------------ golden chests ------------------------------ */
-function openChest(c) {
+function openChest(c, source) {
   if (!c || c.opened) return;
   c.opened = true;
+  c.hp = 0;
   c.hitFlash = 0.2;
-  Sound.chest();
+  Sound.chestPop();
   game.shake = Math.max(game.shake, 0.22);
   game.score += 120;
 
@@ -9470,29 +10546,35 @@ function openChest(c) {
   }
   game.particles.push({ ring: true, x: c.x, y: c.y, r: 6, maxR: 88, life: 0, maxLife: 0.5, color: '#ffd772' });
 
-  /* equal chance: gems / upgrade chip card / health orb */
-  const roll = Math.random();
-  if (roll < 1 / 3) {
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * TAU + rand(-0.2, 0.2);
-      const g = spawnGem(c.x + Math.cos(a) * 14, c.y + Math.sin(a) * 14);
-      g.vx = Math.cos(a) * rand(70, 150);
-      g.vy = Math.sin(a) * rand(70, 150);
-    }
-    addText(c.x, c.y - 34, 'GEMS', '#6ee7b7');
-  } else if (roll < 2 / 3) {
-    game.pickups.push({
-      kind: 'chip', x: c.x, y: c.y - 10,
-      vx: rand(-30, 30), vy: -70, life: 0, t: 0
-    });
-    addText(c.x, c.y - 34, 'UPGRADE CHIP', '#fde68a');
-  } else {
-    game.pickups.push({
-      kind: 'health', x: c.x, y: c.y - 10,
-      vx: rand(-26, 26), vy: -60, life: 0, t: 0
-    });
-    addText(c.x, c.y - 34, 'HEALTH ORB', '#7dd3fc');
+  /* ALWAYS 3–5 gems, flung out from the chest ... */
+  const gemCount = 3 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < gemCount; i++) {
+    const a = (i / gemCount) * TAU + rand(-0.35, 0.35);
+    const spread = rand(6, 20);
+    const g = spawnGem(c.x + Math.cos(a) * spread, c.y + Math.sin(a) * spread);
+    g.vx = Math.cos(a) * rand(120, 230);
+    g.vy = Math.sin(a) * rand(120, 230) - 40;
+    g.delay = 0.45;
   }
+  addText(c.x, c.y - 36, gemCount + ' GEMS', '#6ee7b7');
+
+  /* ... plus exactly one bonus: a health orb or an upgrade chip */
+  const bonusKind = Math.random() < 0.5 ? 'health' : 'chip';
+  game.pickups.push({
+    kind: bonusKind, x: c.x, y: c.y - 10,
+    vx: rand(-30, 30), vy: bonusKind === 'health' ? -70 : -60, life: 0, t: 0
+  });
+  addText(c.x, c.y - 58, bonusKind === 'health' ? 'HEALTH ORB' : 'UPGRADE CHIP', bonusKind === 'health' ? '#7dd3fc' : '#fde68a');
+  Sound.gem();
+
+  if (typeof console !== 'undefined' && console.log) {
+    console.log('[CHEST OPENED] (' + Math.round(c.x) + ', ' + Math.round(c.y) + ') from ' + (source || 'unknown') +
+      ' — ' + gemCount + ' gems + 1 ' + bonusKind);
+  }
+
+  /* the chest itself is gone for good */
+  const idx = game.chests.indexOf(c);
+  if (idx >= 0) game.chests.splice(idx, 1);
 }
 
 /* ------------------------------ pickups ------------------------------------ */
@@ -9600,6 +10682,33 @@ function drawWallRubble(w) {
   ctx.beginPath();
   ctx.ellipse(0, 0, hw * 0.86, hh * 0.7, 0, 0, TAU);
   ctx.fill();
+  ctx.restore();
+}
+
+/* ---- DEBUG: the collision box of every chest, barrel and breakable wall ---- */
+function drawBreakableHitboxes(zoom) {
+  const scale = zoom || 1;
+  ctx.save();
+  ctx.setLineDash([]);
+  ctx.lineWidth = 1 / scale;
+  ctx.strokeStyle = '#ff0000';
+  ctx.shadowBlur = 0;
+
+  for (let i = 0; i < game.breakables.length; i++) {
+    const w = game.breakables[i];
+    if (w.broken) continue;
+    ctx.strokeRect(w.x - w.w / 2, w.y - w.h / 2, w.w, w.h);
+  }
+  for (let i = 0; i < game.chests.length; i++) {
+    const c = game.chests[i];
+    if (c.opened) continue;
+    ctx.strokeRect(c.x - 24, c.y - 20, 48, 40);
+  }
+  for (let i = 0; i < game.obstacles.length; i++) {
+    const o = game.obstacles[i];
+    if (o.kind !== 'barrel' || o.broken) continue;
+    ctx.strokeRect(o.x - o.r * 0.9, o.y - o.r * 1.15, o.r * 1.8, o.r * 2.3);
+  }
   ctx.restore();
 }
 
@@ -10224,6 +11333,9 @@ function render() {
   drawParticles();
   drawPlayer();
 
+  /* collision boxes on top of everything in the world, still in world space */
+  drawBreakableHitboxes(zoom);
+
   ctx.restore();
 
   drawAmbient();
@@ -10260,7 +11372,7 @@ function update(dt) {
   game.ambientClock += dt;
 
   updatePlayer(sdt);
-  updateCamera();
+  updateCamera(sdt);
   updateEnemies(sdt);
   updateTurrets(sdt);
   updateBombs(sdt);
