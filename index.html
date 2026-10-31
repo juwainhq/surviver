@@ -847,6 +847,60 @@
   .card .desc{ font-size:13.5px; line-height:1.5; color:#b9c8da; }
   .card .rank{ margin-top:auto; font-size:10px; letter-spacing:2.6px; color:rgba(232,200,116,.65); text-transform:uppercase; }
 
+
+  /* ---------------- universe select strip (zone screen) ---------------- */
+  #universeRow{
+    display:flex; gap:11px; justify-content:center; flex-wrap:wrap;
+    width:min(1180px,96vw); margin:0 auto 6px;
+  }
+  .uni-card{
+    position:relative; flex:1 1 150px; max-width:190px; padding:11px 9px 10px;
+    background:linear-gradient(180deg, rgba(14,17,26,.96), rgba(5,7,11,.98));
+    border:1px solid rgba(232,200,116,.26); border-radius:3px; cursor:pointer;
+    text-align:center; transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+  .uni-card:hover:not(.locked){ transform:translateY(-4px); border-color:var(--gold-bright); box-shadow:0 0 26px rgba(232,200,116,.24); }
+  .uni-card .unum{ font-family:var(--font-head); font-size:9.5px; letter-spacing:2.6px; color:rgba(232,200,116,.7); text-transform:uppercase; }
+  .uni-card .uname{ font-family:var(--font-head); font-size:12.5px; letter-spacing:.8px; color:#ffe7b8; margin:5px 0 2px; line-height:1.25; }
+  .uni-card .uera{ font-size:10.5px; letter-spacing:1.6px; color:#93a4b8; text-transform:uppercase; }
+  .uni-card .ustate{ display:inline-flex; align-items:center; gap:6px; margin-top:7px; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:rgba(232,200,116,.8); }
+  .uni-card .ustate svg{ width:11px; height:11px; }
+  .uni-card.locked{ opacity:.42; cursor:not-allowed; border-color:rgba(148,163,184,.18); }
+  .uni-card.locked .uname{ color:#9fb0c4; }
+  .uni-card.done{ border-color:rgba(232,200,116,.55); }
+  .uni-card.sel{ border-color:var(--gold-bright); background:linear-gradient(180deg, rgba(34,28,14,.98), rgba(10,9,5,.99)); box-shadow:0 0 30px rgba(232,200,116,.28); }
+  #universeCaption{ font-size:10.5px; letter-spacing:3.4px; text-transform:uppercase; color:rgba(232,200,116,.55); margin-bottom:2px; }
+
+  /* ---------------- universe complete / intro cards ---------------- */
+  #universeComplete, #universeIntro{ justify-content:center; align-items:center; }
+  .uni-inner{
+    width:min(880px,92vw); padding:42px 38px 34px; text-align:center;
+    background:radial-gradient(ellipse at 50% -10%, rgba(232,200,116,.13), rgba(4,5,9,.97) 62%);
+    border:1px solid rgba(232,200,116,.42); border-radius:4px;
+    box-shadow:0 0 100px rgba(0,0,0,.92), inset 0 0 70px rgba(232,200,116,.05);
+    animation:uniRise .55s cubic-bezier(.2,.9,.3,1) both;
+  }
+  @keyframes uniRise{ from{ opacity:0; transform:translateY(28px) scale(.975); } to{ opacity:1; transform:none; } }
+  .uni-kicker{ font-size:10.5px; letter-spacing:6px; text-transform:uppercase; color:rgba(232,200,116,.78); }
+  .uni-title{
+    font-family:var(--font-head); font-size:clamp(26px,4.6vw,50px); letter-spacing:3px;
+    color:#ffe7b8; margin:10px 0 4px; line-height:1.15;
+    text-shadow:0 0 42px rgba(232,200,116,.45), 0 2px 18px rgba(0,0,0,.9);
+  }
+  .uni-era{ font-size:11.5px; letter-spacing:5px; text-transform:uppercase; color:#9fb0c4; }
+  .uni-rule{ width:190px; height:1px; margin:18px auto; background:linear-gradient(90deg, transparent, rgba(232,200,116,.75), transparent); }
+  .uni-story{ font-size:15px; line-height:1.72; color:#c3d2e2; max-width:640px; margin:0 auto; font-style:italic; }
+  .uni-time{ font-family:var(--font-head); font-size:clamp(19px,3vw,32px); letter-spacing:2px; color:var(--gold); margin:16px 0 4px; }
+  .uni-time b{ color:#ffe6a8; font-variant-numeric:tabular-nums; letter-spacing:3px; }
+  .uni-stats{ display:flex; gap:24px; justify-content:center; flex-wrap:wrap; font-size:11.5px; letter-spacing:2px; text-transform:uppercase; color:#93a4b8; margin:12px 0 22px; }
+  .uni-stats b{ color:#ffe7b8; }
+  .uni-roster{ display:flex; gap:9px; justify-content:center; flex-wrap:wrap; margin:16px 0 22px; }
+  .uni-chip{ padding:5px 12px; border:1px solid rgba(232,200,116,.32); border-radius:2px; font-size:10.5px; letter-spacing:2px; text-transform:uppercase; color:#e8c874; }
+  #vicEnding{
+    max-width:660px; margin:14px auto 6px; font-size:15px; line-height:1.7; color:#ffe7b8;
+    font-style:italic; text-shadow:0 0 26px rgba(232,200,116,.35);
+  }
+
   /* ---------------- big screens ---------------- */
   #gameOver h1{ font-size:clamp(34px,6vw,64px); color:#ff9d9d; text-shadow:0 0 30px rgba(239,68,68,.5); }
   #victory h1{ font-size:clamp(26px,4.4vw,48px); color:#ffe4ae; text-shadow:0 0 34px rgba(255,200,110,.55); letter-spacing:3px; }
@@ -1107,6 +1161,8 @@
   <div id="zoneScreen" class="screen">
     <div class="zs-eyebrow">Where Rael makes his stand</div>
     <h1 id="zoneTitle">Select Zone</h1>
+    <div id="universeCaption">Universe</div>
+    <div id="universeRow"></div>
     <div id="zoneHint">Locked zones open as you push deeper</div>
     <div id="zoneRow"></div>
     <button id="btnZoneBack" type="button">Back</button>
@@ -1151,8 +1207,39 @@
     <div id="vicRecord">New Record!</div>
     <div class="statline" id="vicBestTime">Best time 00:00:00</div>
     <div class="save-line" id="vicSaved"><i>✓</i><span>Progress Saved</span></div>
-    <div class="btn-row" style="margin-top:10px">
+    <div id="vicEnding"></div>
+    <div class="btn-row" style="margin-top:12px">
       <button class="btn" id="btnAgain">Play Again</button>
+    </div>
+  </div>
+
+  <!-- ==================== UNIVERSE COMPLETE ==================== -->
+  <div class="screen" id="universeComplete">
+    <div class="uni-inner">
+      <div class="uni-kicker" id="ucKicker">Universe 1 complete</div>
+      <h1 class="uni-title" id="ucName">Medieval 1347 AD</h1>
+      <div class="uni-era" id="ucEra">1347 AD</div>
+      <div class="uni-rule"></div>
+      <div class="uni-time">Completion Time: <b id="ucTime">00:00:00</b></div>
+      <div class="uni-stats">
+        <span>Score <b id="ucScore">0</b></span>
+        <span>Upgrades kept <b id="ucUps">0</b></span>
+        <span>Next <b id="ucNext">—</b></span>
+      </div>
+      <button class="btn" id="btnNextUniverse">Enter Next Universe</button>
+    </div>
+  </div>
+
+  <!-- ==================== UNIVERSE INTRO ==================== -->
+  <div class="screen" id="universeIntro">
+    <div class="uni-inner">
+      <div class="uni-kicker" id="uiKicker">Universe 2</div>
+      <h1 class="uni-title" id="uiName">Ancient Egypt 2500 BC</h1>
+      <div class="uni-era" id="uiEra">2500 BC</div>
+      <div class="uni-rule"></div>
+      <div class="uni-story" id="uiStory"></div>
+      <div class="uni-roster" id="uiRoster"></div>
+      <button class="btn" id="btnEnterUniverse">Enter Universe</button>
     </div>
   </div>
 </div>
@@ -1287,6 +1374,9 @@ const Sound = (function () {
   return {
     ensure,
     shoot()      { tone({ freq: 880, to: 520, dur: 0.07, type: 'square', vol: 0.028 }); },
+    enemyShot()  { tone({ freq: 520, to: 300, dur: 0.06, type: 'square', vol: 0.018 }); },
+    bossCast()   { tone({ freq: 160, to: 460, dur: 0.34, type: 'sine', vol: 0.05 }); noise({ freq: 700, dur: 0.2, vol: 0.02 }); },
+    rewind()     { tone({ freq: 1200, to: 260, dur: 0.28, type: 'triangle', vol: 0.04 }); },
     enemyDeath() { tone({ freq: 220, to: 70, dur: 0.2, type: 'sawtooth', vol: 0.045 }); noise({ freq: 1200, dur: 0.12, vol: 0.03 }); },
     playerHurt() { tone({ freq: 150, to: 55, dur: 0.32, type: 'sawtooth', vol: 0.07 }); noise({ freq: 500, dur: 0.2, vol: 0.05 }); },
     bossAppear() {
@@ -1676,6 +1766,23 @@ const UI = {
   vicRecord: document.getElementById('vicRecord'),
   vicBestTime: document.getElementById('vicBestTime'),
   runTime: document.getElementById('runTime'),
+  universeRow: document.getElementById('universeRow'),
+  universeCaption: document.getElementById('universeCaption'),
+  universeComplete: document.getElementById('universeComplete'),
+  universeIntro: document.getElementById('universeIntro'),
+  ucKicker: document.getElementById('ucKicker'),
+  ucName: document.getElementById('ucName'),
+  ucEra: document.getElementById('ucEra'),
+  ucTime: document.getElementById('ucTime'),
+  ucScore: document.getElementById('ucScore'),
+  ucUps: document.getElementById('ucUps'),
+  ucNext: document.getElementById('ucNext'),
+  uiKicker: document.getElementById('uiKicker'),
+  uiName: document.getElementById('uiName'),
+  uiEra: document.getElementById('uiEra'),
+  uiStory: document.getElementById('uiStory'),
+  uiRoster: document.getElementById('uiRoster'),
+  vicEnding: document.getElementById('vicEnding'),
   btnChangeClass: document.getElementById('btnChangeClass')
 };
 const ctx = UI.canvas.getContext('2d');
@@ -1698,6 +1805,8 @@ const SCREEN_LAYERS = [
   'upgradeScreen',   /* upgrade cards           — game.screen === 'upgrade'     */
   'transition',      /* zone completed card     — game.screen === 'transition'  */
   'gameOver',        /* death                   — game.screen === 'gameover'    */
+  'universeComplete',/* universe cleared card   — game.screen === 'universe'    */
+  'universeIntro',   /* next universe card      — game.screen === 'universeIntro'*/
   'victory'          /* final win               — game.screen === 'victory'     */
 ];
 
@@ -1813,7 +1922,7 @@ const Screens = {
    classList; `Screens.enforce()` re-checks the invariant from the main loop.
    ------------------------------------------------------------------------- */
 /* ------------------------------ zones ------------------------------------- */
-const ZONES = [
+const MEDIEVAL_LEVELS = [
   {
     id: 1,
     name: 'The Village',
@@ -1899,6 +2008,253 @@ const ZONES = [
   }
 ];
 
+/* ============================================================================
+   THE SIX UNIVERSES
+   ----------------------------------------------------------------------------
+   Rael's crash lands him in 1347 AD, and every rift he closes throws him
+   further from home: sand, then steel, then ash, then orbit, then the nothing
+   at the end of the timeline. Each universe is five levels sharing one theme,
+   one cast of three or four enemies and one champion.
+
+   A level is still a "zone" to the rest of the engine: the same arena waves, the
+   same boss ring, the same portal. Thirty of them now live in ZONES, five per
+   universe, in order, so every existing system keeps working on an index.
+   ============================================================================ */
+
+const ARENA_LAYOUTS = [
+  [[720, 760], [2320, 880], [1480, 2420]],
+  [[640, 660], [2380, 760], [1450, 2400]],
+  [[700, 900], [2300, 640], [1560, 2340]],
+  [[760, 640], [2360, 980], [1480, 2380]],
+  [[700, 720], [2320, 720], [1500, 2360]]
+];
+const BOSS_SPOTS = [[1500, 400], [2360, 2360], [1500, 380], [620, 2360], [2270, 2300]];
+
+const UNIVERSE_BLUEPRINTS = [
+  {
+    id: 'medieval',
+    name: 'Medieval 1347 AD',
+    era: '1347 AD',
+    subtitle: 'The Shattered Kingdom',
+    story: 'Rael falls out of a burning sky into the last years of the medieval world.',
+    accent: '#f97316',
+    tile: 'cobble', ambient: 'ember', obstacle: 'village', skyArt: 'moon',
+    sky: { top: '#070c1e', bottom: '#16233f' },
+    enemies: ['knight', 'archer', 'wizard', 'ghost'],
+    power: 1,
+    boss: { name: 'The Time Tyrant', hp: 120, r: 48, color: '#38bdf8', speed: 74 },
+    levels: MEDIEVAL_LEVELS
+  },
+  {
+    id: 'egypt',
+    name: 'Ancient Egypt 2500 BC',
+    era: '2500 BC',
+    subtitle: 'The Sun That Never Sets',
+    story: 'The rift opens on the Nile at the height of the old kingdom — and the sand is already moving.',
+    accent: '#f5b642',
+    tile: 'sand', ambient: 'sand', obstacle: 'desert', skyArt: 'sun',
+    sky: { top: '#2a0d06', bottom: '#f0873a' },
+    enemies: ['anubis', 'mummy', 'scorpion'],
+    power: 1.35,
+    boss: { name: 'The Pharaoh', hp: 100, r: 46, color: '#f5b642', speed: 66, kit: 'pharaoh' },
+    levelTitles: ['The Sun-Scorched Dunes', 'Colonnade of Kings', 'The Necropolis', 'Temple of Ra', 'The Pharaoh\u2019s Throne'],
+    levelBlurbs: [
+      'Bleached dunes under a dying sun. Jackal-headed soldiers stand in the heat haze.',
+      'Avenues of broken columns. Something wrapped is walking between them.',
+      'Tombs stacked to the horizon, and scorpions the size of dogs in the dark.',
+      'Gold doors, gold floor, gold light. The temple has not forgiven the intrusion.',
+      'The throne room. The Pharaoh has been waiting three thousand years.'
+    ],
+    levelStories: [
+      'Sand pours through the rift and swallows the medieval road behind him. Anubis warriors rise out of the dunes with spears already levelled.',
+      'Beyond the dunes a colonnade of kings marks the way inland. Wrapped figures drag themselves between the columns, and the air tastes of dust and myrrh.',
+      'The necropolis is a city of doors that open downwards. Sand scorpions boil out of the tombs, stinging as they come.',
+      'The Temple of Ra is still lit, still warm, still guarded. Every step inward is a step further from the exit.',
+      'The Pharaoh sits at the end of it all, staff in hand. Win, and the rift home opens over the Nile.'
+    ]
+  },
+  {
+    id: 'japan',
+    name: 'Feudal Japan 1600 AD',
+    era: '1600 AD',
+    subtitle: 'The Last Blossom',
+    story: 'The next rift opens in a burning dojo, under cherry blossom and ash, in the last spring of the old shogunate.',
+    accent: '#f472b6',
+    tile: 'dojo', ambient: 'petals', obstacle: 'dojo', skyArt: 'petals',
+    sky: { top: '#2b0a1e', bottom: '#f7a8c8' },
+    enemies: ['samurai', 'ninja', 'oni'],
+    power: 1.7,
+    boss: { name: 'Shogun Kage', hp: 110, r: 44, color: '#f472b6', speed: 96, kit: 'shogun' },
+    levelTitles: ['The Burning Torii', 'Bamboo Approach', 'The Empty Dojo', 'Hall of Blades', 'Shogun\u2019s Keep'],
+    levelBlurbs: [
+      'A torii gate on fire at the top of a stone stair. Red armour in the smoke.',
+      'Bamboo so thick the sky is a rumour. Something keeps throwing steel.',
+      'Tatami, paper walls, no students. Only the ones who stayed.',
+      'A hall of racks, every blade taken down. The floor remembers footsteps.',
+      'The keep. Kage has been listening to the fight for an hour.'
+    ],
+    levelStories: [
+      'The rift spits Rael out at the foot of a burning torii. Samurai in red lacquer turn as one, and the first blade is already drawn.',
+      'Past the gate the road narrows into bamboo. Shurikens come out of the green without a sound, and the shadows between the stalks are not empty.',
+      'The dojo is pristine and completely empty, which is worse. Then the paper wall slides open and an oni fills the doorway.',
+      'The hall of blades has been stripped bare. Kage\u2019s guard fight with their hands and their hate, and they do not stop.',
+      'The keep is burning from the top down. The Shogun waits on the last intact floor, and the rift home hangs over his shoulder.'
+    ]
+  },
+  {
+    id: 'wasteland',
+    name: 'Post-Apocalypse 2087 AD',
+    era: '2087 AD',
+    subtitle: 'The Rust Between Stars',
+    story: 'The rift drops him into the year the world ran out — cracked concrete, glowing dust, and men who trade in both.',
+    accent: '#a3b42c',
+    tile: 'concrete', ambient: 'ash', obstacle: 'wasteland', skyArt: 'dust',
+    sky: { top: '#23240c', bottom: '#8a9432' },
+    enemies: ['raider', 'mutant', 'drone'],
+    power: 2.0,
+    boss: { name: 'Warlord Rex', hp: 120, r: 50, color: '#a3b42c', speed: 84, kit: 'warlord' },
+    levelTitles: ['Ash Highway', 'The Rust Yard', 'Dead Mall', 'Reactor Breach', 'Warlord\u2019s Fortress'],
+    levelBlurbs: [
+      'Eight lanes of cracked asphalt and burnt-out cars. Shotgun shells in the dust.',
+      'A yard of stacked wrecks. Something big is breathing behind the third row.',
+      'A shopping mall with the roof gone. Drones nest in the ceiling.',
+      'The reactor still hums. So does everything that grew in it.',
+      'Rex\u2019s fortress is a wall of welded hulls and a tank that still runs.'
+    ],
+    levelStories: [
+      'Heat, then concrete, then the smell of ozone. Raiders watch from the wrecks and rack a shell the moment he lands.',
+      'The rust yard is a maze of dead vehicles and live traps. Mutants nest in the chassis, and they are done being patient.',
+      'The mall is a cathedral of broken glass. Combat drones hang in the dark like bats and open up with lasers.',
+      'The reactor breach glows through three floors of concrete. Everything down here has too many limbs and no fear.',
+      'Warlord Rex keeps a working tank behind a wall of hulls. He has been waiting for something worth shooting.'
+    ]
+  },
+  {
+    id: 'space',
+    name: 'Deep Space 3500 AD',
+    era: '3500 AD',
+    subtitle: 'The Hive at the Edge',
+    story: 'A rift in open space. The derelict ship is already infested, and the Hive Queen has been expecting him.',
+    accent: '#38bdf8',
+    tile: 'metal', ambient: 'stars', obstacle: 'spaceship', skyArt: 'stars',
+    sky: { top: '#000308', bottom: '#0b1730' },
+    enemies: ['aliendrone', 'voidwraith', 'mech'],
+    power: 2.3,
+    boss: { name: 'The Hive Queen', hp: 130, r: 52, color: '#7c3aed', speed: 62, kit: 'hivequeen' },
+    levelTitles: ['Docking Ring', 'Cryo Corridor', 'Reactor Spine', 'The Bridge', 'Hive Core'],
+    levelBlurbs: [
+      'A docking ring open to hard vacuum, and something silver moving in it.',
+      'Frozen sleepers in fogged glass. Some of the pods are open from the inside.',
+      'Cable runs and coolant steam. The ship is warm where it should be cold.',
+      'The bridge is dark, the crew is gone, and the consoles are still logging.',
+      'The core is not a reactor any more. It is a nest.'
+    ],
+    levelStories: [
+      'The rift opens onto a hull and the hull is still pressurised. Silver drones detach from the ring and come for him in a line.',
+      'The cryo corridor is a mile of frosted glass. Wraiths drift between the pods, invisible until the last three metres.',
+      'Something has been growing in the reactor spine for a decade. Mech guardians stand in the coolant fog, and their rockets are already lit.',
+      'The bridge is the last clean room on the ship. It does not stay clean for long.',
+      'The Hive Core pulses under a lattice of ribs. Every drone on the ship turns toward the intrusion at once.'
+    ]
+  },
+  {
+    id: 'void',
+    name: 'The Void \u2014 End of Time',
+    era: 'END OF TIME',
+    subtitle: 'The Architect of Oblivion',
+    story: 'No era, no place: the last rift opens outside of time, where the thing that unravelled Rael\u2019s ship has been waiting.',
+    accent: '#a855f7',
+    tile: 'voidgrid', ambient: 'void', obstacle: 'voidcrystal', skyArt: 'void',
+    sky: { top: '#05010c', bottom: '#1b0433' },
+    enemies: ['shade', 'timewraith', 'titan'],
+    power: 2.6,
+    boss: { name: 'The Architect of Oblivion', hp: 200, r: 56, color: '#a855f7', speed: 70, kit: 'architect' },
+    levelTitles: ['The Last Door', 'Fractured Yesterday', 'Where Time Died', 'The Hollow Throne', 'Oblivion'],
+    levelBlurbs: [
+      'Black floor, purple fractures, and a copy of Rael standing at the far end.',
+      'Yesterday keeps happening in pieces. Some of the pieces fight back.',
+      'The place where the timeline snapped. Nothing here agrees on what it is.',
+      'A throne with nothing on it, guarded by everything that ever wore a crown.',
+      'The Architect waits at the centre of the nothing, and it is smiling.'
+    ],
+    levelStories: [
+      'The door closes behind him and there is no door. A shade wearing his face lifts the weapon he chose and comes on.',
+      'Time has come apart into slabs of yesterday. Wraiths slip backwards through their own tracks to avoid the hit.',
+      'This is where the timeline snapped. Chaos titans patrol the break, wearing the attacks of every universe he has already survived.',
+      'The hollow throne is a monument to every champion he has killed. They are all standing on it.',
+      'Everything the Architect unmade is in this room. Kill it, and the timeline can still be put back.'
+    ]
+  }
+];
+
+/* one level of a universe: the same shape as a medieval zone, themed and scaled */
+function makeUniverseLevel(uni, i) {
+  const tier = i + 1;
+  const types = uni.enemies;
+  const count = 8 + i * 2;
+  return {
+    id: tier,
+    name: uni.levelTitles[i],
+    blurb: uni.levelBlurbs[i],
+    story: uni.levelStories[i],
+    tile: uni.tile,
+    ambient: uni.ambient,
+    obstacle: uni.obstacle,
+    accent: uni.accent,
+    sky: uni.sky,
+    skyArt: uni.skyArt,
+    groundTint: null,
+    waves: [
+      { count: count, types: [types[0], types[1]] },
+      { count: count + 2, types: [types[1], types[2], types[0]] }
+    ],
+    arenas: ARENA_LAYOUTS[(i + uni.index * 2) % ARENA_LAYOUTS.length],
+    bossPos: BOSS_SPOTS[(i + uni.index) % BOSS_SPOTS.length],
+    boss: {
+      name: uni.boss.name,
+      hp: Math.max(8, Math.round(uni.boss.hp * (0.4 + 0.15 * i))),
+      r: uni.boss.r,
+      color: uni.boss.color,
+      speed: uni.boss.speed,
+      kit: uni.boss.kit
+    }
+  };
+}
+
+const UNIVERSES = UNIVERSE_BLUEPRINTS.map(function (blueprint, index) {
+  const uni = Object.assign({}, blueprint);
+  uni.index = index;
+  uni.number = index + 1;
+  uni.levels = blueprint.levels ? blueprint.levels.slice() : [0, 1, 2, 3, 4].map((k) => makeUniverseLevel(uni, k));
+  uni.levels.forEach(function (z, k) {
+    z.universe = index;
+    z.universeName = uni.name;
+    z.level = k + 1;
+    z.power = (blueprint.power || 1) * (0.85 + (k + 1) * 0.06);
+  });
+  return uni;
+});
+
+/* thirty levels, in universe order: index 0-4 medieval, 5-9 Egypt, and so on */
+const ZONES = [];
+UNIVERSES.forEach(function (u) { u.levels.forEach(function (z) { ZONES.push(z); }); });
+
+const LEVELS_PER_UNIVERSE = 5;
+
+function universeOf(zoneIndex) {
+  const i = Math.floor((zoneIndex | 0) / LEVELS_PER_UNIVERSE);
+  return UNIVERSES[clamp(i, 0, UNIVERSES.length - 1)];
+}
+
+function levelInUniverse(zoneIndex) {
+  return ((zoneIndex | 0) % LEVELS_PER_UNIVERSE) + 1;
+}
+
+/* the index of the first level of the universe the save has reached */
+function universeStart(zoneIndex) {
+  return Math.floor((zoneIndex | 0) / LEVELS_PER_UNIVERSE) * LEVELS_PER_UNIVERSE;
+}
+
 /* ------------------------- destructible environment ------------------------ */
 /* Fixed world coordinates per zone, hand-spread around the map: every slot is
    >260px from an arena centre, >290px from the boss spot and >400px from the
@@ -1927,7 +2283,34 @@ const ENEMY_DEFS = {
   knight: { hp: 2, speed: 100, r: 16, color: '#ef4444', score: 12, contact: 1, turn: 4.2 },
   archer: { hp: 1, speed: 88, r: 14, color: '#fb923c', score: 14, contact: 1, fire: 2.0, turn: 5.2 },
   wizard: { hp: 3, speed: 62, r: 17, color: '#a855f7', score: 20, contact: 1, fire: 3.0, turn: 3.2 },
-  ghost:  { hp: 1, speed: 156, r: 13, color: '#e2e8f0', score: 10, contact: 1, turn: 8.0 }
+  ghost:  { hp: 1, speed: 156, r: 13, color: '#e2e8f0', score: 10, contact: 1, turn: 8.0 },
+
+  /* ---- Universe 2 · Ancient Egypt -------------------------------------- */
+  /* `contact: 0` means the body deals no damage on touch; it hands out a
+     status instead (slow or poison) through `slow` / `poison`. */
+  anubis:   { hp: 3, speed: 104, r: 16, color: '#eab308', score: 22, contact: 1, turn: 4.6, ai: 'spear',    art: 'anubis' },
+  mummy:    { hp: 4, speed: 60,  r: 18, color: '#d6c7a1', score: 24, contact: 0, slow: 1.8, turn: 2.4, ai: 'mummy', art: 'mummy' },
+  scorpion: { hp: 1, speed: 196, r: 11, color: '#f59e0b', score: 18, contact: 0, poison: 3, turn: 9.0, ai: 'scorpion', art: 'scorpion' },
+
+  /* ---- Universe 3 · Feudal Japan --------------------------------------- */
+  samurai: { hp: 4, speed: 96,  r: 17, color: '#dc2626', score: 26, contact: 1, turn: 4.2, ai: 'samurai', art: 'samurai' },
+  ninja:   { hp: 2, speed: 168, r: 13, color: '#64748b', score: 22, contact: 1, turn: 7.0, ai: 'ninja',   art: 'ninja' },
+  oni:     { hp: 9, speed: 56,  r: 26, color: '#2563eb', score: 40, contact: 3, turn: 2.2, ai: 'oni',     art: 'oni' },
+
+  /* ---- Universe 4 · Post-Apocalypse ------------------------------------ */
+  raider: { hp: 3,  speed: 92,  r: 16, color: '#b45309', score: 26, contact: 1, turn: 4.4, ai: 'raider', art: 'raider' },
+  mutant: { hp: 10, speed: 72,  r: 24, color: '#65a30d', score: 40, contact: 2, turn: 2.6, ai: 'mutant', art: 'mutant' },
+  drone:  { hp: 3,  speed: 122, r: 14, color: '#38bdf8', score: 28, contact: 1, turn: 5.4, fly: true, ai: 'combatdrone', art: 'drone' },
+
+  /* ---- Universe 5 · Deep Space ----------------------------------------- */
+  aliendrone: { hp: 2,  speed: 202, r: 12, color: '#e2e8f0', score: 24, contact: 1, turn: 6.2, fly: true, ai: 'plasma', art: 'plasma' },
+  voidwraith: { hp: 4,  speed: 122, r: 15, color: '#a78bfa', score: 30, contact: 2, turn: 6.0, fly: true, ai: 'wraith', art: 'wraith' },
+  mech:       { hp: 14, speed: 50,  r: 24, color: '#94a3b8', score: 46, contact: 2, turn: 2.0, ai: 'mech',   art: 'mech' },
+
+  /* ---- Universe 6 · The Void -------------------------------------------- */
+  shade:      { hp: 5,  speed: 190, r: 14, color: '#c084fc', score: 34, contact: 1, turn: 6.6, ai: 'shade',  art: 'shade' },
+  timewraith: { hp: 4,  speed: 132, r: 15, color: '#818cf8', score: 32, contact: 2, turn: 6.0, fly: true, ai: 'rewind', art: 'wraithTime' },
+  titan:      { hp: 20, speed: 46,  r: 30, color: '#7c3aed', score: 60, contact: 3, turn: 1.8, ai: 'titan',  art: 'titan' }
 };
 
 /* ------------------------------ upgrades -----------------------------------
@@ -1935,6 +2318,16 @@ const ENEMY_DEFS = {
    Every chip carries a gold glyph, a name and one line of flavour text, and the
    card reads them straight off the definition. `max` is how many ranks of that
    chip one run may hold — 1 means it is taken once and then leaves the pool. */
+/* what the roster cards call them */
+const ENEMY_LABELS = {
+  knight: 'Iron Knight', archer: 'Hooded Archer', wizard: 'Robed Wizard', ghost: 'Pale Ghost',
+  anubis: 'Anubis Warrior', mummy: 'Sand Mummy', scorpion: 'Sand Scorpion',
+  samurai: 'Samurai', ninja: 'Ninja', oni: 'Oni Demon',
+  raider: 'Raider', mutant: 'Mutant', drone: 'Combat Drone',
+  aliendrone: 'Alien Drone', voidwraith: 'Void Wraith', mech: 'Mech Guardian',
+  shade: 'Void Shade', timewraith: 'Time Wraith', titan: 'Chaos Titan'
+};
+
 const UPGRADE_POOL = [
   /* ------------------------------- offensive ------------------------------- */
   { id: 'plasma', name: 'Plasma Amplifier', kind: 'Offensive', glyph: '⟡', max: 3,
@@ -2076,6 +2469,7 @@ const game = {
   classId: 'knight',   /* picked on the class screen; knight is the fallback */
   lifetimeGems: 0,     /* every gem ever collected, across every run */
   maxZone: 0,          /* highest zone index ever reached: unlocks the zone select */
+  uiUniverse: 0,       /* which universe the zone select is currently showing */
   abilities: { dash: false, nova: false, turret: false, overcharge: false, bomb: false },
   bossesDefeated: [false, false, false, false, false],
   qCd: 0,              /* the class ability's own cooldown */
@@ -2088,6 +2482,8 @@ const game = {
   stormTimer: 0,       /* gunslinger Bullet Storm */
   stormFire: 0,
   rift: null,          /* mage Temporal Rift */
+  sandPillars: [],     /* the Pharaoh's columns: solid until they collapse */
+  mines: [],           /* Warlord Rex's pressure plates */
   beams: [],           /* instant sniper / railgun beams */
   swings: [],          /* live sword swooshes, drawn for 0.2s each */
   turrets: [],
@@ -2157,7 +2553,11 @@ function makePlayer() {
     berserker: false,
     berserkActive: false,
     chronoSurge: false,
-    chronoSurgeCd: 30   /* Chrono Surge: a free mini freeze every 30s */
+    chronoSurgeCd: 30,  /* Chrono Surge: a free mini freeze every 30s */
+    /* --- universe statuses --------------------------------------------------*/
+    slowT: 0,           /* sand mummy wraps: movement drags while this runs */
+    poisonT: 0,         /* scorpion venom: 1 damage spread over three seconds */
+    poisonAcc: 0
   };
 }
 
@@ -2190,6 +2590,8 @@ function resetRun() {
   game.beams.length = 0;
   game.turrets.length = 0;
   game.bombs.length = 0;
+  game.sandPillars.length = 0;
+  game.mines.length = 0;
   /* abilities are a permanent reward: a new run never clears them */
   syncAbilityHud();
 }
@@ -2243,6 +2645,8 @@ function loadZone(zoneIndex, opts) {
   game.beams.length = 0;
   game.turrets.length = 0;
   game.bombs.length = 0;
+  game.sandPillars.length = 0;
+  game.mines.length = 0;
   game.timeScale = 1;
   game.slowmo = 0;
   game.killsThisZone = 0;
@@ -2265,6 +2669,9 @@ function loadZone(zoneIndex, opts) {
   p.phaseTimer = 0;
   p.barrierCd = 0;
   p.chronoSurgeCd = 30;
+  p.slowT = 0;
+  p.poisonT = 0;
+  p.poisonAcc = 0;
   /* the ward persists across zones, but it is never handed out for free */
   p.swingCd = 0;
   p.swingT = 0;
@@ -2283,7 +2690,8 @@ function loadZone(zoneIndex, opts) {
   game.cam.y = cameraTargetY();
 
   noteZoneReached(game.zoneIndex);
-  UI.zoneBadge.textContent = 'Zone ' + z.id;
+  const zUni = universeOf(game.zoneIndex);
+  UI.zoneBadge.textContent = 'Universe ' + zUni.number + ' · Level ' + z.level;
   UI.zoneName.textContent = z.name;
   document.documentElement.style.setProperty('--zone-accent', z.accent);
   updateObjective();
@@ -2322,7 +2730,34 @@ const OBSTACLE_SETS = {
     { kind: 'portcullis', w: 0.48, r: 16, len: 92 }
   ],
   tower: [{ kind: 'crystalpillar', w: 1, r: 25 }],
-  portal: [{ kind: 'shard', w: 1, r: 23 }]
+  portal: [{ kind: 'shard', w: 1, r: 23 }],
+
+  /* ---- the five new universes ---- */
+  desert: [
+    { kind: 'sandstone', w: 0.44, r: 25 },
+    { kind: 'obelisk', w: 0.3, r: 19 },
+    { kind: 'urn', w: 0.26, r: 16 }
+  ],
+  dojo: [
+    { kind: 'stonelantern', w: 0.34, r: 20 },
+    { kind: 'bambooclump', w: 0.38, r: 21 },
+    { kind: 'ricebarrel', w: 0.28, r: 18 }
+  ],
+  wasteland: [
+    { kind: 'carhulk', w: 0.34, r: 25 },
+    { kind: 'jersey', w: 0.42, r: 22, len: 96 },
+    { kind: 'oildrum', w: 0.24, r: 17 }
+  ],
+  spaceship: [
+    { kind: 'rack', w: 0.36, r: 22 },
+    { kind: 'canister', w: 0.3, r: 18 },
+    { kind: 'hullcrate', w: 0.34, r: 21 }
+  ],
+  voidcrystal: [
+    { kind: 'voidspire', w: 0.42, r: 24 },
+    { kind: 'voidslab', w: 0.34, r: 22 },
+    { kind: 'voidshard', w: 0.24, r: 16 }
+  ]
 };
 
 function pickProp(set, rng) {
@@ -2386,7 +2821,7 @@ function buildObstacles(zoneIndex) {
 
 /* ---------------------- destructible placement ----------------------------- */
 function buildDestructibles(zoneIndex) {
-  const cfg = DESTRUCTIBLES[zoneIndex] || DESTRUCTIBLES[0];
+  const cfg = DESTRUCTIBLES[zoneIndex % DESTRUCTIBLES.length];
 
   game.breakables = cfg.walls.map(function (w, i) {
     const vertical = w[2] === 'v';
@@ -2440,6 +2875,13 @@ function collideObstacles(actor) {
     const w = game.breakables[i];
     if (w.broken) continue;
     resolveCircleRect(actor, w.x, w.y, w.w / 2, w.h / 2);
+  }
+
+  /* the Pharaoh's sand columns are solid for as long as they stand */
+  for (let i = 0; i < game.sandPillars.length; i++) {
+    const sp = game.sandPillars[i];
+    if (sp.grow < 0.5) continue;
+    pushOutOfCircle(actor, sp.x, sp.y, sp.r * 0.8);
   }
 
   actor.x = clamp(actor.x, actor.r + 4, WORLD - actor.r - 4);
@@ -2604,6 +3046,20 @@ function updatePlayer(dt) {
   if (p.phaseTimer > 0) p.phaseTimer = Math.max(0, p.phaseTimer - dt);
   if (p.barrierCd > 0) p.barrierCd = Math.max(0, p.barrierCd - dt);
 
+  /* status effects: the sand mummy drags his feet, the scorpion poisons him */
+  if (p.slowT > 0) p.slowT = Math.max(0, p.slowT - dt);
+  if (p.poisonT > 0) {
+    p.poisonT = Math.max(0, p.poisonT - dt);
+    p.poisonAcc = (p.poisonAcc || 0) + dt;
+    if (p.poisonAcc >= 1) {
+      p.poisonAcc -= 1;
+      hurtPlayer(1 / 3, true);
+      for (let i = 0; i < 5; i++) {
+        spawnParticle(p.x + rand(-8, 8), p.y + rand(-8, 8), rand(-30, 30), rand(-70, -20), 0.5, 4, '#86efac', 2);
+      }
+    }
+  }
+
   /* dash */
   if (p.dashCd > 0) p.dashCd = Math.max(0, p.dashCd - dt);
   const wasDashing = p.dashTimer > 0;
@@ -2640,12 +3096,14 @@ function updatePlayer(dt) {
     const DECEL_TIME = 4 / FPS_REF;
     const mv = moveVector();
     const wantMove = mv.x !== 0 || mv.y !== 0;
-    const tx = mv.x * p.speed;
-    const ty = mv.y * p.speed;
+    /* a sand mummy's grip: 45% of his stride while the wraps are on him */
+    const walkSpeed = p.speed * (p.slowT > 0 ? 0.55 : 1);
+    const tx = mv.x * walkSpeed;
+    const ty = mv.y * walkSpeed;
     const dx = tx - p.vx;
     const dy = ty - p.vy;
     const gap = Math.hypot(dx, dy);
-    const rate = (wantMove ? p.speed / ACCEL_TIME : p.speed / DECEL_TIME) * dt;
+    const rate = (wantMove ? walkSpeed / ACCEL_TIME : walkSpeed / DECEL_TIME) * dt;
     if (gap <= rate || gap < 1e-4) {
       p.vx = tx;
       p.vy = ty;
@@ -3828,15 +4286,19 @@ function updateBombs(dt) {
 }
 
 /* ------------------------------ damage to player --------------------------- */
-function hurtPlayer(amount) {
+function hurtPlayer(amount, raw) {
   const p = game.player;
   if (game.screen !== 'playing') return;
   if (game.arenaGrace > 0) return;      /* arena entry window: fully invincible */
-  /* Phase Cloak: out of phase, nothing can find him to hit him */
-  if (p.phaseTimer > 0) return;
-  if (p.invuln > 0 || p.dashTimer > 0) return;
+  /* raw damage is poison and other damage-over-time: it ignores wards and
+     i-frames, because the tick already happened inside his blood */
+  if (!raw) {
+    /* Phase Cloak: out of phase, nothing can find him to hit him */
+    if (p.phaseTimer > 0) return;
+    if (p.invuln > 0 || p.dashTimer > 0) return;
+  }
   /* Temporal Barrier: the first hit of every twenty seconds is swallowed */
-  if (p.temporalBarrier && p.barrierCd <= 0) {
+  if (!raw && p.temporalBarrier && p.barrierCd <= 0) {
     p.barrierCd = 20;
     p.invuln = Math.max(p.invuln, 0.55);
     Sound.ability();
@@ -3848,7 +4310,7 @@ function hurtPlayer(amount) {
     }
     return;
   }
-  if (p.shield > 0) {
+  if (!raw && p.shield > 0) {
     p.shield -= 1;
     /* Overclock Shield: the ward burns for four seconds instead of one */
     p.invuln = p.overclockShield ? 4.0 : 1.0;
@@ -3862,12 +4324,14 @@ function hurtPlayer(amount) {
     return;
   }
   p.hp -= amount;
-  p.invuln = 1.15;
+  if (!raw) {
+    p.invuln = 1.15;
+    game.shake = Math.max(game.shake, 0.5);
+    game.flashTimer = 0.3;
+    game.flashColor = '#ff5b5b';
+    Sound.playerHurt();
+  }
   p.hitFlash = 0.22;                 /* the trooper flashes red */
-  game.shake = Math.max(game.shake, 0.5);
-  game.flashTimer = 0.3;
-  game.flashColor = '#ff5b5b';
-  Sound.playerHurt();
   for (let i = 0; i < 14; i++) {
     const a = rand(0, TAU);
     spawnParticle(p.x, p.y, Math.cos(a) * rand(60, 240), Math.sin(a) * rand(60, 240), 0.4, 8, '#fca5a5', 3);
@@ -3908,14 +4372,26 @@ function hurtPlayer(amount) {
 /* ------------------------------ spawning ----------------------------------- */
 function spawnEnemy(type, x, y, arenaIndex) {
   const def = ENEMY_DEFS[type] || ENEMY_DEFS.knight;
-  const scale = 1 + game.zoneIndex * 0.08;
+  /* each level carries a power level from its universe: Egypt starts tougher
+     than the village and the Void is the hardest thing in the game */
+  const power = (ZONES[game.zoneIndex] && ZONES[game.zoneIndex].power) || 1;
+  const scale = 0.85 + power * 0.18;
   const e = {
     type,
     x, y,
     r: def.r,
-    hp: def.hp,
-    maxHp: def.hp,
+    hp: Math.round(def.hp * power * 10) / 10,
+    maxHp: Math.round(def.hp * power * 10) / 10,
     speed: def.speed * scale,
+    fly: !!def.fly,
+    special: !!def.ai,
+    ai: def.ai || null,
+    art: def.art || null,
+    stateT: 0,
+    chargeT: 0,
+    rewindCd: 0,
+    hist: [],
+    invis: 0,
     arena: (typeof arenaIndex === 'number') ? arenaIndex : null,
     fireTimer: def.fire ? def.fire * rand(0.5, 1.1) : 0,
     hitFlash: 0,
@@ -3963,6 +4439,241 @@ function countArenaEnemies(arenaIndex) {
   return n;
 }
 
+/* --------------------------- universe cast --------------------------------- */
+/* Every enemy outside the medieval four is driven from here: one archetype per
+   behaviour, sharing the same steering and collision the horde already uses.
+   The functions only decide where the body wants to go and when it attacks. */
+function applyPoison(seconds) {
+  const p = game.player;
+  if (!p) return;
+  p.poisonT = Math.max(p.poisonT || 0, seconds);
+  p.poisonAcc = p.poisonAcc || 0;
+}
+
+function updateSpecialEnemy(e, dt, ang, d, canSee) {
+  const p = game.player;
+  const def = ENEMY_DEFS[e.type] || ENEMY_DEFS.knight;
+  const ai = def.ai;
+  if (e.stateT > 0) e.stateT = Math.max(0, e.stateT - dt);
+  if (e.rewindCd > 0) e.rewindCd = Math.max(0, e.rewindCd - dt);
+
+  /* chase by default */
+  e.wantX = Math.cos(ang);
+  e.wantY = Math.sin(ang);
+
+  /* hold a ring around the player, strafing: used by the shooters */
+  const standoff = (want) => {
+    const radial = d > want + 40 ? 1 : (d < want - 50 ? -1 : 0);
+    const perp = ang + Math.PI / 2;
+    e.zig += dt * 1.7;
+    e.wantX = Math.cos(ang) * radial + Math.cos(perp) * Math.sin(e.zig) * 0.7;
+    e.wantY = Math.sin(ang) * radial + Math.sin(perp) * Math.sin(e.zig) * 0.7;
+  };
+
+  if (ai === 'spear') {
+    /* jackal soldier: closes to spear range, then throws one every 1.8s */
+    if (d > 190) {
+      e.wantX = Math.cos(ang);
+      e.wantY = Math.sin(ang);
+    } else {
+      standoff(150);
+      e.fireTimer -= dt;
+      if (canSee && e.fireTimer <= 0) {
+        e.fireTimer = 1.8;
+        fireEnemyBullet(e.x, e.y, ang, 620, 'spear', 5, 1);
+        Sound.enemyShot();
+      }
+    }
+  } else if (ai === 'mummy') {
+    /* a slow shambling walk that drags the player's feet when it reaches him */
+    e.wantX = Math.cos(ang) * 0.85;
+    e.wantY = Math.sin(ang) * 0.85;
+    e.zig += dt * 0.9;
+    e.wantX += Math.cos(ang + 1.6) * Math.sin(e.zig) * 0.25;
+    e.wantY += Math.sin(ang + 1.6) * Math.sin(e.zig) * 0.25;
+  } else if (ai === 'scorpion') {
+    /* fast, jerky, never straight */
+    e.zig += dt * 5.2;
+    e.wantX = Math.cos(ang + Math.sin(e.zig) * 0.5);
+    e.wantY = Math.sin(ang + Math.sin(e.zig) * 0.5);
+  } else if (ai === 'samurai') {
+    /* closes, winds up (stateT), then charges with the blade out */
+    if (e.chargeT > 0) {
+      e.chargeT = Math.max(0, e.chargeT - dt);
+      e.wantX = Math.cos(e.chargeA);
+      e.wantY = Math.sin(e.chargeA);
+    } else if (e.stateT > 0) {
+      e.wantX *= 0.05;
+      e.wantY *= 0.05;
+    } else if (d < 230) {
+      if (d < 150 && canSee) {
+        e.stateT = 0.45;
+        e.chargeT = 0.42;
+        e.chargeA = ang;
+        Sound.enemyShot();
+      } else {
+        e.wantX = Math.cos(ang);
+        e.wantY = Math.sin(ang);
+      }
+    }
+    if (e.chargeT > 0) e.contactCd = 0;   /* the slash lands again mid-charge */
+  } else if (ai === 'ninja') {
+    /* vanishes past 260px, reappears close, throws shurikens */
+    e.invis = d > 260 ? 1 : 0;
+    if (d > 300) standoff(220); else e.wantX *= 0.9;
+    e.fireTimer -= dt;
+    if (canSee && e.fireTimer <= 0 && d < 520) {
+      e.fireTimer = 1.5;
+      fireEnemyBullet(e.x, e.y, ang, 380, 'shuriken', 5, 1);
+      Sound.enemyShot();
+    }
+  } else if (ai === 'oni') {
+    /* a wall of muscle: slow, and every few seconds it slams the floor */
+    e.wantX = Math.cos(ang) * 0.9;
+    e.wantY = Math.sin(ang) * 0.9;
+    e.fireTimer -= dt;
+    if (canSee && e.fireTimer <= 0 && d < 150) {
+      e.fireTimer = 3.2;
+      game.shake = Math.max(game.shake, 0.4);
+      game.particles.push({ ring: true, x: e.x, y: e.y + e.r * 0.4, r: 12, maxR: 128, life: 0, maxLife: 0.42, color: '#60a5fa' });
+      for (let k = 0; k < 16; k++) {
+        const a = rand(0, TAU);
+        spawnParticle(e.x, e.y + e.r * 0.4, Math.cos(a) * rand(80, 260), Math.sin(a) * rand(80, 260), 0.35, 7, '#93c5fd', 3);
+      }
+      if (d < 145) hurtPlayer(2);
+    }
+  } else if (ai === 'raider') {
+    standoff(270);
+    e.fireTimer -= dt;
+    if (canSee && e.fireTimer <= 0 && d < 560) {
+      e.fireTimer = 2.4;
+      /* a shotgun: five pellets in a cone */
+      for (let k = -2; k <= 2; k++) {
+        fireEnemyBullet(e.x, e.y, ang + k * 0.09, 470, 'pellet', 3.5, 1);
+      }
+      Sound.enemyShot();
+    }
+  } else if (ai === 'mutant') {
+    if (e.stateT > 0) { e.wantX *= 0.05; e.wantY *= 0.05; }
+    else if (e.chargeT > 0) {
+      e.chargeT = Math.max(0, e.chargeT - dt);
+      e.wantX = Math.cos(e.chargeA) * 2.2;
+      e.wantY = Math.sin(e.chargeA) * 2.2;
+    } else if (d < 420) {
+      e.stateT = 0.35;
+      e.chargeT = 0.75;
+      e.chargeA = ang;
+    }
+  } else if (ai === 'combatdrone') {
+    standoff(320);
+    e.fireTimer -= dt;
+    if (canSee && e.fireTimer <= 0 && d < 640) {
+      e.fireTimer = 2.2;
+      e.burst = 3;
+    }
+    if (e.burst > 0) {
+      e.burstT = (e.burstT || 0) - dt;
+      if (e.burstT <= 0) {
+        e.burstT = 0.11;
+        e.burst--;
+        fireEnemyBullet(e.x, e.y, ang, 700, 'laser', 3.5, 1);
+        Sound.enemyShot();
+      }
+    }
+  } else if (ai === 'plasma') {
+    /* silver alien drone: buzzes straight in and spits plasma */
+    standoff(180);
+    e.fireTimer -= dt;
+    if (canSee && e.fireTimer <= 0 && d < 520) {
+      e.fireTimer = 1.5;
+      for (let k = 0; k < 2; k++) {
+        fireEnemyBullet(e.x, e.y, ang + (k ? 0.12 : -0.12), 430, 'plasma', 6, 1);
+      }
+      Sound.enemyShot();
+    }
+  } else if (ai === 'wraith') {
+    /* invisible until it is within 150px, then it is already swinging */
+    e.invis = d > 150 ? 1 : 0;
+    if (d > 170) {
+      e.wantX = Math.cos(ang);
+      e.wantY = Math.sin(ang);
+    } else {
+      e.wantX = Math.cos(ang) * 1.25;
+      e.wantY = Math.sin(ang) * 1.25;
+      if (e.contactCd <= 0) e.contactCd = 0.2;
+    }
+  } else if (ai === 'mech') {
+    standoff(420);
+    e.fireTimer -= dt;
+    if (canSee && e.fireTimer <= 0 && d < 720) {
+      e.fireTimer = 2.8;
+      const b = fireEnemyBullet(e.x, e.y, ang, 300, 'rocket', 7, 2);
+      b.homing = 1.1;
+      Sound.enemyShot();
+    }
+  } else if (ai === 'shade') {
+    /* a mirror of Rael: same weapon, same footwork, none of the mercy */
+    standoff(230);
+    e.fireTimer -= dt;
+    if (canSee && e.fireTimer <= 0 && d < 620) {
+      e.fireTimer = 0.9;
+      const cls = getClass();
+      if (cls.weapon === 'blade') {
+        e.wantX = Math.cos(ang) * 1.6;
+        e.wantY = Math.sin(ang) * 1.6;
+        if (d < 120) hurtPlayer(1);
+      } else if (cls.weapon === 'rail') {
+        fireEnemyBullet(e.x, e.y, ang, 1500, 'laser', 4, 1);
+      } else {
+        fireEnemyBullet(e.x, e.y, ang, 520, 'plasma', 5, 1);
+      }
+      Sound.enemyShot();
+    }
+  } else if (ai === 'rewind') {
+    /* time wraith: files its own position, and slips back when a hit lands */
+    e.histTimer = (e.histTimer || 0) - dt;
+    if (e.histTimer <= 0) {
+      e.histTimer = 0.1;
+      e.hist.push({ x: e.x, y: e.y });
+      if (e.hist.length > 12) e.hist.shift();
+    }
+    if (e.hitFlash > 0 && e.rewindCd <= 0 && e.hist.length > 4) {
+      const back = e.hist[0];
+      for (let k = 0; k < 12; k++) {
+        spawnParticle(e.x, e.y, rand(-120, 120), rand(-120, 120), 0.3, 6, '#818cf8', 3);
+      }
+      e.x = back.x;
+      e.y = back.y;
+      e.rewindCd = 2.4;
+      e.hist.length = 0;
+      Sound.rewind();
+    }
+    standoff(200);
+  } else if (ai === 'titan') {
+    /* chaos titan: whatever the last five universes did, all at once */
+    e.wantX = Math.cos(ang) * 0.75;
+    e.wantY = Math.sin(ang) * 0.75;
+    e.fireTimer -= dt;
+    if (canSee && e.fireTimer <= 0 && d < 700) {
+      e.fireTimer = 2.6;
+      const roll = Math.floor(rand(0, 5));
+      if (roll === 0) {
+        fireEnemyBullet(e.x, e.y, ang, 620, 'spear', 6, 1);
+      } else if (roll === 1) {
+        for (let k = -2; k <= 2; k++) fireEnemyBullet(e.x, e.y, ang + k * 0.1, 460, 'pellet', 4, 1);
+      } else if (roll === 2) {
+        for (let k = 0; k < 6; k++) fireEnemyBullet(e.x, e.y, ang + (k / 6) * TAU, 320, 'shuriken', 5, 1);
+      } else if (roll === 3) {
+        fireEnemyBullet(e.x, e.y, ang, 760, 'laser', 5, 1);
+      } else {
+        const b = fireEnemyBullet(e.x, e.y, ang, 260, 'acid', 7, 1);
+        b.homing = 0.6;
+      }
+      Sound.enemyShot();
+    }
+  }
+}
+
 /* ------------------------------ enemy update ------------------------------- */
 function updateEnemies(dt) {
   const p = game.player;
@@ -3989,7 +4700,11 @@ function updateEnemies(dt) {
     let wantX = 0;
     let wantY = 0;
 
-    if (e.type === 'knight') {
+    if (e.special) {
+      updateSpecialEnemy(e, dt, ang, d, canSee);
+      wantX = e.wantX;
+      wantY = e.wantY;
+    } else if (e.type === 'knight') {
       const stop = e.r + p.r + 9;
       if (d > stop + 4) {
         wantX = Math.cos(ang);
@@ -4068,10 +4783,19 @@ function updateEnemies(dt) {
       }
     }
 
-    /* contact damage */
+    /* contact damage, plus whatever status the body carries */
     if (canSee && d < e.r + p.r + 2 && e.contactCd <= 0) {
-      e.contactCd = 0.9;
-      hurtPlayer(ENEMY_DEFS[e.type].contact);
+      const cdef = ENEMY_DEFS[e.type] || ENEMY_DEFS.knight;
+      e.contactCd = cdef.contact ? 0.9 : 0.4;
+      if (cdef.contact) hurtPlayer(cdef.contact);
+      if (cdef.slow) {
+        p.slowT = Math.max(p.slowT || 0, cdef.slow);
+        addText(p.x, p.y - 30, 'SLOWED', '#d6c7a1');
+      }
+      if (cdef.poison) {
+        applyPoison(cdef.poison);
+        addText(p.x, p.y - 30, 'POISONED', '#86efac');
+      }
     }
   }
 }
@@ -4355,6 +5079,7 @@ function spawnBoss(opts) {
     color: def.color,
     speed: def.speed,
     phase: 1,
+    kit: def.kit || null,   /* the universe champions run their own routines */
     t: 0,
     angle: 0,
     attackTimer: 1.6,
@@ -4538,6 +5263,9 @@ function updateBoss(dt) {
     }
     return;   /* no attacking, and damageBoss() ignores hits, until it lands */
   }
+
+  /* the five universe champions run their own kits */
+  if (b.kit && BOSS_KITS[b.kit]) { updateBossKit(b, dt); return; }
 
   const ratio = clamp(b.hp / b.maxHp, 0, 1);
   /* zones 1-4 fight in three phases (75% / 50%), the Time Tyrant in four */
@@ -4794,6 +5522,20 @@ function damageBoss(dmg) {
   const b = game.boss;
   if (!b) return;
   if (b.entering) return;   /* the entrance cannot be interrupted */
+  /* the Hive Queen's regenerating shield eats damage before her body does */
+  if (b.kit === 'hivequeen' && (b.shield || 0) > 0) {
+    const eaten = Math.min(b.shield, dmg);
+    b.shield -= eaten;
+    b.hitFlash = 0.1;
+    b.k.shieldCd = 0;
+    addScore(2);
+    Sound.bossHit();
+    for (let i = 0; i < 5; i++) {
+      spawnParticle(b.x + rand(-b.r, b.r), b.y + rand(-b.r, b.r), rand(-60, 60), rand(-60, 60), 0.3, 5, '#7dd3fc', 3);
+    }
+    if (eaten >= dmg) return;
+    dmg -= eaten;
+  }
   b.hp -= dmg;
   b.hitFlash = 0.1;
   Sound.bossHit();
@@ -5214,19 +5956,86 @@ function completeZone() {
   BossMusic.stop();
   addScore(1500);
   Sound.levelClear();
-  if (game.zoneIndex >= ZONES.length - 1) {
-    showVictory();
+
+  const uni = universeOf(game.zoneIndex);
+  const lvl = levelInUniverse(game.zoneIndex);
+
+  /* the fifth level ends a universe — one card to bank it, one to open the next */
+  if (lvl >= LEVELS_PER_UNIVERSE) {
+    if (uni.index >= UNIVERSES.length - 1) {
+      showVictory();      /* the Architect is down: the true ending */
+      return;
+    }
+    showUniverseComplete(uni);
     return;
   }
+
   game.pendingZone = game.zoneIndex + 1;
   noteZoneReached(game.pendingZone);
   SaveSystem.save('zone');
   const next = ZONES[game.pendingZone];
-  UI.transEyebrow.textContent = 'Zone ' + next.id;
+  UI.transEyebrow.textContent = 'Universe ' + uni.number + ' · Level ' + (lvl + 1);
   UI.transTitle.textContent = next.name;
   UI.transStory.textContent = next.story;
   Screens.show('transition');
   game.screen = 'transition';
+}
+
+/* --------------------------- universe transitions -------------------------- */
+/* Finishing level five of a universe: bank the run, show the card, and only
+   move on when the player presses the button. Nothing is lost — the score,
+   upgrades, abilities and class all travel into the next universe. */
+let pendingUniverse = 0;
+
+function showUniverseComplete(uni) {
+  game.screen = 'universe';
+  game.mouse.down = false;
+  pendingUniverse = Math.min(UNIVERSES.length - 1, uni.index + 1);
+  const next = UNIVERSES[pendingUniverse];
+  let ups = 0;
+  for (const k in game.upgradeLevels) ups += game.upgradeLevels[k] || 0;
+  UI.ucKicker.textContent = 'Universe ' + uni.number + ' complete';
+  UI.ucName.textContent = uni.name;
+  UI.ucEra.textContent = uni.era;
+  UI.ucTime.textContent = RunClock.format(RunClock.tick());
+  UI.ucScore.textContent = String(Math.floor(game.score));
+  UI.ucUps.textContent = String(ups);
+  UI.ucNext.textContent = next.name;
+  Screens.show('universeComplete');
+  Sound.levelClear();
+  SaveSystem.save('universe');
+}
+
+function showUniverseIntro(index) {
+  const u = UNIVERSES[clamp(index, 0, UNIVERSES.length - 1)];
+  pendingUniverse = u.index;
+  game.screen = 'universeIntro';
+  UI.uiKicker.textContent = 'Universe ' + u.number;
+  UI.uiName.textContent = u.name;
+  UI.uiEra.textContent = u.era;
+  UI.uiStory.textContent = u.story;
+  /* the roster of the universe you are about to walk into */
+  if (UI.uiRoster) {
+    UI.uiRoster.innerHTML = u.enemies.map(function (id) {
+      const label = ENEMY_LABELS[id] || id;
+      return '<span class="uni-chip">' + label + '</span>';
+    }).join('') + '<span class="uni-chip">' + u.boss.name + '</span>';
+  }
+  Screens.show('universeIntro');
+  Sound.portal();
+}
+
+/* step through the door: same run, same Rael, five fresh levels */
+function enterUniverse() {
+  const u = UNIVERSES[clamp(pendingUniverse, 0, UNIVERSES.length - 1)];
+  const first = u.index * LEVELS_PER_UNIVERSE;
+  game.pendingZone = first;
+  noteZoneReached(first);
+  loadZone(first, { freshPlayer: false });
+  game.screen = 'playing';
+  Screens.show('hud');
+  showBanner(u.name.toUpperCase());
+  SaveSystem.save('universe');
 }
 
 function updateObjective() {
@@ -5896,7 +6705,59 @@ function zoneArt(i) {
   return '<svg class="zart" viewBox="0 0 64 64"><path fill="#1b2230" d="M14 46h36v6H14zM20 38h24v6H20z"/><path fill="' + col + '" opacity=".85" d="M26 24h12v12H26z"/><path fill="none" stroke="' + col + '" stroke-width="2" opacity=".7" d="M18 20l6-8 8 7 8-7 6 8"/></svg>';
 }
 
+/* six universe cards in a row: the frontier universe and everything behind it
+   is open, the rest stay locked until Rael gets there */
+function drawUniverseCards() {
+  const row = UI.universeRow;
+  if (!row) return;
+  if (typeof row.replaceChildren === 'function') row.replaceChildren();
+  else row.innerHTML = '';
+
+  const frontier = clamp(game.maxZone | 0, 0, ZONES.length - 1);
+  const frontierU = Math.floor(frontier / LEVELS_PER_UNIVERSE);
+  game.uiUniverse = clamp(game.uiUniverse | 0, 0, UNIVERSES.length - 1);
+
+  for (let i = 0; i < UNIVERSES.length; i++) {
+    const u = UNIVERSES[i];
+    const locked = i > frontierU;
+    const done = i < frontierU;
+    const card = document.createElement('div');
+    card.className = 'uni-card ' + (locked ? 'locked' : (done ? 'done' : 'open')) +
+      (i === game.uiUniverse ? ' sel' : '');
+    card.setAttribute('data-universe', String(i));
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', locked ? '-1' : '0');
+    card.setAttribute('aria-disabled', locked ? 'true' : 'false');
+    card.setAttribute('aria-label', u.name + (locked ? ' (locked)' : ''));
+    card.innerHTML =
+      '<div class="unum">Universe ' + u.number + '</div>' +
+      '<div class="uname">' + u.name + '</div>' +
+      '<div class="uera">' + u.era + '</div>' +
+      (locked
+        ? '<span class="ustate">' + LOCK_SVG + 'Locked</span>'
+        : (done
+          ? '<span class="ustate">' + CHECK_SVG + 'Cleared</span>'
+          : '<span class="ustate">' + PLAY_SVG + 'Enter</span>'));
+    const idx = i;
+    const pick = () => {
+      if (locked || game.screen !== 'zones') return;
+      game.uiUniverse = idx;
+      Sound.ability();
+      drawZoneCards();
+    };
+    card.addEventListener('click', pick);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); }
+    });
+    row.appendChild(card);
+  }
+  if (UI.universeCaption) {
+    UI.universeCaption.textContent = 'Universe ' + (game.uiUniverse + 1) + ' of ' + UNIVERSES.length;
+  }
+}
+
 function drawZoneCards() {
+  drawUniverseCards();
   const row = UI.zoneRow;
   if (!row) return;
   /* rebuild the strip so lock/check state always matches the frontier */
@@ -5904,8 +6765,11 @@ function drawZoneCards() {
   else row.innerHTML = '';
 
   const maxZone = clamp(game.maxZone | 0, 0, ZONES.length - 1);
-  for (let i = 0; i < ZONES.length; i++) {
+  const base = game.uiUniverse * LEVELS_PER_UNIVERSE;
+  for (let n = 0; n < LEVELS_PER_UNIVERSE; n++) {
+    const i = base + n;
     const z = ZONES[i];
+    if (!z) continue;
     const done = i < maxZone;
     const locked = i > maxZone;
     const card = document.createElement('div');
@@ -5914,9 +6778,9 @@ function drawZoneCards() {
     card.setAttribute('role', 'button');
     card.setAttribute('tabindex', locked ? '-1' : '0');
     card.setAttribute('aria-disabled', locked ? 'true' : 'false');
-    card.setAttribute('aria-label', 'Zone ' + z.id + ' · ' + z.name + (locked ? ' (locked)' : ''));
+    card.setAttribute('aria-label', 'Level ' + z.level + ' · ' + z.name + (locked ? ' (locked)' : ''));
     card.innerHTML =
-      '<div class="znum">Zone ' + z.id + '</div>' +
+      '<div class="znum">Level ' + z.level + '</div>' +
       zoneArt(i) +
       '<div class="zname">' + z.name + '</div>' +
       '<div class="zdesc">' + (z.blurb || '') + '</div>' +
@@ -5934,22 +6798,28 @@ function drawZoneCards() {
   }
 
   if (UI.zoneHint) {
-    UI.zoneHint.textContent = maxZone <= 0
-      ? 'Locked zones open as you push deeper'
-      : (maxZone >= ZONES.length - 1
-        ? 'Every zone unlocked'
-        : (maxZone + 1) + ' of ' + ZONES.length + ' zones unlocked');
+    const uni = UNIVERSES[game.uiUniverse];
+    let open = 0;
+    for (let n = 0; n < LEVELS_PER_UNIVERSE; n++) if (base + n <= maxZone) open++;
+    UI.zoneHint.textContent = open === 0
+      ? 'This universe is still sealed — push deeper in the one before it'
+      : (open === LEVELS_PER_UNIVERSE
+        ? 'All five levels of ' + uni.name + ' are open'
+        : open + ' of ' + LEVELS_PER_UNIVERSE + ' levels open in ' + uni.name);
   }
 }
 
 function showZoneSelect() {
   if (UI.zoneRow) UI.zoneRow.scrollLeft = 0;
+  /* land on the universe Rael has actually reached */
+  game.uiUniverse = Math.floor(clamp(game.maxZone | 0, 0, ZONES.length - 1) / LEVELS_PER_UNIVERSE);
   drawZoneCards();
   Screens.show('zoneScreen');
   game.screen = 'zones';
   game.menuTime = 0;
-  /* start the strip on the frontier so the newest zone is in view */
-  const frontier = clamp(game.maxZone | 0, 0, ZONES.length - 1);
+  /* start the strip on the frontier so the newest level is in view */
+  const frontier = clamp(game.maxZone | 0, 0, ZONES.length - 1) -
+    game.uiUniverse * LEVELS_PER_UNIVERSE;
   const el = UI.zoneRow && UI.zoneRow.children ? UI.zoneRow.children[frontier] : null;
   if (el && typeof el.scrollIntoView === 'function') {
     try { el.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) { /* ignore */ }
@@ -5972,8 +6842,8 @@ function openClassScreen(zoneIndex) {
   const z = ZONES[pendingStartZone];
   if (UI.csEyebrow) {
     UI.csEyebrow.textContent = pendingChangeClass
-      ? 'Zone ' + z.id + ' · ' + z.name + ' · your score carries over'
-      : 'Zone ' + z.id + ' · ' + z.name;
+      ? 'Universe ' + universeOf(pendingStartZone).number + ' · Level ' + z.level + ' · ' + z.name + ' · your score carries over'
+      : 'Universe ' + universeOf(pendingStartZone).number + ' · Level ' + z.level + ' · ' + z.name;
   }
 
   /* a slot remembers its class: offer a one-click start instead of a re-pick.
@@ -6111,6 +6981,9 @@ function endRun() {
   Screens.show('gameOver');
 }
 
+const TRUE_ENDING =
+  'The timeline is restored. Commander Rael returns to 3047 AD — a legend across all of time.';
+
 function showVictory() {
   BossMusic.stop();
   game.screen = 'victory';
@@ -6122,6 +6995,7 @@ function showVictory() {
   UI.vicScore.textContent = String(Math.floor(game.score));
   UI.vicGems.textContent = String(game.gems);
   UI.vicBest.textContent = 'Best score ' + Math.max(game.best, Math.floor(game.score));
+  if (UI.vicEnding) UI.vicEnding.textContent = TRUE_ENDING;
 
   /* freeze the speedrun clock and compare it with the saved best */
   const time = RunClock.finish();
@@ -6219,6 +7093,10 @@ function updateHud() {
 
 /* ------------------------------ buttons ------------------------------------ */
 document.getElementById('btnBegin').addEventListener('click', beginMission);
+document.getElementById('btnNextUniverse').addEventListener('click', () => {
+  showUniverseIntro(pendingUniverse);
+});
+document.getElementById('btnEnterUniverse').addEventListener('click', enterUniverse);
 document.getElementById('btnHowTo').addEventListener('click', () => {
   UI.howto.classList.toggle('show');
 });
@@ -6603,6 +7481,207 @@ function groundTileFor(zoneIndex) {
       g.fillStyle = 'rgba(196,146,255,0.1)';
       g.fillRect(rng() * S, rng() * S, 1.2, 1.2);
     }
+
+  } else if (z.tile === 'sand') {
+    /* ---- Universe 2 · Egypt: wind-combed sand over carved stone ---- */
+    g.fillStyle = '#c79a56';
+    g.fillRect(0, 0, S, S);
+    /* dune ripples: long shallow waves in three sand tones */
+    for (let i = 0; i < 22; i++) {
+      const y0 = rng() * S;
+      const amp = 3 + rng() * 7;
+      const tone = rng();
+      g.strokeStyle = tone > 0.66 ? 'rgba(240,206,140,0.30)'
+        : (tone > 0.33 ? 'rgba(166,124,66,0.28)' : 'rgba(206,168,104,0.35)');
+      g.lineWidth = 1.4 + rng() * 3.2;
+      g.beginPath();
+      for (let x = -10; x <= S + 10; x += 8) {
+        const y = y0 + Math.sin((x / S) * TAU * (1 + (i % 3)) + i) * amp;
+        if (x === -10) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+    /* grain */
+    for (let i = 0; i < 260; i++) {
+      g.fillStyle = rng() > 0.5 ? 'rgba(255,238,196,0.35)' : 'rgba(120,88,44,0.28)';
+      g.fillRect(rng() * S, rng() * S, 1.1, 1.1);
+    }
+    /* two carved hieroglyph bands, half-buried in the sand */
+    for (let b = 0; b < 2; b++) {
+      const by = 40 + b * 128 + rng() * 12;
+      g.fillStyle = '#8d6a3a';
+      g.fillRect(0, by, S, 22);
+      g.fillStyle = 'rgba(245,214,150,0.22)';
+      g.fillRect(0, by, S, 2.4);
+      g.fillStyle = 'rgba(60,38,16,0.55)';
+      for (let x = 6; x < S - 10; x += 17) {
+        const k = Math.floor(rng() * 5);
+        g.save();
+        g.translate(x, by + 11);
+        g.beginPath();
+        if (k === 0) { g.arc(0, 0, 4, 0, TAU); }
+        else if (k === 1) { g.moveTo(-4, 5); g.lineTo(0, -6); g.lineTo(4, 5); }
+        else if (k === 2) { g.moveTo(-4, -5); g.lineTo(4, -5); g.moveTo(0, -5); g.lineTo(0, 6); }
+        else if (k === 3) { g.moveTo(-4, 0); g.quadraticCurveTo(0, -7, 4, 0); g.moveTo(-4, 5); g.lineTo(4, 5); }
+        else { g.moveTo(-4, -5); g.quadraticCurveTo(5, -2, -2, 6); }
+        if (k === 0) g.stroke(); else g.stroke();
+        g.lineWidth = 1.6;
+        g.restore();
+      }
+    }
+  } else if (z.tile === 'dojo') {
+    /* ---- Universe 3 · Japan: dark cedar boards and tatami ---- */
+    g.fillStyle = '#1b120b';
+    g.fillRect(0, 0, S, S);
+    /* plank grain across the whole tile */
+    for (let i = 0; i < 140; i++) {
+      g.strokeStyle = 'rgba(52,34,20,' + (0.15 + rng() * 0.3).toFixed(2) + ')';
+      g.lineWidth = 0.8 + rng() * 1.4;
+      const y = rng() * S;
+      g.beginPath();
+      g.moveTo(0, y);
+      g.bezierCurveTo(S * 0.3, y + (rng() - 0.5) * 5, S * 0.7, y + (rng() - 0.5) * 5, S, y);
+      g.stroke();
+    }
+    /* four tatami mats, woven straw with dark cloth borders */
+    const matW = S / 2 - 5, matH = S / 2 - 5;
+    for (let my = 0; my < 2; my++) {
+      for (let mx = 0; mx < 2; mx++) {
+        const x = 3 + mx * (S / 2), y = 3 + my * (S / 2);
+        g.fillStyle = '#6f5f39';
+        g.fillRect(x, y, matW, matH);
+        g.fillStyle = 'rgba(122,108,66,0.55)';
+        for (let k = 0; k < matW; k += 3) g.fillRect(x + k, y, 1.5, matH);
+        g.fillStyle = 'rgba(40,30,16,0.30)';
+        for (let k = 0; k < matH; k += 7) g.fillRect(x, y + k, matW, 1.2);
+        g.strokeStyle = '#20160e';
+        g.lineWidth = 3;
+        g.strokeRect(x + 1.5, y + 1.5, matW - 3, matH - 3);
+        g.fillStyle = 'rgba(214,182,120,0.12)';
+        g.fillRect(x + 4, y + 4, matW - 8, 2);
+      }
+    }
+    /* a few fallen petals ground into the weave */
+    for (let i = 0; i < 14; i++) {
+      g.fillStyle = 'rgba(244,164,196,' + (0.16 + rng() * 0.22).toFixed(2) + ')';
+      g.beginPath();
+      g.ellipse(rng() * S, rng() * S, 2 + rng() * 2.6, 1.2 + rng() * 1.4, rng() * TAU, 0, TAU);
+      g.fill();
+    }
+  } else if (z.tile === 'concrete') {
+    /* ---- Universe 4 · the wasteland: cracked concrete slabs ---- */
+    g.fillStyle = '#4a4a42';
+    g.fillRect(0, 0, S, S);
+    const cs = S / 3;
+    for (let cy = 0; cy < 3; cy++) {
+      for (let cx = 0; cx < 3; cx++) {
+        const t = rng();
+        g.fillStyle = t > 0.6 ? '#565650' : (t > 0.3 ? '#4d4d46' : '#44443e');
+        g.fillRect(cx * cs + 2, cy * cs + 2, cs - 4, cs - 4);
+        g.fillStyle = 'rgba(255,255,255,0.03)';
+        g.fillRect(cx * cs + 4, cy * cs + 4, cs - 8, 3);
+      }
+    }
+    /* cracks radiating between slabs */
+    for (let i = 0; i < 14; i++) {
+      let x = rng() * S, y = rng() * S;
+      g.strokeStyle = 'rgba(20,20,16,0.65)';
+      g.lineWidth = 1 + rng() * 1.6;
+      g.beginPath(); g.moveTo(x, y);
+      for (let k = 0; k < 4; k++) {
+        x += (rng() - 0.5) * 40; y += (rng() - 0.5) * 40;
+        g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+    /* one faded radiation stencil */
+    g.save();
+    g.translate(S * (0.3 + rng() * 0.4), S * (0.3 + rng() * 0.4));
+    g.rotate(rng() * TAU);
+    g.globalAlpha = 0.22;
+    g.fillStyle = '#c9d64a';
+    for (let k = 0; k < 3; k++) {
+      g.beginPath();
+      g.moveTo(0, 0);
+      g.arc(0, 0, 22, (k / 3) * TAU - 0.5, (k / 3) * TAU + 0.5);
+      g.closePath();
+      g.fill();
+    }
+    g.beginPath(); g.arc(0, 0, 4, 0, TAU); g.fill();
+    g.globalAlpha = 1;
+    g.restore();
+    for (let i = 0; i < 120; i++) {
+      g.fillStyle = 'rgba(160,160,140,0.12)';
+      g.fillRect(rng() * S, rng() * S, 1.6, 1.6);
+    }
+  } else if (z.tile === 'metal') {
+    /* ---- Universe 5 · the ship: dark plating with a live blue grid ---- */
+    g.fillStyle = '#0b1018';
+    g.fillRect(0, 0, S, S);
+    const pw = S / 2, ph = S / 2;
+    for (let py = 0; py < 2; py++) {
+      for (let px = 0; px < 2; px++) {
+        const t = rng();
+        g.fillStyle = t > 0.55 ? '#131b26' : (t > 0.25 ? '#101822' : '#0d141d');
+        g.fillRect(px * pw + 3, py * ph + 3, pw - 6, ph - 6);
+        /* brushed sheen */
+        g.fillStyle = 'rgba(148,197,255,0.035)';
+        g.fillRect(px * pw + 6, py * ph + 6, pw - 12, 6);
+        /* rivets */
+        g.fillStyle = 'rgba(160,196,240,0.22)';
+        for (let k = 0; k < 4; k++) {
+          g.beginPath();
+          g.arc(px * pw + 10 + k * 18, py * ph + 10, 1.5, 0, TAU);
+          g.fill();
+        }
+      }
+    }
+    /* glowing seams */
+    g.strokeStyle = 'rgba(56,189,248,0.55)';
+    g.lineWidth = 2;
+    g.shadowColor = 'rgba(56,189,248,0.9)';
+    g.shadowBlur = 8;
+    g.beginPath();
+    g.moveTo(0, 0); g.lineTo(S, 0);
+    g.moveTo(0, S / 2); g.lineTo(S, S / 2);
+    g.moveTo(0, 0); g.lineTo(0, S);
+    g.moveTo(S / 2, 0); g.lineTo(S / 2, S);
+    g.stroke();
+    g.shadowBlur = 0;
+    /* floor markers */
+    g.strokeStyle = 'rgba(56,189,248,0.14)';
+    g.lineWidth = 1.2;
+    g.beginPath(); g.arc(S * 0.25, S * 0.25, 16, 0, TAU); g.stroke();
+  } else if (z.tile === 'voidgrid') {
+    /* ---- Universe 6 · the void: pure black and purple fractals ---- */
+    g.fillStyle = '#05010a';
+    g.fillRect(0, 0, S, S);
+    for (let i = 0; i < 90; i++) {
+      g.fillStyle = 'rgba(120,60,200,0.05)';
+      g.beginPath(); g.arc(rng() * S, rng() * S, 2 + rng() * 8, 0, TAU); g.fill();
+    }
+    /* branching fractals, drawn recursively in miniature */
+    const branch = (x, y, a, len, depth) => {
+      if (depth <= 0 || len < 2) return;
+      const nx = x + Math.cos(a) * len;
+      const ny = y + Math.sin(a) * len;
+      g.strokeStyle = 'rgba(168,85,247,' + (0.16 + depth * 0.07).toFixed(2) + ')';
+      g.lineWidth = depth * 0.55;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(nx, ny); g.stroke();
+      const spread = 0.5 + rng() * 0.35;
+      branch(nx, ny, a - spread, len * 0.66, depth - 1);
+      branch(nx, ny, a + spread, len * 0.66, depth - 1);
+    };
+    for (let i = 0; i < 5; i++) {
+      branch(rng() * S, rng() * S, rng() * TAU, 26 + rng() * 18, 4);
+    }
+    /* faint lattice so the floor never reads as empty */
+    g.strokeStyle = 'rgba(124,58,237,0.10)';
+    g.lineWidth = 1;
+    for (let k = 0; k <= S; k += 32) {
+      g.beginPath(); g.moveTo(k, 0); g.lineTo(k, S); g.stroke();
+      g.beginPath(); g.moveTo(0, k); g.lineTo(S, k); g.stroke();
+    }
   } else {
     /* ---- Zone 5 · The Time Portal: black floor run through with blue charge ---- */
     g.fillStyle = '#02040a';
@@ -6659,7 +7738,8 @@ function buildFloorArt(zoneIndex) {
   const art = {
     kind: z.tile,
     torches: [], straw: [], rubble: [], roots: [], mushrooms: [],
-    puddles: [], runes: [], circles: [], fissures: [], rifts: [], motes: []
+    puddles: [], runes: [], circles: [], fissures: [], rifts: [], motes: [],
+    hiero: [], petals: [], stencils: [], panels: [], fractals: []
   };
   const px = () => 100 + rng() * (WORLD - 200);
   const py = () => 100 + rng() * (WORLD - 200);
@@ -6709,6 +7789,44 @@ function buildFloorArt(zoneIndex) {
       const s = spot(24);
       if (s) art.rubble.push({ x: s.x, y: s.y, s: rng() });
     }
+  } else if (art.kind === 'sand') {
+    /* ---- Egypt: carved glyph slabs and half-buried flagstones ---- */
+    for (let i = 0; i < 26; i++) {
+      const s = spot(40);
+      if (s) art.hiero.push({ x: s.x, y: s.y, rot: (rng() - 0.5) * 0.5, s: 0.8 + rng() * 0.6, n: 3 + Math.floor(rng() * 4) });
+    }
+    for (let i = 0; i < 70; i++) {
+      const s = spot(24);
+      if (s) art.rubble.push({ x: s.x, y: s.y, s: rng() });
+    }
+  } else if (art.kind === 'dojo') {
+    /* ---- Japan: drifts of fallen blossom and scattered straw ---- */
+    for (let i = 0; i < 120; i++) art.petals.push({ x: px(), y: py(), s: rng(), rot: rng() * TAU, ph: rng() * TAU });
+    for (let i = 0; i < 60; i++) art.straw.push({ x: px(), y: py(), s: rng(), rot: rng() * TAU });
+  } else if (art.kind === 'concrete') {
+    /* ---- the wasteland: gravel, broken slabs, radiation stencils ---- */
+    for (let i = 0; i < 30; i++) {
+      const s = spot(30);
+      if (s) art.rubble.push({ x: s.x, y: s.y, s: rng() });
+    }
+    for (let i = 0; i < 9; i++) {
+      const s = spot(70);
+      if (s) art.stencils.push({ x: s.x, y: s.y, rot: rng() * TAU, r: 26 + rng() * 22, s: rng() });
+    }
+  } else if (art.kind === 'metal') {
+    /* ---- the ship: recessed floor lights and cable runs ---- */
+    for (let i = 0; i < 34; i++) {
+      const s = spot(40);
+      if (s) art.panels.push({ x: s.x, y: s.y, rot: (rng() > 0.5 ? 0 : Math.PI / 2), ph: rng() * TAU, s: rng() });
+    }
+    for (let i = 0; i < 40; i++) art.motes.push({ x: px(), y: py(), ph: rng() * TAU, s: rng(), h: 0 });
+  } else if (art.kind === 'voidgrid') {
+    /* ---- the void: fractal scars that breathe ---- */
+    for (let i = 0; i < 24; i++) {
+      const s = spot(60);
+      if (s) art.fractals.push({ x: s.x, y: s.y, ph: rng() * TAU, s: rng(), r: 40 + rng() * 40 });
+    }
+    for (let i = 0; i < 40; i++) art.motes.push({ x: px(), y: py(), ph: rng() * TAU, s: rng(), h: 60 + rng() * 90 });
   } else if (art.kind === 'crack') {
     for (let i = 0; i < 130; i++) art.runes.push(makeRuneScript(rng, px(), py()));
     for (let i = 0; i < 24; i++) {
@@ -7163,6 +8281,96 @@ function artMote(mt, t) {
 }
 
 /* ---- the dispatched pass, culled to the camera ---- */
+
+/* ---- decals for the five new universes ---- */
+function artHieroSlab(h, t) {
+  ctx.save();
+  ctx.translate(h.x, h.y);
+  ctx.rotate(h.rot);
+  ctx.scale(h.s, h.s);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(-26, -13, 56, 30);
+  ctx.fillStyle = '#9a7642';
+  ctx.fillRect(-28, -15, 56, 30);
+  ctx.fillStyle = 'rgba(245,214,150,0.25)';
+  ctx.fillRect(-28, -15, 56, 3);
+  ctx.strokeStyle = 'rgba(58,36,14,0.7)';
+  ctx.lineWidth = 1.6;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < h.n; i++) {
+    const gx = -20 + i * 13;
+    ctx.beginPath();
+    if (i % 3 === 0) { ctx.arc(gx, 0, 4, 0, TAU); }
+    else if (i % 3 === 1) { ctx.moveTo(gx - 4, 6); ctx.lineTo(gx, -7); ctx.lineTo(gx + 4, 6); ctx.closePath(); }
+    else { ctx.moveTo(gx - 4, -6); ctx.lineTo(gx, 6); ctx.moveTo(gx, -6); ctx.lineTo(gx + 4, 4); }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function artPetalDrift(p, t) {
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(p.rot + Math.sin(t * 0.6 + p.ph) * 0.3);
+  ctx.globalAlpha = 0.45 + p.s * 0.4;
+  ctx.fillStyle = p.s > 0.6 ? '#f9a8d4' : '#fbcfe8';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 3 + p.s * 3, 1.6 + p.s * 1.4, 0, 0, TAU);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function artRadStencil(st, t) {
+  ctx.save();
+  ctx.translate(st.x, st.y);
+  ctx.rotate(st.rot);
+  ctx.globalAlpha = 0.13 + st.s * 0.07;
+  ctx.fillStyle = '#c9d64a';
+  for (let k = 0; k < 3; k++) {
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, st.r, (k / 3) * TAU - 0.52, (k / 3) * TAU + 0.52);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.beginPath(); ctx.arc(0, 0, st.r * 0.16, 0, TAU); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function artFloorPanel(pn, t) {
+  const pulse = 0.5 + 0.5 * Math.sin(t * 1.6 + pn.ph);
+  ctx.save();
+  ctx.translate(pn.x, pn.y);
+  ctx.rotate(pn.rot);
+  ctx.fillStyle = '#0b1119';
+  ctx.fillRect(-22, -4, 44, 8);
+  ctx.fillStyle = 'rgba(56,189,248,' + (0.12 + pulse * 0.22).toFixed(2) + ')';
+  ctx.fillRect(-20, -2, 40, 4);
+  ctx.fillStyle = 'rgba(186,230,253,' + (0.25 + pulse * 0.3).toFixed(2) + ')';
+  ctx.fillRect(-20, -1, 40, 1.6);
+  ctx.restore();
+}
+
+function artFractal(f, t) {
+  ctx.save();
+  ctx.translate(f.x, f.y);
+  ctx.globalAlpha = 0.18 + 0.12 * Math.sin(t * 1.4 + f.ph);
+  ctx.strokeStyle = '#a855f7';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * TAU + f.ph + t * 0.06;
+    const rr = f.r * (0.5 + f.s * 0.6);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr * 0.7);
+  }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
 function drawFloorArt() {
   const art = game.floorArt;
   if (!art) return;
@@ -7202,6 +8410,54 @@ function drawFloorArt() {
     for (i = 0; i < art.rubble.length; i++) {
       const r = art.rubble[i];
       if (vis(r.x, r.y, 26)) artRubblePile(r);
+    }
+  } else if (art.kind === 'sand') {
+    for (i = 0; i < art.hiero.length; i++) {
+      const h = art.hiero[i];
+      if (vis(h.x, h.y, 50)) artHieroSlab(h, t);
+    }
+    for (i = 0; i < art.rubble.length; i++) {
+      const r = art.rubble[i];
+      if (vis(r.x, r.y, 26)) artRubblePile(r);
+    }
+  } else if (art.kind === 'dojo') {
+    for (i = 0; i < art.petals.length; i++) {
+      const pn = art.petals[i];
+      if (vis(pn.x, pn.y, 20)) artPetalDrift(pn, t);
+    }
+    for (i = 0; i < art.straw.length; i++) {
+      const st2 = art.straw[i];
+      if (vis(st2.x, st2.y, 22)) artStraw(st2);
+    }
+  } else if (art.kind === 'concrete') {
+    for (i = 0; i < art.stencils.length; i++) {
+      const st3 = art.stencils[i];
+      if (vis(st3.x, st3.y, st3.r + 10)) artRadStencil(st3, t);
+    }
+    for (i = 0; i < art.rubble.length; i++) {
+      const r2 = art.rubble[i];
+      if (vis(r2.x, r2.y, 26)) artRubblePile(r2);
+    }
+  } else if (art.kind === 'metal') {
+    for (i = 0; i < art.panels.length; i++) {
+      const pn2 = art.panels[i];
+      if (vis(pn2.x, pn2.y, 40)) artFloorPanel(pn2, t);
+    }
+    for (i = 0; i < art.motes.length; i++) {
+      const m2 = art.motes[i];
+      if (vis(m2.x, m2.y, 24)) {
+        ctx.fillStyle = 'rgba(186,230,253,0.5)';
+        ctx.fillRect(m2.x, m2.y, 1.6, 1.6);
+      }
+    }
+  } else if (art.kind === 'voidgrid') {
+    for (i = 0; i < art.fractals.length; i++) {
+      const f2 = art.fractals[i];
+      if (vis(f2.x, f2.y, f2.r + 10)) artFractal(f2, t);
+    }
+    for (i = 0; i < art.motes.length; i++) {
+      const m3 = art.motes[i];
+      if (vis(m3.x, m3.y, 40)) artMote(m3, t);
     }
   } else if (art.kind === 'crack') {
     for (i = 0; i < art.circles.length; i++) {
@@ -8541,10 +9797,667 @@ function drawRobedGiant(b, pal, flash) {
   ctx.restore();
 }
 
+
+/* ============================================================================
+   THE UNIVERSE CAST — every new enemy, drawn on the same canvas rules as the
+   medieval four: one readable silhouette, three flat colour zones, an oversized
+   head, and a weapon you can name from across the arena.
+   ============================================================================ */
+function enemyDir(e) { return Math.cos(e.heading) >= 0 ? 1 : -1; }
+
+function artAnubis(e, flash) {
+  const r = e.r, dir = enemyDir(e), t = e.t;
+  const skin = flash || '#2b2733';
+  const gold = flash || '#facc15';
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.scale(dir, 1);
+  const bob = Math.sin(t * 3) * 1.1;
+  const step = Math.sin(t * 7) * 2.6;
+  ctx.fillStyle = flash || '#1a1820';
+  ctx.fillRect(-7, 1, 4.5, 11 + step);
+  ctx.fillRect(3, 1, 4.5, 11 - step);
+  /* kilt */
+  ctx.fillStyle = flash || '#c8a24a';
+  ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(8, 0); ctx.lineTo(6, 9); ctx.lineTo(-6, 9); ctx.closePath(); ctx.fill();
+  /* torso */
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.ellipse(0, -6 + bob, 7.5, 9, 0, 0, TAU); ctx.fill();
+  /* gold pectoral */
+  ctx.fillStyle = gold;
+  ctx.beginPath(); ctx.ellipse(0, -13 + bob, 7.2, 2.8, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = hexToRgba('#facc15', 0.5);
+  ctx.beginPath(); ctx.arc(0, -12 + bob, 2, 0, TAU); ctx.fill();
+  /* jackal head */
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.ellipse(1, -20 + bob, 6, 5.8, 0, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(4, -22.5 + bob); ctx.lineTo(14, -19.5 + bob); ctx.lineTo(4, -16 + bob); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-2, -25 + bob); ctx.lineTo(-5, -35 + bob); ctx.lineTo(2, -26 + bob); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(3, -25 + bob); ctx.lineTo(6, -34 + bob); ctx.lineTo(8, -24 + bob); ctx.closePath(); ctx.fill();
+  /* eye + nose */
+  ctx.fillStyle = flash || '#f59e0b';
+  ctx.beginPath(); ctx.arc(5, -20.5 + bob, 1.7, 0, TAU); ctx.fill();
+  ctx.fillStyle = flash || '#0b0a0e';
+  ctx.beginPath(); ctx.arc(13, -19.5 + bob, 1.1, 0, TAU); ctx.fill();
+  /* spear, angled forward */
+  ctx.save();
+  ctx.translate(9, -8 + bob);
+  ctx.rotate(-0.35);
+  ctx.fillStyle = flash || '#8a5a2b';
+  ctx.fillRect(-2, -26, 3, 34);
+  ctx.fillStyle = flash || '#fde68a';
+  ctx.beginPath(); ctx.moveTo(-0.5, -34); ctx.lineTo(4, -25); ctx.lineTo(-5, -25); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.restore();
+}
+
+function artMummy(e, flash) {
+  const dir = enemyDir(e), t = e.t;
+  const wrap = flash || '#cfc0a0';
+  const wrapDark = flash || '#a89a7c';
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.scale(dir, 1);
+  const bob = Math.sin(t * 1.8) * 1.4;
+  const sway = Math.sin(t * 2.2) * 1.6;
+  /* legs */
+  ctx.fillStyle = wrapDark;
+  ctx.fillRect(-6, 2, 5, 12);
+  ctx.fillRect(2, 2, 5, 12);
+  /* body */
+  ctx.fillStyle = wrap;
+  ctx.beginPath(); ctx.ellipse(0, -7 + bob, 8, 11, 0.06, 0, TAU); ctx.fill();
+  /* bandage bands */
+  ctx.strokeStyle = 'rgba(80,68,50,0.45)';
+  ctx.lineWidth = 1.4;
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.moveTo(-8.5, -14 + i * 4 + bob);
+    ctx.quadraticCurveTo(0, -12 + i * 4 + bob + 2, 8.5, -15 + i * 4 + bob);
+    ctx.stroke();
+  }
+  /* reaching arms */
+  ctx.strokeStyle = wrap;
+  ctx.lineWidth = 4.4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-3, -11 + bob); ctx.lineTo(-9 + sway, -7 + bob); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(3, -11 + bob); ctx.lineTo(12 + sway, -14 + bob); ctx.stroke();
+  /* head */
+  ctx.fillStyle = wrap;
+  ctx.beginPath(); ctx.ellipse(1, -22 + bob, 6.4, 7, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(80,68,50,0.4)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(-5, -24 + bob); ctx.lineTo(7, -21 + bob); ctx.stroke();
+  /* one green eye */
+  ctx.fillStyle = flash || '#4ade80';
+  ctx.beginPath(); ctx.arc(4, -23 + bob, 1.8, 0, TAU); ctx.fill();
+  ctx.fillStyle = hexToRgba('#4ade80', 0.35);
+  ctx.beginPath(); ctx.arc(4, -23 + bob, 4.4, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
+function artScorpion(e, flash) {
+  const dir = enemyDir(e), t = e.t;
+  const shell = flash || '#b8860b';
+  const dark = flash || '#7c5a08';
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.scale(dir, 1);
+  const scuttle = Math.sin(t * 14) * 1.4;
+  /* legs */
+  ctx.strokeStyle = dark; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  for (let i = 0; i < 3; i++) {
+    const lx = -4 + i * 5;
+    ctx.beginPath(); ctx.moveTo(lx, 2); ctx.lineTo(lx - 5, 8 + (i % 2 ? scuttle : -scuttle)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(lx, 2); ctx.lineTo(lx + 4, 8 - (i % 2 ? scuttle : -scuttle)); ctx.stroke();
+  }
+  /* body */
+  ctx.fillStyle = shell;
+  ctx.beginPath(); ctx.ellipse(0, 0, 9, 5.4, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = dark;
+  ctx.beginPath(); ctx.ellipse(2, -1, 4.5, 2.6, 0, 0, TAU); ctx.fill();
+  /* claws */
+  ctx.strokeStyle = shell; ctx.lineWidth = 2.6;
+  ctx.beginPath(); ctx.moveTo(-7, -1); ctx.lineTo(-13, -5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-7, 1); ctx.lineTo(-13, 5); ctx.stroke();
+  ctx.fillStyle = shell;
+  ctx.beginPath(); ctx.arc(-13, -5, 2.4, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(-13, 5, 2.4, 0, TAU); ctx.fill();
+  /* tail curled over the back */
+  ctx.strokeStyle = shell; ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(7, 0);
+  ctx.quadraticCurveTo(13, -6 + scuttle, 8, -13);
+  ctx.stroke();
+  ctx.fillStyle = flash || '#fde047';
+  ctx.beginPath(); ctx.moveTo(8, -13); ctx.lineTo(11, -18); ctx.lineTo(6, -16); ctx.closePath(); ctx.fill();
+  /* eyes */
+  ctx.fillStyle = '#fef3c7';
+  ctx.beginPath(); ctx.arc(-3, -2, 1.1, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(-1, -3, 1.1, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
+function artSamurai(e, flash) {
+  const dir = enemyDir(e), t = e.t;
+  const armour = flash || '#b91c1c';
+  const trim = flash || '#f59e0b';
+  const dark = flash || '#3f0d0d';
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.scale(dir, 1);
+  const bob = Math.sin(t * 4) * 0.9;
+  const charging = e.chargeT > 0;
+  /* legs */
+  ctx.fillStyle = dark;
+  ctx.fillRect(-6, 1, 5, 12);
+  ctx.fillRect(2, 1, 5, 12);
+  /* skirt plates */
+  ctx.fillStyle = armour;
+  ctx.beginPath(); ctx.moveTo(-9, -2); ctx.lineTo(9, -2); ctx.lineTo(7, 6); ctx.lineTo(-7, 6); ctx.closePath(); ctx.fill();
+  /* torso */
+  ctx.fillStyle = armour;
+  ctx.beginPath(); ctx.ellipse(0, -9 + bob, 8, 9.5, 0, 0, TAU); ctx.fill();
+  /* lacing */
+  ctx.strokeStyle = trim; ctx.lineWidth = 1.2;
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath(); ctx.moveTo(-6, -13 + i * 3.4 + bob); ctx.lineTo(6, -13 + i * 3.4 + bob); ctx.stroke();
+  }
+  /* shoulder guards */
+  ctx.fillStyle = dark;
+  ctx.beginPath(); ctx.ellipse(-8, -13 + bob, 4.6, 3, -0.3, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(8, -13 + bob, 4.6, 3, 0.3, 0, TAU); ctx.fill();
+  /* kabuto */
+  ctx.fillStyle = armour;
+  ctx.beginPath(); ctx.arc(1, -21 + bob, 6.6, Math.PI, 0); ctx.fill();
+  ctx.fillRect(-5.6, -21 + bob, 13, 3);
+  ctx.fillStyle = trim;
+  ctx.beginPath(); ctx.moveTo(0, -27 + bob); ctx.lineTo(-7, -33 + bob); ctx.lineTo(1, -30 + bob); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(2, -27 + bob); ctx.lineTo(9, -33 + bob); ctx.lineTo(3, -30 + bob); ctx.closePath(); ctx.fill();
+  /* mask + eyes */
+  ctx.fillStyle = flash || '#1c1310';
+  ctx.fillRect(-4.6, -20 + bob, 10, 3.4);
+  ctx.fillStyle = '#fca5a5';
+  ctx.fillRect(-2.4, -19.4 + bob, 2.4, 1.6);
+  ctx.fillRect(2.2, -19.4 + bob, 2.4, 1.6);
+  /* katana */
+  ctx.save();
+  ctx.translate(9, -8 + bob);
+  ctx.rotate(charging ? -1.15 : -0.42);
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(-1.6, 0, 3.2, 9);
+  ctx.fillStyle = flash || '#e2e8f0';
+  ctx.beginPath();
+  ctx.moveTo(0, -2); ctx.quadraticCurveTo(3.4, -18, 0.4, -31);
+  ctx.quadraticCurveTo(-2.2, -17, -2.4, -2);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+  if (charging) {
+    ctx.strokeStyle = 'rgba(248,113,113,0.5)'; ctx.lineWidth = 1.4;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath(); ctx.moveTo(-12 - i * 5, -16 + i * 7); ctx.lineTo(-4 - i * 5, -16 + i * 7); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function artNinja(e, flash) {
+  const dir = enemyDir(e), t = e.t;
+  const cloth = flash || '#1e293b';
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.scale(dir, 1);
+  ctx.globalAlpha = e.invis ? 0.16 : 1;
+  const bob = Math.sin(t * 5) * 0.8;
+  /* legs */
+  ctx.fillStyle = flash || '#0f172a';
+  ctx.fillRect(-5, 1, 4.4, 11);
+  ctx.fillRect(2, 1, 4.4, 11);
+  /* body */
+  ctx.fillStyle = cloth;
+  ctx.beginPath(); ctx.ellipse(0, -6 + bob, 6.6, 9, 0, 0, TAU); ctx.fill();
+  /* sash */
+  ctx.fillStyle = flash || '#b91c1c';
+  ctx.fillRect(-6.6, -4 + bob, 13, 2.4);
+  /* scarf trailing behind */
+  const flap = Math.sin(t * 6) * 3;
+  ctx.fillStyle = flash || '#7f1d1d';
+  ctx.beginPath();
+  ctx.moveTo(-4, -15 + bob);
+  ctx.quadraticCurveTo(-16, -14 + flap, -22, -8 + flap);
+  ctx.quadraticCurveTo(-14, -10 + flap, -4, -11 + bob);
+  ctx.closePath(); ctx.fill();
+  /* hood */
+  ctx.fillStyle = cloth;
+  ctx.beginPath(); ctx.ellipse(1, -19 + bob, 5.6, 6.2, 0, 0, TAU); ctx.fill();
+  /* eye slit */
+  ctx.fillStyle = flash || '#e2e8f0';
+  ctx.fillRect(-2.6, -20 + bob, 7.6, 2.2);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0.6, -19.6 + bob, 1.8, 1.4);
+  /* shuriken in hand */
+  ctx.save();
+  ctx.translate(9, -8 + bob);
+  ctx.rotate(t * 8);
+  ctx.fillStyle = flash || '#cbd5e1';
+  for (let k = 0; k < 4; k++) {
+    ctx.rotate(Math.PI / 2);
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(6, -2); ctx.lineTo(7.4, 0); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function artOni(e, flash) {
+  const r = e.r, dir = enemyDir(e), t = e.t;
+  const skin = flash || '#1d4ed8';
+  const skinDark = flash || '#172554';
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.scale(dir, 1);
+  const bob = Math.sin(t * 2) * 1.6;
+  const step = Math.sin(t * 3) * 2.2;
+  /* legs */
+  ctx.fillStyle = skinDark;
+  ctx.fillRect(-10, 6, 7, 16 + step);
+  ctx.fillRect(3, 6, 7, 16 - step);
+  /* loincloth */
+  ctx.fillStyle = flash || '#b45309';
+  ctx.beginPath(); ctx.moveTo(-11, 0); ctx.lineTo(11, 0); ctx.lineTo(8, 11); ctx.lineTo(-8, 11); ctx.closePath(); ctx.fill();
+  /* belly */
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.ellipse(0, -9 + bob, 12, 14, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = hexToRgba('#93c5fd', 0.35);
+  ctx.beginPath(); ctx.ellipse(0, -4 + bob, 7.6, 6.4, 0, 0, TAU); ctx.fill();
+  /* arms */
+  ctx.strokeStyle = skin; ctx.lineWidth = 6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-10, -14 + bob); ctx.lineTo(-16, -3 + bob + step); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(10, -14 + bob); ctx.lineTo(17, -8 + bob - step); ctx.stroke();
+  /* head */
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.ellipse(1, -25 + bob, 8.4, 8, 0, 0, TAU); ctx.fill();
+  /* horns */
+  ctx.fillStyle = flash || '#f8fafc';
+  ctx.beginPath(); ctx.moveTo(-4, -31 + bob); ctx.lineTo(-7, -42 + bob); ctx.lineTo(1, -33 + bob); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(5, -31 + bob); ctx.lineTo(9, -41 + bob); ctx.lineTo(10, -30 + bob); ctx.closePath(); ctx.fill();
+  /* tusks + eyes */
+  ctx.fillStyle = '#f8fafc';
+  ctx.beginPath(); ctx.moveTo(3, -21 + bob); ctx.lineTo(5, -17 + bob); ctx.lineTo(1.6, -20 + bob); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = flash || '#fde047';
+  ctx.beginPath(); ctx.arc(-2, -27 + bob, 1.9, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(5, -27 + bob, 1.9, 0, TAU); ctx.fill();
+  /* kanabo club */
+  ctx.save();
+  ctx.translate(16, -8 + bob);
+  ctx.rotate(-0.4 + Math.sin(t * 2) * 0.06);
+  ctx.fillStyle = flash || '#57534e';
+  ctx.fillRect(-2.4, 0, 4.8, 24);
+  ctx.fillStyle = flash || '#a8a29e';
+  ctx.beginPath(); ctx.roundRect(-4.6, -20, 9.2, 22, 2); ctx.fill();
+  ctx.fillStyle = flash || '#7f1d1d';
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath(); ctx.arc(-2.4, -16 + i * 5, 1.3, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(2.4, -13 + i * 5, 1.3, 0, TAU); ctx.fill();
+  }
+  ctx.restore();
+  ctx.restore();
+}
+
+function artRaider(e, flash) {
+  const dir = enemyDir(e), t = e.t;
+  const coat = flash || '#57534e';
+  const rust = flash || '#b45309';
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.scale(dir, 1);
+  const bob = Math.sin(t * 3) * 0.9;
+  /* legs */
+  ctx.fillStyle = flash || '#3f3f46';
+  ctx.fillRect(-6, 1, 5, 12);
+  ctx.fillRect(2, 1, 5, 12);
+  /* coat */
+  ctx.fillStyle = coat;
+  ctx.beginPath(); ctx.moveTo(-8, -16 + bob); ctx.lineTo(8, -16 + bob); ctx.lineTo(9, 6); ctx.lineTo(-9, 6); ctx.closePath(); ctx.fill();
+  /* body armour plates */
+  ctx.fillStyle = rust;
+  ctx.fillRect(-7, -12 + bob, 14, 4);
+  ctx.fillRect(-6, -6 + bob, 12, 3);
+  /* shoulder spikes */
+  ctx.fillStyle = flash || '#78716c';
+  ctx.beginPath(); ctx.moveTo(-8, -16 + bob); ctx.lineTo(-13, -20 + bob); ctx.lineTo(-8, -11 + bob); ctx.closePath(); ctx.fill();
+  /* head: gas mask + goggles */
+  ctx.fillStyle = flash || '#292524';
+  ctx.beginPath(); ctx.ellipse(1, -21 + bob, 5.8, 6, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = flash || '#facc15';
+  ctx.beginPath(); ctx.arc(-1.4, -22 + bob, 2, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(3.4, -22 + bob, 2, 0, TAU); ctx.fill();
+  ctx.fillStyle = flash || '#44403c';
+  ctx.fillRect(-1, -17 + bob, 5, 3.4);
+  /* shotgun */
+  ctx.save();
+  ctx.translate(7, -9 + bob);
+  ctx.rotate(-0.12);
+  ctx.fillStyle = flash || '#78350f'; ctx.fillRect(-4, -1.8, 10, 3.6);
+  ctx.fillStyle = flash || '#a8a29e'; ctx.fillRect(6, -1.4, 14, 2.8);
+  ctx.fillStyle = flash || '#e7e5e4'; ctx.fillRect(18, -1.8, 3, 3.6);
+  ctx.restore();
+  ctx.restore();
+}
+
+function artMutant(e, flash) {
+  const dir = enemyDir(e), t = e.t;
+  const skin = flash || '#4d7c0f';
+  const lump = flash || '#65a30d';
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.scale(dir, 1);
+  const breathe = Math.sin(t * 2.4) * 1.8;
+  /* legs */
+  ctx.fillStyle = flash || '#365314';
+  ctx.fillRect(-10, 6, 8, 15);
+  ctx.fillRect(3, 6, 8, 15);
+  /* hunched body */
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.ellipse(0, -6 + breathe * 0.4, 14, 15, 0.1, 0, TAU); ctx.fill();
+  /* tumours */
+  ctx.fillStyle = lump;
+  ctx.beginPath(); ctx.arc(-7, -12, 4.2 + breathe * 0.4, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(7, -3, 3.4, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(-2, -18, 3, 0, TAU); ctx.fill();
+  /* huge right arm */
+  ctx.strokeStyle = skin; ctx.lineWidth = 8; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(9, -16); ctx.lineTo(18, -4 + breathe); ctx.stroke();
+  ctx.fillStyle = lump;
+  ctx.beginPath(); ctx.arc(19, -2 + breathe, 4.6, 0, TAU); ctx.fill();
+  /* small left arm */
+  ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(-10, -14); ctx.lineTo(-17, -4); ctx.stroke();
+  /* head sunk into the shoulders */
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.ellipse(1, -21, 7, 6.4, 0, 0, TAU); ctx.fill();
+  /* glowing veins */
+  ctx.strokeStyle = 'rgba(190,242,100,0.65)'; ctx.lineWidth = 1.1;
+  ctx.beginPath(); ctx.moveTo(-6, -20); ctx.quadraticCurveTo(0, -16, 6, -20); ctx.stroke();
+  ctx.fillStyle = flash || '#fef08a';
+  ctx.beginPath(); ctx.arc(-1.6, -22, 1.7, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(3.6, -22, 1.7, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
+function artDrone(e, flash) {
+  const t = e.t;
+  ctx.save();
+  ctx.translate(e.x, e.y + Math.sin(t * 3) * 2.4);
+  /* rotor blur */
+  ctx.strokeStyle = 'rgba(148,163,184,0.55)';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.ellipse(0, -10, 15, 3, 0, 0, TAU); ctx.stroke();
+  /* arms */
+  ctx.fillStyle = flash || '#334155';
+  ctx.fillRect(-13, -7, 26, 3.4);
+  /* core */
+  ctx.fillStyle = flash || '#475569';
+  ctx.beginPath(); ctx.roundRect(-8, -6, 16, 12, 4); ctx.fill();
+  ctx.fillStyle = flash || '#0f172a';
+  ctx.beginPath(); ctx.roundRect(-12, -3, 4, 7, 1.6); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(8, -3, 4, 7, 1.6); ctx.fill();
+  /* eye */
+  const eye = flash || '#f87171';
+  ctx.fillStyle = eye;
+  ctx.shadowColor = eye; ctx.shadowBlur = 10;
+  ctx.beginPath(); ctx.arc(0, -0.5, 3.2, 0, TAU); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#fee2e2';
+  ctx.beginPath(); ctx.arc(0.8, -1.4, 1.1, 0, TAU); ctx.fill();
+  /* antenna */
+  ctx.strokeStyle = flash || '#94a3b8'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(0, -13); ctx.stroke();
+  ctx.restore();
+}
+
+function artPlasma(e, flash) {
+  const dir = enemyDir(e), t = e.t;
+  ctx.save();
+  ctx.translate(e.x, e.y + Math.sin(t * 5) * 1.6);
+  ctx.scale(dir, 1);
+  /* silver delta hull */
+  ctx.fillStyle = flash || '#cbd5e1';
+  ctx.beginPath();
+  ctx.moveTo(13, 0); ctx.lineTo(-6, -9); ctx.lineTo(-2, 0); ctx.lineTo(-6, 9);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = flash || '#94a3b8';
+  ctx.beginPath(); ctx.moveTo(13, 0); ctx.lineTo(1, -4); ctx.lineTo(1, 4); ctx.closePath(); ctx.fill();
+  /* cyan core */
+  const glow = ctx.createRadialGradient(-1, 0, 1, -1, 0, 9);
+  glow.addColorStop(0, 'rgba(224,242,254,0.95)');
+  glow.addColorStop(0.5, 'rgba(56,189,248,0.65)');
+  glow.addColorStop(1, 'rgba(56,189,248,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(-1, 0, 9, 0, TAU); ctx.fill();
+  /* thruster */
+  ctx.fillStyle = 'rgba(125,211,252,0.75)';
+  ctx.beginPath();
+  ctx.moveTo(-6, -3); ctx.lineTo(-14 - Math.sin(t * 20) * 2, 0); ctx.lineTo(-6, 3);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function artWraith(e, flash) {
+  const dir = enemyDir(e), t = e.t;
+  ctx.save();
+  ctx.translate(e.x, e.y + Math.sin(t * 1.8) * 3);
+  ctx.scale(dir, 1);
+  ctx.globalAlpha = e.invis ? 0.1 : 0.92;
+  /* tattered cloak */
+  ctx.fillStyle = flash || '#4c1d95';
+  ctx.beginPath();
+  ctx.moveTo(-9, -14);
+  ctx.quadraticCurveTo(-13, 4, -7, 12);
+  ctx.lineTo(-3, 7); ctx.lineTo(0, 13); ctx.lineTo(3, 6); ctx.lineTo(7, 12);
+  ctx.quadraticCurveTo(13, 4, 9, -14);
+  ctx.closePath(); ctx.fill();
+  /* hood */
+  ctx.fillStyle = flash || '#2e1065';
+  ctx.beginPath(); ctx.ellipse(0, -16, 7.4, 8, 0, 0, TAU); ctx.fill();
+  /* void face */
+  ctx.fillStyle = '#05010c';
+  ctx.beginPath(); ctx.ellipse(1.4, -15.6, 4.6, 5.4, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = flash || '#c4b5fd';
+  ctx.shadowColor = '#a78bfa'; ctx.shadowBlur = 10;
+  ctx.beginPath(); ctx.arc(-0.4, -16, 1.5, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(3.6, -16, 1.5, 0, TAU); ctx.fill();
+  ctx.shadowBlur = 0;
+  /* claws */
+  ctx.strokeStyle = flash || '#c4b5fd';
+  ctx.lineWidth = 1.6;
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(8, -8 + i * 3);
+    ctx.lineTo(14, -6 + i * 3.4);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function artMech(e, flash) {
+  const dir = enemyDir(e), t = e.t;
+  const plate = flash || '#64748b';
+  const plateLight = flash || '#94a3b8';
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.scale(dir, 1);
+  const bob = Math.sin(t * 1.6) * 0.8;
+  /* legs */
+  ctx.fillStyle = plate;
+  ctx.fillRect(-9, 8, 7, 13);
+  ctx.fillRect(3, 8, 7, 13);
+  ctx.fillStyle = flash || '#334155';
+  ctx.fillRect(-10, 19, 9, 4);
+  ctx.fillRect(2, 19, 9, 4);
+  /* torso */
+  ctx.fillStyle = plate;
+  ctx.beginPath(); ctx.roundRect(-11, -12 + bob, 22, 22, 3); ctx.fill();
+  ctx.fillStyle = plateLight;
+  ctx.fillRect(-8, -8 + bob, 16, 4);
+  /* shoulder rocket pods */
+  ctx.fillStyle = flash || '#475569';
+  ctx.beginPath(); ctx.roundRect(-17, -14 + bob, 7, 9, 2); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(10, -14 + bob, 7, 9, 2); ctx.fill();
+  ctx.fillStyle = '#f97316';
+  ctx.beginPath(); ctx.arc(-13.5, -11.5 + bob, 1.3, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(13.5, -11.5 + bob, 1.3, 0, TAU); ctx.fill();
+  /* chest core */
+  ctx.fillStyle = flash || '#38bdf8';
+  ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.arc(0, -2 + bob, 3, 0, TAU); ctx.fill();
+  ctx.shadowBlur = 0;
+  /* head */
+  ctx.fillStyle = plateLight;
+  ctx.beginPath(); ctx.roundRect(-5.5, -22 + bob, 11, 9, 2); ctx.fill();
+  ctx.fillStyle = flash || '#0ea5e9';
+  ctx.fillRect(-3.6, -19 + bob, 7.2, 2.6);
+  ctx.restore();
+}
+
+function artShade(e, flash) {
+  const dir = enemyDir(e), t = e.t;
+  const glow = flash || '#c084fc';
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.scale(dir, 1);
+  ctx.globalAlpha = 0.88;
+  const bob = Math.sin(t * 3) * 0.9;
+  const cls = getClass();
+  /* the mirror wears Rael's body, in void violet */
+  ctx.fillStyle = flash || '#2e1065';
+  ctx.fillRect(-5, 2, 4.6, 11);
+  ctx.fillRect(2, 2, 4.6, 11);
+  ctx.fillStyle = flash || '#4c1d95';
+  ctx.beginPath(); ctx.ellipse(0, -7 + bob, 7.4, 10, 0, 0, TAU); ctx.fill();
+  /* hood */
+  ctx.beginPath(); ctx.ellipse(1, -19 + bob, 6, 6.6, 0, 0, TAU); ctx.fill();
+  /* the face is a hole with two points of light */
+  ctx.fillStyle = '#0a0112';
+  ctx.beginPath(); ctx.ellipse(1.6, -19 + bob, 4.2, 4.8, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = glow;
+  ctx.shadowColor = glow; ctx.shadowBlur = 9;
+  ctx.beginPath(); ctx.arc(-0.4, -19.6 + bob, 1.3, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(3.4, -19.6 + bob, 1.3, 0, TAU); ctx.fill();
+  /* the class weapon, mirrored: blade, pistol, rail or orb */
+  if (cls.weapon === 'blade') {
+    ctx.strokeStyle = hexToRgba(glow, 0.9); ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(8, -6 + bob); ctx.lineTo(20, -22 + bob); ctx.stroke();
+  } else if (cls.weapon === 'rail') {
+    ctx.fillStyle = hexToRgba(glow, 0.85);
+    ctx.fillRect(6, -11 + bob, 19, 2.6);
+  } else if (cls.weapon === 'orbs') {
+    for (let k = 0; k < 3; k++) {
+      ctx.fillStyle = hexToRgba(glow, 0.8);
+      ctx.beginPath();
+      ctx.arc(10 + Math.cos(t * 2 + k * 2) * 4, -12 + Math.sin(t * 2 + k * 2) * 4, 2.2, 0, TAU);
+      ctx.fill();
+    }
+  } else {
+    ctx.fillStyle = hexToRgba(glow, 0.9);
+    ctx.fillRect(7, -10 + bob, 11, 3.4);
+    ctx.fillRect(15, -8.4 + bob, 4, 2.2);
+  }
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function artWraithTime(e, flash) {
+  const dir = enemyDir(e), t = e.t;
+  ctx.save();
+  ctx.translate(e.x, e.y + Math.sin(t * 2.2) * 3);
+  ctx.scale(dir, 1);
+  /* after-images of where it just was */
+  const hist = e.hist || [];
+  for (let k = 0; k < hist.length; k += 3) {
+    ctx.globalAlpha = 0.05 + (k / hist.length) * 0.08;
+    ctx.fillStyle = '#818cf8';
+    const hx = (hist[k].x - e.x) * dir;
+    const hy = hist[k].y - e.y;
+    ctx.beginPath(); ctx.ellipse(hx, hy, 6, 9, 0, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = e.invis ? 0.12 : 0.94;
+  ctx.fillStyle = flash || '#3730a3';
+  ctx.beginPath();
+  ctx.moveTo(-8, -13);
+  ctx.quadraticCurveTo(-12, 4, -6, 11);
+  ctx.lineTo(-2, 6); ctx.lineTo(1, 12); ctx.lineTo(4, 5); ctx.lineTo(8, 11);
+  ctx.quadraticCurveTo(12, 3, 8, -13);
+  ctx.closePath(); ctx.fill();
+  /* clock face where the head should be */
+  ctx.fillStyle = flash || '#1e1b4b';
+  ctx.beginPath(); ctx.arc(0, -17, 7, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(199,210,254,0.85)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(0, -17, 7, 0, TAU); ctx.stroke();
+  ctx.strokeStyle = flash || '#c7d2fe';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(0, -17); ctx.lineTo(0, -12.4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, -17); ctx.lineTo(3.4, -15.4); ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function artTitan(e, flash) {
+  const dir = enemyDir(e), t = e.t;
+  const flesh = flash || '#5b21b6';
+  const plate = flash || '#2e1065';
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.scale(dir, 1);
+  const bob = Math.sin(t * 1.4) * 2;
+  /* legs */
+  ctx.fillStyle = plate;
+  ctx.fillRect(-12, 10, 9, 20);
+  ctx.fillRect(4, 10, 9, 20);
+  /* torso */
+  ctx.fillStyle = flesh;
+  ctx.beginPath(); ctx.ellipse(0, -6 + bob, 15, 18, 0, 0, TAU); ctx.fill();
+  /* plates stolen from every universe */
+  ctx.fillStyle = hexToRgba('#f5b642', 0.55);   /* pharaoh gold */
+  ctx.beginPath(); ctx.ellipse(0, -18 + bob, 12, 3.4, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = hexToRgba('#dc2626', 0.6);    /* samurai lacquer */
+  ctx.fillRect(-15, -14 + bob, 7, 11);
+  ctx.fillStyle = hexToRgba('#94a3b8', 0.6);    /* mech plating */
+  ctx.fillRect(8, -12 + bob, 8, 12);
+  /* arms */
+  ctx.strokeStyle = flesh; ctx.lineWidth = 7; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-13, -14 + bob); ctx.lineTo(-21, 2 + bob); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(13, -14 + bob); ctx.lineTo(22, -2 + bob); ctx.stroke();
+  /* head */
+  ctx.fillStyle = flesh;
+  ctx.beginPath(); ctx.ellipse(0, -26 + bob, 9, 8, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#0a0112';
+  ctx.beginPath(); ctx.ellipse(1, -26 + bob, 6, 5.4, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = flash || '#e9d5ff';
+  ctx.shadowColor = '#a855f7'; ctx.shadowBlur = 12;
+  ctx.beginPath(); ctx.arc(-2, -27 + bob, 1.8, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(4, -27 + bob, 1.8, 0, TAU); ctx.fill();
+  ctx.shadowBlur = 0;
+  /* horn crown */
+  ctx.fillStyle = flash || '#c4b5fd';
+  ctx.beginPath(); ctx.moveTo(-6, -32 + bob); ctx.lineTo(-10, -42 + bob); ctx.lineTo(-2, -34 + bob); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(5, -32 + bob); ctx.lineTo(9, -41 + bob); ctx.lineTo(10, -31 + bob); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+const ENEMY_ART = {
+  anubis: artAnubis, mummy: artMummy, scorpion: artScorpion,
+  samurai: artSamurai, ninja: artNinja, oni: artOni,
+  raider: artRaider, mutant: artMutant, drone: artDrone,
+  plasma: artPlasma, wraith: artWraith, mech: artMech,
+  shade: artShade, wraithTime: artWraithTime, titan: artTitan
+};
+
 function drawEnemy(e) {
   const r = e.r;
   const flash = e.hitFlash > 0 ? '#ffffff' : null;
-  const box = CHAR[e.type] || CHAR.knight;
+  const box = CHAR[e.type] || { w: r * 2.4, h: r * 2.9 };
 
   /* a grounded shadow under the feet, so nothing floats without a contact point */
   ctx.save();
@@ -8554,7 +10467,8 @@ function drawEnemy(e) {
   ctx.fill();
   ctx.restore();
 
-  if (e.type === 'knight') drawEnemyKnight(e, flash);
+  if (e.art && ENEMY_ART[e.art]) ENEMY_ART[e.art](e, flash);
+  else if (e.type === 'knight') drawEnemyKnight(e, flash);
   else if (e.type === 'archer') drawEnemyArcher(e, flash);
   else if (e.type === 'wizard') drawEnemyWizard(e, flash);
   else drawEnemyGhost(e, flash);
@@ -8566,6 +10480,780 @@ function drawEnemy(e) {
     ctx.fillStyle = '#f87171';
     ctx.fillRect(e.x - w / 2, e.y - box.h * 0.62, w * clamp(e.hp / e.maxHp, 0, 1), 4);
   }
+}
+
+
+/* ============================================================================
+   THE CHAMPIONS OF THE OTHER UNIVERSES
+   ----------------------------------------------------------------------------
+   The medieval five keep their hand-written routines. The five that follow are
+   built from one kit each: an update that owns its timers and an art function
+   that draws in local space (the caller has already translated to the body).
+   ============================================================================ */
+function bossAim(b) { return angleTo(b.x, b.y, game.player.x, game.player.y); }
+
+function bossStride(b, dt, speed, keepRange) {
+  const p = game.player;
+  const d = dist(b.x, b.y, p.x, p.y);
+  const a = angleTo(b.x, b.y, p.x, p.y);
+  const want = (keepRange && d < keepRange) ? -0.45 : 1;
+  b.x = clamp(b.x + Math.cos(a) * speed * want * dt, 90, WORLD - 90);
+  b.y = clamp(b.y + Math.sin(a) * speed * want * dt, 90, WORLD - 90);
+  b.angle = a;
+}
+
+function bossBlink(b, colour) {
+  const p = game.player;
+  const a = rand(0, TAU);
+  const r = rand(240, 420);
+  for (let i = 0; i < 18; i++) {
+    spawnParticle(b.x, b.y, rand(-200, 200), rand(-200, 200), 0.4, 7, colour, 3);
+  }
+  b.x = clamp(p.x + Math.cos(a) * r, 140, WORLD - 140);
+  b.y = clamp(p.y + Math.sin(a) * r, 140, WORLD - 140);
+  game.particles.push({ ring: true, x: b.x, y: b.y, r: 8, maxR: b.r * 3, life: 0, maxLife: 0.4, color: colour });
+  for (let i = 0; i < 18; i++) {
+    spawnParticle(b.x, b.y, rand(-200, 200), rand(-200, 200), 0.4, 7, colour, 3);
+  }
+  Sound.bossCast();
+}
+
+function bossSummon(b, type, n) {
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * TAU + rand(-0.3, 0.3);
+    const e = spawnEnemy(type, b.x + Math.cos(a) * (b.r + 46), b.y + Math.sin(a) * (b.r + 46), null);
+    e.hp = Math.round(e.maxHp * 1.15 * 10) / 10;
+    e.maxHp = e.hp;
+    for (let k = 0; k < 8; k++) {
+      spawnParticle(e.x, e.y, rand(-90, 90), rand(-90, 90), 0.35, 5, b.color, 3);
+    }
+  }
+  Sound.bossCast();
+}
+
+/* the pharaoh's sand columns: solid for nine seconds, then they collapse */
+function spawnSandPillar(x, y) {
+  game.sandPillars.push({
+    x: clamp(x, 80, WORLD - 80), y: clamp(y, 80, WORLD - 80),
+    r: 34, life: 9, maxLife: 9, ph: rand(0, TAU), grow: 0
+  });
+}
+
+function updateSandPillars(dt) {
+  for (let i = game.sandPillars.length - 1; i >= 0; i--) {
+    const s = game.sandPillars[i];
+    s.life -= dt;
+    s.grow = Math.min(1, s.grow + dt * 4);
+    if (s.life <= 0) {
+      for (let k = 0; k < 14; k++) {
+        spawnParticle(s.x, s.y, rand(-140, 140), rand(-140, 140), 0.5, 7, '#d8b06a', 3);
+      }
+      game.sandPillars.splice(i, 1);
+    }
+  }
+}
+
+function drawSandPillars() {
+  const t = game.time;
+  for (let i = 0; i < game.sandPillars.length; i++) {
+    const s = game.sandPillars[i];
+    if (s.x < game.cam.x - 120 || s.x > game.cam.x + viewW() + 120) continue;
+    if (s.y < game.cam.y - 160 || s.y > game.cam.y + viewH() + 160) continue;
+    const k = s.grow * (1 - Math.max(0, (1 - s.life / 1.2)));
+    const h = 96 * k;
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.ellipse(0, 4, s.r * 1.1, s.r * 0.4, 0, 0, TAU); ctx.fill();
+    for (let b = 0; b < 5; b++) {
+      const off = Math.sin(t * 3 + b * 1.4 + s.ph) * 6;
+      const grd = ctx.createLinearGradient(0, -h, 0, 0);
+      grd.addColorStop(0, 'rgba(214,178,110,0.25)');
+      grd.addColorStop(0.55, 'rgba(198,154,86,0.62)');
+      grd.addColorStop(1, 'rgba(150,110,58,0.85)');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.moveTo(-s.r * (0.5 + b * 0.12) + off, 0);
+      ctx.quadraticCurveTo(-s.r * 0.3 + off * 1.4, -h * 0.6, off * 1.8, -h);
+      ctx.quadraticCurveTo(s.r * 0.3 + off * 1.4, -h * 0.6, s.r * (0.5 + b * 0.12) + off, 0);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(245,214,150,0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(0, 0, s.r, s.r * 0.4, 0, 0, TAU); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+/* warlord mines: a pressure plate that goes off on contact or on its fuse */
+function updateMines(dt) {
+  const p = game.player;
+  for (let i = game.mines.length - 1; i >= 0; i--) {
+    const m = game.mines[i];
+    m.t -= dt;
+    m.arm = Math.min(1, (m.arm || 0) + dt * 2.5);
+    const d = dist(m.x, m.y, p.x, p.y);
+    if (m.t <= 0 || (m.arm >= 1 && d < 52)) {
+      explodeAt(m.x, m.y, 1.6, '#f97316');
+      if (d < 90) hurtPlayer(1);
+      game.mines.splice(i, 1);
+    }
+  }
+}
+
+function drawMines() {
+  const t = game.time;
+  for (let i = 0; i < game.mines.length; i++) {
+    const m = game.mines[i];
+    const blink = Math.sin(t * 12) > 0 ? 1 : 0.35;
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath(); ctx.ellipse(0, 3, 15, 6, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#3f3f46';
+    ctx.beginPath(); ctx.arc(0, 0, 12 * m.arm, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#a1a1aa'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, 12 * m.arm, 0, TAU); ctx.stroke();
+    ctx.fillStyle = 'rgba(239,68,68,' + blink.toFixed(2) + ')';
+    ctx.beginPath(); ctx.arc(0, 0, 4 * m.arm, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* the phase banner, shared by every kit that has stages */
+function bossPhaseStep(b, steps) {
+  const ratio = clamp(b.hp / b.maxHp, 0, 1);
+  let phase = 1;
+  for (let i = 1; i < steps.length; i++) if (ratio <= steps[i]) phase = i + 1;
+  if (phase !== b.phase) {
+    b.phase = phase;
+    if (UI.bossPhase) {
+      UI.bossPhase.textContent = 'PHASE ' + phase;
+      UI.bossPhase.className = 'p' + Math.min(4, phase);
+    }
+    if (typeof BossMusic !== 'undefined' && BossMusic.setPhase) BossMusic.setPhase(Math.min(4, phase));
+    showBanner('PHASE ' + phase);
+    Sound.bossAppear();
+    game.shake = Math.max(game.shake, 0.6);
+    for (let i = 0; i < 26; i++) {
+      const a = rand(0, TAU);
+      spawnParticle(b.x, b.y, Math.cos(a) * rand(80, 300), Math.sin(a) * rand(80, 300), 0.5, 10, b.color, 3);
+    }
+  }
+  return phase;
+}
+
+const BOSS_KITS = {
+  /* -------------------------------------------------- The Pharaoh · Egypt */
+  pharaoh: {
+    init(b) { b.k = { pillar: 3.2, beam: 5.0, summon: 7.5, beamObj: null }; },
+    update(b, dt) {
+      const k = b.k, p = game.player;
+      const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
+      bossStride(b, dt, b.speed * (phase >= 2 ? 1.3 : 1), 300);
+
+      k.pillar -= dt;
+      if (k.pillar <= 0) {
+        k.pillar = phase >= 2 ? 5.0 : 7.0;
+        for (let i = 0; i < 3; i++) {
+          const a = rand(0, TAU), r = 80 + rand(0, 120);
+          spawnSandPillar(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r);
+        }
+        Sound.bossCast();
+      }
+
+      k.summon -= dt;
+      if (k.summon <= 0) {
+        k.summon = phase >= 2 ? 7.5 : 10;
+        bossSummon(b, 'mummy', 2);
+      }
+
+      k.beam -= dt;
+      if (k.beam <= 0 && !k.beamObj) {
+        k.beam = phase >= 2 ? 3.6 : 5.0;
+        k.beamObj = { t: 0, charge: 0.85, fire: 0.3, angle: bossAim(b) };
+        Sound.bossCast();
+      }
+      if (k.beamObj) {
+        const bm = k.beamObj;
+        bm.t += dt;
+        bm.angle = bossAim(b);
+        if (bm.t > bm.charge && bm.t < bm.charge + bm.fire) {
+          const x2 = b.x + Math.cos(bm.angle) * 1400;
+          const y2 = b.y + Math.sin(bm.angle) * 1400;
+          if (segHitsCircle(b.x, b.y, x2, y2, p.x, p.y, 18)) hurtPlayer(1);
+          for (let i = 0; i < 3; i++) {
+            const dd = rand(60, 900);
+            spawnParticle(b.x + Math.cos(bm.angle) * dd, b.y + Math.sin(bm.angle) * dd,
+              rand(-40, 40), rand(-40, 40), 0.25, 5, '#fde68a', 3);
+          }
+        }
+        if (bm.t > bm.charge + bm.fire) k.beamObj = null;
+      }
+    },
+    draw(b, flash) {
+      const t = game.time, k = b.k || {};
+      /* the charged staff beam, telegraphed then fired */
+      if (k.beamObj) {
+        const bm = k.beamObj;
+        const charged = bm.t > bm.charge;
+        ctx.save();
+        ctx.rotate(bm.angle);
+        if (!charged) {
+          ctx.strokeStyle = 'rgba(253,224,71,' + (0.25 + 0.5 * (bm.t / bm.charge)).toFixed(2) + ')';
+          ctx.lineWidth = 2 + 3 * (bm.t / bm.charge);
+          ctx.setLineDash([16, 12]);
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(1400, 0); ctx.stroke();
+          ctx.setLineDash([]);
+        } else {
+          const w = 26 * (1 - (bm.t - bm.charge) / bm.fire);
+          ctx.fillStyle = 'rgba(253,224,71,0.35)';
+          ctx.fillRect(0, -w * 0.9, 1400, w * 1.8);
+          ctx.fillStyle = '#fde68a';
+          ctx.fillRect(0, -w * 0.4, 1400, w * 0.8);
+          ctx.fillStyle = '#fffbeb';
+          ctx.fillRect(0, -w * 0.12, 1400, w * 0.24);
+        }
+        ctx.restore();
+      }
+
+      const bob = Math.sin(t * 2) * 2;
+      /* robe */
+      ctx.fillStyle = flash || '#c9a24a';
+      ctx.beginPath();
+      ctx.moveTo(-b.r * 0.75, b.r * 0.95);
+      ctx.lineTo(-b.r * 0.4, -b.r * 0.35 + bob);
+      ctx.lineTo(b.r * 0.4, -b.r * 0.35 + bob);
+      ctx.lineTo(b.r * 0.75, b.r * 0.95);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(90,60,20,0.35)';
+      ctx.fillRect(-b.r * 0.2, -b.r * 0.3 + bob, b.r * 0.12, b.r * 1.2);
+      /* gold collar */
+      ctx.fillStyle = flash || '#fde68a';
+      ctx.beginPath(); ctx.ellipse(0, -b.r * 0.36 + bob, b.r * 0.44, b.r * 0.16, 0, 0, TAU); ctx.fill();
+      /* nemes headdress */
+      ctx.fillStyle = flash || '#1e3a8a';
+      ctx.beginPath();
+      ctx.moveTo(-b.r * 0.46, -b.r * 0.2 + bob);
+      ctx.lineTo(-b.r * 0.3, -b.r * 1.05 + bob);
+      ctx.lineTo(b.r * 0.3, -b.r * 1.05 + bob);
+      ctx.lineTo(b.r * 0.46, -b.r * 0.2 + bob);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = flash || '#f5b642';
+      for (let i = 0; i < 4; i++) {
+        ctx.fillRect(-b.r * 0.5 + i * b.r * 0.1, -b.r * 0.95 + bob, b.r * 0.07, b.r * 0.7);
+        ctx.fillRect(b.r * 0.24 - i * b.r * 0.02 + i * b.r * 0.02, -b.r * 0.95 + bob, b.r * 0.07, b.r * 0.7);
+      }
+      /* face */
+      ctx.fillStyle = flash || '#8a6a34';
+      ctx.beginPath(); ctx.ellipse(0, -b.r * 0.6 + bob, b.r * 0.28, b.r * 0.3, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#0b0a0e';
+      ctx.fillRect(-b.r * 0.2, -b.r * 0.66 + bob, b.r * 0.14, b.r * 0.06);
+      ctx.fillRect(b.r * 0.06, -b.r * 0.66 + bob, b.r * 0.14, b.r * 0.06);
+      /* false beard */
+      ctx.fillStyle = flash || '#1e3a8a';
+      ctx.fillRect(-b.r * 0.06, -b.r * 0.42 + bob, b.r * 0.12, b.r * 0.3);
+      /* staff */
+      ctx.save();
+      ctx.translate(b.r * 0.52, -b.r * 0.2 + bob);
+      ctx.rotate(Math.sin(t * 1.4) * 0.06);
+      ctx.fillStyle = flash || '#a16207';
+      ctx.fillRect(-3, -b.r * 0.95, 6, b.r * 1.9);
+      ctx.fillStyle = flash || '#fde68a';
+      ctx.beginPath(); ctx.arc(0, -b.r * 0.98, b.r * 0.16, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(253,224,71,0.35)';
+      ctx.beginPath(); ctx.arc(0, -b.r * 0.98, b.r * 0.34, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+  },
+
+  /* ------------------------------------------------- Shogun Kage · Japan */
+  shogun: {
+    init(b) { b.k = { blink: 4.0, summon: 6.0, spiral: 3.0, spiralT: 0, spiralA: 0, slash: 2.0 }; },
+    update(b, dt) {
+      const k = b.k, p = game.player;
+      const phase = bossPhaseStep(b, [1, 0.6]);
+      bossStride(b, dt, b.speed * 0.55, 260);
+
+      k.blink -= dt;
+      if (k.blink <= 0) {
+        k.blink = phase >= 2 ? 3.0 : 4.4;
+        bossBlink(b, '#f472b6');
+      }
+      k.summon -= dt;
+      if (k.summon <= 0) {
+        k.summon = phase >= 2 ? 7.0 : 9.5;
+        bossSummon(b, 'ninja', 4);
+        showBanner('SHADOW CLONES');
+      }
+      k.spiral -= dt;
+      if (k.spiral <= 0 && k.spiralT <= 0) {
+        k.spiral = phase >= 2 ? 3.4 : 4.8;
+        k.spiralT = 1.0;
+        k.spiralA = rand(0, TAU);
+      }
+      if (k.spiralT > 0) {
+        k.spiralT -= dt;
+        k.spiralA += dt * 5.2;
+        k.fireAcc = (k.fireAcc || 0) + dt;
+        if (k.fireAcc > 0.075) {
+          k.fireAcc = 0;
+          fireEnemyBullet(b.x, b.y, k.spiralA, 360, 'shuriken', 5, 1);
+          fireEnemyBullet(b.x, b.y, k.spiralA + Math.PI, 360, 'shuriken', 5, 1);
+        }
+      }
+      /* a short blade slash if he lands on top of the player */
+      k.slash -= dt;
+      if (k.slash <= 0) {
+        k.slash = 2.0;
+        if (dist(b.x, b.y, p.x, p.y) < b.r + 70) {
+          hurtPlayer(1);
+          game.beams.push({
+            kind: 'slash', x1: b.x, y1: b.y,
+            x2: b.x + Math.cos(bossAim(b)) * 120, y2: b.y + Math.sin(bossAim(b)) * 120,
+            life: 0, maxLife: 0.16, width: 9, colour: '#f9a8d4', core: '#ffffff'
+          });
+          Sound.bash();
+        }
+      }
+    },
+    draw(b, flash) {
+      const t = game.time;
+      const bob = Math.sin(t * 3) * 1.6;
+      /* trailing shadow clones */
+      ctx.save();
+      ctx.globalAlpha = 0.16;
+      for (let i = 1; i <= 2; i++) {
+        ctx.fillStyle = '#f472b6';
+        ctx.beginPath();
+        ctx.ellipse(-Math.cos(b.angle) * i * 26, -b.r * 0.2 + bob, b.r * 0.4, b.r * 0.8, 0, 0, TAU);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+      /* armour skirt */
+      ctx.fillStyle = flash || '#1f2937';
+      ctx.beginPath();
+      ctx.moveTo(-b.r * 0.62, b.r * 0.92);
+      ctx.lineTo(-b.r * 0.3, -b.r * 0.2 + bob);
+      ctx.lineTo(b.r * 0.3, -b.r * 0.2 + bob);
+      ctx.lineTo(b.r * 0.62, b.r * 0.92);
+      ctx.closePath(); ctx.fill();
+      /* lacquer plates */
+      ctx.fillStyle = flash || '#9f1239';
+      ctx.fillRect(-b.r * 0.5, -b.r * 0.34 + bob, b.r, b.r * 0.5);
+      ctx.strokeStyle = flash || '#f472b6';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(-b.r * 0.5, -b.r * 0.28 + i * b.r * 0.15 + bob);
+        ctx.lineTo(b.r * 0.5, -b.r * 0.28 + i * b.r * 0.15 + bob);
+        ctx.stroke();
+      }
+      /* shoulders */
+      ctx.fillStyle = flash || '#111827';
+      ctx.beginPath(); ctx.ellipse(-b.r * 0.56, -b.r * 0.2 + bob, b.r * 0.24, b.r * 0.3, -0.3, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(b.r * 0.56, -b.r * 0.2 + bob, b.r * 0.24, b.r * 0.3, 0.3, 0, TAU); ctx.fill();
+      /* kabuto with the crescent crest */
+      ctx.fillStyle = flash || '#1f2937';
+      ctx.beginPath(); ctx.arc(0, -b.r * 0.62 + bob, b.r * 0.34, Math.PI, 0); ctx.fill();
+      ctx.fillRect(-b.r * 0.34, -b.r * 0.62 + bob, b.r * 0.68, b.r * 0.18);
+      ctx.fillStyle = flash || '#fbbf24';
+      ctx.beginPath();
+      ctx.moveTo(0, -b.r * 0.9 + bob);
+      ctx.quadraticCurveTo(-b.r * 0.5, -b.r * 1.25 + bob, -b.r * 0.62, -b.r * 0.86 + bob);
+      ctx.quadraticCurveTo(-b.r * 0.3, -b.r * 1.0 + bob, 0, -b.r * 0.9 + bob);
+      ctx.fill();
+      /* mask */
+      ctx.fillStyle = flash || '#b91c1c';
+      ctx.fillRect(-b.r * 0.24, -b.r * 0.6 + bob, b.r * 0.48, b.r * 0.2);
+      ctx.fillStyle = '#fde68a';
+      ctx.fillRect(-b.r * 0.17, -b.r * 0.55 + bob, b.r * 0.1, b.r * 0.05);
+      ctx.fillRect(b.r * 0.07, -b.r * 0.55 + bob, b.r * 0.1, b.r * 0.05);
+      /* twin blades */
+      for (const side of [-1, 1]) {
+        ctx.save();
+        ctx.translate(side * b.r * 0.6, -b.r * 0.05 + bob);
+        ctx.rotate(side * (0.5 + Math.sin(t * 2 + side) * 0.1));
+        ctx.fillStyle = flash || '#111827';
+        ctx.fillRect(-2.4, 0, 4.8, b.r * 0.22);
+        ctx.fillStyle = flash || '#e2e8f0';
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(4, -b.r * 0.8); ctx.lineTo(0.6, -b.r * 0.95);
+        ctx.lineTo(-2.4, -b.r * 0.2); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+    }
+  },
+
+  /* ------------------------------------------------ Warlord Rex · Wastes */
+  warlord: {
+    init(b) { b.k = { gun: 2.4, mine: 4.0, charge: 6.0, chargeT: 0, drive: 0, angle: 0 }; },
+    update(b, dt) {
+      const k = b.k, p = game.player;
+      const phase = bossPhaseStep(b, [1, 0.55]);
+      if (k.drive > 0) {
+        k.drive -= dt;
+        b.x = clamp(b.x + Math.cos(k.angle) * 520 * dt, 100, WORLD - 100);
+        b.y = clamp(b.y + Math.sin(k.angle) * 520 * dt, 100, WORLD - 100);
+        if (dist(b.x, b.y, p.x, p.y) < b.r + p.r + 6) hurtPlayer(2);
+        if (Math.random() < 0.7) {
+          spawnParticle(b.x, b.y + b.r * 0.5, rand(-40, 40), rand(-20, 20), 0.4, 8, '#4b5563', 3);
+        }
+      } else if (k.chargeT > 0) {
+        k.chargeT -= dt;
+        k.angle = k.angle;
+      } else {
+        bossStride(b, dt, b.speed * 0.5, 320);
+      }
+
+      k.charge -= dt;
+      if (k.charge <= 0 && k.drive <= 0 && k.chargeT <= 0) {
+        k.charge = phase >= 2 ? 5.0 : 7.0;
+        k.chargeT = 0.7;
+        k.angle = bossAim(b);
+        Sound.bossCast();
+      } else if (k.chargeT > 0 && k.chargeT - dt <= 0) {
+        k.drive = 1.15;
+        Sound.bash();
+      }
+
+      k.gun -= dt;
+      if (k.gun <= 0) {
+        k.gun = phase >= 2 ? 2.4 : 3.4;
+        const a = bossAim(b);
+        for (let i = -2; i <= 2; i++) {
+          fireEnemyBullet(b.x, b.y, a + i * 0.11, 520, 'pellet', 4, 1);
+        }
+        Sound.enemyShot();
+      }
+
+      k.mine -= dt;
+      if (k.mine <= 0) {
+        k.mine = phase >= 2 ? 5.0 : 7.0;
+        for (let i = 0; i < 3; i++) {
+          const a = rand(0, TAU), r = rand(90, 220);
+          game.mines.push({ x: clamp(p.x + Math.cos(a) * r, 80, WORLD - 80), y: clamp(p.y + Math.sin(a) * r, 80, WORLD - 80), t: 6, arm: 0 });
+        }
+        showBanner('MINES DEPLOYED');
+      }
+    },
+    draw(b, flash) {
+      const t = game.time;
+      const k = b.k || {};
+      const shaking = k.chargeT > 0 ? Math.sin(t * 40) * 2 : 0;
+      ctx.save();
+      ctx.translate(shaking, 0);
+      /* treads */
+      ctx.fillStyle = flash || '#27272a';
+      ctx.beginPath(); ctx.roundRect(-b.r * 1.05, b.r * 0.4, b.r * 2.1, b.r * 0.5, 6); ctx.fill();
+      for (let i = 0; i < 6; i++) {
+        ctx.fillStyle = i % 2 ? '#3f3f46' : '#18181b';
+        ctx.fillRect(-b.r * 0.95 + i * b.r * 0.33, b.r * 0.42, b.r * 0.2, b.r * 0.46);
+      }
+      /* hull */
+      ctx.fillStyle = flash || '#4d5a2a';
+      ctx.beginPath();
+      ctx.moveTo(-b.r * 0.95, b.r * 0.45);
+      ctx.lineTo(-b.r * 0.7, -b.r * 0.1);
+      ctx.lineTo(b.r * 0.7, -b.r * 0.1);
+      ctx.lineTo(b.r * 0.95, b.r * 0.45);
+      ctx.closePath(); ctx.fill();
+      /* welded plates */
+      ctx.fillStyle = 'rgba(30,36,16,0.55)';
+      for (let i = 0; i < 4; i++) ctx.fillRect(-b.r * 0.9 + i * b.r * 0.46, -b.r * 0.05, b.r * 0.42, b.r * 0.4);
+      /* turret */
+      ctx.fillStyle = flash || '#3f4a22';
+      ctx.beginPath(); ctx.ellipse(0, -b.r * 0.24, b.r * 0.5, b.r * 0.34, 0, 0, TAU); ctx.fill();
+      /* machine gun barrels */
+      ctx.fillStyle = flash || '#18181b';
+      ctx.save();
+      ctx.rotate(b.angle);
+      ctx.fillRect(b.r * 0.3, -b.r * 0.1, b.r * 0.85, b.r * 0.16);
+      ctx.restore();
+      /* Rex himself, in the hatch */
+      ctx.fillStyle = flash || '#78350f';
+      ctx.beginPath(); ctx.roundRect(-b.r * 0.26, -b.r * 0.85, b.r * 0.52, b.r * 0.55, 5); ctx.fill();
+      ctx.fillStyle = flash || '#a16207';
+      ctx.beginPath(); ctx.ellipse(0, -b.r * 0.92, b.r * 0.2, b.r * 0.2, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#0b0a0e';
+      ctx.fillRect(-b.r * 0.14, -b.r * 0.97, b.r * 0.28, b.r * 0.08);
+      ctx.fillStyle = '#f97316';
+      ctx.fillRect(-b.r * 0.1, -b.r * 0.95, b.r * 0.08, b.r * 0.03);
+      ctx.fillRect(b.r * 0.02, -b.r * 0.95, b.r * 0.08, b.r * 0.03);
+      /* antennas */
+      ctx.strokeStyle = '#a1a1aa'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-b.r * 0.42, -b.r * 0.5); ctx.lineTo(-b.r * 0.6, -b.r * 1.0); ctx.stroke();
+      ctx.restore();
+    }
+  },
+
+  /* ------------------------------------------------ The Hive Queen · Space */
+  hivequeen: {
+    init(b) {
+      b.k = { spawn: 3.0, acid: 4.0, shieldCd: 0 };
+      b.shield = 40;
+      b.shieldMax = 40;
+    },
+    update(b, dt) {
+      const k = b.k, p = game.player;
+      const phase = bossPhaseStep(b, [1, 0.5]);
+      bossStride(b, dt, b.speed * 0.8, 260);
+
+      /* the shield refills while it is not being hit */
+      if ((b.shield || 0) < b.shieldMax) {
+        k.shieldCd = (k.shieldCd || 0) + dt;
+        if (k.shieldCd > 1.4) b.shield = Math.min(b.shieldMax, b.shield + 7 * dt);
+      }
+
+      k.spawn -= dt;
+      if (k.spawn <= 0) {
+        k.spawn = phase >= 2 ? 3.4 : 4.6;
+        let drones = 0;
+        for (let i = 0; i < game.enemies.length; i++) if (game.enemies[i].type === 'aliendrone') drones++;
+        if (drones < 9) bossSummon(b, 'aliendrone', phase >= 2 ? 3 : 2);
+      }
+
+      k.acid -= dt;
+      if (k.acid <= 0) {
+        k.acid = phase >= 2 ? 3.0 : 4.2;
+        const a = bossAim(b);
+        for (let i = -3; i <= 3; i++) {
+          const b2 = fireEnemyBullet(b.x, b.y, a + i * 0.13, 380 + Math.abs(i) * 12, 'acid', 7, 1);
+          b2.homing = 0.25;
+        }
+        Sound.enemyShot();
+      }
+    },
+    draw(b, flash) {
+      const t = game.time;
+      const bob = Math.sin(t * 1.6) * 4;
+      /* wings */
+      ctx.save();
+      ctx.globalAlpha = 0.32;
+      ctx.fillStyle = flash || '#c4b5fd';
+      for (const side of [-1, 1]) {
+        const flap = Math.sin(t * 16) * 0.28;
+        ctx.save();
+        ctx.scale(side, 1);
+        ctx.rotate(flap);
+        ctx.beginPath();
+        ctx.ellipse(b.r * 0.9, -b.r * 0.5, b.r * 0.85, b.r * 0.34, -0.4, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+      /* abdomen */
+      ctx.fillStyle = flash || '#4c1d95';
+      ctx.beginPath();
+      ctx.ellipse(0, b.r * 0.62 + bob * 0.4, b.r * 0.62, b.r * 0.72, 0, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(167,139,250,0.55)';
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.ellipse(0, b.r * 0.35 + i * b.r * 0.24 + bob * 0.4, b.r * 0.42 - i * b.r * 0.08, b.r * 0.07, 0, 0, TAU);
+        ctx.fill();
+      }
+      /* thorax */
+      ctx.fillStyle = flash || '#5b21b6';
+      ctx.beginPath(); ctx.ellipse(0, -b.r * 0.12 + bob, b.r * 0.46, b.r * 0.52, 0, 0, TAU); ctx.fill();
+      /* legs */
+      ctx.strokeStyle = flash || '#3b0764'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      for (const side of [-1, 1]) {
+        for (let i = 0; i < 3; i++) {
+          ctx.beginPath();
+          ctx.moveTo(side * b.r * 0.3, -b.r * 0.1 + i * b.r * 0.26 + bob);
+          ctx.lineTo(side * b.r * 0.85, -b.r * 0.3 + i * b.r * 0.34 + bob + Math.sin(t * 4 + i) * 4);
+          ctx.stroke();
+        }
+      }
+      /* crowned head */
+      ctx.fillStyle = flash || '#6d28d9';
+      ctx.beginPath(); ctx.ellipse(0, -b.r * 0.72 + bob, b.r * 0.34, b.r * 0.32, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#fde047';
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.arc(-b.r * 0.2 + i * b.r * 0.13, -b.r * 0.74 + bob, b.r * 0.045, 0, TAU);
+        ctx.fill();
+      }
+      /* mandibles */
+      ctx.strokeStyle = flash || '#a78bfa'; ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-b.r * 0.12, -b.r * 0.5 + bob); ctx.lineTo(-b.r * 0.26, -b.r * 0.34 + bob);
+      ctx.moveTo(b.r * 0.12, -b.r * 0.5 + bob); ctx.lineTo(b.r * 0.26, -b.r * 0.34 + bob);
+      ctx.stroke();
+      /* the shield, drawn as a hard bubble */
+      if ((b.shield || 0) > 0.5) {
+        const k2 = b.shield / b.shieldMax;
+        ctx.strokeStyle = 'rgba(125,211,252,' + (0.35 + 0.45 * k2).toFixed(2) + ')';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(0, 0, b.r * 1.5, 0, TAU); ctx.stroke();
+        ctx.fillStyle = 'rgba(56,189,248,' + (0.10 * k2).toFixed(2) + ')';
+        ctx.beginPath(); ctx.arc(0, 0, b.r * 1.5, 0, TAU); ctx.fill();
+      }
+    }
+  },
+
+  /* ------------------------------------- The Architect of Oblivion · Void */
+  architect: {
+    init(b) {
+      b.k = { attack: 2.6, mode: 0, spiralT: 0, spiralA: 0, beamObj: null, clone50: false, clone25: false };
+    },
+    update(b, dt) {
+      const k = b.k, p = game.player;
+      /* five phases: everything the timeline already threw at him, in order */
+      const phase = bossPhaseStep(b, [1, 0.8, 0.6, 0.4, 0.2]);
+      bossStride(b, dt, b.speed * (0.7 + phase * 0.12), 280);
+
+      /* clones of the champions he has already killed */
+      const ratio = b.hp / b.maxHp;
+      if (!k.clone50 && ratio <= 0.5) {
+        k.clone50 = true;
+        showBanner('CLONES OF THE FALLEN');
+        bossSummon(b, 'oni', 1);
+        bossSummon(b, 'mech', 1);
+      }
+      if (!k.clone25 && ratio <= 0.25) {
+        k.clone25 = true;
+        showBanner('CLONES OF THE FALLEN');
+        bossSummon(b, 'mutant', 1);
+        bossSummon(b, 'titan', 1);
+      }
+
+      k.attack -= dt;
+      if (k.attack <= 0) {
+        k.attack = Math.max(1.3, 2.6 - phase * 0.22);
+        k.mode = (k.mode + 1) % 6;
+        const a = bossAim(b);
+        if (k.mode === 0) {
+          /* pharaoh: pillars */
+          for (let i = 0; i < 2; i++) {
+            const ang2 = rand(0, TAU), r = 90 + rand(0, 100);
+            spawnSandPillar(p.x + Math.cos(ang2) * r, p.y + Math.sin(ang2) * r);
+          }
+          Sound.bossCast();
+        } else if (k.mode === 1) {
+          /* kage: shuriken spiral */
+          k.spiralT = 0.8;
+          k.spiralA = a;
+        } else if (k.mode === 2) {
+          /* rex: machine gun */
+          for (let i = -2; i <= 2; i++) fireEnemyBullet(b.x, b.y, a + i * 0.1, 540, 'pellet', 4, 1);
+          Sound.enemyShot();
+        } else if (k.mode === 3) {
+          /* hive: acid cone */
+          for (let i = -3; i <= 3; i++) fireEnemyBullet(b.x, b.y, a + i * 0.12, 400, 'acid', 7, 1);
+        } else if (k.mode === 4) {
+          /* its own void beam */
+          k.beamObj = { t: 0, charge: 0.7, fire: 0.28, angle: a };
+          Sound.bossCast();
+        } else {
+          /* void bolts in a ring */
+          for (let i = 0; i < 8; i++) fireEnemyBullet(b.x, b.y, a + (i / 8) * TAU, 330, 'plasma', 6, 1);
+        }
+      }
+
+      if (k.spiralT > 0) {
+        k.spiralT -= dt;
+        k.spiralA += dt * 6;
+        k.fireAcc = (k.fireAcc || 0) + dt;
+        if (k.fireAcc > 0.08) {
+          k.fireAcc = 0;
+          fireEnemyBullet(b.x, b.y, k.spiralA, 340, 'shuriken', 5, 1);
+        }
+      }
+      if (k.beamObj) {
+        const bm = k.beamObj;
+        bm.t += dt;
+        bm.angle = bossAim(b);
+        if (bm.t > bm.charge && bm.t < bm.charge + bm.fire) {
+          const x2 = b.x + Math.cos(bm.angle) * 1500;
+          const y2 = b.y + Math.sin(bm.angle) * 1500;
+          if (segHitsCircle(b.x, b.y, x2, y2, p.x, p.y, 18)) hurtPlayer(1);
+        }
+        if (bm.t > bm.charge + bm.fire) k.beamObj = null;
+      }
+    },
+    draw(b, flash) {
+      const t = game.time;
+      const bob = Math.sin(t * 1.2) * 5;
+      const k = b.k || {};
+      /* the beam telegraph */
+      if (k.beamObj) {
+        const bm = k.beamObj;
+        ctx.save();
+        ctx.rotate(bm.angle);
+        if (bm.t < bm.charge) {
+          ctx.strokeStyle = 'rgba(216,180,254,' + (0.3 + 0.5 * (bm.t / bm.charge)).toFixed(2) + ')';
+          ctx.lineWidth = 3 + 4 * (bm.t / bm.charge);
+          ctx.setLineDash([20, 14]);
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(1500, 0); ctx.stroke();
+          ctx.setLineDash([]);
+        } else {
+          const w = 30 * (1 - (bm.t - bm.charge) / bm.fire);
+          ctx.fillStyle = 'rgba(232,121,249,0.34)';
+          ctx.fillRect(0, -w, 1500, w * 2);
+          ctx.fillStyle = '#f0abfc';
+          ctx.fillRect(0, -w * 0.4, 1500, w * 0.8);
+          ctx.fillStyle = '#fdf4ff';
+          ctx.fillRect(0, -w * 0.1, 1500, w * 0.2);
+        }
+        ctx.restore();
+      }
+      /* orbiting shards of dead timelines */
+      for (let i = 0; i < 5; i++) {
+        const a = t * 0.8 + (i / 5) * TAU;
+        const rr = b.r * (1.5 + 0.18 * Math.sin(t + i));
+        ctx.fillStyle = 'rgba(168,85,247,0.5)';
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr * 0.6 + bob, 4.5, 0, TAU);
+        ctx.fill();
+      }
+      /* cloak of nothing */
+      ctx.fillStyle = flash || '#0b0212';
+      ctx.beginPath();
+      ctx.moveTo(-b.r * 0.9, b.r * 1.1);
+      ctx.quadraticCurveTo(-b.r * 0.7, -b.r * 0.3 + bob, 0, -b.r * 0.9 + bob);
+      ctx.quadraticCurveTo(b.r * 0.7, -b.r * 0.3 + bob, b.r * 0.9, b.r * 1.1);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(216,180,254,0.45)';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      /* the mask */
+      ctx.fillStyle = flash || '#e9d5ff';
+      ctx.beginPath();
+      ctx.moveTo(0, -b.r * 1.35 + bob);
+      ctx.lineTo(b.r * 0.36, -b.r * 0.95 + bob);
+      ctx.lineTo(b.r * 0.2, -b.r * 0.52 + bob);
+      ctx.lineTo(-b.r * 0.2, -b.r * 0.52 + bob);
+      ctx.lineTo(-b.r * 0.36, -b.r * 0.95 + bob);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#1b0433';
+      ctx.beginPath(); ctx.ellipse(-b.r * 0.13, -b.r * 0.86 + bob, b.r * 0.07, b.r * 0.13, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(b.r * 0.13, -b.r * 0.86 + bob, b.r * 0.07, b.r * 0.13, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(232,121,249,0.9)';
+      ctx.beginPath(); ctx.arc(-b.r * 0.13, -b.r * 0.86 + bob, b.r * 0.03, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(b.r * 0.13, -b.r * 0.86 + bob, b.r * 0.03, 0, TAU); ctx.fill();
+      /* crown of broken time */
+      ctx.strokeStyle = flash || '#c084fc';
+      ctx.lineWidth = 2.4;
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * b.r * 0.14, -b.r * 1.3 + bob);
+        ctx.lineTo(i * b.r * 0.2, -b.r * 1.62 + bob);
+        ctx.stroke();
+      }
+    }
+  }
+};
+
+function updateBossKit(b, dt) {
+  const kit = BOSS_KITS[b.kit];
+  if (!kit) return;
+  if (!b.k) kit.init(b);
+  kit.update(b, dt);
+  collideObstacles(b);
 }
 
 function drawBoss() {
@@ -8590,6 +11278,13 @@ function drawBoss() {
   ctx.beginPath(); ctx.arc(b.x, b.y, r * 2.5, 0, TAU); ctx.fill();
 
   ctx.translate(b.x, b.y);
+
+  /* the universe champions draw themselves, still inside the shared shadow */
+  if (b.kit && BOSS_KITS[b.kit]) {
+    BOSS_KITS[b.kit].draw(b, flash);
+    ctx.restore();
+    return;
+  }
 
   /* zone 0 rides an armoured giant, zone 1 a robed one; the other three keep
      their own bespoke rigs below */
@@ -9300,30 +11995,172 @@ function drawSkyBand() {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, SKY_H);
 
-  /* stars — fixed, only a slow twinkle */
-  for (let i = 0; i < skyStars.length; i++) {
-    const s = skyStars[i];
-    /* the sky band is a still image: stars never twinkle with time */
-    ctx.globalAlpha = s.a;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(s.x, s.y, s.r, s.r);
-  }
-  ctx.globalAlpha = 1;
 
-  /* moon — fixed in the top right corner of the sky band */
-  const mx = W - 104;
-  const my = 52;
-  const mr = 34;
-  const halo = ctx.createRadialGradient(mx, my, mr * 0.6, mx, my, mr * 2.7);
-  halo.addColorStop(0, 'rgba(226,236,250,0.22)');
-  halo.addColorStop(1, 'rgba(140,170,220,0)');
-  ctx.fillStyle = halo;
-  ctx.beginPath(); ctx.arc(mx, my, mr * 2.7, 0, TAU); ctx.fill();
-  ctx.fillStyle = '#e9eef8';
-  ctx.beginPath(); ctx.arc(mx, my, mr, 0, TAU); ctx.fill();
-  ctx.fillStyle = 'rgba(186,199,219,0.5)';
-  ctx.beginPath(); ctx.arc(mx - 10, my - 7, 7, 0, TAU); ctx.fill();
-  ctx.beginPath(); ctx.arc(mx + 9, my + 8, 5, 0, TAU); ctx.fill();
+  const art = z.skyArt || 'moon';
+  if (art === 'sun') {
+    /* ---- Egypt: a sun that never sets ---- */
+    const sx = W * 0.5, sy = SKY_H - 54;
+    const halo = ctx.createRadialGradient(sx, sy, 20, sx, sy, 300);
+    halo.addColorStop(0, 'rgba(255,214,140,0.55)');
+    halo.addColorStop(0.4, 'rgba(249,128,58,0.22)');
+    halo.addColorStop(1, 'rgba(240,135,58,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(sx, sy, 300, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#ffd28a';
+    ctx.beginPath(); ctx.arc(sx, sy, 62, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(255,236,190,0.85)';
+    ctx.beginPath(); ctx.arc(sx, sy, 44, 0, TAU); ctx.fill();
+    /* heat bands across the disc */
+    ctx.fillStyle = 'rgba(240,135,58,0.28)';
+    for (let i = 0; i < 4; i++) ctx.fillRect(sx - 70, sy - 30 + i * 18, 140, 4);
+    /* far dune ridge */
+    ctx.fillStyle = 'rgba(72,32,12,0.55)';
+    ctx.beginPath();
+    ctx.moveTo(0, SKY_H);
+    for (let x = 0; x <= W; x += 60) {
+      ctx.lineTo(x, SKY_H - 18 - Math.sin(x * 0.006) * 14);
+    }
+    ctx.lineTo(W, SKY_H); ctx.closePath(); ctx.fill();
+  } else if (art === 'petals') {
+    /* ---- Japan: blossom pink over a burning skyline ---- */
+    for (let i = 0; i < 40; i++) {
+      const s = skyStars[i];
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = '#ffd0e2';
+      ctx.fillRect(s.x, s.y, 1.6, 1.6);
+    }
+    ctx.globalAlpha = 1;
+    /* distant hills + a torii silhouette on the horizon */
+    ctx.fillStyle = 'rgba(60,16,38,0.7)';
+    ctx.beginPath();
+    ctx.moveTo(0, SKY_H);
+    for (let x = 0; x <= W; x += 80) ctx.lineTo(x, SKY_H - 30 - Math.cos(x * 0.005) * 22);
+    ctx.lineTo(W, SKY_H); ctx.closePath(); ctx.fill();
+    const tx = W * 0.18;
+    ctx.fillStyle = 'rgba(30,8,20,0.85)';
+    ctx.fillRect(tx - 34, SKY_H - 74, 6, 74);
+    ctx.fillRect(tx + 28, SKY_H - 74, 6, 74);
+    ctx.fillRect(tx - 44, SKY_H - 80, 88, 7);
+    ctx.fillRect(tx - 34, SKY_H - 64, 68, 5);
+    /* petals drifting through the banner */
+    for (let i = 0; i < 26; i++) {
+      const px = ((i * 149 + Math.sin(i) * 60) % W);
+      const py = ((i * 71) % SKY_H);
+      ctx.globalAlpha = 0.35 + (i % 4) * 0.12;
+      ctx.fillStyle = i % 3 ? '#ffc2d8' : '#ff9ec4';
+      ctx.beginPath();
+      ctx.ellipse(px, py, 3.4, 2, (i * 0.7) % TAU, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  } else if (art === 'dust') {
+    /* ---- the wasteland: a sky the colour of old bruise ---- */
+    for (let i = 0; i < 34; i++) {
+      const x = ((i * 137) % W), y = ((i * 53) % (SKY_H - 30));
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = '#d7e07a';
+      ctx.fillRect(x, y, 1.4, 1.4);
+    }
+    ctx.globalAlpha = 1;
+    /* sickly haze banks */
+    for (let i = 0; i < 5; i++) {
+      const y = SKY_H * (0.25 + i * 0.14);
+      const g2 = ctx.createLinearGradient(0, y - 18, 0, y + 18);
+      g2.addColorStop(0, 'rgba(163,180,44,0)');
+      g2.addColorStop(0.5, 'rgba(163,180,44,0.16)');
+      g2.addColorStop(1, 'rgba(163,180,44,0)');
+      ctx.fillStyle = g2;
+      ctx.fillRect(0, y - 18, W, 36);
+    }
+    /* dead skyline */
+    ctx.fillStyle = 'rgba(18,20,10,0.8)';
+    for (let x = 0; x < W; x += 46) {
+      const h = 14 + ((x * 7919) % 38);
+      ctx.fillRect(x, SKY_H - h, 30 + ((x * 31) % 12), h);
+    }
+  } else if (art === 'stars') {
+    /* ---- deep space: more stars than sky ---- */
+    for (let i = 0; i < skyStars.length; i++) {
+      const st = skyStars[i];
+      ctx.globalAlpha = st.a;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(st.x, st.y, st.r, st.r);
+    }
+    /* nebula */
+    const n1 = ctx.createRadialGradient(W * 0.72, SKY_H * 0.4, 8, W * 0.72, SKY_H * 0.4, 240);
+    n1.addColorStop(0, 'rgba(56,189,248,0.20)');
+    n1.addColorStop(0.55, 'rgba(129,140,248,0.10)');
+    n1.addColorStop(1, 'rgba(129,140,248,0)');
+    ctx.fillStyle = n1;
+    ctx.beginPath(); ctx.arc(W * 0.72, SKY_H * 0.4, 240, 0, TAU); ctx.fill();
+    const n2 = ctx.createRadialGradient(W * 0.2, SKY_H * 0.62, 6, W * 0.2, SKY_H * 0.62, 180);
+    n2.addColorStop(0, 'rgba(168,85,247,0.18)');
+    n2.addColorStop(1, 'rgba(168,85,247,0)');
+    ctx.fillStyle = n2;
+    ctx.beginPath(); ctx.arc(W * 0.2, SKY_H * 0.62, 180, 0, TAU); ctx.fill();
+    /* a ringed planet in the corner */
+    const px2 = W - 120, py2 = 46, pr = 26;
+    ctx.fillStyle = 'rgba(255,214,170,0.18)';
+    ctx.beginPath(); ctx.arc(px2, py2, pr * 1.9, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#c9a27a';
+    ctx.beginPath(); ctx.arc(px2, py2, pr, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(226,232,240,0.7)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(px2, py2, pr * 1.7, pr * 0.42, -0.42, 0, TAU);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  } else if (art === 'void') {
+    /* ---- the end of time: a sky that is a hole ---- */
+    for (let i = 0; i < 7; i++) {
+      const rx = W * 0.5, ry = SKY_H * 0.52;
+      const rr = 40 + i * 46;
+      ctx.strokeStyle = 'rgba(168,85,247,' + (0.30 - i * 0.033).toFixed(3) + ')';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.ellipse(rx, ry, rr, rr * (0.4 + i * 0.03), i * 0.4, 0, TAU);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 60; i++) {
+      const a = i * 0.9, rr = 12 + i * 3.4;
+      ctx.fillStyle = i % 3 ? 'rgba(196,146,255,0.5)' : 'rgba(255,255,255,0.6)';
+      ctx.fillRect(W * 0.5 + Math.cos(a) * rr * 1.6, SKY_H * 0.52 + Math.sin(a) * rr * 0.55, 1.8, 1.8);
+    }
+    /* fracture lines */
+    ctx.strokeStyle = 'rgba(216,180,254,0.35)';
+    ctx.lineWidth = 1.6;
+    for (let i = 0; i < 6; i++) {
+      let x = (i * 173) % W, y = 10 + ((i * 97) % (SKY_H - 20));
+      ctx.beginPath(); ctx.moveTo(x, y);
+      for (let k = 0; k < 4; k++) {
+        x += Math.cos(i + k) * 60; y += Math.sin(i * 2 + k) * 26;
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+  } else {
+  /* ---- medieval: stars, then the moon in the top right ---- */
+    for (let i = 0; i < skyStars.length; i++) {
+      const s = skyStars[i];
+      ctx.globalAlpha = s.a;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(s.x, s.y, s.r, s.r);
+    }
+    ctx.globalAlpha = 1;
+    const mx = W - 104;
+    const my = 52;
+    const mr = 34;
+    const halo = ctx.createRadialGradient(mx, my, mr * 0.6, mx, my, mr * 2.7);
+    halo.addColorStop(0, 'rgba(226,236,250,0.22)');
+    halo.addColorStop(1, 'rgba(140,170,220,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(mx, my, mr * 2.7, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#e9eef8';
+    ctx.beginPath(); ctx.arc(mx, my, mr, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(186,199,219,0.5)';
+    ctx.beginPath(); ctx.arc(mx - 10, my - 7, 7, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(mx + 9, my + 8, 5, 0, TAU); ctx.fill();
+  }
 
   /* horizon line + accent glow */
   const acc = z.accent;
@@ -10145,6 +12982,263 @@ function drawPropShard(o, t) {
   ctx.restore();
 }
 
+
+/* ============================================================================
+   PROPS FOR THE OTHER FIVE UNIVERSES — the same rule as everything else: a
+   flat silhouette with two or three colour zones, drawn straight onto the world.
+   ============================================================================ */
+function propSandstone(o) {
+  ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.rot * 0.15);
+  ctx.fillStyle = '#a97f45';
+  ctx.beginPath();
+  ctx.moveTo(-o.r, o.r * 0.5); ctx.lineTo(-o.r * 0.8, -o.r * 0.7);
+  ctx.lineTo(o.r * 0.2, -o.r); ctx.lineTo(o.r, -o.r * 0.2);
+  ctx.lineTo(o.r * 0.85, o.r * 0.6); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(240,206,140,0.35)';
+  ctx.beginPath();
+  ctx.moveTo(-o.r * 0.8, -o.r * 0.7); ctx.lineTo(o.r * 0.2, -o.r); ctx.lineTo(o.r * 0.1, -o.r * 0.4);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(90,60,26,0.55)'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(-o.r * 0.5, -o.r * 0.2); ctx.lineTo(o.r * 0.6, -o.r * 0.05); ctx.stroke();
+  ctx.restore();
+}
+
+function propObelisk(o) {
+  ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.rot * 0.1);
+  ctx.fillStyle = '#8a6a3c';
+  ctx.beginPath();
+  ctx.moveTo(-o.r * 0.5, o.r * 0.7); ctx.lineTo(-o.r * 0.34, -o.r * 1.5);
+  ctx.lineTo(0, -o.r * 2.1); ctx.lineTo(o.r * 0.34, -o.r * 1.5);
+  ctx.lineTo(o.r * 0.5, o.r * 0.7); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(245,214,150,0.28)';
+  ctx.beginPath();
+  ctx.moveTo(-o.r * 0.34, -o.r * 1.5); ctx.lineTo(0, -o.r * 2.1); ctx.lineTo(0, o.r * 0.7);
+  ctx.lineTo(-o.r * 0.5, o.r * 0.7); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(250,204,21,0.55)';
+  for (let i = 0; i < 3; i++) ctx.fillRect(-o.r * 0.12, -o.r * (1.2 - i * 0.4), o.r * 0.24, 2.4);
+  ctx.restore();
+}
+
+function propUrn(o) {
+  ctx.save(); ctx.translate(o.x, o.y);
+  ctx.fillStyle = '#b5834a';
+  ctx.beginPath();
+  ctx.moveTo(-o.r * 0.6, 0);
+  ctx.quadraticCurveTo(-o.r * 0.9, -o.r * 1.2, -o.r * 0.35, -o.r * 1.5);
+  ctx.lineTo(o.r * 0.35, -o.r * 1.5);
+  ctx.quadraticCurveTo(o.r * 0.9, -o.r * 1.2, o.r * 0.6, 0);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#8a5f30';
+  ctx.fillRect(-o.r * 0.42, -o.r * 1.65, o.r * 0.84, o.r * 0.2);
+  ctx.strokeStyle = 'rgba(60,36,14,0.5)'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(-o.r * 0.62, -o.r * 0.8); ctx.quadraticCurveTo(0, -o.r * 0.55, o.r * 0.62, -o.r * 0.8); ctx.stroke();
+  ctx.restore();
+}
+
+function propStoneLantern(o) {
+  const t = game.time;
+  ctx.save(); ctx.translate(o.x, o.y);
+  ctx.fillStyle = '#5b5b56';
+  ctx.fillRect(-o.r * 0.3, -o.r * 0.4, o.r * 0.6, o.r * 0.9);
+  ctx.fillRect(-o.r * 0.62, -o.r * 0.9, o.r * 1.24, o.r * 0.42);
+  ctx.beginPath();
+  ctx.moveTo(-o.r * 0.9, -o.r * 1.5); ctx.lineTo(o.r * 0.9, -o.r * 1.5);
+  ctx.lineTo(o.r * 0.55, -o.r * 1.0); ctx.lineTo(-o.r * 0.55, -o.r * 1.0);
+  ctx.closePath(); ctx.fill();
+  /* the little fire inside */
+  const glow = 0.7 + 0.3 * Math.sin(t * 4 + o.variant * 6);
+  ctx.fillStyle = 'rgba(253,186,116,' + (0.25 * glow).toFixed(2) + ')';
+  ctx.beginPath(); ctx.arc(0, -o.r * 0.7, o.r * 1.1, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#fdba74';
+  ctx.fillRect(-o.r * 0.16, -o.r * 0.8, o.r * 0.32, o.r * 0.28);
+  ctx.restore();
+}
+
+function propBambooClump(o) {
+  ctx.save(); ctx.translate(o.x, o.y);
+  for (let i = 0; i < 4; i++) {
+    const dx = -o.r * 0.5 + i * (o.r * 0.34);
+    const h = o.r * (1.6 + (i % 3) * 0.3);
+    ctx.fillStyle = i % 2 ? '#3f6b32' : '#4d7c3a';
+    ctx.fillRect(dx, -h, 3.4, h);
+    ctx.fillStyle = 'rgba(120,168,96,0.6)';
+    ctx.fillRect(dx, -h, 1.2, h);
+    ctx.strokeStyle = 'rgba(24,44,20,0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(dx - 1, -h * 0.55); ctx.lineTo(dx + 4.4, -h * 0.55);
+    ctx.moveTo(dx - 1, -h * 0.25); ctx.lineTo(dx + 4.4, -h * 0.25);
+    ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(74,120,58,0.9)';
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.ellipse(-o.r * 0.4 + i * o.r * 0.25, -o.r * 1.9 - (i % 2) * 6, 7, 2.6, 0.4, 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function propRiceBarrel(o) {
+  ctx.save(); ctx.translate(o.x, o.y);
+  ctx.fillStyle = '#8a6a3f';
+  ctx.beginPath();
+  ctx.moveTo(-o.r * 0.7, 0); ctx.lineTo(-o.r * 0.8, -o.r * 1.1);
+  ctx.lineTo(o.r * 0.8, -o.r * 1.1); ctx.lineTo(o.r * 0.7, 0);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#c9a86a';
+  ctx.beginPath(); ctx.ellipse(0, -o.r * 1.1, o.r * 0.8, o.r * 0.26, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(60,40,18,0.6)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-o.r * 0.74, -o.r * 0.7); ctx.lineTo(o.r * 0.74, -o.r * 0.7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-o.r * 0.7, -o.r * 0.3); ctx.lineTo(o.r * 0.7, -o.r * 0.3); ctx.stroke();
+  ctx.restore();
+}
+
+function propCarHulk(o) {
+  ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.rot * 0.2);
+  ctx.fillStyle = '#4b3a2c';
+  ctx.beginPath();
+  ctx.moveTo(-o.r, o.r * 0.5); ctx.lineTo(-o.r, -o.r * 0.2);
+  ctx.lineTo(-o.r * 0.4, -o.r * 0.8); ctx.lineTo(o.r * 0.5, -o.r * 0.75);
+  ctx.lineTo(o.r, -o.r * 0.1); ctx.lineTo(o.r, o.r * 0.5);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(-o.r * 0.35, -o.r * 0.7, o.r * 0.8, o.r * 0.34);
+  ctx.strokeStyle = 'rgba(140,110,80,0.5)'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(-o.r * 0.8, o.r * 0.1); ctx.lineTo(o.r * 0.8, o.r * 0.15); ctx.stroke();
+  ctx.fillStyle = '#1b1712';
+  ctx.beginPath(); ctx.arc(-o.r * 0.55, o.r * 0.5, o.r * 0.26, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(o.r * 0.55, o.r * 0.5, o.r * 0.26, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
+function propJersey(o) {
+  ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.rot);
+  ctx.fillStyle = '#6b6b62';
+  ctx.fillRect(-o.len / 2, -o.r * 0.5, o.len, o.r * 1.0);
+  ctx.fillStyle = '#5a5a52';
+  ctx.fillRect(-o.len / 2, -o.r * 0.5, o.len, o.r * 0.28);
+  ctx.fillStyle = 'rgba(201,214,74,0.35)';
+  for (let i = 0; i < 3; i++) ctx.fillRect(-o.len / 2 + 14 + i * 34, -o.r * 0.08, 12, 3);
+  ctx.restore();
+}
+
+function propOilDrum(o) {
+  ctx.save(); ctx.translate(o.x, o.y);
+  ctx.fillStyle = '#6d4b2a';
+  ctx.fillRect(-o.r * 0.6, -o.r * 1.3, o.r * 1.2, o.r * 1.3);
+  ctx.fillStyle = '#8a5f30';
+  ctx.beginPath(); ctx.ellipse(0, -o.r * 1.3, o.r * 0.6, o.r * 0.2, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(40,26,12,0.6)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-o.r * 0.6, -o.r * 0.9); ctx.lineTo(o.r * 0.6, -o.r * 0.9); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-o.r * 0.6, -o.r * 0.4); ctx.lineTo(o.r * 0.6, -o.r * 0.4); ctx.stroke();
+  ctx.fillStyle = 'rgba(163,180,44,0.5)';
+  ctx.fillRect(-o.r * 0.2, -o.r * 0.75, o.r * 0.4, o.r * 0.22);
+  ctx.restore();
+}
+
+function propRack(o) {
+  const t = game.time;
+  ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.rot * 0.08);
+  ctx.fillStyle = '#1c2634';
+  ctx.fillRect(-o.r * 0.7, -o.r * 1.7, o.r * 1.4, o.r * 1.7);
+  ctx.fillStyle = '#2b3a4e';
+  ctx.fillRect(-o.r * 0.62, -o.r * 1.6, o.r * 1.24, o.r * 0.5);
+  for (let i = 0; i < 4; i++) {
+    const on = Math.sin(t * 3 + i * 1.7 + o.variant * 9) > 0;
+    ctx.fillStyle = on ? '#67e8f9' : '#1e3a4a';
+    ctx.fillRect(-o.r * 0.5, -o.r * 1.45 + i * o.r * 0.28, o.r * 0.22, o.r * 0.1);
+  }
+  ctx.strokeStyle = 'rgba(56,189,248,0.5)'; ctx.lineWidth = 1.4;
+  ctx.strokeRect(-o.r * 0.7, -o.r * 1.7, o.r * 1.4, o.r * 1.7);
+  ctx.restore();
+}
+
+function propCanister(o) {
+  const t = game.time;
+  ctx.save(); ctx.translate(o.x, o.y);
+  ctx.fillStyle = '#334155';
+  ctx.beginPath(); ctx.roundRect(-o.r * 0.55, -o.r * 1.5, o.r * 1.1, o.r * 1.5, o.r * 0.28); ctx.fill();
+  ctx.fillStyle = '#475569';
+  ctx.fillRect(-o.r * 0.2, -o.r * 1.7, o.r * 0.4, o.r * 0.24);
+  const pulse = 0.55 + 0.45 * Math.sin(t * 2.4 + o.variant * 5);
+  ctx.fillStyle = 'rgba(56,189,248,' + (0.35 * pulse).toFixed(2) + ')';
+  ctx.beginPath(); ctx.arc(0, -o.r * 0.7, o.r * 0.7, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#7dd3fc';
+  ctx.fillRect(-o.r * 0.42, -o.r * 0.8, o.r * 0.84, o.r * 0.16);
+  ctx.restore();
+}
+
+function propHullCrate(o) {
+  ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.rot * 0.12);
+  ctx.fillStyle = '#3f4b5c';
+  ctx.fillRect(-o.r * 0.8, -o.r * 1.1, o.r * 1.6, o.r * 1.1);
+  ctx.strokeStyle = '#64748b'; ctx.lineWidth = 2;
+  ctx.strokeRect(-o.r * 0.8, -o.r * 1.1, o.r * 1.6, o.r * 1.1);
+  ctx.beginPath();
+  ctx.moveTo(-o.r * 0.8, -o.r * 1.1); ctx.lineTo(o.r * 0.8, 0);
+  ctx.moveTo(o.r * 0.8, -o.r * 1.1); ctx.lineTo(-o.r * 0.8, 0);
+  ctx.stroke();
+  ctx.fillStyle = '#f59e0b';
+  ctx.fillRect(-o.r * 0.2, -o.r * 0.62, o.r * 0.4, o.r * 0.16);
+  ctx.restore();
+}
+
+function propVoidSpire(o) {
+  const t = game.time;
+  ctx.save(); ctx.translate(o.x, o.y);
+  const pulse = 0.6 + 0.4 * Math.sin(t * 2 + o.variant * 7);
+  ctx.fillStyle = 'rgba(168,85,247,' + (0.22 * pulse).toFixed(2) + ')';
+  ctx.beginPath(); ctx.arc(0, -o.r, o.r * 1.5, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#2b0b45';
+  ctx.beginPath();
+  ctx.moveTo(-o.r * 0.55, 0); ctx.lineTo(-o.r * 0.3, -o.r * 1.9);
+  ctx.lineTo(0, -o.r * 2.5); ctx.lineTo(o.r * 0.3, -o.r * 1.9);
+  ctx.lineTo(o.r * 0.55, 0); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(216,180,254,0.8)';
+  ctx.beginPath();
+  ctx.moveTo(-o.r * 0.12, 0); ctx.lineTo(-o.r * 0.05, -o.r * 1.8);
+  ctx.lineTo(o.r * 0.1, 0); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function propVoidSlab(o) {
+  const t = game.time;
+  ctx.save(); ctx.translate(o.x, o.y + Math.sin(t * 1.2 + o.variant * 4) * 3);
+  ctx.rotate(o.rot * 0.25);
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(-o.r * 0.9, -o.r * 0.5, o.r * 1.8, o.r * 0.9);
+  ctx.fillStyle = '#1b0729';
+  ctx.fillRect(-o.r * 0.9, -o.r * 0.62, o.r * 1.8, o.r * 0.9);
+  ctx.strokeStyle = 'rgba(168,85,247,0.7)'; ctx.lineWidth = 1.6;
+  ctx.strokeRect(-o.r * 0.9, -o.r * 0.62, o.r * 1.8, o.r * 0.9);
+  ctx.strokeStyle = 'rgba(233,213,255,0.35)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-o.r * 0.6, -o.r * 0.2); ctx.lineTo(o.r * 0.2, -o.r * 0.35); ctx.lineTo(o.r * 0.6, -o.r * 0.1); ctx.stroke();
+  ctx.restore();
+}
+
+function propVoidShard(o) {
+  ctx.save(); ctx.translate(o.x, o.y);
+  ctx.fillStyle = '#3b0a5c';
+  ctx.beginPath();
+  ctx.moveTo(0, -o.r * 1.8); ctx.lineTo(o.r * 0.5, -o.r * 0.2);
+  ctx.lineTo(0, o.r * 0.2); ctx.lineTo(-o.r * 0.5, -o.r * 0.4);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(216,180,254,0.55)';
+  ctx.beginPath();
+  ctx.moveTo(0, -o.r * 1.6); ctx.lineTo(o.r * 0.18, -o.r * 0.4); ctx.lineTo(-o.r * 0.1, -o.r * 0.3);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+const PROP_ART = {
+  sandstone: propSandstone, obelisk: propObelisk, urn: propUrn,
+  stonelantern: propStoneLantern, bambooclump: propBambooClump, ricebarrel: propRiceBarrel,
+  carhulk: propCarHulk, jersey: propJersey, oildrum: propOilDrum,
+  rack: propRack, canister: propCanister, hullcrate: propHullCrate,
+  voidspire: propVoidSpire, voidslab: propVoidSlab, voidshard: propVoidShard
+};
+
 function drawObstacles() {
   const t = game.time;
   for (let i = 0; i < game.obstacles.length; i++) {
@@ -10177,6 +13271,8 @@ function drawObstacles() {
     else if (o.kind === 'brokenwall') drawPropBrokenWall(o);
     else if (o.kind === 'portcullis') drawPropPortcullis(o);
     else if (o.kind === 'crystalpillar') drawPropCrystalPillar(o, t);
+    else if (o.kind === 'shard') drawPropShard(o, t);
+    else if (PROP_ART[o.kind]) PROP_ART[o.kind](o, t);
     else drawPropShard(o, t);
   }
 }
@@ -10518,6 +13614,53 @@ function drawEnemyBullets() {
       ctx.strokeRect(-b.r, -b.r, b.r * 2, b.r * 2);
       ctx.restore();
       ctx.globalAlpha = 1;
+    } else if (b.kind === 'spear') {
+      const a = Math.atan2(b.vy, b.vx);
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(a);
+      ctx.fillStyle = '#a16207'; ctx.fillRect(-16, -1.4, 22, 2.8);
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(6, -4); ctx.lineTo(6, 4); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    } else if (b.kind === 'shuriken') {
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.spin * 6);
+      ctx.fillStyle = '#cbd5e1';
+      for (let k = 0; k < 4; k++) {
+        ctx.rotate(Math.PI / 2);
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(7, -2.4); ctx.lineTo(9, 0); ctx.closePath(); ctx.fill();
+      }
+      ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(0, 0, 1.6, 0, TAU); ctx.fill();
+      ctx.restore();
+    } else if (b.kind === 'pellet') {
+      ctx.fillStyle = '#fb923c'; ctx.shadowColor = '#f97316'; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.8, 0, TAU); ctx.fill();
+      ctx.shadowBlur = 0;
+    } else if (b.kind === 'laser') {
+      const a = Math.atan2(b.vy, b.vx);
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(a);
+      ctx.fillStyle = 'rgba(248,113,113,0.35)'; ctx.fillRect(-18, -3, 26, 6);
+      ctx.fillStyle = '#fca5a5'; ctx.fillRect(-14, -1.4, 22, 2.8);
+      ctx.fillStyle = '#fff'; ctx.fillRect(-6, -0.8, 8, 1.6);
+      ctx.restore();
+    } else if (b.kind === 'plasma') {
+      const g = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, b.r * 2.6);
+      g.addColorStop(0, 'rgba(224,242,254,0.95)');
+      g.addColorStop(0.45, 'rgba(56,189,248,0.7)');
+      g.addColorStop(1, 'rgba(56,189,248,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2.6, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#f0f9ff'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.5, 0, TAU); ctx.fill();
+    } else if (b.kind === 'rocket') {
+      const a = Math.atan2(b.vy, b.vx);
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(a);
+      ctx.fillStyle = '#e2e8f0'; ctx.fillRect(-8, -3, 14, 6);
+      ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.moveTo(6, -3); ctx.lineTo(11, 0); ctx.lineTo(6, 3); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#fb923c';
+      ctx.beginPath(); ctx.ellipse(-9, 0, 5 + Math.sin(b.life * 40) * 1.5, 2.4, 0, 0, TAU); ctx.fill();
+      ctx.restore();
+    } else if (b.kind === 'acid') {
+      ctx.fillStyle = 'rgba(74,222,128,0.3)';
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 1.9, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#4ade80'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.9, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#dcfce7'; ctx.beginPath(); ctx.arc(b.x - 1, b.y - 1, b.r * 0.35, 0, TAU); ctx.fill();
     } else {
       /* shock */
       ctx.fillStyle = '#fca5a5';
@@ -10651,6 +13794,72 @@ function drawAmbient() {
       ctx.beginPath(); ctx.arc(x, y, 2 + (i % 3), 0, TAU); ctx.fill();
       ctx.shadowBlur = 0;
     }
+  } else if (kind === 'sand') {
+    /* blown sand: low streaks that never quite settle */
+    ctx.strokeStyle = 'rgba(240,206,140,0.28)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    for (let i = 0; i < 60; i++) {
+      const x = ((i * 197 + t * (140 + (i % 5) * 30)) % (W + 160)) - 80;
+      const y = SKY_H + 30 + ((i * 89) % (VIEW_H - 40)) + Math.sin(t * 1.4 + i) * 8;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 16 + (i % 4) * 5, y - 2);
+    }
+    ctx.stroke();
+    for (let i = 0; i < 22; i++) {
+      const x = ((i * 311 + t * 220) % (W + 120)) - 60;
+      const y = SKY_H + ((i * 137) % (VIEW_H - 60));
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = '#e9c98a';
+      ctx.beginPath(); ctx.arc(x, y, 2 + (i % 3), 0, TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  } else if (kind === 'petals') {
+    /* cherry blossom: petals on the wind, spinning as they fall */
+    for (let i = 0; i < 34; i++) {
+      const x = ((i * 211 + Math.sin(t * 0.7 + i) * 40 + t * 26) % (W + 120)) - 60;
+      const y = ((i * 97 + t * (48 + (i % 5) * 16)) % (H + 80)) - 40;
+      ctx.globalAlpha = 0.55 + (i % 3) * 0.15;
+      ctx.fillStyle = i % 4 === 0 ? '#fda4c0' : '#ffd0e2';
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(t * 1.6 + i);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 4.2, 2.2, 0, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  } else if (kind === 'ash') {
+    /* fallout ash: grey flakes drifting down through the yellow light */
+    for (let i = 0; i < 54; i++) {
+      const x = ((i * 173 + t * 18 + Math.sin(t + i) * 12) % (W + 80)) - 40;
+      const y = ((i * 89 + t * (34 + (i % 4) * 10)) % (H + 60)) - 30;
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = i % 5 === 0 ? '#c9d64a' : '#b8b8ac';
+      ctx.fillRect(x, y, 1.8, 1.8);
+    }
+    ctx.globalAlpha = 1;
+  } else if (kind === 'stars') {
+    /* drifting star dust inside the ship */
+    for (let i = 0; i < 40; i++) {
+      const x = ((i * 149 + t * (10 + (i % 3) * 6)) % W);
+      const y = SKY_H + ((i * 113 + Math.sin(t * 0.4 + i) * 14) % (VIEW_H - 40));
+      ctx.globalAlpha = 0.16 + 0.14 * Math.sin(t * 2 + i);
+      ctx.fillStyle = i % 3 ? '#bae6fd' : '#ffffff';
+      ctx.fillRect(x, y, 1.6, 1.6);
+    }
+    ctx.globalAlpha = 1;
+  } else if (kind === 'void') {
+    /* motes rising out of the nothing */
+    for (let i = 0; i < 34; i++) {
+      const x = ((i * 163 + Math.sin(t * 0.5 + i) * 60) % W);
+      const y = H - ((t * (14 + (i % 4) * 9) + i * 83) % (H + 90));
+      ctx.globalAlpha = 0.2 + 0.25 * Math.sin(t * 1.6 + i);
+      ctx.fillStyle = i % 3 ? '#c084fc' : '#f5e8ff';
+      ctx.beginPath(); ctx.arc(x, y, 1.4 + (i % 3), 0, TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   } else {
     for (let i = 0; i < 36; i++) {
       const a = t * 0.6 + i * 0.7;
@@ -11981,6 +15190,8 @@ function render() {
   drawBossArena();
   drawPortal();
   drawObstacles();
+  drawSandPillars();
+  drawMines();
   drawHiddenSpots();
   drawFootsteps();
   drawGems();
