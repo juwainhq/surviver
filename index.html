@@ -848,6 +848,121 @@
   .card .rank{ margin-top:auto; font-size:10px; letter-spacing:2.6px; color:rgba(232,200,116,.65); text-transform:uppercase; }
 
 
+
+  /* ---------------- gem shop ---------------- */
+  #shopScreen{
+    justify-content:center; align-items:center; padding:0;
+    background:radial-gradient(ellipse at 50% 45%, rgba(6,8,14,.93), rgba(2,3,7,.985));
+    backdrop-filter:blur(3px);
+  }
+  .shop-wrap{
+    width:min(1180px,96vw); height:min(790px,94vh); margin:auto;
+    display:flex; flex-direction:column;
+    background:linear-gradient(180deg, rgba(9,11,18,.985), rgba(3,4,8,.99));
+    border:1px solid rgba(232,200,116,.45); border-radius:4px;
+    box-shadow:0 0 100px rgba(0,0,0,.92), inset 0 0 70px rgba(232,200,116,.04);
+  }
+  .shop-head{
+    display:flex; align-items:center; gap:18px; padding:18px 26px 14px;
+    border-bottom:1px solid rgba(232,200,116,.22);
+  }
+  .shop-head h2{
+    font-family:var(--font-head); font-size:clamp(17px,2.2vw,25px); font-weight:900;
+    letter-spacing:6px; text-transform:uppercase; color:#ffe7b8; margin:0;
+    text-shadow:0 0 30px rgba(232,200,116,.35);
+  }
+  .shop-sub{ font-size:9.5px; letter-spacing:3.4px; text-transform:uppercase; color:rgba(232,200,116,.55); }
+  .shop-bank{
+    margin-left:auto; display:flex; align-items:center; gap:9px;
+    font-family:var(--font-head); font-size:21px; font-weight:700; color:#ffdf9b;
+    font-variant-numeric:tabular-nums; letter-spacing:1px;
+  }
+  .shop-bank svg{ width:21px; height:21px; filter:drop-shadow(0 0 8px rgba(110,231,183,.55)); }
+  .shop-tabs{ display:flex; gap:8px; padding:14px 26px 0; flex-wrap:wrap; }
+  .shop-tab{
+    font-family:var(--font-head); font-size:10.5px; font-weight:700; letter-spacing:2.6px;
+    text-transform:uppercase; color:rgba(214,226,244,.55); background:none;
+    border:1px solid rgba(232,200,116,.18); border-bottom:none;
+    border-radius:3px 3px 0 0; padding:10px 20px; cursor:pointer;
+    transition:color .2s ease, background .2s ease, border-color .2s ease;
+    -webkit-appearance:none; appearance:none;
+  }
+  .shop-tab:hover{ color:#ffe7b8; border-color:rgba(232,200,116,.4); }
+  .shop-tab.active{
+    color:#ffe7b8; border-color:rgba(232,200,116,.6);
+    background:rgba(232,200,116,.09);
+    box-shadow:inset 0 0 22px rgba(232,200,116,.07);
+  }
+  #shopGrid{
+    flex:1; overflow-y:auto; padding:18px 26px 22px;
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr));
+    gap:14px; align-content:start;
+  }
+  #shopGrid::-webkit-scrollbar{ width:8px; }
+  #shopGrid::-webkit-scrollbar-track{ background:rgba(255,255,255,.04); border-radius:4px; }
+  #shopGrid::-webkit-scrollbar-thumb{ background:rgba(232,200,116,.35); border-radius:4px; }
+  .shop-card{
+    display:flex; flex-direction:column; gap:9px; padding:15px 15px 13px;
+    background:linear-gradient(180deg, rgba(16,19,28,.97), rgba(5,7,11,.98));
+    border:1px solid rgba(232,200,116,.3); border-radius:3px;
+    transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+  }
+  .shop-card:hover{ border-color:rgba(232,200,116,.6); box-shadow:0 0 26px rgba(232,200,116,.14); }
+  .shop-card.owned{ border-color:rgba(232,200,116,.42); }
+  .shop-card.maxed{ border-color:rgba(110,231,183,.5); }
+  .sc-top{ display:flex; align-items:center; gap:11px; }
+  .sc-icon{
+    flex:0 0 auto; width:38px; height:38px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-head); font-size:16px; color:#ffe4ae;
+    border:1px solid rgba(232,200,116,.45);
+    background:radial-gradient(circle at 50% 40%, rgba(232,200,116,.18), rgba(8,10,16,.9));
+    box-shadow:inset 0 0 16px rgba(232,200,116,.16);
+  }
+  .sc-name{
+    font-family:var(--font-head); font-size:12.5px; font-weight:700; letter-spacing:1.2px;
+    color:#ffe7b8; text-transform:uppercase; line-height:1.3;
+  }
+  .sc-desc{ font-size:12.5px; line-height:1.45; color:#b9c8da; min-height:52px; }
+  .sc-stars{ font-size:13px; letter-spacing:3px; color:#e8c874; }
+  .sc-stars .off{ color:rgba(232,200,116,.22); }
+  .sc-foot{ margin-top:auto; display:flex; align-items:center; gap:10px; }
+  .sc-cost{
+    display:flex; align-items:center; gap:6px;
+    font-family:var(--font-head); font-size:14px; font-weight:700; color:#ffdf9b;
+    font-variant-numeric:tabular-nums;
+  }
+  .sc-cost svg{ width:13px; height:13px; }
+  .sc-buy{
+    margin-left:auto; font-family:var(--font-head); font-size:10px; font-weight:700;
+    letter-spacing:2.2px; text-transform:uppercase; color:#ffe7b8;
+    background:rgba(232,200,116,.12); border:1px solid rgba(232,200,116,.55);
+    border-radius:2px; padding:8px 15px; cursor:pointer;
+    transition:background .2s ease, box-shadow .2s ease, color .2s ease;
+    -webkit-appearance:none; appearance:none;
+  }
+  .sc-buy:hover:not(:disabled){ background:rgba(232,200,116,.24); box-shadow:0 0 18px rgba(232,200,116,.3); }
+  .sc-buy:active:not(:disabled){ transform:scale(.97); }
+  .sc-buy:disabled{
+    opacity:.34; cursor:not-allowed; color:#93a4b8;
+    border-color:rgba(148,163,184,.28); background:rgba(148,163,184,.06);
+  }
+  .sc-buy.maxed:disabled{ color:#6ee7b7; border-color:rgba(110,231,183,.4); background:rgba(110,231,183,.08); opacity:.75; }
+  .shop-foot{
+    padding:0 26px 16px; display:flex; justify-content:space-between; align-items:center; gap:16px;
+  }
+  .shop-note{ font-size:10px; letter-spacing:2.4px; text-transform:uppercase; color:rgba(214,226,244,.4); }
+  .shop-flash{
+    font-family:var(--font-head); font-size:11px; letter-spacing:2.6px; text-transform:uppercase;
+    color:#6ee7b7; opacity:0; transition:opacity .25s ease;
+  }
+  .shop-flash.show{ opacity:1; }
+  .shop-flash.bad{ color:#fca5a5; }
+
+  /* the seventh ability slot only exists once the Overdrive Core is bought */
+  #abOverdrive{ display:none; }
+  #abOverdrive.show{ display:flex; }
+
   /* ---------------- universe select strip (zone screen) ---------------- */
   #universeRow{
     display:flex; gap:11px; justify-content:center; flex-wrap:wrap;
@@ -989,6 +1104,10 @@
         <span class="icon">✦</span><span class="cd"></span><span class="key">E</span><span class="label">NOVA</span>
         <span class="lock"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
       </div>
+      <div class="ability" id="abOverdrive">
+        <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
+        <span class="icon">⇉</span><span class="cd"></span><span class="key">Z</span><span class="label">OVERDRIVE</span>
+      </div>
       <div class="ability" id="abDash">
         <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="27"/><circle class="ring" cx="32" cy="32" r="27"/></svg>
         <span class="icon">➤</span><span class="cd"></span><span class="key">SHIFT</span><span class="label">DASH</span>
@@ -1075,7 +1194,7 @@
       <div class="sp-row"><span>Saved run</span><b id="spRun">None</b></div>
       <div class="sp-rule"></div>
       <button id="btnResetSave" type="button">Reset save</button>
-      <div id="spNote">Clears the saved run, the best score and lifetime gems.</div>
+      <div id="spNote">Clears the saved run, the best score, the gem bank and every shop purchase.</div>
     </div>
 
     <div id="continueWrap">
@@ -1085,6 +1204,7 @@
 
     <div class="btn-row" style="margin-top:12px">
       <button class="btn" id="btnBegin">Begin Mission</button>
+      <button class="btn" id="btnShop">Shop</button>
       <button class="btn ghost" id="btnHowTo">How To Play</button>
     </div>
     <div id="howto">
@@ -1180,7 +1300,10 @@
     <div class="eyebrow" id="transEyebrow">Zone 2</div>
     <h1 id="transTitle">The Dark Forest</h1>
     <div class="story" id="transStory"></div>
-    <button class="btn" id="btnContinue" style="margin-top:8px">Continue</button>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn" id="btnContinue">Continue</button>
+      <button class="btn ghost" id="btnVisitShop">Visit Shop</button>
+    </div>
   </div>
 
   <!-- ==================== GAME OVER ==================== -->
@@ -1240,6 +1363,31 @@
       <div class="uni-story" id="uiStory"></div>
       <div class="uni-roster" id="uiRoster"></div>
       <button class="btn" id="btnEnterUniverse">Enter Universe</button>
+    </div>
+  </div>
+
+  <!-- ==================== GEM SHOP ==================== -->
+  <div class="screen" id="shopScreen">
+    <div class="shop-wrap">
+      <div class="shop-head">
+        <div>
+          <h2>Supply Depot</h2>
+          <div class="shop-sub">Permanent upgrades · purchased with gems</div>
+        </div>
+        <div class="shop-bank"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg><span id="shopGems">0</span></div>
+      </div>
+      <div class="shop-tabs" id="shopTabs">
+        <button class="shop-tab active" type="button" data-tab="upgrades">Upgrades</button>
+        <button class="shop-tab" type="button" data-tab="consumables">Consumables</button>
+        <button class="shop-tab" type="button" data-tab="cosmetics">Cosmetics</button>
+        <button class="shop-tab" type="button" data-tab="classes">Classes</button>
+      </div>
+      <div id="shopGrid"></div>
+      <div class="shop-foot">
+        <div class="shop-note" id="shopNote">Upgrades are permanent — they follow Rael through every run and every universe.</div>
+        <div class="shop-flash" id="shopFlash"></div>
+        <button class="btn shop-close" id="btnShopClose" type="button">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1711,7 +1859,8 @@ const UI = {
     dash: document.getElementById('abDash'),
     turret: document.getElementById('abTurret'),
     overcharge: document.getElementById('abOvercharge'),
-    bomb: document.getElementById('abBomb')
+    bomb: document.getElementById('abBomb'),
+    overdrive: document.getElementById('abOverdrive')
   },
   qIcon: document.getElementById('qIcon'),
   qLabel: document.getElementById('qLabel'),
@@ -1783,6 +1932,12 @@ const UI = {
   uiStory: document.getElementById('uiStory'),
   uiRoster: document.getElementById('uiRoster'),
   vicEnding: document.getElementById('vicEnding'),
+  shopScreen: document.getElementById('shopScreen'),
+  shopGrid: document.getElementById('shopGrid'),
+  shopTabs: document.getElementById('shopTabs'),
+  shopGems: document.getElementById('shopGems'),
+  shopFlash: document.getElementById('shopFlash'),
+  shopNote: document.getElementById('shopNote'),
   btnChangeClass: document.getElementById('btnChangeClass')
 };
 const ctx = UI.canvas.getContext('2d');
@@ -1807,6 +1962,7 @@ const SCREEN_LAYERS = [
   'gameOver',        /* death                   — game.screen === 'gameover'    */
   'universeComplete',/* universe cleared card   — game.screen === 'universe'    */
   'universeIntro',   /* next universe card      — game.screen === 'universeIntro'*/
+  'shopScreen',      /* the gem shop            — game.screen === 'shop'        */
   'victory'          /* final win               — game.screen === 'victory'     */
 ];
 
@@ -2461,6 +2617,16 @@ const game = {
   mouse: { x: W / 2, y: H / 2, down: false },
   keys: Object.create(null),
   abilityCdScale: 1,   /* set by the Reactor Coils upgrade */
+  /* --- shop (permanent, bought with the gem bank) -------------------------- */
+  shopGemMult: 1,      /* Gem Processor */
+  shopCdScale: 1,      /* Cooldown Chip */
+  shopCrit: 0,         /* Critical Strike */
+  shopBlast: 1,        /* Blast Radius */
+  shopIronWill: false, /* Iron Will */
+  ironWillUsed: {},    /* universe index -> Iron Will already spent */
+  gemCarry: 0,         /* Gem Processor remainder */
+  overdriveCd: 0,
+  overdriveTimer: 0,
   cdModule: 1,         /* set by the Cooldown Module chip: composes with the above */
   secondWindUsed: false,  /* Second Wind is once per zone */
   waveDelay: 0,
@@ -2586,6 +2752,15 @@ function resetRun() {
   game.stormTimer = 0;
   game.stormFire = 0;
   game.arenaGrace = 0;
+  game.overdriveCd = 0;
+  game.overdriveTimer = 0;
+  game.gemCarry = 0;
+  game.shopGemMult = 1;
+  game.shopCdScale = 1;
+  game.shopCrit = 0;
+  game.shopBlast = 1;
+  game.shopIronWill = false;
+  game.ironWillUsed = {};
   game.rift = null;
   game.beams.length = 0;
   game.turrets.length = 0;
@@ -2641,6 +2816,8 @@ function loadZone(zoneIndex, opts) {
   game.stormTimer = 0;
   game.stormFire = 0;
   game.arenaGrace = 0;
+  game.overdriveCd = 0;
+  game.overdriveTimer = 0;
   game.rift = null;
   game.beams.length = 0;
   game.turrets.length = 0;
@@ -3012,6 +3189,7 @@ window.addEventListener('keydown', (e) => {
   if (k === 'f' && hasAbility('turret')) dropTurret();
   if (k === 'r' && hasAbility('overcharge')) startOvercharge();
   if (k === 'x' && hasAbility('bomb')) throwBomb();
+  if (k === 'z' && hasAbility('overdrive')) startOverdrive();
   if (k === 'Shift' && hasAbility('dash')) dash();
 });
 window.addEventListener('keyup', (e) => {
@@ -3060,6 +3238,13 @@ function updatePlayer(dt) {
     }
   }
 
+  /* Overdrive: the buff burns down, the cooldown behind it keeps running */
+  if (game.overdriveCd > 0) game.overdriveCd = Math.max(0, game.overdriveCd - dt);
+  if (game.overdriveTimer > 0) {
+    game.overdriveTimer = Math.max(0, game.overdriveTimer - dt);
+    if (game.overdriveTimer === 0) addText(p.x, p.y - 40, 'OVERDRIVE OVER', '#e8c874');
+  }
+
   /* dash */
   if (p.dashCd > 0) p.dashCd = Math.max(0, p.dashCd - dt);
   const wasDashing = p.dashTimer > 0;
@@ -3097,7 +3282,7 @@ function updatePlayer(dt) {
     const mv = moveVector();
     const wantMove = mv.x !== 0 || mv.y !== 0;
     /* a sand mummy's grip: 45% of his stride while the wraps are on him */
-    const walkSpeed = p.speed * (p.slowT > 0 ? 0.55 : 1);
+    const walkSpeed = p.speed * (p.slowT > 0 ? 0.55 : 1) * odm();
     const tx = mv.x * walkSpeed;
     const ty = mv.y * walkSpeed;
     const dx = tx - p.vx;
@@ -3200,12 +3385,13 @@ function updatePlayer(dt) {
   /* gunslinger bullet storm */
   if (game.stormTimer > 0) updateBulletStorm(dt);
 
-  /* cooldowns */
-  if (game.qCd > 0) game.qCd = Math.max(0, game.qCd - dt);
-  if (game.novaCd > 0) game.novaCd = Math.max(0, game.novaCd - dt);
-  if (game.turretCd > 0) game.turretCd = Math.max(0, game.turretCd - dt);
-  if (game.bombCd > 0) game.bombCd = Math.max(0, game.bombCd - dt);
-  if (game.overchargeCd > 0) game.overchargeCd = Math.max(0, game.overchargeCd - dt);
+  /* cooldowns — Overdrive doubles the clock they run on */
+  const cdt = dt * odm();
+  if (game.qCd > 0) game.qCd = Math.max(0, game.qCd - cdt);
+  if (game.novaCd > 0) game.novaCd = Math.max(0, game.novaCd - cdt);
+  if (game.turretCd > 0) game.turretCd = Math.max(0, game.turretCd - cdt);
+  if (game.bombCd > 0) game.bombCd = Math.max(0, game.bombCd - cdt);
+  if (game.overchargeCd > 0) game.overchargeCd = Math.max(0, game.overchargeCd - cdt);
   if (game.overchargeTimer > 0) {
     game.overchargeTimer = Math.max(0, game.overchargeTimer - dt);
     /* embers while the reactor is burning */
@@ -3549,11 +3735,11 @@ function swingSword() {
 
   const half = arc / 2;
   p.swingT = SWORD_SWING_TIME;
-  p.swingCd = SWORD_COOLDOWN;
+  p.swingCd = SWORD_COOLDOWN / (shopMagazineMult() * odm());
   p.swingFrom = p.angle - half * dir;
   p.swingTo = p.angle + half * dir;
 
-  const dmg = swordDamage();
+  const dmg = swordDamage() * odm();
   let hits = 0;
 
   for (let i = game.enemies.length - 1; i >= 0; i--) {
@@ -3726,7 +3912,7 @@ function fireSniper(charged) {
 
 function fireMageOrbs(charged) {
   const p = game.player;
-  const n = p.arc ? 4 : 3;
+  const n = (p.arc ? 4 : 3) + (p.mageOrbs | 0);
   for (let i = 0; i < n; i++) {
     const a = p.angle + (i - (n - 1) / 2) * 0.42;
     p.shotCount = (p.shotCount | 0) + 1;
@@ -3767,7 +3953,7 @@ function fireClassWeapon(dt) {
     if (cls.weapon === 'pistols') firePistols(charged);
     else if (cls.weapon === 'rail') fireSniper(charged);
     else fireMageOrbs(charged);
-    p.fireTimer = p.fireRate * (charged ? 0.5 : 1);
+    p.fireTimer = (p.fireRate * (charged ? 0.5 : 1)) / odm();
   }
 }
 
@@ -3792,7 +3978,9 @@ const ABILITIES = [
   { id: 'overcharge', key: 'r', name: 'Overcharge', cd: 30 },
   { id: 'bomb', key: 'x', name: 'Time Bomb', cd: 18 }
 ];
-function cdScale() { return (game.abilityCdScale || 1) * (game.cdModule || 1); }
+function cdScale() {
+  return (game.abilityCdScale || 1) * (game.cdModule || 1) * (game.shopCdScale || 1);
+}
 
 /* ---- Q: the class ability ---- */
 function castClassAbility() {
@@ -3964,7 +4152,7 @@ function updateRift(dt) {
   if (!r) return;
   r.life -= dt;
   r.spin += dt * 1.9;
-  r.r = Math.min(215, r.r + dt * 620);
+  r.r = Math.min(215 * (game.shopBlast || 1), r.r + dt * 620);
   if (r.life <= 0) {
     Sound.riftEnd();
     for (let i = 0; i < 26; i++) {
@@ -4036,8 +4224,33 @@ function novaBlast() {
     spawnParticle(p.x + Math.cos(a) * (p.r + 10), p.y + Math.sin(a) * (p.r + 10),
       Math.cos(a) * rand(80, 200), Math.sin(a) * rand(80, 200), 0.3, 7, '#a5f3fc', 4);
   }
-  game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 190, life: 0, maxLife: 0.42, color: '#a5f3fc' });
+  game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 190 * (game.shopBlast || 1), life: 0, maxLife: 0.42, color: '#a5f3fc' });
   addText(p.x, p.y - 40, 'NOVA BLAST', '#a5f3fc');
+}
+
+/* ---- Z: Overdrive (bought in the shop): every stat doubles for 5s ---- */
+const OVERDRIVE_CD = 60;
+const OVERDRIVE_TIME = 5;
+
+function startOverdrive() {
+  if (!hasAbility('overdrive')) return;
+  if (game.overdriveCd > 0) return;
+  if (game.overdriveTimer > 0) return;
+  const p = game.player;
+  game.overdriveCd = OVERDRIVE_CD * cdScale();
+  game.overdriveTimer = OVERDRIVE_TIME;
+  Sound.overcharge();
+  game.shake = Math.max(game.shake, 0.35);
+  game.flashTimer = 0.24;
+  game.flashColor = '#ffe9a8';
+  addText(p.x, p.y - 46, 'OVERDRIVE', '#ffd54a');
+  game.particles.push({ ring: true, x: p.x, y: p.y, r: 10, maxR: 220, life: 0, maxLife: 0.5, color: '#ffd54a' });
+  for (let i = 0; i < 26; i++) {
+    const a = rand(0, TAU);
+    spawnParticle(p.x + Math.cos(a) * 14, p.y + Math.sin(a) * 14,
+      Math.cos(a) * rand(80, 300), Math.sin(a) * rand(80, 300),
+      0.45, rand(4, 9), i % 2 ? '#ffd54a' : '#fff7d6', 3.4);
+  }
 }
 
 /* ---- SHIFT: dash in the movement direction, invincible ---- */
@@ -4216,7 +4429,7 @@ function explodeBomb(b) {
 /* the volatile fifth round: a small hot burst where it lands. `skip` is the
    body the round already hit, so nothing takes the same shot twice. */
 function explodeAt(x, y, dmg, colour, skip) {
-  const R = 92;
+  const R = 92 * (game.shopBlast || 1);
   const col = colour || '#fbbf24';
   Sound.bombBoom();
   game.shake = Math.max(game.shake, 0.2);
@@ -4358,6 +4571,26 @@ function hurtPlayer(amount, raw) {
       for (let i = 0; i < 22; i++) {
         const a = rand(0, TAU);
         spawnParticle(p.x, p.y, Math.cos(a) * rand(90, 300), Math.sin(a) * rand(90, 300), 0.45, 7, '#ffe9ae', 3);
+      }
+      updateHealthOrbs();
+      return;
+    }
+    /* Iron Will: one free resurrection per universe */
+    const uniIdx = Math.floor(clamp(game.zoneIndex | 0, 0, ZONES.length - 1) / LEVELS_PER_UNIVERSE);
+    if (game.shopIronWill && !(game.ironWillUsed && game.ironWillUsed[uniIdx])) {
+      game.ironWillUsed = game.ironWillUsed || {};
+      game.ironWillUsed[uniIdx] = true;
+      p.hp = Math.min(2, p.maxHp);
+      p.invuln = 2.6;
+      p.hitFlash = 0;
+      Sound.ability();
+      addText(p.x, p.y - 46, 'IRON WILL', '#ffd54a');
+      game.flashTimer = 0.3;
+      game.flashColor = '#ffd54a';
+      game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 8, maxR: 120, life: 0, maxLife: 0.6, color: '#ffd54a' });
+      for (let i = 0; i < 26; i++) {
+        const a = rand(0, TAU);
+        spawnParticle(p.x, p.y, Math.cos(a) * rand(90, 320), Math.sin(a) * rand(90, 320), 0.5, 7, '#ffe9ae', 3);
       }
       updateHealthOrbs();
       return;
@@ -4863,7 +5096,7 @@ function updateBullets(dt) {
     if (brk && brk.t < bestT) { bestT = brk.t; hitKind = 'break'; hitObj = brk.obj; hitBreakKind = brk.kind; }
 
     if (hitKind === 'enemy') {
-      damageEnemy(hitObj, b.dmg, false);
+      damageEnemy(hitObj, b.dmg * odm(), false);
       if (b.knock) {
         const a = Math.atan2(b.vy, b.vx);
         hitObj.x = clamp(hitObj.x + Math.cos(a) * b.knock, 40, WORLD - 40);
@@ -4882,7 +5115,7 @@ function updateBullets(dt) {
         hit = true;
       }
     }
-    else if (hitKind === 'boss') { damageBoss(b.dmg); hit = true; }
+    else if (hitKind === 'boss') { damageBoss(b.dmg * odm()); hit = true; }
     else if (hitKind === 'break') {
       damageBreakableObject(hitObj, hitBreakKind, b.kind || 'bullet', b.x, b.y);
       hit = true;
@@ -5007,6 +5240,11 @@ function nearestEnemyTo(x, y, range, skip) {
 /* `noChain` stops a chain bolt's own kill from arcing again, so the lightning
    never runs away across the whole arena in one frame. */
 function damageEnemy(e, dmg, silent, noChain) {
+  /* Critical Strike: any hit can triple, with a gold flash on the target */
+  if ((game.shopCrit || 0) > 0 && Math.random() < game.shopCrit) {
+    dmg *= 3;
+    critFlash(e.x, e.y);
+  }
   e.hp -= dmg;
   e.hitFlash = 0.12;
   if (e.hp > 0) return;
@@ -5522,6 +5760,10 @@ function damageBoss(dmg) {
   const b = game.boss;
   if (!b) return;
   if (b.entering) return;   /* the entrance cannot be interrupted */
+  if ((game.shopCrit || 0) > 0 && Math.random() < game.shopCrit) {
+    dmg *= 3;
+    critFlash(b.x, b.y - b.r * 0.4);
+  }
   /* the Hive Queen's regenerating shield eats damage before her body does */
   if (b.kit === 'hivequeen' && (b.shield || 0) > 0) {
     const eaten = Math.min(b.shield, dmg);
@@ -5820,6 +6062,13 @@ function syncAbilityHud() {
   }
   /* the class slot is always live */
   if (UI.abilities.q) UI.abilities.q.classList.remove('locked');
+  /* Overdrive is a shop unlock: the seventh slot only exists once it is bought */
+  if (UI.abilities.overdrive) {
+    const on = hasAbility('overdrive');
+    UI.abilities.overdrive.classList.toggle('show', on);
+    UI.abilities.overdrive.classList.toggle('locked', !on);
+    if (on) UI.abilities.overdrive.classList.remove('cooling');
+  }
 }
 
 /* entering an arena hands the player a short grace window: enemies are already
@@ -6357,6 +6606,7 @@ const SaveSystem = (function () {
     while (game.bossesDefeated.length < ZONES.length) game.bossesDefeated.push(false);
 
     loadZone(slot.zone, { freshPlayer: false });
+    applyShopUpgrades();
 
     const maxHp = game.player.maxHp;
     game.player.hp = (slot.hp >= 1 && slot.hp <= maxHp) ? slot.hp : maxHp;
@@ -6436,6 +6686,22 @@ const SaveSystem = (function () {
       return readCount(SAVE_TIME_KEY);
     },
     lifetimeGems: function () { return readCount(SAVE_GEMS_KEY); },
+    /* spending the bank: the live total, the bare key and the run slot all
+       move together, so a reload can never refund a purchase */
+    spendGems: function (n) {
+      const cost = Math.max(0, Math.floor(Number(n) || 0));
+      if (!cost) return -1;
+      const slot = load();
+      const have = Math.max(game.lifetimeGems | 0, readCount(SAVE_GEMS_KEY), slot ? slot.gemsTotal | 0 : 0);
+      if (have < cost) return -1;
+      const left = have - cost;
+      game.lifetimeGems = left;
+      writeCount(SAVE_GEMS_KEY, left);
+      const raw = readJSON(SAVE_KEY);
+      if (raw && typeof raw === 'object') { raw.gemsTotal = left; writeJSON(SAVE_KEY, raw); }
+      if (typeof refreshSaveUi === 'function') refreshSaveUi();
+      return left;
+    },
     maxZone: function () {
       const stored = readCount(SAVE_MAX_ZONE_KEY);
       const slot = load();
@@ -6490,7 +6756,14 @@ function syncGemMultHud() {
 
 /* gems are counted twice: in the run and for the lifetime total */
 function addGems(n) {
-  const amount = Math.max(0, Math.floor(n || 0));
+  const raw = Math.max(0, Number(n) || 0);
+  if (!raw) return;
+  /* Gem Processor pays a fraction per pickup, so the bonus is banked as a
+     running remainder instead of being rounded away on every single gem */
+  const mult = game.shopGemMult || 1;
+  game.gemCarry = (game.gemCarry || 0) + raw * mult;
+  const amount = Math.floor(game.gemCarry + 1e-9);
+  game.gemCarry = Math.max(0, game.gemCarry - amount);
   if (!amount) return;
   game.gems += amount;
   game.gemsRun = Math.max(0, (game.gemsRun | 0) + amount);
@@ -6518,6 +6791,475 @@ function refreshSaveUi() {
 function markProgressSaved(el, ok) {
   if (!el || !el.classList) return;
   el.classList.toggle('show', !!ok);
+}
+
+
+/* =============================================================================
+   GEM SHOP
+   =============================================================================
+   Every gem Rael picks up is banked twice: in the run (spendable score) and for
+   good, under survive_gems_total. The shop spends that bank on permanent gear.
+   What is bought lives in survive_shop_v1 and is re-applied to Rael at the start
+   of every run, in every universe, for as long as the browser remembers him. */
+
+const SHOP_KEY = 'survive_shop_v1';
+const SHOP_VERSION = 1;
+
+/* the ten permanent stat upgrades */
+const SHOP_UPGRADES = [
+  { id: 'armor', name: 'Reinforced Armor', glyph: '⛨', max: 5, cost: 50,
+    desc: '+1 max health orb per level.' },
+  { id: 'targeting', name: 'Targeting Module', glyph: '⌖', max: 5, cost: 40,
+    desc: '+10% bullet damage per level.' },
+  { id: 'thruster', name: 'Thruster Boots', glyph: '➤', max: 5, cost: 35,
+    desc: '+8% movement speed per level.' },
+  { id: 'magazine', name: 'Extended Magazine', glyph: '▤', max: 3, cost: 60,
+    desc: '+15% fire rate per level.' },
+  { id: 'processor', name: 'Gem Processor', glyph: '◈', max: 3, cost: 80,
+    desc: '+25% gems earned per level.' },
+  { id: 'cooldown', name: 'Cooldown Chip', glyph: '◷', max: 3, cost: 70,
+    desc: '-10% to every ability cooldown per level.' },
+  { id: 'blast', name: 'Blast Radius', glyph: '◎', max: 3, cost: 90,
+    desc: '+20% explosion and ability radius per level.' },
+  { id: 'critical', name: 'Critical Strike', glyph: '✷', max: 3, cost: 100,
+    desc: '10% chance per level for any hit to deal triple damage with a gold flash.' },
+  { id: 'ironwill', name: 'Iron Will', glyph: '✚', max: 1, cost: 200,
+    desc: 'Once per universe, auto-revive at 2 health orbs.' },
+  { id: 'overdrive', name: 'Overdrive Core', glyph: '⇉', max: 1, cost: 500,
+    desc: 'Unlocks the 7th ability — OVERDRIVE: all stats doubled for 5s, 60s cooldown, key Z.' }
+];
+
+/* one-shot supplies, used the moment they are bought */
+const SHOP_CONSUMABLES = [
+  { id: 'medkit', name: 'Field Medkit', glyph: '✚', cost: 30,
+    desc: 'Restore 1 health orb right now. Mid-run only.' },
+  { id: 'charge', name: 'Chrono Charge', glyph: '◷', cost: 40,
+    desc: 'Every ability cooldown clears instantly. Mid-run only.' },
+  { id: 'aegis', name: 'Aegis Plate', glyph: '⛨', cost: 60,
+    desc: 'Add 1 shield charge to this run. Mid-run only.' }
+];
+
+/* paint jobs for Rael's visor, aura and dash trail */
+const SHOP_COSMETICS = [
+  { id: 'crimson', name: 'Crimson Vow', glyph: '✦', cost: 120, colour: '#ff5566',
+    desc: 'Ember-red field glow and visor. The 1347 look.' },
+  { id: 'verdant', name: 'Verdant Oath', glyph: '❖', cost: 150, colour: '#4ade80',
+    desc: 'Forest-green glow and visor. Something from the deep woods.' },
+  { id: 'violet', name: 'Void Bloom', glyph: '◈', cost: 200, colour: '#c084fc',
+    desc: 'Purple glow and visor, torn from the end of time.' }
+];
+
+/* permanent doctrine perks, one per class */
+const SHOP_CLASSES = [
+  { id: 'knight', name: 'Vanguard Doctrine', glyph: '⚔', cost: 150,
+    desc: 'As the Vanguard Knight: +1 max health orb and +6% damage.' },
+  { id: 'gunslinger', name: 'Gunslinger Doctrine', glyph: '➶', cost: 150,
+    desc: 'As the Gunslinger: +1 pierce and +10% fire rate.' },
+  { id: 'sniper', name: 'Sniper Doctrine', glyph: '⌖', cost: 150,
+    desc: 'As the Sniper: +15% damage on the rail shot.' },
+  { id: 'mage', name: 'Arcane Doctrine', glyph: '✧', cost: 150,
+    desc: 'As the Arcane: +1 orb per volley.' }
+];
+
+const GEM_ICON = '<svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>';
+
+const Shop = (function () {
+  const state = { levels: {}, classes: {}, cosmetics: {}, cosmetic: null };
+  let loaded = false;
+
+  function store() {
+    try { return window.localStorage || null; } catch (e) { return null; }
+  }
+
+  function load() {
+    loaded = true;
+    state.levels = {};
+    state.classes = {};
+    state.cosmetics = {};
+    state.cosmetic = null;
+    const s = store();
+    if (!s) return state;
+    let raw = null;
+    try { raw = JSON.parse(s.getItem(SHOP_KEY) || 'null'); } catch (e) { raw = null; }
+    if (!raw || typeof raw !== 'object') return state;
+    const lv = (raw.levels && typeof raw.levels === 'object') ? raw.levels : {};
+    for (let i = 0; i < SHOP_UPGRADES.length; i++) {
+      const it = SHOP_UPGRADES[i];
+      const v = clamp(Math.round(Number(lv[it.id]) || 0), 0, it.max);
+      if (v > 0) state.levels[it.id] = v;
+    }
+    const cl = (raw.classes && typeof raw.classes === 'object') ? raw.classes : {};
+    for (let i = 0; i < SHOP_CLASSES.length; i++) {
+      if (cl[SHOP_CLASSES[i].id]) state.classes[SHOP_CLASSES[i].id] = true;
+    }
+    const cos = (raw.cosmetics && typeof raw.cosmetics === 'object') ? raw.cosmetics : {};
+    for (let i = 0; i < SHOP_COSMETICS.length; i++) {
+      if (cos[SHOP_COSMETICS[i].id]) state.cosmetics[SHOP_COSMETICS[i].id] = true;
+    }
+    if (typeof raw.cosmetic === 'string' && SHOP_COSMETICS.some((c) => c.id === raw.cosmetic)) {
+      state.cosmetic = raw.cosmetic;
+      state.cosmetics[raw.cosmetic] = true;   /* wearing something means owning it */
+    }
+    return state;
+  }
+
+  function save() {
+    const s = store();
+    if (!s) return false;
+    try {
+      s.setItem(SHOP_KEY, JSON.stringify({
+        v: SHOP_VERSION, levels: state.levels, classes: state.classes,
+        cosmetics: state.cosmetics, cosmetic: state.cosmetic
+      }));
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function ensure() { if (!loaded) load(); return state; }
+  function level(id) { ensure(); return state.levels[id] | 0; }
+  function maxed(id) {
+    const def = SHOP_UPGRADES.find((u) => u.id === id);
+    return !!def && level(id) >= def.max;
+  }
+  function classOwned(id) { ensure(); return !!state.classes[id]; }
+  function cosmeticColour() {
+    ensure();
+    if (!state.cosmetic) return null;
+    const c = SHOP_COSMETICS.find((k) => k.id === state.cosmetic);
+    return c ? c.colour : null;
+  }
+
+  return {
+    load: load, save: save, ensure: ensure,
+    level: level, maxed: maxed,
+    classOwned: classOwned, cosmeticColour: cosmeticColour,
+    state: state,
+    /* what the bank holds right now */
+    gems: function () {
+      refreshSaveUi();
+      return Math.max(0, game.lifetimeGems | 0);
+    }
+  };
+}());
+
+/* the permanent numbers, read straight off the shop each run */
+function shopLevel(id) { return Shop.level(id); }
+function shopBlastMult() { return 1 + 0.20 * shopLevel('blast'); }
+/* Overdrive: every stat doubles, so the multipliers below are 2x while it runs */
+function odm() { return (game.overdriveTimer || 0) > 0 ? 2 : 1; }
+function shopFireBoost() { return (1 + 0.15 * shopLevel('magazine')) * odm(); }
+function shopMagazineMult() { return 1 + 0.15 * shopLevel('magazine'); }
+
+/* The gold flash a critical hit leaves behind */
+function critFlash(x, y) {
+  addText(x, y - 26, 'CRIT', '#ffd54a');
+  game.particles.push({ ring: true, x: x, y: y, r: 4, maxR: 40, life: 0, maxLife: 0.24, color: '#ffd54a' });
+  for (let i = 0; i < 9; i++) {
+    const a = rand(0, TAU);
+    spawnParticle(x, y, Math.cos(a) * rand(70, 240), Math.sin(a) * rand(70, 240),
+      rand(0.18, 0.34), rand(3, 6), i % 2 ? '#ffe9a8' : '#fbbf24', 3);
+  }
+}
+
+/* every permanent purchase, stamped onto a brand-new player at run start */
+function applyShopUpgrades() {
+  const p = game.player;
+  if (!p) return;
+  Shop.ensure();
+
+  const cls = getClass();
+  p.maxHp = Math.max(1, p.maxHp + shopLevel('armor'));
+  p.damage *= 1 + 0.10 * shopLevel('targeting');
+  p.speed *= 1 + 0.08 * shopLevel('thruster');
+  if (p.fireRate > 0) p.fireRate /= shopMagazineMult();
+
+  /* doctrine perks ride on top of the class build */
+  if (Shop.classOwned(cls.id)) {
+    if (cls.id === 'knight') { p.maxHp += 1; p.damage *= 1.06; }
+    else if (cls.id === 'gunslinger') { p.pierce = (p.pierce || 0) + 1; p.fireRate *= 0.9; }
+    else if (cls.id === 'sniper') { p.damage *= 1.15; }
+    else if (cls.id === 'mage') { p.mageOrbs = (p.mageOrbs | 0) + 1; p.damage *= 1.04; }
+  }
+
+  p.hp = p.maxHp;
+  game.shopGemMult = 1 + 0.25 * shopLevel('processor');
+  game.shopCdScale = Math.pow(0.90, shopLevel('cooldown'));
+  game.shopBlast = shopBlastMult();
+  game.shopCrit = 0.10 * shopLevel('critical');
+  game.shopIronWill = shopLevel('ironwill') > 0;
+  game.ironWillUsed = {};
+  if (!game.abilities) game.abilities = {};
+  game.abilities.overdrive = shopLevel('overdrive') > 0;
+  p.cosmetic = Shop.cosmeticColour();
+  updateHealthOrbs();
+  syncAbilityHud();
+}
+
+/* ------------------------------- the shop UI -------------------------------- */
+let shopTab = 'upgrades';
+let shopReturn = { screen: 'menu', layer: 'menu' };
+let shopFlashTimer = 0;
+
+const SHOP_TABS = {
+  upgrades: {
+    items: SHOP_UPGRADES,
+    note: 'Upgrades are permanent — they follow Rael through every run and every universe.'
+  },
+  consumables: {
+    items: SHOP_CONSUMABLES,
+    note: 'One-shot supplies. They can only be used while a run is live.'
+  },
+  cosmetics: {
+    items: SHOP_COSMETICS,
+    note: 'Paint jobs for the visor and the field glow. Click a card you own to wear it.'
+  },
+  classes: {
+    items: SHOP_CLASSES,
+    note: 'Doctrine perks: buy once, then every future run of that class carries it.'
+  }
+};
+
+function shopRunActive() {
+  return shopReturn.screen === 'playing' || shopReturn.screen === 'transition' ||
+    shopReturn.screen === 'upgrade' || shopReturn.screen === 'universe';
+}
+
+function shopItemState(tab, it) {
+  const gems = Shop.gems();
+  if (tab === 'upgrades') {
+    const lvl = Shop.level(it.id);
+    const full = lvl >= it.max;
+    return {
+      level: lvl, max: it.max, full: full,
+      cost: it.cost,
+      disabled: full || gems < it.cost,
+      label: full ? (it.max === 1 ? 'Owned' : 'Maxed') : (lvl > 0 ? 'Upgrade' : 'Buy')
+    };
+  }
+  if (tab === 'cosmetics') {
+    Shop.ensure();
+    const owned = Shop.state.cosmetic === it.id;
+    const has = shopCosmeticOwned(it.id);
+    return {
+      level: has ? 1 : 0, max: 1, full: has,
+      cost: it.cost,
+      disabled: has || gems < it.cost,
+      label: owned ? 'Worn' : (has ? 'Wear' : 'Buy')
+    };
+  }
+  if (tab === 'classes') {
+    const owned = Shop.classOwned(it.id);
+    return {
+      level: owned ? 1 : 0, max: 1, full: owned,
+      cost: it.cost,
+      disabled: owned || gems < it.cost,
+      label: owned ? 'Owned' : 'Buy'
+    };
+  }
+  /* consumables never run out: they are bought over and over */
+  return {
+    level: 0, max: 0, full: false, cost: it.cost,
+    disabled: !shopRunActive() || gems < it.cost,
+    label: shopRunActive() ? 'Buy' : 'In Run'
+  };
+}
+
+function shopCosmeticOwned(id) {
+  Shop.ensure();
+  return !!Shop.state.cosmetics[id] || Shop.state.cosmetic === id;
+}
+
+function shopStars(lvl, max) {
+  if (!max) return '';
+  let out = '';
+  for (let i = 0; i < max; i++) out += (i < lvl ? '★' : '<span class="off">★</span>');
+  return out;
+}
+
+function shotShopCard(tab, it) {
+  const st = shopItemState(tab, it);
+  const stars = tab === 'consumables'
+    ? '<div class="sc-stars"><span class="off">SINGLE USE</span></div>'
+    : '<div class="sc-stars">' + shopStars(st.level, st.max) + '</div>';
+  return '<div class="shop-card' + (st.full ? ' maxed' : '') + (st.level > 0 ? ' owned' : '') +
+    '" data-item="' + it.id + '">' +
+    '<div class="sc-top"><div class="sc-icon">' + it.glyph + '</div>' +
+    '<div class="sc-name">' + it.name + '</div></div>' +
+    '<div class="sc-desc">' + it.desc + '</div>' + stars +
+    '<div class="sc-foot"><span class="sc-cost">' + GEM_ICON + it.cost + '</span>' +
+    '<button class="sc-buy' + (st.full ? ' maxed' : '') + '" type="button" data-buy="' + it.id + '"' +
+    (st.disabled ? ' disabled' : '') + '>' + st.label + '</button></div></div>';
+}
+
+function renderShop() {
+  const tab = SHOP_TABS[shopTab] ? shopTab : 'upgrades';
+  if (!UI.shopGrid) return;
+  UI.shopGrid.innerHTML = SHOP_TABS[tab].items.map((it) => shotShopCard(tab, it)).join('');
+  if (UI.shopNote) UI.shopNote.textContent = SHOP_TABS[tab].note;
+  if (UI.shopGems) UI.shopGems.textContent = String(Shop.gems());
+  if (UI.shopTabs) {
+    const tabs = UI.shopTabs.querySelectorAll('[data-tab]');
+    for (let i = 0; i < tabs.length; i++) {
+      tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === tab);
+    }
+  }
+}
+
+function shopSay(text, bad) {
+  if (!UI.shopFlash) return;
+  UI.shopFlash.textContent = text;
+  UI.shopFlash.classList.toggle('bad', !!bad);
+  UI.shopFlash.classList.add('show');
+  shopFlashTimer = 2.2;
+}
+
+function shopBuy(tab, id) {
+  const list = SHOP_TABS[tab] ? SHOP_TABS[tab].items : [];
+  const it = list.find((k) => k.id === id);
+  if (!it) return false;
+  const gems = Shop.gems();
+
+  if (tab === 'upgrades') {
+    if (Shop.maxed(id)) { shopSay('Already at maximum', true); return false; }
+    if (gems < it.cost) { shopSay('Not enough gems', true); return false; }
+    if (SaveSystem.spendGems(it.cost) < 0) { shopSay('Not enough gems', true); return false; }
+    Shop.state.levels[id] = Shop.level(id) + 1;
+    Shop.save();
+    Sound.ability();
+    shopSay(it.name + ' · level ' + Shop.level(id) + '/' + it.max);
+    /* a purchase made between levels lands on the live player at once */
+    if (shopRunActive()) shopApplyLive(id);
+    renderShop();
+    return true;
+  }
+
+  if (tab === 'consumables') {
+    if (!shopRunActive()) { shopSay('Only while a run is live', true); return false; }
+    if (gems < it.cost) { shopSay('Not enough gems', true); return false; }
+    if (SaveSystem.spendGems(it.cost) < 0) { shopSay('Not enough gems', true); return false; }
+    useConsumable(it.id);
+    renderShop();
+    return true;
+  }
+
+  if (tab === 'cosmetics') {
+    if (shopCosmeticOwned(id)) {
+      /* already bought: clicking wears it */
+      Shop.state.cosmetic = (Shop.state.cosmetic === id) ? null : id;
+      Shop.save();
+      if (game.player) game.player.cosmetic = Shop.cosmeticColour();
+      Sound.ability();
+      shopSay(Shop.state.cosmetic ? it.name + ' equipped' : 'Paint stripped back to standard');
+      renderShop();
+      return true;
+    }
+    if (gems < it.cost) { shopSay('Not enough gems', true); return false; }
+    if (SaveSystem.spendGems(it.cost) < 0) { shopSay('Not enough gems', true); return false; }
+    Shop.state.cosmetics[id] = true;
+    Shop.state.cosmetic = id;
+    Shop.save();
+    if (game.player) game.player.cosmetic = Shop.cosmeticColour();
+    Sound.ability();
+    shopSay(it.name + ' equipped');
+    renderShop();
+    return true;
+  }
+
+  if (tab === 'classes') {
+    if (Shop.classOwned(id)) { shopSay('Doctrine already owned', true); return false; }
+    if (gems < it.cost) { shopSay('Not enough gems', true); return false; }
+    if (SaveSystem.spendGems(it.cost) < 0) { shopSay('Not enough gems', true); return false; }
+    Shop.state.classes[id] = true;
+    Shop.save();
+    Sound.ability();
+    shopSay(it.name + ' unlocked');
+    if (shopRunActive()) shopApplyLive('doctrine');
+    renderShop();
+    return true;
+  }
+  return false;
+}
+
+/* buying mid-run takes effect immediately, not at the next zone */
+function shopApplyLive(id) {
+  const p = game.player;
+  if (!p) return;
+  if (id === 'armor') { p.maxHp += 1; p.hp = Math.min(p.maxHp, p.hp + 1); }
+  else if (id === 'targeting') p.damage *= 1.10;
+  else if (id === 'thruster') p.speed *= 1.08;
+  else if (id === 'magazine') { if (p.fireRate > 0) p.fireRate /= 1.15; }
+  else if (id === 'processor') game.shopGemMult = 1 + 0.25 * shopLevel('processor');
+  else if (id === 'cooldown') game.shopCdScale = Math.pow(0.90, shopLevel('cooldown'));
+  else if (id === 'critical') game.shopCrit = 0.10 * shopLevel('critical');
+  else if (id === 'ironwill') game.shopIronWill = true;
+  else if (id === 'overdrive') { game.abilities.overdrive = true; syncAbilityHud(); }
+  else if (id === 'doctrine') {
+    const cls = getClass();
+    if (Shop.classOwned(cls.id)) {
+      if (cls.id === 'knight') { p.maxHp += 1; p.damage *= 1.06; }
+      else if (cls.id === 'gunslinger') { p.pierce = (p.pierce || 0) + 1; p.fireRate *= 0.9; }
+      else if (cls.id === 'sniper') p.damage *= 1.15;
+      else if (cls.id === 'mage') p.mageOrbs = (p.mageOrbs | 0) + 1;
+    }
+  }
+  updateHealthOrbs();
+}
+
+function useConsumable(id) {
+  const p = game.player;
+  if (!p) return;
+  if (id === 'medkit') {
+    p.hp = Math.min(p.maxHp, p.hp + 1);
+    updateHealthOrbs();
+    addText(p.x, p.y - 40, '+1 HEALTH', '#6ee7b7');
+    Sound.ability();
+  } else if (id === 'charge') {
+    game.qCd = 0; game.novaCd = 0; game.turretCd = 0;
+    game.overchargeCd = 0; game.bombCd = 0; game.overdriveCd = 0;
+    p.dashCd = 0;
+    addText(p.x, p.y - 40, 'ALL ABILITIES READY', '#a5f3fc');
+    Sound.ability();
+  } else if (id === 'aegis') {
+    p.shield = (p.shield | 0) + 1;
+    addText(p.x, p.y - 40, '+1 SHIELD', '#facc15');
+    Sound.ability();
+  }
+  shopSay('Supply used');
+}
+
+function openShop(from) {
+  Shop.ensure();
+  refreshSaveUi();
+  const layer = from || Screens.current || 'menu';
+  const target = (game.screen === 'playing' || game.screen === 'transition' ||
+    game.screen === 'upgrade' || game.screen === 'universe') ? game.screen : 'menu';
+  shopReturn = {
+    screen: layer === 'menu' ? 'menu' : target,
+    layer: layer
+  };
+  if (layer === 'menu') shopReturn.screen = 'menu';
+  game.mouse.down = false;
+  game.screen = 'shop';
+  renderShop();
+  Screens.show('shopScreen');
+}
+
+function closeShop() {
+  const back = shopReturn.screen || 'menu';
+  game.screen = back;
+  Screens.show(shopReturn.layer || 'menu');
+  /* only bank the run if there really is one open behind the shop */
+  if (back === 'playing' || back === 'transition' || back === 'upgrade' ||
+      back === 'universe' || back === 'universeIntro') {
+    SaveSystem.save('shop');
+  }
+  renderShop();
+}
+
+function shopTabSet(tab) {
+  if (!SHOP_TABS[tab]) return;
+  shopTab = tab;
+  renderShop();
 }
 
 /* --------------------------- continue / settings --------------------------- */
@@ -6565,11 +7307,14 @@ function onResetSaveClick() {
     game.gems = 0;
     game.maxZone = 0;
     game.abilities = { dash: false, nova: false, turret: false, overcharge: false, bomb: false };
-    game.bossesDefeated = [false, false, false, false, false];
+    game.bossesDefeated = new Array(ZONES.length).fill(false);
+    /* the shop is progress too: a full reset hands back an empty depot */
+    try { window.localStorage.removeItem(SHOP_KEY); } catch (err) { /* ignore */ }
+    Shop.load();
     syncAbilityHud();
     if (game.screen === 'zones') drawZoneCards();
     disarmResetSave();
-    if (UI.spNote) UI.spNote.textContent = 'Save data cleared. A new run starts from Zone 1.';
+    if (UI.spNote) UI.spNote.textContent = 'Save data cleared — run, gems and every shop purchase wiped.';
     refreshSaveUi();
     return;
   }
@@ -6578,7 +7323,7 @@ function onResetSaveClick() {
     UI.btnResetSave.classList.add('armed');
     UI.btnResetSave.textContent = 'Confirm reset?';
   }
-  if (UI.spNote) UI.spNote.textContent = 'This wipes the saved run, best score and lifetime gems. Tap again to confirm.';
+  if (UI.spNote) UI.spNote.textContent = 'This wipes the saved run, best score, gem bank and shop. Tap again to confirm.';
 }
 
 /* ------------------------------ speedrun clock ------------------------------
@@ -6954,6 +7699,7 @@ function startRun(classId, zoneIndex, opts) {
   /* freshPlayer:false — resetRun() already built this player, and rebuilding it
      inside loadZone would throw away the carried upgrades */
   loadZone(zone, { freshPlayer: false });
+  applyShopUpgrades();       /* permanent shop levels, stamped on at run start */
   game.screen = 'playing';
   Screens.show('hud');
   game.menuTime = 0;
@@ -7074,6 +7820,10 @@ function updateHud() {
   if (hasAbility('turret')) setRing(UI.abilities.turret, 1 - game.turretCd / (25 * cdScale()));
   if (hasAbility('overcharge')) setRing(UI.abilities.overcharge, 1 - game.overchargeCd / (30 * cdScale()));
   if (hasAbility('bomb')) setRing(UI.abilities.bomb, 1 - game.bombCd / (18 * cdScale()));
+  if (hasAbility('overdrive')) {
+    setRing(UI.abilities.overdrive, 1 - game.overdriveCd / (OVERDRIVE_CD * cdScale()));
+    UI.abilities.overdrive.classList.toggle('active', game.overdriveTimer > 0);
+  }
 
   /* seconds left on the long cooldowns, ticking on the icon */
   UI.abilities.q.querySelector('.cd').textContent =
@@ -7093,6 +7843,27 @@ function updateHud() {
 
 /* ------------------------------ buttons ------------------------------------ */
 document.getElementById('btnBegin').addEventListener('click', beginMission);
+document.getElementById('btnShop').addEventListener('click', () => openShop('menu'));
+document.getElementById('btnVisitShop').addEventListener('click', () => openShop('transition'));
+document.getElementById('btnShopClose').addEventListener('click', closeShop);
+if (UI.shopTabs) {
+  UI.shopTabs.addEventListener('click', (e) => {
+    const btn = e.target && e.target.closest ? e.target.closest('[data-tab]') : null;
+    if (btn) shopTabSet(btn.getAttribute('data-tab'));
+  });
+}
+if (UI.shopGrid) {
+  UI.shopGrid.addEventListener('click', (e) => {
+    const btn = e.target && e.target.closest ? e.target.closest('[data-buy]') : null;
+    if (btn && !btn.disabled) { shopBuy(shopTab, btn.getAttribute('data-buy')); return; }
+    /* a paint job that is already owned is worn by clicking anywhere on its card */
+    if (shopTab !== 'cosmetics') return;
+    const card = e.target && e.target.closest ? e.target.closest('[data-item]') : null;
+    if (!card) return;
+    const id = card.getAttribute('data-item');
+    if (shopCosmeticOwned(id)) shopBuy('cosmetics', id);
+  });
+}
 document.getElementById('btnNextUniverse').addEventListener('click', () => {
   showUniverseIntro(pendingUniverse);
 });
@@ -11477,9 +12248,27 @@ function drawBoss() {
    With one orb left every glow turns a flickering red. */
 const SOLDIER = { w: 40, h: 44, scale: 1, feet: 22 };
 
+function hexTriplet(hex) {
+  const h = String(hex).replace('#', '');
+  const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16);
+  return ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255);
+}
+
 /* one place that decides what colour the trooper's glow is right now */
 function soldierGlow(p) {
   const low = p.hp <= 1 && p.hp > 0;
+  /* a shop paint job recolours the visor, the aura and the dash trail */
+  if (!low && p.cosmetic) {
+    const rgb = hexTriplet(p.cosmetic);
+    return {
+      low: false, flick: 1, cosmetic: true,
+      rgb: rgb,
+      glow: p.cosmetic,
+      visor: '#ffffff',
+      visorHot: 'rgba(255,255,255,0.97)',
+      visorGlow: hexToRgba(p.cosmetic, 0.95)
+    };
+  }
   const t = game.time;
   const flick = low
     ? 0.5 + 0.5 * Math.abs(Math.sin(t * 8.5)) * (Math.sin(t * 23.7) > -0.55 ? 1 : 0.2)
