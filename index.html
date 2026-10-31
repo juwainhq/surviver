@@ -790,9 +790,7 @@
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:12px; box-sizing:border-box; overflow:hidden;
   }
-  /* only a very short viewport has to scroll — then the faint hint appears */
-  #classScreen.overflowing .cs-inner{ overflow-y:auto; justify-content:flex-start; }
-  #classScreen.overflowing .cs-inner > *{ flex:0 0 auto; }
+
   #classScreen .cs-eyebrow{
     font-family:var(--font-head); font-size:9px; line-height:1.2; letter-spacing:4px;
     color:rgba(232,200,116,.62); text-transform:uppercase; margin:0;
@@ -805,15 +803,15 @@
   }
   /* four cards, always a 2 x 2 grid with 16px gutters, capped at 220 x 220 */
   #classGrid{
-    display:grid; grid-template-columns:repeat(2, minmax(0, 220px));
-    grid-auto-rows:minmax(0, 220px); gap:16px;
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(0, 200px));
+    grid-auto-rows:auto; gap:12px;
     justify-content:center; align-content:center;
-    width:100%; max-width:456px; box-sizing:border-box;
+    width:100%; max-width:928px; box-sizing:border-box;
   }
   .class-card{
-    width:100%; max-width:220px; height:220px; max-height:220px;
-    padding:7px 10px 6px; display:flex; flex-direction:column; align-items:center;
-    gap:3px; text-align:center; cursor:pointer;
+    width:100%; max-width:200px; height:auto; max-height:100%;
+    padding:12px; display:flex; flex-direction:column; align-items:center;
+    gap:2px; text-align:center; cursor:pointer;
     box-sizing:border-box; overflow:hidden;
     background:linear-gradient(180deg, rgba(13,16,24,.95), rgba(5,7,11,.98));
     border:1px solid rgba(232,200,116,.34); border-radius:3px;
@@ -824,28 +822,28 @@
     box-shadow:0 0 30px rgba(232,200,116,.3), inset 0 0 26px rgba(232,200,116,.06);
   }
   .class-card .cicon{
-    width:60px; height:60px; display:block; flex:0 0 auto;
+    width:55px; height:55px; display:block; flex:0 0 auto;
     filter:drop-shadow(0 0 10px rgba(232,200,116,.28));
   }
   .class-card .cicon svg{ width:100%; height:100%; display:block; }
   .class-card .cname{
-    font-family:var(--font-head); font-size:13px; font-weight:700;
-    letter-spacing:1.4px; text-transform:uppercase; color:#ffe7b8; line-height:1.2;
+    font-family:var(--font-head); font-size:11px; font-weight:700;
+    letter-spacing:1.2px; text-transform:uppercase; color:#ffe7b8; line-height:1.1;
     flex:0 0 auto;
   }
   .class-card .cdesc{
-    font-size:11px; line-height:1.3; color:#aebccd;
+    font-size:9px; line-height:1.1; color:#aebccd;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   }
-  .class-card .cstats{ width:100%; display:flex; flex-direction:column; gap:3px; }
+  .class-card .cstats{ width:100%; display:flex; flex-direction:column; gap:2px; }
   .class-card .cstat{
-    display:flex; align-items:center; gap:6px;
-    font-size:9px; line-height:1.2; letter-spacing:1.2px; text-transform:uppercase;
+    display:flex; align-items:center; gap:5px;
+    font-size:7px; line-height:1.1; letter-spacing:1.0px; text-transform:uppercase;
     color:rgba(214,226,244,.62);
   }
-  .class-card .cstat .lbl{ width:44px; flex:0 0 auto; text-align:left; }
+  .class-card .cstat .lbl{ width:40px; flex:0 0 auto; text-align:left; }
   .class-card .cbar{
-    flex:1; height:8px; border-radius:4px; overflow:hidden;
+    flex:1; height:6px; border-radius:3px; overflow:hidden;
     background:rgba(255,255,255,.06); border:1px solid rgba(232,200,116,.16);
   }
   .class-card .cbar i{
@@ -895,10 +893,10 @@
   }
   /* seven class cards + the shop tile: four across when there is room */
   @media (min-width: 940px){
-    #classGrid{ grid-template-columns:repeat(4, minmax(0, 220px)); max-width:928px; }
+    #classGrid{ grid-template-columns:repeat(auto-fit, minmax(0, 200px)); max-width:928px; }
   }
   @media (max-width: 939px){
-    #classGrid{ grid-template-columns:repeat(2, minmax(0, 220px)); }
+    #classGrid{ grid-template-columns:repeat(auto-fit, minmax(0, 200px)); }
   }
   /* ---------------- ability unlock ceremony ---------------- */
   #abilityUnlock{
@@ -1685,7 +1683,7 @@
     </div>
     <button id="btnClassSkip" type="button">Skip · continue as <span id="skipClassName">Vanguard Knight</span></button>
    </div>
-   <div class="cs-hint" aria-hidden="true">scroll to see more</div>
+ 
   </div>
 
   <!-- ==================== ZONE SELECT ==================== -->
@@ -10122,7 +10120,6 @@ function openClassScreen(zoneIndex) {
   showScreen('classSelect');
   game.menuTime = 0;
   drawClassCards();
-  updateClassHint();
 }
 
 function backToMenu() {
@@ -10134,23 +10131,7 @@ function backToMenu() {
   refreshSaveUi();
 }
 
-/* the class screen fits the stage at every normal size; if a very short
-   viewport still cannot hold the 2 x 2 grid we let it scroll and show the
-   faint "scroll to see more" nudge at the bottom */
-function updateClassHint() {
-  const screen = UI.classScreen;
-  if (!screen) return;
-  const inner = screen.querySelector('.cs-inner');
-  if (!inner || !inner.children) return;
-  const kids = inner.children;
-  let need = 0;
-  for (let i = 0; i < kids.length; i++) need += kids[i].offsetHeight || 0;
-  let gap = 0;
-  try { gap = parseFloat(getComputedStyle(inner).rowGap) || 0; } catch (e) { gap = 0; }
-  need += Math.max(0, kids.length - 1) * gap;
-  const room = inner.clientHeight || 0;
-  if (screen.classList) screen.classList.toggle('overflowing', need > room + 1);
-}
+
 
 function drawClassCards() {
   for (let i = 0; i < UI.classIcons.length; i++) {
@@ -19217,7 +19198,6 @@ function resize() {
       'translate(' + (viewOffX / dpr) + 'px,' + (viewOffY / dpr) + 'px) scale(' + cssScale + ')';
   }
   paintBackdrop();
-  updateClassHint();
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', resize);
@@ -19259,7 +19239,7 @@ window.addEventListener('beforeunload', () => flushSaveGame(true));
   resize();
   updateHealthOrbs();
   if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
-    document.fonts.ready.then(updateClassHint).catch(function () {});
+    document.fonts.ready.then(() => {}).catch(function () {});
   }
 })();
 </script>
