@@ -84,6 +84,9 @@
   }
 
   #topRight{ position:absolute; top:16px; right:22px; display:flex; gap:20px; align-items:center; }
+  /* speedrun read-out: tabular digits so the clock never jitters the row */
+  .stat.time{ color:#ffe9b0; font-variant-numeric:tabular-nums; letter-spacing:1.6px; }
+  .stat.time span{ display:inline-block; min-width:92px; text-align:right; }
   .stat{ display:flex; align-items:center; gap:7px; font-weight:700; font-size:18px; color:#eef4ff; }
   .stat svg{ width:16px; height:16px; }
   .stat .lbl{ font-size:11px; letter-spacing:2px; color:rgba(214,226,244,.6); font-weight:600; }
@@ -837,6 +840,38 @@
   /* ---------------- big screens ---------------- */
   #gameOver h1{ font-size:clamp(34px,6vw,64px); color:#ff9d9d; text-shadow:0 0 30px rgba(239,68,68,.5); }
   #victory h1{ font-size:clamp(26px,4.4vw,48px); color:#ffe4ae; text-shadow:0 0 34px rgba(255,200,110,.55); letter-spacing:3px; }
+  /* the run's total time, in the same gold as the rest of the win card */
+  #vicTime{
+    font-family:var(--font-head); font-size:clamp(16px,2.2vw,24px); font-weight:700;
+    letter-spacing:3px; color:var(--gold);
+    text-shadow:0 0 26px rgba(232,200,116,.55), 0 2px 12px rgba(0,0,0,.9);
+  }
+  #vicTime b{
+    font-size:clamp(26px,3.6vw,42px); font-weight:900; color:#ffe6a8;
+    font-variant-numeric:tabular-nums; letter-spacing:4px;
+    text-shadow:0 0 34px rgba(255,214,130,.75), 0 2px 14px rgba(0,0,0,.95);
+  }
+  #vicRecord{
+    display:none; margin-top:2px; padding:7px 20px; border-radius:2px;
+    font-family:var(--font-head); font-size:14px; font-weight:900; letter-spacing:2.5px;
+    color:#100c02;
+    background:linear-gradient(180deg,#ffeeb8,#e8c874);
+    box-shadow:0 0 26px rgba(232,200,116,.6), inset 0 0 0 1px rgba(255,255,255,.45);
+  }
+  #vicRecord.show{
+    display:inline-block;
+    animation:recPop .55s cubic-bezier(.2,1.5,.4,1) both,
+              recGlow 1.6s ease-in-out .55s infinite alternate;
+  }
+  @keyframes recPop{
+    from{ transform:scale(.72); opacity:0; }
+    to{ transform:scale(1); opacity:1; }
+  }
+  @keyframes recGlow{
+    from{ box-shadow:0 0 16px rgba(232,200,116,.4), inset 0 0 0 1px rgba(255,255,255,.4); }
+    to{ box-shadow:0 0 42px rgba(255,226,158,.9), inset 0 0 0 1px rgba(255,255,255,.7); }
+  }
+  #vicBestTime{ display:none; }
   .statline{ font-size:18px; letter-spacing:1.4px; color:#dbe6f5; }
   .statline b{ color:var(--gold); font-variant-numeric:tabular-nums; }
   #transition h1{ font-size:clamp(26px,4.4vw,46px); color:#ffe4ae; letter-spacing:5px; text-shadow:0 0 30px rgba(255,200,110,.45); }
@@ -876,6 +911,7 @@
     <div id="topRight">
       <span class="stat"><svg viewBox="0 0 24 24" fill="#e8c874" aria-hidden="true"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.8-6-3.4-6 3.4 1.3-6.8-5-4.7 6.8-.8z"/></svg><span id="scoreVal">0</span></span>
       <span class="stat"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg><span id="gemVal">0</span></span>
+      <span class="stat time" title="Run time"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c874" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.6 1.7M9 3h6"/></svg><span id="runTime">00:00:00</span></span>
     </div>
 
     <div id="abilities">
@@ -1091,6 +1127,7 @@
     <div class="save-line" id="goSaved"><i>✓</i><span>Progress Saved</span></div>
     <div class="btn-row" style="margin-top:10px">
       <button class="btn" id="btnRetry">Retry Zone</button>
+      <button class="btn" id="btnChangeClass">Change Class</button>
       <button class="btn ghost" id="btnRestart">Restart</button>
     </div>
   </div>
@@ -1101,6 +1138,9 @@
     <h1>Commander Rael has returned to the future.</h1>
     <div class="statline">Final Score <b id="vicScore">0</b> · Gems <b id="vicGems">0</b></div>
     <div class="statline" id="vicBest">Best score 0</div>
+    <div id="vicTime">Completion Time: <b id="vicTimeVal">00:00:00</b></div>
+    <div id="vicRecord">New Record!</div>
+    <div class="statline" id="vicBestTime">Best time 00:00:00</div>
     <div class="save-line" id="vicSaved"><i>✓</i><span>Progress Saved</span></div>
     <div class="btn-row" style="margin-top:10px">
       <button class="btn" id="btnAgain">Play Again</button>
@@ -1620,7 +1660,13 @@ const UI = {
   victory: document.getElementById('victory'),
   vicScore: document.getElementById('vicScore'),
   vicGems: document.getElementById('vicGems'),
-  vicBest: document.getElementById('vicBest')
+  vicBest: document.getElementById('vicBest'),
+  vicTime: document.getElementById('vicTime'),
+  vicTimeVal: document.getElementById('vicTimeVal'),
+  vicRecord: document.getElementById('vicRecord'),
+  vicBestTime: document.getElementById('vicBestTime'),
+  runTime: document.getElementById('runTime'),
+  btnChangeClass: document.getElementById('btnChangeClass')
 };
 const ctx = UI.canvas.getContext('2d');
 const mmCtx = UI.minimap.getContext('2d');
@@ -4960,6 +5006,7 @@ const SAVE_KEY = 'survive_save_v1';
 const SAVE_BEST_KEY = 'survive_best_score';
 const SAVE_GEMS_KEY = 'survive_gems_total';
 const SAVE_MAX_ZONE_KEY = 'survive_max_zone';   /* frontier: unlocks zone select */
+const SAVE_TIME_KEY = 'survive_best_time';      /* fastest full clear, in ms */
 const SAVE_VERSION = 1;
 const AUTOSAVE_EVERY = 4;          /* seconds between background writes */
 
@@ -5145,6 +5192,7 @@ const SaveSystem = (function () {
         s.removeItem(SAVE_BEST_KEY);
         s.removeItem(SAVE_GEMS_KEY);
         s.removeItem(SAVE_MAX_ZONE_KEY);
+        s.removeItem(SAVE_TIME_KEY);
       } catch (e) { /* ignore */ }
     }
     lastWriteOk = false;
@@ -5252,6 +5300,15 @@ const SaveSystem = (function () {
     summary: summary,
     tick: tick,
     best: function () { return readCount(SAVE_BEST_KEY); },
+    /* fastest full clear ever, in milliseconds (0 = no clear yet) */
+    bestTime: function () { return readCount(SAVE_TIME_KEY); },
+    setBestTime: function (ms) {
+      const v = Math.max(0, Math.round(Number(ms) || 0));
+      if (v <= 0) return readCount(SAVE_TIME_KEY);
+      const cur = readCount(SAVE_TIME_KEY);
+      if (cur === 0 || v < cur) writeCount(SAVE_TIME_KEY, v);
+      return readCount(SAVE_TIME_KEY);
+    },
     lifetimeGems: function () { return readCount(SAVE_GEMS_KEY); },
     maxZone: function () {
       const stored = readCount(SAVE_MAX_ZONE_KEY);
@@ -5308,7 +5365,10 @@ function continueSavedRun() {
   if (!slot) { refreshSaveUi(); return false; }
   Sound.ensure();
   toggleSettings(false);
-  return SaveSystem.apply(slot);
+  pendingChangeClass = false;
+  const ok = SaveSystem.apply(slot);
+  RunClock.resume();   /* a restored run keeps the clock going */
+  return ok;
 }
 
 let resetArmedAt = 0;
@@ -5360,6 +5420,84 @@ function onResetSaveClick() {
   if (UI.spNote) UI.spNote.textContent = 'This wipes the saved run, best score and lifetime gems. Tap again to confirm.';
 }
 
+/* ------------------------------ speedrun clock ------------------------------
+   The clock starts on the BEGIN MISSION click and never pauses: it keeps
+   counting through deaths, retries, class swaps and every zone change, and it
+   stops only when Rael walks through the final portal. Read-outs are MM:SS:cs
+   (04:32:17 = 4 min, 32 s, 17 hundredths). */
+const RunClock = {
+  running: false,
+  startedAt: 0,
+  elapsed: 0,      /* milliseconds: live while running, frozen once stopped */
+  best: 0,
+  record: false,
+
+  format(ms) {
+    const total = Math.max(0, Math.floor(Number(ms) || 0));
+    const cs = Math.floor(total / 10) % 100;
+    const sec = Math.floor(total / 1000) % 60;
+    const min = Math.floor(total / 60000);
+    const two = (n) => (n < 10 ? '0' + n : String(n));
+    return two(min) + ':' + two(sec) + ':' + two(cs);
+  },
+
+  /* a brand new mission: back to zero */
+  start() {
+    this.running = true;
+    this.startedAt = nowMs();
+    this.elapsed = 0;
+    this.record = false;
+    this.paint();
+    return this;
+  },
+
+  /* a run that is already under way (continue from the save slot) picks the
+     clock back up instead of resetting it */
+  resume() {
+    if (this.running) return this;
+    this.running = true;
+    this.startedAt = nowMs() - this.elapsed;
+    return this;
+  },
+
+  tick() {
+    if (this.running) this.elapsed = Math.max(0, nowMs() - this.startedAt);
+    return this.elapsed;
+  },
+
+  stop() {
+    this.tick();
+    this.running = false;
+    return this.elapsed;
+  },
+
+  reset() {
+    this.running = false;
+    this.startedAt = 0;
+    this.elapsed = 0;
+    this.record = false;
+    this.paint();
+    return this;
+  },
+
+  /* the HUD read-out, refreshed from updateHud() every frame */
+  paint() {
+    if (!UI.runTime) return;
+    const text = this.format(this.tick());
+    if (UI.runTime.textContent !== text) UI.runTime.textContent = text;
+  },
+
+  /* victory: freeze the clock and compare it with the saved best */
+  finish() {
+    const total = Math.round(this.stop());
+    const previous = SaveSystem.bestTime();
+    this.record = total > 0 && (previous <= 0 || total < previous);
+    if (this.record) SaveSystem.setBestTime(total);
+    this.best = this.record ? total : previous;
+    return { total: total, best: this.best, record: this.record };
+  }
+};
+
 /* ------------------------------ run lifecycle ------------------------------ */
 /* Begin Mission never drops you straight into the world: the class screen
    comes first, and the run starts on the card you pick. */
@@ -5367,6 +5505,9 @@ function beginMission() {
   Sound.ensure();
   toggleSettings(false);
   resetRun();   /* a fresh run: nothing carries over */
+  pendingChangeClass = false;
+  /* the speedrun clock starts on this click and only a new mission rewinds it */
+  RunClock.start();
   showZoneSelect();
 }
 
@@ -5374,6 +5515,9 @@ function beginMission() {
 /* five cards in one scrollable row. Zones the player has already reached are
    playable, finished ones carry a gold check, later ones stay locked. */
 let pendingStartZone = 0;
+/* set while the class screen was opened from the game over screen: the run keeps
+   its score, gems, upgrades and abilities, only the doctrine changes */
+let pendingChangeClass = false;
 
 const LOCK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
   '<path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg>';
@@ -5474,14 +5618,19 @@ function selectZone(index) {
 function openClassScreen(zoneIndex) {
   pendingStartZone = clamp(typeof zoneIndex === 'number' ? zoneIndex : pendingStartZone, 0, ZONES.length - 1);
   const z = ZONES[pendingStartZone];
-  if (UI.csEyebrow) UI.csEyebrow.textContent = 'Zone ' + z.id + ' · ' + z.name;
+  if (UI.csEyebrow) {
+    UI.csEyebrow.textContent = pendingChangeClass
+      ? 'Zone ' + z.id + ' · ' + z.name + ' · your score carries over'
+      : 'Zone ' + z.id + ' · ' + z.name;
+  }
 
-  /* a slot remembers its class: offer a one-click start instead of a re-pick */
+  /* a slot remembers its class: offer a one-click start instead of a re-pick.
+     Never in a class swap — there the whole point is picking a new one. */
   const slot = SaveSystem.load();
   if (UI.btnClassSkip) {
     const saved = slot ? (CLASSES.find((c) => c.id === slot.classId) || CLASSES[0]) : null;
     if (saved && UI.skipClassName) UI.skipClassName.textContent = saved.name;
-    UI.btnClassSkip.classList.toggle('show', !!saved);
+    UI.btnClassSkip.classList.toggle('show', !!saved && !pendingChangeClass);
   }
   Screens.show('classScreen');
   game.screen = 'class';
@@ -5491,6 +5640,10 @@ function openClassScreen(zoneIndex) {
 }
 
 function backToMenu() {
+  pendingChangeClass = false;
+  /* backing out of the zone select abandons the mission: the clock rewinds and
+     waits for the next BEGIN MISSION */
+  RunClock.reset();
   Screens.show('menu');
   game.screen = 'menu';
   refreshSaveUi();
@@ -5542,9 +5695,35 @@ function startRun(classId, zoneIndex, opts) {
   const o = opts || {};
   const zone = clamp(typeof zoneIndex === 'number' ? zoneIndex : 0, 0, ZONES.length - 1);
 
+  /* a class swap on the game over screen keeps the whole run — score, gems,
+     kills, frontier, boss record and upgrades — and only rebuilds the body */
+  let kept = null;
+  if (o.changeClass) {
+    kept = {
+      score: game.score,
+      gems: game.gems,
+      kills: game.kills,
+      maxZone: game.maxZone,
+      bosses: (game.bossesDefeated || []).slice(),
+      upgrades: Object.assign({}, game.upgradeLevels || {})
+    };
+    /* the knight's sword upgrades do not follow Rael into another doctrine */
+    for (let i = 0; i < UPGRADE_POOL.length; i++) {
+      const up = UPGRADE_POOL[i];
+      if (up.classOnly && up.classOnly !== classId) delete kept.upgrades[up.id];
+    }
+  }
+
   game.classId = classId;
   resetRun();
-  if (o.carryUpgrades) {
+  if (kept) {
+    game.score = kept.score;
+    game.gems = kept.gems;
+    game.kills = kept.kills;
+    game.maxZone = kept.maxZone;
+    game.bossesDefeated = kept.bosses;
+    applyUpgradeLevels(kept.upgrades);
+  } else if (o.carryUpgrades) {
     const slot = SaveSystem.load();
     if (slot && slot.upgrades) applyUpgradeLevels(slot.upgrades);
   }
@@ -5557,6 +5736,7 @@ function startRun(classId, zoneIndex, opts) {
   updateObjective();
   updateHealthOrbs();
   showBanner(getClass().name.toUpperCase());
+  RunClock.resume();          /* a continued run keeps counting */
   SaveSystem.save('start');   /* a new run replaces the old slot */
 }
 
@@ -5588,11 +5768,36 @@ function showVictory() {
   UI.vicScore.textContent = String(Math.floor(game.score));
   UI.vicGems.textContent = String(game.gems);
   UI.vicBest.textContent = 'Best score ' + Math.max(game.best, Math.floor(game.score));
+
+  /* freeze the speedrun clock and compare it with the saved best */
+  const time = RunClock.finish();
+  if (UI.vicTimeVal) UI.vicTimeVal.textContent = RunClock.format(time.total);
+  if (UI.vicRecord) UI.vicRecord.classList.toggle('show', time.record);
+  if (UI.vicBestTime) {
+    const showBest = !time.record && time.best > 0;
+    UI.vicBestTime.textContent = 'Best time ' + RunClock.format(time.best);
+    UI.vicBestTime.style.display = showBest ? 'block' : 'none';
+  }
+
   Screens.show('victory');
   Sound.portal();
 }
 
+/* CHANGE CLASS on the game over card: bank the run first (zone, score, gems,
+   upgrades, abilities), then hand over to the class picker. Picking a card
+   restarts the same zone under the new doctrine with the score intact. */
+function changeClass() {
+  if (game.screen !== 'gameover') return;
+  Sound.ensure();
+  /* same deal as a death save: keep everything, hand the zone back at full hp */
+  SaveSystem.save('classchange', { hp: game.player ? game.player.maxHp : undefined });
+  pendingStartZone = clamp(game.zoneIndex | 0, 0, ZONES.length - 1);
+  pendingChangeClass = true;
+  openClassScreen(pendingStartZone);
+}
+
 function retryZone() {
+  pendingChangeClass = false;
   game.screen = 'playing';
   loadZone(game.zoneIndex);
   Screens.show('hud');
@@ -5650,6 +5855,9 @@ function updateHud() {
   UI.abilities.bomb.querySelector('.cd').textContent =
     game.bombCd > 0.05 ? String(Math.ceil(game.bombCd)) : '';
 
+  /* speedrun clock, top-right */
+  RunClock.paint();
+
   /* screen effect */
   UI.overchargeGlow.classList.toggle('on', game.overchargeTimer > 0);
 }
@@ -5668,7 +5876,10 @@ document.getElementById('btnContinue').addEventListener('click', () => {
 for (let i = 0; i < UI.classCards.length; i++) {
   const card = UI.classCards[i];
   const pick = () => {
-    if (game.screen === 'class') startRun(CLASSES[i].id, pendingStartZone, { carryUpgrades: true });
+    if (game.screen !== 'class') return;
+    const swap = pendingChangeClass;
+    pendingChangeClass = false;
+    startRun(CLASSES[i].id, pendingStartZone, swap ? { changeClass: true } : { carryUpgrades: true });
   };
   card.addEventListener('click', pick);
   card.addEventListener('keydown', (e) => {
@@ -5676,6 +5887,7 @@ for (let i = 0; i < UI.classCards.length; i++) {
   });
 }
 document.getElementById('btnRetry').addEventListener('click', retryZone);
+if (UI.btnChangeClass) UI.btnChangeClass.addEventListener('click', changeClass);
 document.getElementById('btnRestart').addEventListener('click', restartRun);
 document.getElementById('btnAgain').addEventListener('click', restartRun);
 
@@ -5685,8 +5897,10 @@ if (UI.btnZoneBack) UI.btnZoneBack.addEventListener('click', backToMenu);
 if (UI.btnClassSkip) {
   UI.btnClassSkip.addEventListener('click', () => {
     if (game.screen !== 'class') return;
+    const swap = pendingChangeClass;
+    pendingChangeClass = false;
     const slot = SaveSystem.load();
-    startRun(slot ? slot.classId : 'knight', pendingStartZone, { carryUpgrades: true });
+    startRun(slot ? slot.classId : 'knight', pendingStartZone, swap ? { changeClass: true } : { carryUpgrades: true });
   });
 }
 UI.settingsBtn.addEventListener('click', (e) => {
