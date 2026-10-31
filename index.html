@@ -36,6 +36,9 @@
      of them is display:none until the screen manager makes it the single active
      layer, so two screens can never be on screen at the same time. */
   .screen{ display:none !important; }
+  /* an inactive layer is not merely transparent — it is out of the layout, so
+     there is no state in which two screens can share the screen */
+  .screen:not(.show){ display:none !important; }
   .screen.show{
     display:flex !important;
     animation:screenIn .34s ease-out both;
@@ -337,7 +340,7 @@
     position:absolute; inset:0; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:16px; text-align:center;
     padding:28px; z-index:30;
-    background:radial-gradient(ellipse at 50% 45%, rgba(12,18,32,.72), rgba(3,4,8,.94));
+    background:radial-gradient(ellipse at 50% 45%, rgba(10,15,26,.92), rgba(2,3,7,.985));
     backdrop-filter:blur(2px);
     /* every screen fades in and out over 0.4s (game over, victory, upgrades,
        the zone card) — visibility flips only once the fade has finished */
@@ -1715,10 +1718,14 @@ const Screens = {
     return out;
   },
 
-  /* hide one layer (its display falls back to none on its own) */
+  /* hide one layer: the class stops the fade-in, the inline display makes the
+     layer impossible to see even if the stylesheet is ever overridden */
   hide(name) {
     const el = this.element(name);
-    if (el && el.classList) el.classList.remove('show');
+    if (el && el.classList) {
+      el.classList.remove('show');
+      if (el.style) el.style.display = 'none';
+    }
     if (this.current === name) this.current = null;
   },
 
@@ -1726,14 +1733,18 @@ const Screens = {
   show(name) {
     const next = this.element(name);
     const layers = this.layers();
+    /* the previous screen is fully hidden BEFORE the next one is revealed */
     for (let i = 0; i < layers.length; i++) {
-      if (layers[i] !== next) layers[i].classList.remove('show');
+      if (layers[i] === next) continue;
+      layers[i].classList.remove('show');
+      if (layers[i].style) layers[i].style.display = 'none';
     }
     if (!next || !next.classList) {
       this.current = null;
       return null;
     }
-    /* restart the fade so the cards re-animate on every visit */
+    /* hand the layer back to the stylesheet, then restart the fade */
+    if (next.style) next.style.display = '';
     next.classList.remove('show');
     void next.offsetWidth;
     next.classList.add('show');
@@ -1741,11 +1752,31 @@ const Screens = {
     return next;
   },
 
+  /* boot / recovery: clear every layer, then reveal exactly one */
+  reset(name) {
+    const layers = this.layers();
+    for (let i = 0; i < layers.length; i++) {
+      layers[i].classList.remove('show');
+      if (layers[i].style) layers[i].style.display = 'none';
+    }
+    this.current = null;
+    return name ? this.show(name) : null;
+  },
+
   /* belt and braces: if a future call site ever flags two layers at once, keep
      only the newest one. Runs a few times a second from the main loop. */
   enforce() {
     const vis = this.visible();
-    if (vis.length <= 1) return vis;
+    if (vis.length <= 1) {
+      /* nothing flagged twice, but a layer without .show must still be gone */
+      const layers = this.layers();
+      for (let i = 0; i < layers.length; i++) {
+        if (!layers[i].classList.contains('show') && layers[i].style && layers[i].style.display !== 'none') {
+          layers[i].style.display = 'none';
+        }
+      }
+      return vis;
+    }
     const keep = (this.current && vis.indexOf(this.current) >= 0) ? this.current : vis[vis.length - 1];
     for (let i = 0; i < vis.length; i++) {
       if (vis[i] !== keep) this.hide(vis[i]);
@@ -11812,7 +11843,7 @@ window.addEventListener('orientationchange', resize);
   syncAbilityUnlocks(true);      /* silent: replay anything the frontier implies */
   syncAbilityHud();
   refreshSaveUi();
-  Screens.show('menu');          /* boot lands on the title screen, only */
+  Screens.reset('menu');         /* boot lands on the title screen, only */
 
   game.player = makePlayer();
   game.fog = new Uint8Array(FOG_COLS * FOG_COLS);
