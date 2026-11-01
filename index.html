@@ -219,19 +219,23 @@
 
   /* ------------------------------ ability bar ------------------------------
      One clean row of square buttons, centred at the bottom of the screen.
-     Every slot is a fixed 52x52 square: the icon in the middle, the key in the
-     top-left corner, the ability name in tiny type under the icon. A locked
-     slot is a dark grey padlock. The circular sweep unwinds clockwise as the
-     cooldown counts down, and the thin ring fills back up behind it.
+     The pill is a fixed 68px tall and every slot is a fixed 48x48 square —
+     no exceptions, on any screen. The icon is drawn on a canvas dead centre
+     (drawAbilityIcon), the key hint sits in the top-left corner and the
+     ability name in tiny type under the icon, capped at six characters.
+     A locked slot is a dark grey disc with a drawn padlock (drawLockIcon).
+     Every symbol in this bar is drawn geometry: no emoji, no Unicode glyph,
+     no HTML entity and no text character is ever used as an icon here.
      ------------------------------------------------------------------------ */
   #abilities{
     position:absolute; left:50%; bottom:16px;
     transform:translateX(-50%);
     display:flex; flex-direction:row; flex-wrap:nowrap;
     align-items:center; justify-content:center;
+    height:68px; box-sizing:border-box;
     background:#0a0a18; background-color:rgba(10,10,24,.9);
-    border:2px solid #c9a84c; border-radius:12px;
-    padding:8px 16px; margin:0;
+    border:2px solid #c9a84c; border-radius:34px;
+    padding:0 16px; margin:0;
     z-index:26; pointer-events:none;
   }
   .ability{
@@ -259,153 +263,41 @@
     50% { border-color: #fff; box-shadow: 0 0 12px #c9a84c; }
     100% { border-color: #c9a84c; box-shadow: 0 0 0px #c9a84c; }
   }
-
-  .ability .ab-ring{
-    position:absolute; inset:0; width:100%; height:100%;
-    pointer-events:none; display:none;
-  }
-  .ability .ab-sweep{
-    position:absolute; inset:0; width:100%; height:100%;
-    pointer-events:none;
-    background: conic-gradient(rgba(255,255,255,.86) 0deg, transparent 0deg);
-    transition: background .05s linear;
-  }
-  .ability .icon{
-    position:absolute; width:60%; height:60%;
-    display:flex; align-items:center; justify-content:center;
-    pointer-events:none;
-  }
-  .ability .icon svg { width:100%; height:100%; }
-  .ability .key{
-    position:absolute; top:2px; left:2px;
-    font-family:var(--font-head); font-size:8px; color:#c9a84c;
-    pointer-events:none;
-  }
-  .ability .label{
-    position:absolute; bottom:-12px; left:50%; transform:translateX(-50%);
-    font-family:var(--font-stat); font-size:7px; color:#eaf0fa;
-    text-transform:uppercase; white-space:nowrap; overflow:hidden;
-    pointer-events:none;
-    max-width:48px; text-overflow:clip;
-  }
-  }
-  .ability .ring-bg{ fill:none; stroke:rgba(232,200,116,.14); stroke-width:3; }
-  .ability .ring{
-    fill:none; stroke:rgba(232,200,116,.8); stroke-width:3; stroke-linecap:round;
-    stroke-dasharray:169.6; stroke-dashoffset:0;
-    transition:stroke-dashoffset .12s linear, stroke .25s ease;
-  }
-  .ability.ready .ring{ stroke:rgba(143,232,255,.8); }
   /* the circular cooldown overlay: a dark wedge that unwinds clockwise */
   .ability .ab-sweep{
     position:absolute; inset:0; border-radius:50%;
-    background:conic-gradient(rgba(2,4,9,.86) calc(var(--cd, 1) * 360deg), rgba(2,4,9,0) 0);
-    opacity:0; transition:opacity .12s linear;
-    pointer-events:none;
+    pointer-events:none; background:transparent;
+    transition:background .05s linear;
   }
-  .ability.cooling .ab-sweep{ opacity:1; }
-  /* the icon, dead centre */
-    .ability .icon{
-    position:absolute; left:0; right:0; top:0; bottom:0;
-    display:block; text-align:center; line-height:52px;
-    font-family:Rajdhani, sans-serif; font-size:12px; font-weight:700;
+  /* the icon, dead centre: one 48x48 canvas per slot, painted by JS */
+  .ability .icon{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:none;
     transition:opacity .15s ease;
-    background-size: 32px 32px; background-position: center; background-repeat: no-repeat;
   }
-  /* Q — Class Ability */
-  #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M26 10 L38 22 L26 34 L14 22 Z' fill='%23fcd34d' stroke='%23f0b45a' stroke-width='2'/></svg>"); }
-  .knight #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M26 10 L38 22 L26 34 L14 22 Z' fill='%23fcd34d' stroke='%23f0b45a' stroke-width='2'/></svg>"); }
-  .gunslinger #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M16 26 L40 26' stroke='%23a5f3fc' stroke-width='4' stroke-linecap='round'/><circle cx='40' cy='26' r='4' fill='%23a5f3fc'/></svg>"); }
-  .sniper #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><line x1='12' y1='26' x2='40' y2='26' stroke='%23c7d2fe' stroke-width='3'/><line x1='35' y1='20' x2='45' y2='26' stroke='%23c7d2fe' stroke-width='3'/><line x1='35' y1='32' x2='45' y2='26' stroke='%23c7d2fe' stroke-width='3'/></svg>"); }
-  .mage #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><circle cx='26' cy='26' r='16' fill='none' stroke='%23a78bfa' stroke-width='3'/><circle cx='26' cy='26' r='8' fill='%23a78bfa'/></svg>"); }
-  .berserker #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M16 16 L36 16 L26 36 Z' fill='%23ff7a45'/><path d='M26 16 L36 36 L16 36 Z' fill='%23ff7a45'/></svg>"); }
-  .shadow #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><circle cx='26' cy='26' r='16' stroke='%23c4b5fd' stroke-width='3' fill='none'/><circle cx='26' cy='26' r='6' fill='%23c4b5fd'/></svg>"); }
-  .tech #abQ .icon { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><rect x='18' y='18' width='16' height='16' rx='2' fill='%236ee7b7'/><circle cx='26' cy='26' r='4' fill='%2334d399'/></svg>"); }
-
-  /* E — Nova Blast */
-  #abNova .icon {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M26 6 L26 16 M26 36 L26 46 M6 26 L16 26 M36 26 L46 26 M12 12 L19 19 M33 33 L40 40 M12 40 L19 33 M33 19 L40 12' stroke='%23ffffff' stroke-width='3' stroke-linecap='round'/><circle cx='26' cy='26' r='6' fill='%23ffffff'/></svg>");
-    filter: drop-shadow(0 0 4px #fff);
-  }
-  .ability.ready #abNova .icon { filter: drop-shadow(0 0 8px #fff); }
-  .ability.cooling #abNova .icon { filter: none; opacity: .3; }
-
-  /* Shift — Dash */
-  #abDash .icon {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M18 26 L38 26' stroke='%2306b6d4' stroke-width='4' stroke-linecap='round'/><path d='M38 26 L30 18' stroke='%2306b6d4' stroke-width='3' stroke-linecap='round'/><path d='M38 26 L30 34' stroke='%2306b6d4' stroke-width='3' stroke-linecap='round'/><path d='M30 26 L22 18' stroke='%2306b6d4' stroke-width='2' stroke-linecap='round'/><path d='M30 26 L22 34' stroke='%2306b6d4' stroke-width='2' stroke-linecap='round'/><path d='M22 26 L14 18' stroke='%2306b6d4' stroke-width='1' stroke-linecap='round'/><path d='M22 26 L14 34' stroke='%2306b6d4' stroke-width='1' stroke-linecap='round'/></svg>");
-    filter: drop-shadow(0 0 4px #06b6d4);
-  }
-  .ability.ready #abDash .icon { filter: drop-shadow(0 0 8px #06b6d4); }
-  .ability.cooling #abDash .icon { filter: none; opacity: .3; }
-
-  /* F — Turret Drop */
-  #abTurret .icon {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><rect x='18' y='30' width='16' height='12' rx='2' fill='%234b5563'/><rect x='22' y='22' width='8' height='8' rx='1' fill='%234b5563'/><line x1='26' y1='22' x2='26' y2='10' stroke='%234b5563' stroke-width='2'/><circle cx='26' cy='8' r='2' fill='%2322c55e'/></svg>");
-    filter: drop-shadow(0 0 4px #4b5563);
-  }
-  .ability.ready #abTurret .icon { filter: drop-shadow(0 0 8px #4b5563); }
-  .ability.cooling #abTurret .icon { filter: none; opacity: .3; }
-
-  /* R — Overcharge */
-  #abOvercharge .icon {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M20 10 L32 26 L20 42' stroke='%23f97316' stroke-width='5' stroke-linecap='round'/><path d='M24 14 L30 22' stroke='%23f97316' stroke-width='2'/><path d='M22 30 L28 38' stroke='%23f97316' stroke-width='2'/></svg>");
-    filter: drop-shadow(0 0 4px #f97316);
-  }
-  .ability.ready #abOvercharge .icon { filter: drop-shadow(0 0 8px #f97316); }
-  .ability.cooling #abOvercharge .icon { filter: none; opacity: .3; }
-
-  /* X — Time Bomb */
-  #abBomb .icon {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><circle cx='26' cy='26' r='20' fill='%237f1d1d' stroke='%23991b1b' stroke-width='2'/><line x1='26' y1='16' x2='26' y2='30' stroke='%23ffffff' stroke-width='1'/><line x1='20' y1='22' x2='32' y2='30' stroke='%23ffffff' stroke-width='1'/><path d='M26 6 L26 10' stroke='%23f59e0b' stroke-width='2'/><path d='M25 8 L27 6' stroke='%23f59e0b' stroke-width='1'/><path d='M27 8 L25 6' stroke='%23f59e0b' stroke-width='1'/></svg>");
-    filter: drop-shadow(0 0 4px #7f1d1d);
-  }
-  .ability.ready #abBomb .icon { filter: drop-shadow(0 0 8px #7f1d1d); }
-  .ability.cooling #abBomb .icon { filter: none; opacity: .3; }
-
-  /* Overdrive (Z) — optional 7th slot */
-  #abOverdrive .icon {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><path d='M16 26 L36 26' stroke='%23a855f7' stroke-width='4'/><path d='M36 26 L30 20' stroke='%23a855f7' stroke-width='3'/><path d='M36 26 L30 32' stroke='%23a855f7' stroke-width='3'/></svg>");
-    filter: drop-shadow(0 0 4px #a855f7);
-  }
-  .ability.ready #abOverdrive .icon { filter: drop-shadow(0 0 8px #a855f7); }
-  .ability.cooling #abOverdrive .icon { filter: none; opacity: .3; }
-
-  /* Cooldown sweep overlay: clean white arc */
-  .ability .ab-sweep{
-    position:absolute; inset:0; border-radius:50%;
-    background:conic-gradient(rgba(255,255,255,.86) calc(var(--cd, 1) * 360deg), rgba(255,255,255,0) 0);
-    opacity:0; transition:opacity .12s linear;
-    pointer-events:none;
-  }
-
+  .ability .icon canvas{ width:48px; height:48px; display:block; }
   /* Key label: tiny gold text in top-left */
   .ability .key{
-    position:absolute; top:3px; left:4px;
+    position:absolute; top:2px; left:4px;
     font-family:Rajdhani, sans-serif; font-size:7px; font-weight:700; line-height:1;
     letter-spacing:.4px; color:#ffd98a;
     text-shadow:0 1px 3px rgba(0,0,0,.9);
-    white-space:nowrap;
+    white-space:nowrap; pointer-events:none;
   }
-
-  /* Ability name: 8px Rajdhani font below icon */
+  /* Ability name: 8px Rajdhani under the icon, never more than 6 characters */
   .ability .label{
-    position:absolute; left:1px; right:1px; bottom:4px;
+    position:absolute; left:1px; right:1px; bottom:2px;
     display:block; text-align:center;
     font-family:Rajdhani, sans-serif; font-size:8px; line-height:1; letter-spacing:.2px;
-    color:#e8c874;
-    white-space:nowrap; overflow:hidden;
+    color:#e8c874; text-transform:uppercase;
+    white-space:nowrap; overflow:hidden; pointer-events:none;
   }
-
-  /* Cooldown text overlay: dark grey when cooling */
+  /* Cooldown dims the drawn icon and the type */
   .ability.cooling .icon { opacity: .3; }
   .ability.cooling .label { color: #4b5563; }
   .ability.cooling .key { color: #4b5563; }
-  /* Locked slot: a plain dark grey filled disc with a small padlock on it.
-     Both are drawn geometry, painted on the slot's <canvas> by drawLockIcon()
-     — two rectangles for the lock body, one arc for the shackle, 16x16 base
-     px. Nothing in the ability bar is an emoji, a Unicode symbol, an HTML
-     entity or a text character standing in for an icon, so there is no glyph
-     here that could ever inherit a font size or a colour and blow up. */
+  /* Locked slot: dark grey disc + drawn padlock, painted on its own canvas */
   .ability .lock{
     position:absolute; inset:0; display:none;
     align-items:center; justify-content:center;
@@ -423,8 +315,6 @@
     border-color:rgba(107,114,128,.36);
     box-shadow:none;
   }
-  .ability.locked .ring-bg{ stroke:rgba(107,114,128,.18); }
-  .ability.locked .ring{ stroke:transparent; }
 
   /* class badge (bottom left) */
   #classBadge{
@@ -1100,8 +990,8 @@
     100%{ transform:scale(1) rotate(0); opacity:1 }
   }
   #abilityUnlock .au-glyph{
-    font-family:var(--font-head); font-size:52px; line-height:1; font-weight:700; color:#ffe7b8;
-    text-shadow:0 0 24px rgba(255,206,120,.95), 0 0 55px rgba(255,170,50,.5);
+    width:56px; height:56px; display:block;
+    filter:drop-shadow(0 0 24px rgba(255,206,120,.95)) drop-shadow(0 0 55px rgba(255,170,50,.5));
   }
   #abilityUnlock .au-key{
     position:absolute; bottom:-9px; left:50%; transform:translateX(-50%);
@@ -1626,12 +1516,7 @@
       <div class="ability" id="abQ" style="--ability-color:#c9a84c;">
         <div class="ab-btn">
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48" fill="none" stroke="#c9a84c" stroke-width="3" aria-hidden="true" focusable="false">
-              <circle cx="24" cy="24" r="18"/>
-              <line x1="24" y1="24" x2="24" y2="12"/>
-            </svg>
-          </span>
+          <span class="icon" aria-hidden="true"><canvas class="ab-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">Q</span>
           <span class="label" id="qLabel">BASH</span>
@@ -1642,11 +1527,7 @@
       <div class="ability locked" id="abNova" style="--ability-color:#ffffff;">
         <div class="ab-btn">
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48" fill="#ffffff" aria-hidden="true" focusable="false">
-              <polygon points="24,4 27,17 40,17 29,26 33,39 24,30 15,39 19,26 8,17 21,17"/>
-            </svg>
-          </span>
+          <span class="icon" aria-hidden="true"><canvas class="ab-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">E</span>
           <span class="label">NOVA</span>
@@ -1657,11 +1538,7 @@
       <div class="ability locked" id="abDash" style="--ability-color:#00ffff;">
         <div class="ab-btn">
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48" fill="#00ffff" aria-hidden="true" focusable="false">
-              <polygon points="14,12 34,24 14,36"/>
-            </svg>
-          </span>
+          <span class="icon" aria-hidden="true"><canvas class="ab-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">SHIFT</span>
           <span class="label">DASH</span>
@@ -1672,15 +1549,10 @@
       <div class="ability locked" id="abTurret" style="--ability-color:#00ff88;">
         <div class="ab-btn">
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48" stroke="#00ff88" stroke-width="4" stroke-linecap="round" fill="none" aria-hidden="true" focusable="false">
-              <line x1="24" y1="10" x2="24" y2="38"/>
-              <line x1="10" y1="10" x2="38" y2="10"/>
-            </svg>
-          </span>
+          <span class="icon" aria-hidden="true"><canvas class="ab-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">F</span>
-          <span class="label">TURRET</span>
+          <span class="label">TURR</span>
           <span class="lock" aria-hidden="true"><canvas class="lock-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
         </div>
       </div>
@@ -1688,14 +1560,10 @@
       <div class="ability locked" id="abOvercharge" style="--ability-color:#ff8800;">
         <div class="ab-btn">
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48" fill="#ff8800" aria-hidden="true" focusable="false">
-              <polygon points="24,4 20,20 28,20 24,36 28,52 20,52 24,36"/>
-            </svg>
-          </span>
+          <span class="icon" aria-hidden="true"><canvas class="ab-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">R</span>
-          <span class="label">OVERCH</span>
+          <span class="label">OVER</span>
           <span class="lock" aria-hidden="true"><canvas class="lock-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
         </div>
       </div>
@@ -1703,14 +1571,7 @@
       <div class="ability locked" id="abBomb" style="--ability-color:#ff3333;">
         <div class="ab-btn">
           <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48" stroke="#ff3333" stroke-width="3" fill="none" aria-hidden="true" focusable="false">
-              <circle cx="24" cy="24" r="18"/>
-              <line x1="24" y1="15" x2="24" y2="33"/>
-              <line x1="15" y1="24" x2="33" y2="24"/>
-              <circle cx="24" cy="10" r="2"/>
-            </svg>
-          </span>
+          <span class="icon" aria-hidden="true"><canvas class="ab-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">X</span>
           <span class="label">BOMB</span>
@@ -1751,7 +1612,7 @@
   <div id="abilityUnlock" aria-live="assertive">
     <div class="au-rays"></div>
     <div class="au-badge">
-      <span class="au-glyph" id="auGlyph">➤</span>
+      <canvas class="au-glyph" id="auGlyph" width="112" height="112" aria-hidden="true" focusable="false"></canvas>
       <span class="au-key" id="auKey">SHIFT</span>
     </div>
     <div class="au-eyebrow">NEW ABILITY UNLOCKED</div>
@@ -4331,6 +4192,27 @@ const CLASSES = [
 /* the four doctrines Rael starts with; the rest are bought with gems */
 const FREE_CLASSES = ['knight', 'gunslinger', 'sniper', 'mage'];
 
+/* The Q slot is labelled with the class ability name — BASH for the Vanguard
+   Knight, STORM for the Gunslinger, RAIL for the Sniper, RIFT for the Chrono
+   Mage — and the same table keeps the bought classes honest. Every label in
+   the bar is capped at six characters so it can never overflow its 48px slot,
+   and the Q icon drawn next to it always matches the name under it. */
+const CLASS_Q_LABEL = {
+  knight: 'BASH', gunslinger: 'STORM', sniper: 'RAIL', mage: 'RIFT',
+  berserker: 'RAGE', shadow: 'MARK', tech: 'OVRLD'
+};
+const CLASS_Q_ICON = {
+  knight: 'bash', gunslinger: 'storm', sniper: 'rail', mage: 'rift',
+  berserker: 'rage', shadow: 'mark', tech: 'overload'
+};
+/* fixed short names for the five earned slots, all within the 6-char cap */
+const SLOT_LABEL = { nova: 'NOVA', dash: 'DASH', turret: 'TURR', overcharge: 'OVER', bomb: 'BOMB' };
+const LABEL_CAP = 6;
+
+function classQLabel(id) {
+  return String(CLASS_Q_LABEL[id] || 'BASH').slice(0, LABEL_CAP);
+}
+
 function classUnlocked(id) {
   if (FREE_CLASSES.indexOf(id) >= 0) return true;
   /* Shop lives further down the file: never touch it before it exists */
@@ -4383,11 +4265,12 @@ function swordDamage() {
 function syncClassHud() {
   const c = getClass();
   UI.className.textContent = c.name;
-  // UI.qIcon.textContent = c.q.glyph;  <-- removed, icon is CSS background
-  UI.qLabel.textContent = c.q.label;
-  // UI.abilities.q.style.color = c.q.colour; <-- removed, color is CSS background
+  /* the Q slot name comes from the class table, capped to fit the slot */
+  if (UI.qLabel) UI.qLabel.textContent = classQLabel(c.id);
   paintClassIcon(UI.badgeIcon, c.id);
-  // Apply class ID to HUD for CSS selectors (.knight #abQ .icon, etc.)
+  drawAbilityArt();              /* the Q icon follows the class, drawn not typed */
+  /* keep the class id on the HUD as a styling hook; the Q icon and the Q
+     label themselves come from CLASS_Q_ICON / CLASS_Q_LABEL and are drawn */
   const hud = document.getElementById('hud');
   if (hud) {
     hud.className = 'screen ' + c.id;
@@ -7222,20 +7105,15 @@ function updateParticles(dt) {
    zone boss, in this order: zone 1 -> dash, 2 -> nova, 3 -> turret,
    4 -> overcharge, 5 -> time bomb. */
 const ABILITY_UNLOCKS = [
-  { id: 'dash',       key: 'Shift', name: 'Dash',            glyph: '➤',
-    desc: 'Blink a short distance through anything, briefly invincible.',
+  { id: 'dash',       key: 'Shift', name: 'Dash',               desc: 'Blink a short distance through anything, briefly invincible.',
     hint: 'Press SHIFT to use it' },
-  { id: 'nova',       key: 'E',     name: 'Nova Blast',      glyph: '✦',
-    desc: 'Sixteen energy bolts erupt in every direction around you.',
+  { id: 'nova',       key: 'E',     name: 'Nova Blast',         desc: 'Sixteen energy bolts erupt in every direction around you.',
     hint: 'Press E to use it' },
-  { id: 'turret',     key: 'F',     name: 'Turret Drop',     glyph: '⌖',
-    desc: 'Set down a sentry gun that fires on its own for 12 seconds.',
+  { id: 'turret',     key: 'F',     name: 'Turret Drop',        desc: 'Set down a sentry gun that fires on its own for 12 seconds.',
     hint: 'Press F to use it' },
-  { id: 'overcharge', key: 'R',     name: 'Overcharge',      glyph: '⚡',
-    desc: 'Route the reactor through your weapon: double fire rate for 8 seconds.',
+  { id: 'overcharge', key: 'R',     name: 'Overcharge',         desc: 'Route the reactor through your weapon: double fire rate for 8 seconds.',
     hint: 'Press R to use it' },
-  { id: 'bomb',       key: 'X',     name: 'Time Bomb',       glyph: '◉',
-    desc: 'Hurl a timed charge that sticks, then detonates in a wide blast.',
+  { id: 'bomb',       key: 'X',     name: 'Time Bomb',          desc: 'Hurl a timed charge that sticks, then detonates in a wide blast.',
     hint: 'Press X to use it' }
 ];
 const ABILITY_IDS = ['dash', 'nova', 'turret', 'overcharge', 'bomb'];
@@ -7266,7 +7144,7 @@ function hideAbilityUnlock() {
 function playUnlockCard(def) {
   if (!UI.abilityUnlock || !def) return;
   UI.abilityUnlock.classList.remove('show');
-  if (UI.auGlyph) UI.auGlyph.textContent = def.glyph;
+  if (UI.auGlyph) drawAbilityIcon(UI.auGlyph, def.id, 112);   /* drawn, not typed */
   if (UI.auKey) UI.auKey.textContent = def.key;
   if (UI.auName) UI.auName.textContent = def.name;
   if (UI.auDesc) UI.auDesc.textContent = def.desc;
@@ -7392,19 +7270,147 @@ function drawAbilityLocks() {
   for (let i = 0; i < cvs.length; i++) drawLockIcon(cvs[i]);
 }
 
+/* ------------------------- ability icon artwork ----------------------------
+   Every symbol in the ability bar is drawn here with the canvas 2D API —
+   lines, arcs, rectangles and filled paths only. No font, no emoji, no
+   Unicode glyph, no HTML entity and no text character takes part, so an icon
+   can never change size because of type metrics or inherit a colour it was
+   never given. Each piece of art is laid out in a 26x26 box that sits centred
+   in the 48x48 slot, clear of the key hint above and the label below.
+   ------------------------------------------------------------------------ */
+function artLine(g, x1, y1, x2, y2) { g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); }
+function artPoly(g, pts) { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.stroke(); }
+function artDisc(g, x, y, r) { g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); }
+function artRing(g, x, y, r) { g.beginPath(); g.arc(x, y, r, 0, TAU); g.stroke(); }
+function artRect(g, x, y, w, h, r) {
+  g.beginPath();
+  if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h);
+  g.fill();
+}
+
+const ABILITY_ART = {
+  /* class abilities ------------------------------------------------------- */
+  bash(g) {           /* Vanguard Knight: gold shield diamond */
+    g.fillStyle = '#fcd34d'; g.shadowColor = '#f0b45a'; g.shadowBlur = 4;
+    g.beginPath(); g.moveTo(13, 3); g.lineTo(23, 13); g.lineTo(13, 23); g.lineTo(3, 13); g.closePath(); g.fill();
+    g.shadowBlur = 0; g.lineWidth = 2; g.strokeStyle = '#f0b45a'; g.stroke();
+  },
+  storm(g) {          /* Gunslinger: bullet storm, a bolt with a head */
+    g.strokeStyle = '#a5f3fc'; g.shadowColor = '#7dd3fc'; g.shadowBlur = 4; g.lineWidth = 3;
+    artLine(g, 3, 13, 19, 13);
+    artPoly(g, [[15, 8], [22, 13], [15, 18]]);
+  },
+  rail(g) {           /* Sniper: railgun beam, thin guide over a hot core */
+    g.strokeStyle = '#c7d2fe'; g.shadowColor = '#818cf8'; g.shadowBlur = 4;
+    g.lineWidth = 2; artLine(g, 2, 13, 24, 13);
+    g.lineWidth = 4.5; artLine(g, 6, 13, 19, 13);
+    g.shadowBlur = 0; g.fillStyle = '#eef2ff'; artDisc(g, 22, 13, 2.2);
+  },
+  rift(g) {           /* Chrono Mage: temporal rift, ring and core */
+    g.strokeStyle = '#a78bfa'; g.shadowColor = '#8b5cf6'; g.shadowBlur = 4; g.lineWidth = 3;
+    artRing(g, 13, 13, 8);
+    g.fillStyle = '#c4b5fd'; artDisc(g, 13, 13, 3.2);
+  },
+  rage(g) {           /* Berserker: crossed axes */
+    g.strokeStyle = '#ff7a45'; g.shadowColor = '#ff6b3d'; g.shadowBlur = 4; g.lineWidth = 4;
+    artLine(g, 6, 6, 20, 20); artLine(g, 20, 6, 6, 20);
+    g.shadowBlur = 0; g.fillStyle = '#ffd7c2'; artDisc(g, 13, 13, 2.6);
+  },
+  mark(g) {           /* Shadow Assassin: death mark, ringed crosshair */
+    g.strokeStyle = '#c4b5fd'; g.shadowColor = '#a78bfa'; g.shadowBlur = 4; g.lineWidth = 3;
+    artRing(g, 13, 13, 7.5);
+    g.lineWidth = 2.5;
+    artLine(g, 13, 2.5, 13, 6); artLine(g, 13, 20, 13, 23.5);
+    artLine(g, 2.5, 13, 6, 13); artLine(g, 20, 13, 23.5, 13);
+    g.fillStyle = '#c4b5fd'; artDisc(g, 13, 13, 2.4);
+  },
+  overload(g) {       /* Tech Specialist: system overload hex core */
+    g.strokeStyle = '#6ee7b7'; g.shadowColor = '#34d399'; g.shadowBlur = 4; g.lineWidth = 3;
+    artPoly(g, [[22, 13], [17.5, 20.8], [8.5, 20.8], [4, 13], [8.5, 5.2], [17.5, 5.2], [22, 13]]);
+    g.shadowBlur = 0; g.fillStyle = '#34d399'; artDisc(g, 13, 13, 3);
+  },
+  /* earned abilities ------------------------------------------------------ */
+  dash(g) {           /* three fading chevrons */
+    g.strokeStyle = '#06b6d4'; g.shadowColor = '#06b6d4'; g.shadowBlur = 4;
+    g.lineWidth = 3.2; artPoly(g, [[5, 7], [11, 13], [5, 19]]);
+    g.lineWidth = 2.4; artPoly(g, [[11, 7], [17, 13], [11, 19]]);
+    g.lineWidth = 1.6; artPoly(g, [[17, 8], [22, 13], [17, 18]]);
+  },
+  nova(g) {           /* eight bolts around a white core */
+    g.strokeStyle = '#ffffff'; g.fillStyle = '#ffffff';
+    g.shadowColor = '#ffffff'; g.shadowBlur = 6; g.lineWidth = 3;
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4;
+      artLine(g, 13 + Math.cos(a) * 5, 13 + Math.sin(a) * 5, 13 + Math.cos(a) * 11, 13 + Math.sin(a) * 11);
+    }
+    artDisc(g, 13, 13, 4);
+  },
+  turret(g) {         /* sentry: base, head, barrel, live light */
+    g.fillStyle = '#4b5563';
+    artRect(g, 6, 15, 14, 8, 2); artRect(g, 9, 9, 8, 6, 1);
+    g.strokeStyle = '#4b5563'; g.lineWidth = 2; artLine(g, 13, 9, 13, 4);
+    g.fillStyle = '#22c55e'; g.shadowColor = '#22c55e'; g.shadowBlur = 4; artDisc(g, 13, 3, 2);
+  },
+  overcharge(g) {     /* double chevron, reactor routed */
+    g.strokeStyle = '#f97316'; g.shadowColor = '#f97316'; g.shadowBlur = 4;
+    g.lineWidth = 5; artPoly(g, [[8, 4], [18, 13], [8, 22]]);
+    g.lineWidth = 2.5; artPoly(g, [[14, 8], [21, 13], [14, 18]]);
+  },
+  bomb(g) {           /* time charge: shell, crosshair, fuse */
+    g.fillStyle = '#7f1d1d'; g.shadowColor = '#7f1d1d'; g.shadowBlur = 4; artDisc(g, 13, 15, 9);
+    g.shadowBlur = 0; g.strokeStyle = '#991b1b'; g.lineWidth = 2; artRing(g, 13, 15, 9);
+    g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = 1.2;
+    artLine(g, 13, 10, 13, 20); artLine(g, 8, 15, 18, 15);
+    g.strokeStyle = '#f59e0b'; g.lineWidth = 2;
+    artLine(g, 13, 6, 13, 3); artLine(g, 11, 4.5, 13, 3); artLine(g, 15, 4.5, 13, 3);
+  }
+};
+
+/* paint one icon canvas. `fixedPx` lets the full-screen unlock card ask for a
+   bigger backing store; the bar follows the HUD scale instead. */
+function drawAbilityIcon(canvas, kind, fixedPx) {
+  if (!canvas) return;
+  const px = fixedPx || Math.round(clamp(48 * (viewScale || 1), 48, 192));
+  if (canvas.width !== px) canvas.width = px;
+  if (canvas.height !== px) canvas.height = px;
+  const g = canvas.getContext('2d');
+  if (!g) return;
+  const k = px / 48;
+  g.setTransform(k, 0, 0, k, 0, 0);
+  g.clearRect(0, 0, 48, 48);
+  g.save();
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  g.translate(11, 9);                    /* the 26x26 art box inside the slot */
+  (ABILITY_ART[kind] || ABILITY_ART.bash)(g);
+  g.restore();
+}
+
+/* repaint all six slot icons: the Q art follows the chosen class */
+function drawAbilityIcons() {
+  const bar = document.getElementById('abilities');
+  if (!bar) return;
+  const kinds = {
+    abQ: CLASS_Q_ICON[game.playerClass || 'knight'] || 'bash',
+    abNova: 'nova', abDash: 'dash', abTurret: 'turret',
+    abOvercharge: 'overcharge', abBomb: 'bomb'
+  };
+  const slots = bar.querySelectorAll('.ability');
+  for (let i = 0; i < slots.length; i++) {
+    drawAbilityIcon(slots[i].querySelector('.icon canvas'), kinds[slots[i].id]);
+  }
+}
+
+/* icons and padlocks in one call: boot, resize, class change, unlock */
+function drawAbilityArt() {
+  drawAbilityIcons();
+  drawAbilityLocks();
+}
+
 /* dark grey padlocks on every slot the player has not earned yet */
 function syncAbilityHud() {
-  drawAbilityLocks();                          /* drawn, never typed */
+  drawAbilityArt();                            /* drawn, never typed */
   /* sync class ability icon and label */
-  const qLabel = document.getElementById('qLabel');
   const cls = game.playerClass || 'knight';
-  if (cls === 'knight') { qLabel.textContent = 'BASH'; }
-  else if (cls === 'gunslinger') { qLabel.textContent = 'RIFT'; }
-  else if (cls === 'sniper') { qLabel.textContent = 'STORM'; }
-  else if (cls === 'mage') { qLabel.textContent = 'BASH'; }
-  else if (cls === 'berserker') { qLabel.textContent = 'BASH'; }
-  else if (cls === 'shadow') { qLabel.textContent = 'BASH'; }
-  else if (cls === 'tech') { qLabel.textContent = 'RAIL'; }
 
   /* sync unlock/ready/cooldown states */
   const abEls = {
@@ -7418,6 +7424,10 @@ function syncAbilityHud() {
 
   for (const [k, el] of Object.entries(abEls)) {
     if (!el) continue;
+    /* every label in the bar: the class ability name on Q, fixed short names
+       on the earned slots, all hard-capped at six characters */
+    const lab = el.querySelector('.label');
+    if (lab) lab.textContent = String(k === 'q' ? classQLabel(cls) : (SLOT_LABEL[k] || '')).slice(0, LABEL_CAP);
     const isUnlocked = game.abilities[k] || (k === 'q');
     const isReady = isUnlocked && game[`${k}Cd`] <= 0;
     const isCooling = isUnlocked && game[`${k}Cd`] > 0;
@@ -19575,7 +19585,7 @@ function resize() {
     UI.uiLayer.style.transform =
       'translate(' + (viewOffX / dpr) + 'px,' + (viewOffY / dpr) + 'px) scale(' + cssScale + ')';
   }
-  drawAbilityLocks();   /* the drawn padlocks follow the same scale factor */
+  drawAbilityArt();     /* drawn icons and padlocks follow the same scale */
   /* store the independent ratios for the game elements */
   viewScaleX = scaleX;
   viewScaleY = scaleY;
