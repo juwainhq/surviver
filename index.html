@@ -77,21 +77,25 @@
       width: 100% !important; max-width: 100% !important;
       margin-bottom: 12px;
     }
-    #classScreen .cs-inner {
+    #classSelect .cs-inner {
       overflow-y: auto !important;
       justify-content: flex-start !important;
     }
-    #classScreen .cs-inner > * { flex: 0 0 auto !important; }
+    #classSelect .cs-inner > * { flex: 0 0 auto !important; }
   }
 
   /* --- MINIMUM 48PX BUTTON HEIGHT --- */
-  .btn, .ability .ab-btn, #btnResetSave, #btnContinueSave, #btnBegin, #btnShop, #btnHowTo, #btnHowToBack, #btnContinue, #btnVisitShop, #btnNextUniverse, #btnShopClose, #btnClassSkip {
+  .btn, #btnResetSave, #btnContinueSave, #btnBegin, #btnShop, #btnHowTo, #btnHowToBack, #btnContinue, #btnVisitShop, #btnNextUniverse, #btnShopClose, #btnClassSkip {
     min-height: 48px !important;
   }
   /* the stage IS the window: nothing anywhere is given a fixed pixel size */
-  #stage{
+  #gameCanvas{
     position:fixed; inset:0; width:100%; height:100%;
     overflow:hidden; background:#04050a;
+  }
+  #gameCanvas.screen{
+    z-index:1 !important; background:#04050a !important;
+    pointer-events:auto; animation:none !important;
   }
   #game{
     display:block; position:absolute; inset:0;
@@ -113,7 +117,7 @@
      Every menu, card, shop and result screen is a plain HTML layer pinned over
      the whole viewport at z-index 1000 with an opaque backdrop, so the game
      canvas can never be seen through it. They live in #overlays (a sibling of
-     #stage, outside its transform), are display:none until the screen manager
+     #gameCanvas, outside its transform), are display:none until the screen manager
      reveals exactly one of them, and are built from HTML and CSS only — no
      canvas, no drawing code. */
   #overlays{
@@ -152,18 +156,6 @@
     -webkit-backdrop-filter:none !important;
     transition:none !important;
   }
-  /* the HUD is the one layer that is NOT an overlay: it rides inside the stage
-     on top of the canvas, has no backdrop and lets the mouse through */
-  #hud.screen{
-    position:absolute !important; inset:0 !important;
-    width:auto !important; height:auto !important;
-    max-width:none !important; max-height:none !important;
-    z-index:20 !important;
-    background:none !important;
-    pointer-events:none !important;
-    animation:none !important;
-  }
-
   /* ---------------- generic floating type ---------------- */
   .shadow{ text-shadow:0 2px 10px rgba(0,0,0,.92); }
 
@@ -217,104 +209,44 @@
   .stat svg{ width:16px; height:16px; }
   .stat .lbl{ font-size:11px; letter-spacing:2px; color:rgba(214,226,244,.6); font-weight:600; }
 
-  /* ------------------------------ ability bar ------------------------------
-     One clean row of square buttons, centred at the bottom of the screen.
-     The pill is a fixed 68px tall and every slot is a fixed 48x48 square —
-     no exceptions, on any screen. The icon is drawn on a canvas dead centre
-     (drawAbilityIcon), the key hint sits in the top-left corner and the
-     ability name in tiny type under the icon, capped at six characters.
-     A locked slot is a dark grey disc with a drawn padlock (drawLockIcon).
-     Every symbol in this bar is drawn geometry: no emoji, no Unicode glyph,
-     no HTML entity and no text character is ever used as an icon here.
-     ------------------------------------------------------------------------ */
+  /* Six fixed-size SVG buttons. This bar is outside the scaled HUD layer. */
   #abilities{
-    position:absolute; left:50%; bottom:16px;
-    transform:translateX(-50%);
+    position:fixed; left:50%; bottom:max(16px, env(safe-area-inset-bottom));
+    transform:translateX(-50%); z-index:100;
     display:flex; flex-direction:row; flex-wrap:nowrap;
-    align-items:center; justify-content:center;
-    height:68px; box-sizing:border-box;
-    background:#0a0a18; background-color:rgba(10,10,24,.9);
-    border:2px solid #c9a84c; border-radius:34px;
-    padding:0 16px; margin:0;
-    z-index:26; pointer-events:none;
+    align-items:flex-start; justify-content:center; gap:8px;
+    padding:10px 14px 8px; margin:0;
+    background:#0a0a18; border:1px solid #c9a84c; border-radius:40px;
+    pointer-events:auto;
   }
   .ability{
-    position:relative; display:block; flex:0 0 48px;
-    width:48px; height:48px; margin:0 4px; padding:0;
-    box-sizing:border-box;
+    display:flex; flex-direction:column; align-items:center;
+    flex:0 0 52px; width:52px;
   }
   .ability .ab-btn{
-    position:relative; width:48px; height:48px;
-    border-radius:50%;
+    position:relative; isolation:isolate; overflow:hidden;
+    width:52px; height:52px; min-width:52px; min-height:52px !important;
+    flex:0 0 52px; padding:0; box-sizing:border-box;
+    background:#0d0d1f; border:2px solid #2a2a2a; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
-    box-sizing:border-box;
-    background:#0d0d1f;
-    border:2px solid transparent;
-    transition:border-color .18s, box-shadow .18s;
+    color:#c9a84c; cursor:pointer; pointer-events:auto;
   }
-  /* Ready state rings and glows */
-  .ability.ready .ab-btn { border-color: var(--ability-color); box-shadow: 0 0 8px var(--ability-color); }
-  /* Cooldown state */
-  .ability.cooling .ab-btn { border-color: #333333; box-shadow: none; }
-  /* Just unlocked pulse */
-  .ability.unlocked .ab-btn { animation: pulseGold 1.5s 3; }
-  @keyframes pulseGold {
-    0% { border-color: #c9a84c; box-shadow: 0 0 0px #c9a84c; }
-    50% { border-color: #fff; box-shadow: 0 0 12px #c9a84c; }
-    100% { border-color: #c9a84c; box-shadow: 0 0 0px #c9a84c; }
-  }
-  /* the circular cooldown overlay: a dark wedge that unwinds clockwise */
-  .ability .ab-sweep{
-    position:absolute; inset:0; border-radius:50%;
-    pointer-events:none; background:transparent;
-    transition:background .05s linear;
-  }
-  /* the icon, dead centre: one 48x48 canvas per slot, painted by JS */
-  .ability .icon{
-    position:absolute; inset:0;
-    display:flex; align-items:center; justify-content:center;
-    pointer-events:none;
-    transition:opacity .15s ease;
-  }
-  .ability .icon canvas{ width:48px; height:48px; display:block; }
-  /* Key label: tiny gold text in top-left */
+  .ability.unlocked .ab-btn{ border-color:#c9a84c; }
+  .ability.locked .ab-btn{ border-color:#2a2a2a; cursor:default; }
+  .ability.locked .ab-btn svg{ color:#6b6658; }
+  .ability .ab-btn svg{ width:26px; height:26px; display:block; pointer-events:none; }
   .ability .key{
-    position:absolute; top:2px; left:4px;
-    font-family:Rajdhani, sans-serif; font-size:7px; font-weight:700; line-height:1;
-    letter-spacing:.4px; color:#ffd98a;
-    text-shadow:0 1px 3px rgba(0,0,0,.9);
+    margin-top:5px; font-family:'Cinzel', Georgia, serif;
+    font-size:9px; line-height:12px; font-weight:600; color:#c9a84c;
     white-space:nowrap; pointer-events:none;
   }
-  /* Ability name: 8px Rajdhani under the icon, never more than 6 characters */
-  .ability .label{
-    position:absolute; left:1px; right:1px; bottom:2px;
-    display:block; text-align:center;
-    font-family:Rajdhani, sans-serif; font-size:8px; line-height:1; letter-spacing:.2px;
-    color:#e8c874; text-transform:uppercase;
-    white-space:nowrap; overflow:hidden; pointer-events:none;
-  }
-  /* Cooldown dims the drawn icon and the type */
-  .ability.cooling .icon { opacity: .3; }
-  .ability.cooling .label { color: #4b5563; }
-  .ability.cooling .key { color: #4b5563; }
-  /* Locked slot: dark grey disc + drawn padlock, painted on its own canvas */
-  .ability .lock{
-    position:absolute; inset:0; display:none;
-    align-items:center; justify-content:center;
+  .ability.cooling .ab-btn{ opacity:.35; }
+  .ability .ab-sweep{
+    position:absolute; inset:0; border-radius:50%; display:none;
     pointer-events:none;
+    background:conic-gradient(rgba(201,168,76,.65) var(--cooldown-angle,0deg), transparent 0deg);
   }
-  .ability .lock canvas{ width:48px; height:48px; display:block; }
-  .ability.locked .lock{ display:flex; }
-  .ability.locked .icon,
-  .ability.locked .cd,
-  .ability.locked .key,
-  .ability.locked .label,
-  .ability.locked .ab-sweep{ display:none; }
-  .ability.locked .ab-btn{
-    background:linear-gradient(180deg, #14161b 0%, #0a0b0f 100%);
-    border-color:rgba(107,114,128,.36);
-    box-shadow:none;
-  }
+  .ability.cooling .ab-sweep{ display:block; }
 
   /* class badge (bottom left) */
   #classBadge{
@@ -629,7 +561,7 @@
   /* ---------------- main menu backdrop (pure CSS) ----------------
      The title screen used to paint a starfield on a canvas. It is a stack of
      CSS gradients now, so nothing behind the overlay can bleed through. */
-  #menu{
+  #mainMenu{
     background-color:rgba(5,5,15,0.97) !important;
     background-image:
       radial-gradient(1.6px 1.6px at 12% 18%, rgba(255,255,255,.85), rgba(255,255,255,0) 60%),
@@ -647,11 +579,11 @@
       radial-gradient(ellipse at 50% 40%, rgba(16,30,58,.85), rgba(3,4,10,.98) 72%) !important;
   }
   #menuTitle, #menuSub, #menuBest{ position:relative; z-index:2; }
-  #menu .btn-row{ position:relative; z-index:2; }
+  #mainMenu .btn-row{ position:relative; z-index:2; }
   #continueWrap{ position:relative; z-index:2; }
 
   /* ---------------- zone select ---------------- */
-  #zoneScreen{
+  #zoneSelect{
     position:absolute; inset:0; display:flex; flex-direction:column;
     opacity:0; visibility:hidden; pointer-events:none;
     transition:opacity .4s ease, visibility 0s linear .4s;
@@ -661,22 +593,22 @@
     background:radial-gradient(ellipse at 50% 40%, rgba(12,20,36,.72), rgba(2,3,7,.96)),
                linear-gradient(180deg, rgba(3,4,8,.92), rgba(3,4,8,.98));
   }
-  #zoneScreen.show{
+  #zoneSelect.show{
     opacity:1; visibility:visible; pointer-events:auto;
     transition:opacity .4s ease, visibility 0s linear 0s;
   }
   /* level cards drift in one after another when the map select opens */
-  #zoneScreen.show .zone-card{ animation:cardFadeIn .4s ease-out backwards; }
-  #zoneScreen.show .zone-card:nth-child(1){ animation-delay:0s; }
-  #zoneScreen.show .zone-card:nth-child(2){ animation-delay:.05s; }
-  #zoneScreen.show .zone-card:nth-child(3){ animation-delay:.1s; }
-  #zoneScreen.show .zone-card:nth-child(4){ animation-delay:.15s; }
-  #zoneScreen.show .zone-card:nth-child(5){ animation-delay:.2s; }
+  #zoneSelect.show .zone-card{ animation:cardFadeIn .4s ease-out backwards; }
+  #zoneSelect.show .zone-card:nth-child(1){ animation-delay:0s; }
+  #zoneSelect.show .zone-card:nth-child(2){ animation-delay:.05s; }
+  #zoneSelect.show .zone-card:nth-child(3){ animation-delay:.1s; }
+  #zoneSelect.show .zone-card:nth-child(4){ animation-delay:.15s; }
+  #zoneSelect.show .zone-card:nth-child(5){ animation-delay:.2s; }
   @keyframes cardFadeIn{
     from{ opacity:0; transform:translateY(12px) scale(.97); }
     to{ opacity:1; transform:translateY(0) scale(1); }
   }
-  #zoneScreen .zs-eyebrow{
+  #zoneSelect .zs-eyebrow{
     font-family:var(--font-head); font-size:9px; line-height:1.2;
     letter-spacing:4.5px; text-transform:uppercase; color:rgba(232,200,116,.62);
   }
@@ -776,10 +708,10 @@
   }
 
   /* ---------------- main menu ---------------- */
-  #menu{
+  #mainMenu{
     position:absolute; inset:0; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:14px; z-index:40;
-    /* the paint lives in the #menu rule above: an opaque CSS starfield */
+    /* the paint lives in the #mainMenu rule above: an opaque CSS starfield */
     opacity:1; visibility:visible; pointer-events:auto;
   }
   #menuTitle{
@@ -826,7 +758,7 @@
   /* ---------------- class selection ---------------- */
   /* a viewport-sized overlay: seven cards plus the depot tile, four across on
      a wide window, and the picker only scrolls when the window is too short */
-  #classScreen{
+  #classSelect{
     position:absolute; inset:0; width:100%; height:100%; max-height:100%;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     opacity:0; visibility:hidden; pointer-events:none;
@@ -836,22 +768,22 @@
     background:radial-gradient(ellipse at 50% 38%, rgba(10,16,28,.60), rgba(2,3,7,.95)),
                linear-gradient(180deg, rgba(3,4,8,.92), rgba(3,4,8,.97));
   }
-  #classScreen.show{
+  #classSelect.show{
     opacity:1; visibility:visible; pointer-events:auto;
     transition:opacity .4s ease, visibility 0s linear 0s;
   }
-  #classScreen.show .class-card{ animation:cardFadeIn .4s ease-out backwards; }
-  #classScreen.show .class-card:nth-child(1){ animation-delay:0s; }
-  #classScreen.show .class-card:nth-child(2){ animation-delay:.05s; }
-  #classScreen.show .class-card:nth-child(3){ animation-delay:.1s; }
-  #classScreen.show .class-card:nth-child(4){ animation-delay:.15s; }
-  #classScreen .cs-inner{
+  #classSelect.show .class-card{ animation:cardFadeIn .4s ease-out backwards; }
+  #classSelect.show .class-card:nth-child(1){ animation-delay:0s; }
+  #classSelect.show .class-card:nth-child(2){ animation-delay:.05s; }
+  #classSelect.show .class-card:nth-child(3){ animation-delay:.1s; }
+  #classSelect.show .class-card:nth-child(4){ animation-delay:.15s; }
+  #classSelect .cs-inner{
     width:100%; max-height:100%; flex:0 1 auto;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:12px; box-sizing:border-box; overflow:hidden;
   }
 
-  #classScreen .cs-eyebrow{
+  #classSelect .cs-eyebrow{
     font-family:var(--font-head); font-size:9px; line-height:1.2; letter-spacing:4px;
     color:rgba(232,200,116,.62); text-transform:uppercase; margin:0;
   }
@@ -1044,16 +976,16 @@
   }
 
   /* faint nudge, only rendered when the cards really do not fit */
-  #classScreen .cs-hint{
+  #classSelect .cs-hint{
     display:none; position:absolute; left:0; right:0; bottom:4px;
     font-family:var(--font-stat); font-size:10px; letter-spacing:2px;
     text-transform:uppercase; color:rgba(214,226,244,.38); pointer-events:none;
   }
-  #classScreen.overflowing .cs-hint{ display:block; }
+  #classSelect.overflowing .cs-hint{ display:block; }
 
   /* ---------------- upgrade cards ---------------- */
-  #upgradeScreen{ gap:26px; }
-  #upgradeScreen h1{ font-size:clamp(22px,3vw,34px); color:#ffe4ae; letter-spacing:4px; }
+  #upgradeCard{ gap:26px; }
+  #upgradeCard h1{ font-size:clamp(22px,3vw,34px); color:#ffe4ae; letter-spacing:4px; }
   #upgradeCards{ display:flex; gap:22px; flex-wrap:wrap; justify-content:center; }
   .card{
     width:246px; min-height:296px; padding:22px 18px;
@@ -1346,6 +1278,7 @@
     gap:16px; text-align:center; width:100%;
   }
   .uni-panel.on{ display:flex; }
+  .uni-panel[hidden]{ display:none; }
   .uni-inner{
     width:min(880px,92vw); padding:42px 38px 34px; text-align:center;
     background:radial-gradient(ellipse at 50% -10%, rgba(232,200,116,.13), rgba(4,5,9,.97) 62%);
@@ -1376,7 +1309,7 @@
 
   /* ---------------- big screens ---------------- */
   #gameOver h1{ font-size:clamp(34px,6vw,64px); color:#ff9d9d; text-shadow:0 0 30px rgba(239,68,68,.5); }
-  #victory h1{ font-size:clamp(26px,4.4vw,48px); color:#ffe4ae; text-shadow:0 0 34px rgba(255,200,110,.55); letter-spacing:3px; }
+  #victoryScreen h1{ font-size:clamp(26px,4.4vw,48px); color:#ffe4ae; text-shadow:0 0 34px rgba(255,200,110,.55); letter-spacing:3px; }
   /* the run's total time, in the same gold as the rest of the win card */
   #vicTime{
     font-family:var(--font-head); font-size:clamp(16px,2.2vw,24px); font-weight:700;
@@ -1411,8 +1344,8 @@
   #vicBestTime{ display:none; }
   .statline{ font-size:18px; letter-spacing:1.4px; color:#dbe6f5; }
   .statline b{ color:var(--gold); font-variant-numeric:tabular-nums; }
-  #transition h1{ font-size:clamp(26px,4.4vw,46px); color:#ffe4ae; letter-spacing:5px; text-shadow:0 0 30px rgba(255,200,110,.45); }
-  #transition .story{ font-size:16.5px; line-height:1.7; color:#c8d6e8; max-width:660px; }
+  #levelTransition h1{ font-size:clamp(26px,4.4vw,46px); color:#ffe4ae; letter-spacing:5px; text-shadow:0 0 30px rgba(255,200,110,.45); }
+  #levelTransition .story{ font-size:16.5px; line-height:1.7; color:#c8d6e8; max-width:660px; }
 
   /* the HUD is drawn inside #uiLayer in the 1280x720 base space and scaled to
      the window, so it is deliberately NOT given any width-based tweaks: it
@@ -1430,13 +1363,26 @@
   #mobilePauseBtn:active { background:rgba(255,255,255,.1); }
 
   /* --- PAUSE MENU OVERLAY --- */
-  #pauseOverlay {
+  #pauseMenu {
     position:fixed; inset:0; z-index:1001;
     background:rgba(5,5,15,.92); display:none;
     flex-direction:column; align-items:center; justify-content:center;
     pointer-events:none;
   }
-  #pauseOverlay.show { display:flex; pointer-events:auto; }
+  #pauseMenu.show { pointer-events:auto; }
+  #pauseConfirm{
+    position:absolute; inset:0; background:rgba(0,0,0,.8);
+    display:flex; align-items:center; justify-content:center; z-index:1002;
+  }
+  #pauseConfirm[hidden]{ display:none; }
+  .pause-confirm-card{
+    background:#080b13; border:1px solid #e8c874; padding:24px;
+    border-radius:6px; text-align:center; width:min(360px,calc(100vw - 32px));
+  }
+  .pause-confirm-card h2{ font-family:var(--font-head); color:#e8c874; margin-top:0; }
+  .pause-confirm-card p{ font-family:var(--font-stat); color:#eaf0fa; margin:12px 0; }
+  .pause-confirm-actions{ display:flex; gap:16px; justify-content:center; margin-top:24px; }
+  .pause-confirm-actions .pause-btn{ width:120px; margin:0; }
   #pauseTitle {
     font-family:var(--font-head); font-size:48px; font-weight:900;
     color:#e8c874; text-shadow:0 0 15px rgba(232,200,116,.6);
@@ -1466,7 +1412,7 @@
 </style>
 </head>
 <body>
-<div id="stage">
+<div id="gameCanvas" class="screen game-screen">
   <!-- the render target: it fills the window and its buffer follows the window's
        pixels. Every game coordinate (world, camera, player, enemies, HUD) is
        written in the 1280x720 base space and scaled to fit the window, so the
@@ -1492,7 +1438,7 @@
   <!-- ==================== HUD ==================== -->
   <div id="overchargeGlow"></div>
 
-  <div id="hud" class="screen">
+  <div id="hud">
     <div id="topLeft">
       <div id="orbs">
         <span class="orb"></span><span class="orb"></span><span class="orb"></span><span class="orb"></span><span class="orb"></span>
@@ -1509,75 +1455,6 @@
       <span class="stat"><svg viewBox="0 0 24 24" fill="#e8c874" aria-hidden="true"><path d="M12 2l2.9 6.2 6.8.8-5 4.7 1.3 6.8-6-3.4-6 3.4 1.3-6.8-5-4.7 6.8-.8z"/></svg><span id="scoreVal">0</span></span>
       <span class="stat"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg><span id="gemVal">0</span><span id="gemMult" class="mult">×1</span></span>
       <span class="stat time" title="Run time"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c874" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.6 1.7M9 3h6"/></svg><span id="runTime">00:00:00</span></span>
-    </div>
-
-    <div id="abilities" role="group" aria-label="Abilities">
-      <!-- Q: RIFT/BASH/STORM/RAIL (Gold Clock) -->
-      <div class="ability" id="abQ" style="--ability-color:#c9a84c;">
-        <div class="ab-btn">
-          <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true"><canvas class="ab-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
-          <span class="cd" aria-hidden="true"></span>
-          <span class="key" aria-hidden="true">Q</span>
-          <span class="label" id="qLabel">BASH</span>
-          <span class="lock" aria-hidden="true"><canvas class="lock-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
-        </div>
-      </div>
-      <!-- E: NOVA (White 8-point star) -->
-      <div class="ability locked" id="abNova" style="--ability-color:#ffffff;">
-        <div class="ab-btn">
-          <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true"><canvas class="ab-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
-          <span class="cd" aria-hidden="true"></span>
-          <span class="key" aria-hidden="true">E</span>
-          <span class="label">NOVA</span>
-          <span class="lock" aria-hidden="true"><canvas class="lock-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
-        </div>
-      </div>
-      <!-- SHIFT: DASH (Cyan Triangle) -->
-      <div class="ability locked" id="abDash" style="--ability-color:#00ffff;">
-        <div class="ab-btn">
-          <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true"><canvas class="ab-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
-          <span class="cd" aria-hidden="true"></span>
-          <span class="key" aria-hidden="true">SHIFT</span>
-          <span class="label">DASH</span>
-          <span class="lock" aria-hidden="true"><canvas class="lock-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
-        </div>
-      </div>
-      <!-- F: TURRET (Green T) -->
-      <div class="ability locked" id="abTurret" style="--ability-color:#00ff88;">
-        <div class="ab-btn">
-          <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true"><canvas class="ab-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
-          <span class="cd" aria-hidden="true"></span>
-          <span class="key" aria-hidden="true">F</span>
-          <span class="label">TURR</span>
-          <span class="lock" aria-hidden="true"><canvas class="lock-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
-        </div>
-      </div>
-      <!-- R: OVERCHARGE (Orange Lightning) -->
-      <div class="ability locked" id="abOvercharge" style="--ability-color:#ff8800;">
-        <div class="ab-btn">
-          <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true"><canvas class="ab-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
-          <span class="cd" aria-hidden="true"></span>
-          <span class="key" aria-hidden="true">R</span>
-          <span class="label">OVER</span>
-          <span class="lock" aria-hidden="true"><canvas class="lock-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
-        </div>
-      </div>
-      <!-- X: TIME BOMB (Red Circle + Plus + Dot) -->
-      <div class="ability locked" id="abBomb" style="--ability-color:#ff3333;">
-        <div class="ab-btn">
-          <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true"><canvas class="ab-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
-          <span class="cd" aria-hidden="true"></span>
-          <span class="key" aria-hidden="true">X</span>
-          <span class="label">BOMB</span>
-          <span class="lock" aria-hidden="true"><canvas class="lock-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
-        </div>
-      </div>
     </div>
 
     <div id="consumables" aria-label="Consumables"></div>
@@ -1630,10 +1507,48 @@
     <div class="b-objective" id="briefObjective">Clear <b>3 arenas</b> to unlock the boss</div>
   </div>
   </div><!-- /#uiLayer -->
+  <div id="abilities" role="group" aria-label="Abilities">
+    <div class="ability unlocked" id="abQ">
+      <button class="ab-btn" type="button" data-ability="q" aria-label="Class ability (Q)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 20 6v6c0 4.5-3.5 7.5-8 9-4.5-1.5-8-4.5-8-9V6z"/></svg>
+        <span class="ab-sweep" aria-hidden="true"></span>
+      </button><span class="key">Q</span>
+    </div>
+    <div class="ability locked" id="abNova">
+      <button class="ab-btn" type="button" data-ability="nova" aria-label="Nova Blast (E)" disabled>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 1 2.1 6.1L19.8 4.2l-2.9 5.7L23 12l-6.1 2.1 2.9 5.7-5.7-2.9L12 23l-2.1-6.1-5.7 2.9 2.9-5.7L1 12l6.1-2.1-2.9-5.7 5.7 2.9z"/></svg>
+        <span class="ab-sweep" aria-hidden="true"></span>
+      </button><span class="key">E</span>
+    </div>
+    <div class="ability locked" id="abDash">
+      <button class="ab-btn" type="button" data-ability="dash" aria-label="Dash (SHIFT)" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 4 8 8-8 8"/></svg>
+        <span class="ab-sweep" aria-hidden="true"></span>
+      </button><span class="key">SHIFT</span>
+    </div>
+    <div class="ability locked" id="abTurret">
+      <button class="ab-btn" type="button" data-ability="turret" aria-label="Turret Drop (F)" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M12 5v15M8 20h8"/></svg>
+        <span class="ab-sweep" aria-hidden="true"></span>
+      </button><span class="key">F</span>
+    </div>
+    <div class="ability locked" id="abOvercharge">
+      <button class="ab-btn" type="button" data-ability="overcharge" aria-label="Overcharge (R)" disabled>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 10-13h-7z"/></svg>
+        <span class="ab-sweep" aria-hidden="true"></span>
+      </button><span class="key">R</span>
+    </div>
+    <div class="ability locked" id="abBomb">
+      <button class="ab-btn" type="button" data-ability="bomb" aria-label="Time Bomb (X)" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+        <span class="ab-sweep" aria-hidden="true"></span>
+      </button><span class="key">X</span>
+    </div>
+  </div>
 </div>
 
   <!-- ==================== PAUSE MENU OVERLAY ==================== -->
-  <div id="pauseOverlay">
+  <div id="pauseMenu" class="screen">
     <h1 id="pauseTitle">PAUSED</h1>
     <button class="pause-btn" id="btnResumePause">RESUME</button>
     <button class="pause-btn" id="btnVisitShopPause">VISIT SHOP</button>
@@ -1641,6 +1556,16 @@
       <span class="pause-tooltip">finish the current arena first</span>
     </button>
     <button class="pause-btn" id="btnLeaveMenuPause">LEAVE TO MENU</button>
+    <div id="pauseConfirm" role="dialog" aria-modal="true" aria-labelledby="leaveTitle" hidden>
+      <div class="pause-confirm-card">
+        <h2 id="leaveTitle">Leave this zone?</h2>
+        <p>Progress in this arena will be lost but your upgrades and zone progress are saved.</p>
+        <div class="pause-confirm-actions">
+          <button class="pause-btn" type="button" id="btnConfirmLeave">CONFIRM</button>
+          <button class="pause-btn" type="button" id="btnCancelLeave">CANCEL</button>
+        </div>
+      </div>
+    </div>
   </div>
 
 <!-- ==================== OVERLAY SCREENS ====================
@@ -1651,7 +1576,7 @@
      ========================================================= -->
 <div id="overlays">
   <!-- ==================== MAIN MENU ==================== -->
-  <div id="menu" class="screen">
+  <div id="mainMenu" class="screen">
     <h1 id="menuTitle">SURVIVE</h1>
     <div id="menuSub">1347 AD · Commander Rael</div>
 
@@ -1698,7 +1623,7 @@
   </div>
 
   <!-- ==================== CLASS SELECTION ==================== -->
-  <div id="classScreen" class="screen">
+  <div id="classSelect" class="screen">
    <div class="cs-inner">
     <div class="cs-eyebrow" id="csEyebrow">Commander · pick your doctrine</div>
     <h1 id="classTitle">Choose Your Combat Style</h1>
@@ -1802,7 +1727,7 @@
   </div>
 
   <!-- ==================== ZONE SELECT ==================== -->
-  <div id="zoneScreen" class="screen">
+  <div id="zoneSelect" class="screen">
     <div class="zs-eyebrow">Where Rael makes his stand</div>
     <h1 id="zoneTitle">Select Zone</h1>
     <div id="universeCaption">Universe</div>
@@ -1813,14 +1738,14 @@
   </div>
 
   <!-- ==================== UPGRADES ==================== -->
-  <div class="overlay screen" id="upgradeScreen">
+  <div class="overlay screen" id="upgradeCard">
     <div class="eyebrow">Data chip recovered</div>
     <h1>Choose an Upgrade</h1>
     <div id="upgradeCards"></div>
   </div>
 
   <!-- ==================== ZONE TRANSITION ==================== -->
-  <div class="overlay screen" id="transition">
+  <div class="overlay screen" id="levelTransition">
     <div class="eyebrow" id="transEyebrow">Zone 2</div>
     <h1 id="transTitle">The Dark Forest</h1>
     <div class="story" id="transStory"></div>
@@ -1845,7 +1770,7 @@
   </div>
 
   <!-- ==================== VICTORY ==================== -->
-  <div class="overlay screen" id="victory">
+  <div class="overlay screen" id="victoryScreen">
     <div class="eyebrow">Year 3047 · Home</div>
     <h1>Commander Rael has returned to the future.</h1>
     <div class="statline">Final Score <b id="vicScore">0</b> · Gems <b id="vicGems">0</b></div>
@@ -2371,7 +2296,7 @@ const BossMusic = (function () {
 
 /* ------------------------------ DOM --------------------------------------- */
 const UI = {
-  stage: document.getElementById('stage'),
+  stage: document.getElementById('gameCanvas'),
   uiLayer: document.getElementById('uiLayer'),
   canvas: document.getElementById('game'),
   orbs: Array.from(document.querySelectorAll('#orbs .orb')),
@@ -2383,7 +2308,7 @@ const UI = {
   gemMult: document.getElementById('gemMult'),
   hud: document.getElementById('hud'),
   minimap: document.getElementById('minimap'),
-  classScreen: document.getElementById('classScreen'),
+  classScreen: document.getElementById('classSelect'),
   classCards: [
     document.getElementById('cardKnight'),
     document.getElementById('cardGunslinger'),
@@ -2423,15 +2348,14 @@ const UI = {
     dash: document.getElementById('abDash'),
     turret: document.getElementById('abTurret'),
     overcharge: document.getElementById('abOvercharge'),
-    bomb: document.getElementById('abBomb'),
-    overdrive: document.getElementById('abOverdrive')
+    bomb: document.getElementById('abBomb')
   },
-  qIcon: document.getElementById('qIcon'),
-  qLabel: document.getElementById('qLabel'),
   overchargeGlow: document.getElementById('overchargeGlow'),
-  menu: document.getElementById('menu'),
+  menu: document.getElementById('mainMenu'),
+  menuSub: document.getElementById('menuSub'),
+  pauseMenu: document.getElementById('pauseMenu'),
   menuBest: document.getElementById('menuBest'),
-  zoneScreen: document.getElementById('zoneScreen'),
+  zoneScreen: document.getElementById('zoneSelect'),
   zoneRow: document.getElementById('zoneRow'),
   zoneTitle: document.getElementById('zoneTitle'),
   zoneHint: document.getElementById('zoneHint'),
@@ -2457,9 +2381,9 @@ const UI = {
   spNote: document.getElementById('spNote'),
   goSaved: document.getElementById('goSaved'),
   vicSaved: document.getElementById('vicSaved'),
-  upgradeScreen: document.getElementById('upgradeScreen'),
+  upgradeScreen: document.getElementById('upgradeCard'),
   upgradeCards: document.getElementById('upgradeCards'),
-  transition: document.getElementById('transition'),
+  transition: document.getElementById('levelTransition'),
   transEyebrow: document.getElementById('transEyebrow'),
   transTitle: document.getElementById('transTitle'),
   transStory: document.getElementById('transStory'),
@@ -2468,7 +2392,7 @@ const UI = {
   goScore: document.getElementById('goScore'),
   goGems: document.getElementById('goGems'),
   goBest: document.getElementById('goBest'),
-  victory: document.getElementById('victory'),
+  victory: document.getElementById('victoryScreen'),
   vicScore: document.getElementById('vicScore'),
   vicGems: document.getElementById('vicGems'),
   vicBest: document.getElementById('vicBest'),
@@ -2522,173 +2446,79 @@ function withRenderTarget(target, fn) {
 const mmCtx = UI.minimap.getContext('2d');
 
 /* =============================================================================
-   SCREENS — one screen at a time, and only one way to change that
-   =============================================================================
-   showScreen(name) is the ONLY code in this file that can make a screen visible
-   or invisible. It works in two passes:
-
-     1. it walks every one of the eleven screen elements and sets
-        display:none (inline, !important) on all of them;
-     2. it sets display:flex — or display:block for the game/HUD — on the one
-        screen that was asked for.
-
-   Because `display` is written inline and marked important, no stylesheet rule,
-   stale class, boot order accident or half-applied CSS can put a second screen
-   on screen: the state is rebuilt from scratch on every single call. Nothing
-   else in the file writes a screen's display, and enforceScreen() re-asserts
-   the invariant a few times a second from the main loop.
-   ------------------------------------------------------------------------- */
+   SCREENS — one public ID and one visibility writer for the whole game.
+   ============================================================================= */
 const SCREENS = {
-  /* the name the game asks for            element id             how it shows  */
-  mainMenu:           { el: 'menu',                 display: 'flex',  state: 'menu' },
-  howToPlay:          { el: 'howToPlay',            display: 'flex',  state: 'howto' },
-  classSelect:        { el: 'classScreen',          display: 'flex',  state: 'class' },
-  zoneSelect:         { el: 'zoneScreen',           display: 'flex',  state: 'zones' },
-  game:               { el: 'hud',                  display: 'block', state: 'playing' },
-  shopOverlay:        { el: 'shopScreen',           display: 'flex',  state: 'shop' },
-  upgradeCard:        { el: 'upgradeScreen',        display: 'flex',  state: 'upgrade' },
-  levelTransition:    { el: 'transition',           display: 'flex',  state: 'transition' },
-  universeTransition: { el: 'universeTransition',   display: 'flex',  state: 'universe' },
-  gameOver:           { el: 'gameOver',             display: 'flex',  state: 'gameover' },
-  victory:            { el: 'victory',              display: 'flex',  state: 'victory' }
+  mainMenu:           { display: 'flex',  state: 'menu' },
+  howToPlay:          { display: 'flex',  state: 'howto' },
+  classSelect:        { display: 'flex',  state: 'class' },
+  zoneSelect:         { display: 'flex',  state: 'zones' },
+  gameCanvas:         { display: 'block', state: 'playing' },
+  pauseMenu:          { display: 'flex',  state: 'paused' },
+  shopScreen:         { display: 'flex',  state: 'shop' },
+  upgradeCard:        { display: 'flex',  state: 'upgrade' },
+  levelTransition:    { display: 'flex',  state: 'transition' },
+  universeTransition: { display: 'flex',  state: 'universe' },
+  gameOver:           { display: 'flex',  state: 'gameover' },
+  victoryScreen:      { display: 'flex',  state: 'victory' }
 };
 const SCREEN_NAMES = Object.keys(SCREENS);
-
-/* the screen that is on right now — the manager's own bookkeeping */
 let currentScreen = null;
+let universePanel = 'complete';
 
-function screenElement(name) {
-  const def = SCREENS[name];
-  return (def && document.getElementById(def.el)) || null;
-}
-
-/* every screen element, whatever its state */
-function screenElements() {
-  const out = [];
-  for (let i = 0; i < SCREEN_NAMES.length; i++) {
-    const el = screenElement(SCREEN_NAMES[i]);
-    if (el) out.push(el);
-  }
-  return out;
-}
-
-/* pass one: this element is out of the picture, inline and important */
-function hideScreenElement(el) {
-  if (!el) return;
-  el.style.setProperty('display', 'none', 'important');
-  el.classList.remove('show');
-  el.setAttribute('aria-hidden', 'true');
-  el.hidden = true;
-}
-
-/* pass two: exactly this element, and nothing else */
-function revealScreenElement(el, display) {
-  el.style.setProperty('display', display || 'flex', 'important');
-  el.classList.remove('show');
-  void el.offsetWidth;          /* restart the fade-in from the top */
-  el.classList.add('show');
-  el.removeAttribute('aria-hidden');
-  el.hidden = false;
-}
-
-/* ---------------------------------------------------------------------------
-   showScreen(name[, state])
-     name  — one of the eleven keys in SCREENS
-     state — optional game.screen value (only the universe cards need one)
-   Hides ALL screens first, then shows the requested one. Returns the element,
-   or null for an unknown name (in which case everything stays hidden).
-   ------------------------------------------------------------------------- */
-function showScreen(name, state) {
-  /* nothing may be waiting in the save queue when the curtain moves */
-  try { flushSaveGame(true); } catch (e) { /* storage is optional */ }
-  /* 1. every screen off — unconditionally, before anything is turned on */
-  const all = screenElements();
-  for (let i = 0; i < all.length; i++) hideScreenElement(all[i]);
-
-  const def = SCREENS[name];
-  if (!def) {
-    currentScreen = null;
-    setLoopPausedFor(null);
-    return null;
-  }
-
-  /* 2. exactly one screen on */
-  const el = screenElement(name);
-  if (!el) {
-    currentScreen = null;
-    setLoopPausedFor(null);
-    return null;
-  }
-  revealScreenElement(el, def.display);
-  currentScreen = name;
-  game.screen = state || def.state;
-  /* the game screen runs the world; every other screen parks it */
-  setLoopPausedFor(name);
-  return el;
-}
-
-/* the names of the screens that are currently displayed (0 or 1, in practice) */
-function screensVisible() {
-  const out = [];
-  for (let i = 0; i < SCREEN_NAMES.length; i++) {
-    const el = screenElement(SCREEN_NAMES[i]);
+/* This is the only screen transition in the file. Hide every managed screen
+   before revealing exactly the requested one; no caller toggles screen CSS. */
+function showScreen(id) {
+  const def = SCREENS[id];
+  const requested = def ? document.getElementById(id) : null;
+  for (const name of SCREEN_NAMES) {
+    const el = document.getElementById(name);
     if (!el) continue;
-    const inline = el.style.getPropertyValue('display');
-    const shown = inline ? inline !== 'none' : (el.hidden ? false : true);
-    if (shown) out.push(SCREEN_NAMES[i]);
+    el.style.setProperty('display', 'none', 'important');
+    el.classList.remove('show');
+    el.hidden = true;
+    el.setAttribute('aria-hidden', 'true');
   }
-  return out;
+  if (!requested) return null;
+
+  /* Leaving a screen also stops its ancillary animation loops and input. */
+  if (currentScreen === 'shopScreen' && id !== 'shopScreen') {
+    stopCosPreview();
+    stopPetCards();
+  }
+  if (id !== 'pauseMenu') hideLeaveConfirmation();
+  game.mouse.down = false;
+  game.keys = Object.create(null);
+  game.joyX = 0;
+  game.joyY = 0;
+  isPaused = id === 'pauseMenu';
+
+  requested.style.setProperty('display', def.display, 'important');
+  requested.hidden = false;
+  requested.removeAttribute('aria-hidden');
+  requested.classList.add('show');
+  currentScreen = id;
+  game.screen = id === 'universeTransition' && universePanel === 'intro'
+    ? 'universeIntro' : def.state;
+  setLoopPausedFor(id);
+  return requested;
 }
 
-/* the safety net: if anything ever breaks exclusivity, rebuild it from the
-   manager's own record. Runs from update() a few times a second. */
-function enforceScreen() {
-  const vis = screensVisible();
-  if (vis.length === 1 && vis[0] === currentScreen) return true;
-  const keep = currentScreen || vis[vis.length - 1] || 'mainMenu';
-  showScreen(keep);
-  return false;
-}
-
-/* the universe screen holds two cards: "universe complete" and the intro for
-   the next one. Only one panel is ever inside it. */
+/* Panels inside the universe screen are content, not additional screens. */
 function setUniversePanel(which) {
+  universePanel = which === 'intro' ? 'intro' : 'complete';
   const complete = document.getElementById('uniCompletePanel');
   const intro = document.getElementById('uniIntroPanel');
-  const wantIntro = which === 'intro';
   if (complete) {
-    complete.classList.toggle('on', !wantIntro);
-    complete.style.setProperty('display', wantIntro ? 'none' : 'flex', 'important');
+    complete.classList.toggle('on', universePanel === 'complete');
+    complete.hidden = universePanel !== 'complete';
   }
   if (intro) {
-    intro.classList.toggle('on', wantIntro);
-    intro.style.setProperty('display', wantIntro ? 'flex' : 'none', 'important');
+    intro.classList.toggle('on', universePanel === 'intro');
+    intro.hidden = universePanel !== 'intro';
   }
 }
 
-/* ---------------------------- show / hide audit -----------------------------
-   screen name           element              the one place that opens it
-   ---------------------------------------------------------------------------
-   'mainMenu'            #menu                boot()  ·  backToMenu()
-   'howToPlay'           #howToPlay           the HOW TO PLAY button on the menu
-   'zoneSelect'          #zoneScreen          showZoneSelect() — beginMission
-   'classSelect'         #classScreen         openClassScreen() — a zone was picked
-   'game'                #hud                 startRun(), continueSavedRun(),
-                                              retryZone(), chooseUpgrade(),
-                                              the zone card's Continue,
-                                              loadUniverseStart()
-   'upgradeCard'         #upgradeScreen       showUpgrades()
-   'levelTransition'     #transition          completeZone()  (levels 1-4)
-   'universeTransition'  #universeTransition  beginUniverseTransition() (level 5)
-                                              · showUniverseIntro() (panel two)
-   'gameOver'            #gameOver            endRun()
-   'victory'             #victory             showVictory() — the end of universe 6
-   ---------------------------------------------------------------------------
-   Every one of those ends in showScreen(name), which turns ALL eleven screens
-   off before it turns one on. No other statement in this file writes a screen
-   element's display; enforceScreen() re-checks it from the main loop and
-   rebuilds the state from currentScreen if anything ever drifts.
-   ------------------------------------------------------------------------- */
 /* ------------------------------ zones ------------------------------------- */
 const MEDIEVAL_LEVELS = [
   {
@@ -2989,7 +2819,9 @@ function makeUniverseLevel(uni, i) {
   };
 }
 
-const UNIVERSES = UNIVERSE_BLUEPRINTS.map(function (blueprint, index) {
+const UNIVERSE_ORDER = ['medieval', 'egypt', 'japan', 'wasteland', 'space', 'void'];
+const UNIVERSES = UNIVERSE_ORDER.map(function (id, index) {
+  const blueprint = UNIVERSE_BLUEPRINTS.find((u) => u.id === id);
   const uni = Object.assign({}, blueprint);
   uni.index = index;
   uni.number = index + 1;
@@ -3190,9 +3022,10 @@ const CLASS_UPGRADES = [
 function allUpgrades() { return UPGRADE_POOL.concat(CLASS_UPGRADES); }
 
 /* ------------------------------ game state --------------------------------- */
-const game = {
+const gameState = {
   screen: 'menu',
-  zoneIndex: 0,
+  currentUniverse: 0,
+  currentZone: 0,
   time: 0,
   menuTime: 0,
   timeScale: 1,
@@ -3201,8 +3034,9 @@ const game = {
   score: 0,
   gems: 0,
   gemsRun: 0,          /* gems picked up this run: drives the gem multiplier */
-  gemMult: 1,          /* 10 points a kill x this */
-  best: 0,
+  multiplier: 1,       /* 10 points a kill x this */
+  bestScore: 0,
+  bestTime: 0,
   kills: 0,
   killsThisZone: 0,
   player: null,
@@ -3250,12 +3084,12 @@ const game = {
   secondWindUsed: false,  /* Second Wind is once per zone */
   waveDelay: 0,
   pendingWave: null,
-  upgradeLevels: {},
-  classId: 'knight',   /* picked on the class screen; knight is the fallback */
+  upgrades: {},
+  currentClass: 'knight',   /* picked on the class screen; knight is the fallback */
   lifetimeGems: 0,     /* every gem ever collected, across every run */
   maxZone: 0,          /* highest zone index ever reached: unlocks the zone select */
   uiUniverse: 0,       /* which universe the zone select is currently showing */
-  abilities: { dash: false, nova: false, turret: false, overcharge: false, bomb: false },
+  unlockedAbilities: { dash: false, nova: false, turret: false, overcharge: false, bomb: false },
   bossesDefeated: [false, false, false, false, false],
   qCd: 0,              /* the class ability's own cooldown */
   novaCd: 0,
@@ -3279,7 +3113,9 @@ const game = {
   flashTimer: 0,
   flashColor: '#ffffff'
 };
-window.__game = game;
+const game = gameState;
+window.gameState = gameState;
+window.__game = gameState;
 /* =============================================================================
    PLAYER, WORLD LOADING, CAMERA, INPUT
    ============================================================================= */
@@ -3356,11 +3192,11 @@ function resetRun() {
   game.score = 0;
   game.gems = 0;
   game.gemsRun = 0;
-  game.gemMult = 1;
+  gameState.multiplier = 1;
   syncGemMultHud();
   game.kills = 0;
   game.killsThisZone = 0;
-  game.upgradeLevels = {};
+  gameState.upgrades = {};
   game.abilityCdScale = 1;
   game.cdModule = 1;
   game.player = makePlayer();
@@ -3411,8 +3247,10 @@ function noteZoneReached(index) {
 /* ------------------------------ zone loading ------------------------------- */
 function loadZone(zoneIndex, opts) {
   const o = opts || {};
-  game.zoneIndex = clamp(zoneIndex, 0, ZONES.length - 1);
-  const z = ZONES[game.zoneIndex];
+  if (bossArmTimer) { clearTimeout(bossArmTimer); bossArmTimer = 0; }
+  gameState.currentZone = clamp(zoneIndex, 0, ZONES.length - 1);
+  gameState.currentUniverse = Math.floor(gameState.currentZone / LEVELS_PER_UNIVERSE);
+  const z = ZONES[gameState.currentZone];
 
   game.enemies.length = 0;
   game.bullets.length = 0;
@@ -3486,9 +3324,9 @@ function loadZone(zoneIndex, opts) {
   p.swingT = 0;
   game.swings.length = 0;
 
-  game.obstacles = buildObstacles(game.zoneIndex);
-  buildDestructibles(game.zoneIndex);
-  game.floorArt = buildFloorArt(game.zoneIndex);
+  game.obstacles = buildObstacles(gameState.currentZone);
+  buildDestructibles(gameState.currentZone);
+  game.floorArt = buildFloorArt(gameState.currentZone);
   game.arenas = z.arenas.map((a) => ({
     x: a[0], y: a[1], r: ARENA_R,
     cleared: false, active: false, wave: 0, remaining: 0, nextWaveTimer: 0
@@ -3498,8 +3336,8 @@ function loadZone(zoneIndex, opts) {
   game.cam.x = cameraTargetX();
   game.cam.y = cameraTargetY();
 
-  noteZoneReached(game.zoneIndex);
-  const zUni = universeOf(game.zoneIndex);
+  noteZoneReached(gameState.currentZone);
+  const zUni = universeOf(gameState.currentZone);
   UI.zoneBadge.textContent = 'Universe ' + zUni.number + ' · Level ' + z.level;
   UI.zoneName.textContent = z.name;
   document.documentElement.style.setProperty('--zone-accent', z.accent);
@@ -3979,7 +3817,7 @@ function updatePlayer(dt) {
 
   /* standing water: boots kick rings across the puddles of the castle yard */
   if (game.rippleCd > 0) game.rippleCd = Math.max(0, game.rippleCd - dt);
-  if (game.zoneIndex === 2 && p.moving && game.rippleCd <= 0 && puddleAt(p.x, p.y + 4)) {
+  if (gameState.currentZone === 2 && p.moving && game.rippleCd <= 0 && puddleAt(p.x, p.y + 4)) {
     game.rippleCd = 0.15;
     game.particles.push({
       ring: true, x: p.x + rand(-6, 6), y: p.y + rand(-3, 5),
@@ -4197,22 +4035,6 @@ const FREE_CLASSES = ['knight', 'gunslinger', 'sniper', 'mage'];
    Mage — and the same table keeps the bought classes honest. Every label in
    the bar is capped at six characters so it can never overflow its 48px slot,
    and the Q icon drawn next to it always matches the name under it. */
-const CLASS_Q_LABEL = {
-  knight: 'BASH', gunslinger: 'STORM', sniper: 'RAIL', mage: 'RIFT',
-  berserker: 'RAGE', shadow: 'MARK', tech: 'OVRLD'
-};
-const CLASS_Q_ICON = {
-  knight: 'bash', gunslinger: 'storm', sniper: 'rail', mage: 'rift',
-  berserker: 'rage', shadow: 'mark', tech: 'overload'
-};
-/* fixed short names for the five earned slots, all within the 6-char cap */
-const SLOT_LABEL = { nova: 'NOVA', dash: 'DASH', turret: 'TURR', overcharge: 'OVER', bomb: 'BOMB' };
-const LABEL_CAP = 6;
-
-function classQLabel(id) {
-  return String(CLASS_Q_LABEL[id] || 'BASH').slice(0, LABEL_CAP);
-}
-
 function classUnlocked(id) {
   if (FREE_CLASSES.indexOf(id) >= 0) return true;
   /* Shop lives further down the file: never touch it before it exists */
@@ -4220,7 +4042,7 @@ function classUnlocked(id) {
 }
 
 function getClass(id) {
-  const key = id || game.classId || CLASSES[0].id;
+  const key = id || gameState.currentClass || CLASSES[0].id;
   for (let i = 0; i < CLASSES.length; i++) {
     if (CLASSES[i].id !== key) continue;
     /* a doctrine that is not owned can never be played — not even from a save */
@@ -4265,15 +4087,12 @@ function swordDamage() {
 function syncClassHud() {
   const c = getClass();
   UI.className.textContent = c.name;
-  /* the Q slot name comes from the class table, capped to fit the slot */
-  if (UI.qLabel) UI.qLabel.textContent = classQLabel(c.id);
   paintClassIcon(UI.badgeIcon, c.id);
-  drawAbilityArt();              /* the Q icon follows the class, drawn not typed */
-  /* keep the class id on the HUD as a styling hook; the Q icon and the Q
-     label themselves come from CLASS_Q_ICON / CLASS_Q_LABEL and are drawn */
+  syncAbilityHud();
+  /* keep the class id on the HUD as a styling hook */
   const hud = document.getElementById('hud');
   if (hud) {
-    hud.className = 'screen ' + c.id;
+    hud.className = c.id;
   }
 }
 
@@ -5648,7 +5467,7 @@ function hurtPlayer(amount, raw) {
       return;
     }
     /* Iron Will: one free resurrection per universe */
-    const uniIdx = Math.floor(clamp(game.zoneIndex | 0, 0, ZONES.length - 1) / LEVELS_PER_UNIVERSE);
+    const uniIdx = Math.floor(clamp(gameState.currentZone | 0, 0, ZONES.length - 1) / LEVELS_PER_UNIVERSE);
     if (game.shopIronWill && !(game.ironWillUsed && game.ironWillUsed[uniIdx])) {
       game.ironWillUsed = game.ironWillUsed || {};
       game.ironWillUsed[uniIdx] = true;
@@ -5679,7 +5498,7 @@ function spawnEnemy(type, x, y, arenaIndex) {
   const def = ENEMY_DEFS[type] || ENEMY_DEFS.knight;
   /* each level carries a power level from its universe: Egypt starts tougher
      than the village and the Void is the hardest thing in the game */
-  const power = (ZONES[game.zoneIndex] && ZONES[game.zoneIndex].power) || 1;
+  const power = (ZONES[gameState.currentZone] && ZONES[gameState.currentZone].power) || 1;
   const scale = 0.85 + power * 0.18;
   const e = {
     type,
@@ -5717,7 +5536,7 @@ function spawnEnemy(type, x, y, arenaIndex) {
 }
 
 function spawnWave(arena, arenaIndex, waveIndex) {
-  const z = ZONES[game.zoneIndex];
+  const z = ZONES[gameState.currentZone];
   const wave = z.waves[Math.min(waveIndex, z.waves.length - 1)];
   const types = wave.types;
   const count = wave.count;
@@ -6349,6 +6168,7 @@ function nearestEnemyTo(x, y, range, skip) {
 /* `noChain` stops a chain bolt's own kill from arcing again, so the lightning
    never runs away across the whole arena in one frame. */
 function damageEnemy(e, dmg, silent, noChain) {
+  if (!e || e.dead) return;
   /* Death Mark: everything lands three times harder on the marked body */
   const marker = game.player;
   if (marker && marker.markT > 0 && marker.markTarget === e) dmg *= 3;
@@ -6360,11 +6180,12 @@ function damageEnemy(e, dmg, silent, noChain) {
   e.hp -= dmg;
   e.hitFlash = 0.12;
   if (e.hp > 0) return;
+  e.dead = true;
   const idx = game.enemies.indexOf(e);
   if (idx >= 0) game.enemies.splice(idx, 1);
 
   const def = ENEMY_DEFS[e.type] || ENEMY_DEFS.knight;
-  /* 10 points x the gem multiplier, plus the floating +N above the body */
+  /* 10 points x the gem multiplier, plus the floating +10 above the body */
   awardKill(e);
   game.kills += 1;
   game.killsThisZone += 1;
@@ -6438,7 +6259,7 @@ function damageEnemy(e, dmg, silent, noChain) {
 /* ------------------------------ boss --------------------------------------- */
 function spawnBoss(opts) {
   const o = opts || {};
-  const z = ZONES[game.zoneIndex];
+  const z = ZONES[gameState.currentZone];
   const def = z.boss;
   game.boss = {
     x: o.fromX !== undefined ? o.fromX : z.bossPos[0],
@@ -6487,7 +6308,7 @@ function spawnBoss(opts) {
 /* Arm the ring at the marked spot once every arena is cleared. The fight only
    starts when the player actually walks in. */
 function bossRingCentre() {
-  const bp = ZONES[game.zoneIndex].bossPos;
+  const bp = ZONES[gameState.currentZone].bossPos;
   const pad = BOSS_ARENA_R + 20;
   return {
     x: clamp(bp[0], pad, WORLD - pad),
@@ -6516,7 +6337,7 @@ function playerInsideBossZone() {
 /* The player has stepped into the ring: lock the arena, run the entrance,
    light the red border and start the boss score. */
 function startBossFight() {
-  const z = ZONES[game.zoneIndex];
+  const z = ZONES[gameState.currentZone];
   const bz = game.bossZone;
   const fallback = bossRingCentre();
   const cx = bz ? bz.x : fallback.x;
@@ -6548,7 +6369,8 @@ function startBossFight() {
   UI.dangerBorder.classList.remove('flash');
   void UI.dangerBorder.offsetWidth;
   UI.dangerBorder.classList.add('flash');
-  setTimeout(function () { UI.dangerBorder.classList.remove('flash'); }, 1700);
+  if (dangerFlashTimer) clearTimeout(dangerFlashTimer);
+  dangerFlashTimer = setTimeout(function () { UI.dangerBorder.classList.remove('flash'); dangerFlashTimer = 0; }, 1700);
 
   /* dramatic name card for exactly 2 seconds */
   UI.bossIntroName.textContent = z.boss.name;
@@ -6561,7 +6383,7 @@ function startBossFight() {
     game.bossIntroTimer = null;
   }, 2000);
 
-  BossMusic.start(game.zoneIndex, 1);
+  BossMusic.start(gameState.currentZone, 1);
   game.slowmo = 0;          /* never inherit a stale slow-motion */
   game.timeScale = 1;
   game.shake = Math.max(game.shake, 1.0);
@@ -6640,7 +6462,7 @@ function updateBoss(dt) {
 
   const ratio = clamp(b.hp / b.maxHp, 0, 1);
   /* zones 1-4 fight in three phases (75% / 50%), the Time Tyrant in four */
-  const maxPhase = game.zoneIndex >= 4 ? 4 : 3;
+  const maxPhase = gameState.currentZone >= 4 ? 4 : 3;
   const steps = [1, 0.75, 0.5, 0.25];
   let newPhase = 1;
   for (let i = 1; i < maxPhase; i++) {
@@ -6663,7 +6485,7 @@ function updateBoss(dt) {
   const d = dist(b.x, b.y, p.x, p.y);
   const ang = angleTo(b.x, b.y, p.x, p.y);
   b.angle = ang;
-  const zone = game.zoneIndex;
+  const zone = gameState.currentZone;
 
   /* boss body motion + contact damage */
   if (b.charging > 0) {
@@ -6923,7 +6745,9 @@ function damageBoss(dmg) {
 
 function killBoss() {
   const b = game.boss;
-  if (!b) return;
+  if (!b || b.dead) return;
+  b.dead = true;
+  awardKill(b);
   const bx = b.x, by = b.y;
   game.boss = null;
   addScore(2000);
@@ -6961,11 +6785,12 @@ function killBoss() {
   }
 
   /* the boss pays out the zone's ability on a full-screen card */
-  grantBossAbility(game.zoneIndex);
+  grantBossAbility(gameState.currentZone);
 
   /* the portal opens with a growing glow instead of popping into existence */
   game.portal = { x: bx, y: by, r: 76, t: 0, open: 0 };
-  setTimeout(() => { if (game.screen === 'playing') Sound.portal(); }, 700);
+  if (portalSoundTimer) clearTimeout(portalSoundTimer);
+  portalSoundTimer = setTimeout(() => { if (game.screen === 'playing') Sound.portal(); portalSoundTimer = 0; }, 700);
   updateObjective();
   saveGame('boss');
 }
@@ -7058,9 +6883,9 @@ function spawnParticle(x, y, vx, vy, life, size, color, drag) {
   });
 }
 
-function addText(x, y, text, color, size, rise) {
+function addText(x, y, text, color, size, rise, duration) {
   game.texts.push({
-    x, y, text, color: color || '#fff', life: 0, maxLife: 1.1,
+    x, y, text, color: color || '#fff', life: 0, maxLife: duration || 1.1,
     size: size || 15,                 /* score pops are a touch bigger */
     rise: typeof rise === 'number' ? rise : 26   /* and climb further */
   });
@@ -7124,7 +6949,7 @@ function abilityBySlot(zoneIndex) {
 
 function hasAbility(id) {
   if (id === 'q') return true;                       /* the class ability is free */
-  return !!(game.abilities && game.abilities[id]);
+  return !!(gameState.unlockedAbilities && gameState.unlockedAbilities[id]);
 }
 
 function abilityUnlockedCount() {
@@ -7180,8 +7005,8 @@ function syncAbilityUnlocks(silent) {
     /* beating the boss of zone i (0-based) earns slot i */
     if ((game.maxZone | 0) > i || (game.bossesDefeated && game.bossesDefeated[i])) {
       const id = ABILITY_UNLOCKS[i].id;
-      if (!game.abilities[id]) {
-        game.abilities[id] = true;
+      if (!gameState.unlockedAbilities[id]) {
+        gameState.unlockedAbilities[id] = true;
         changed = true;
         if (!silent) showAbilityUnlock(ABILITY_UNLOCKS[i]);
       }
@@ -7197,81 +7022,16 @@ function grantBossAbility(zoneIndex) {
   if (!def) return null;
   game.bossesDefeated = game.bossesDefeated || [false, false, false, false, false];
   game.bossesDefeated[clamp(zoneIndex, 0, 4)] = true;
-  if (game.abilities[def.id]) { syncAbilityHud(); return null; }
-  game.abilities[def.id] = true;
+  if (gameState.unlockedAbilities[def.id]) { syncAbilityHud(); return null; }
+  gameState.unlockedAbilities[def.id] = true;
   syncAbilityHud();
   showAbilityUnlock(def);
-  SaveSystem.save('ability');
+  saveGame('ability');
   return def;
 }
 
-/* ------------------------- locked slot artwork -----------------------------
-   A locked ability is a dark grey filled disc with a small padlock on it, and
-   every pixel of both is drawn with the canvas 2D API: two rectangles make the
-   lock body (the shell and the keyhole cut into it) and one arc makes the
-   shackle. No emoji, no Unicode glyph, no HTML entity and no text character is
-   used as an icon anywhere in the ability bar, so there is nothing left that a
-   missing font or an inherited colour could turn into a screen-sized smear.
-   The artwork is laid out in the HUD's 48x48 base space and the backing store
-   is rebuilt to match the on-screen scale, so it stays crisp at any size.
-   ------------------------------------------------------------------------ */
-const LOCK_BOX   = 48;   /* the slot is a 48x48 square in base space */
-const LOCK_DISC_R = 21;  /* radius of the dark grey filled circle */
-const LOCK_GLYPH = 16;   /* the padlock itself is 16x16 base px */
-
-function drawLockIcon(canvas) {
-  if (!canvas) return;
-  /* cssScale * dpr == viewScale, so viewScale base px == one device px */
-  const px = Math.round(clamp(LOCK_BOX * (viewScale || 1), LOCK_BOX, LOCK_BOX * 4));
-  if (canvas.width !== px) canvas.width = px;
-  if (canvas.height !== px) canvas.height = px;
-  const g = canvas.getContext('2d');
-  if (!g) return;
-  const k = px / LOCK_BOX;                    /* base px -> device px */
-  g.setTransform(k, 0, 0, k, 0, 0);
-  g.clearRect(0, 0, LOCK_BOX, LOCK_BOX);
-
-  /* the disc: one flat dark grey filled circle, nothing else behind the lock */
-  g.beginPath();
-  g.arc(LOCK_BOX / 2, LOCK_BOX / 2, LOCK_DISC_R, 0, TAU);
-  g.fillStyle = '#3a3f4a';
-  g.fill();
-
-  /* the padlock, dead centre, 16x16 base px */
-  const x0 = (LOCK_BOX - LOCK_GLYPH) / 2;     /* 16 */
-  const y0 = (LOCK_BOX - LOCK_GLYPH) / 2;     /* 16 */
-  const steel = '#d5dae3';
-
-  /* shackle: a small arc plus the two legs that drop into the body.
-     The glyph spans y0+1 .. y0+15, so the 16x16 box stays centred on the disc. */
-  g.strokeStyle = steel;
-  g.lineWidth = 2;
-  g.beginPath();
-  g.arc(x0 + 8, y0 + 5.6, 3.6, Math.PI, TAU);       /* half turn over the top */
-  g.stroke();
-  g.beginPath();
-  g.moveTo(x0 + 4.4, y0 + 5.6); g.lineTo(x0 + 4.4, y0 + 8.4);
-  g.moveTo(x0 + 11.6, y0 + 5.6); g.lineTo(x0 + 11.6, y0 + 8.4);
-  g.stroke();
-
-  /* body: rectangle one is the shell, rectangle two is the keyhole in it */
-  g.fillStyle = steel;
-  g.fillRect(x0 + 2.5, y0 + 8, 11, 7);
-  g.fillStyle = '#2b303b';
-  g.fillRect(x0 + 7, y0 + 10, 2, 3.2);
-}
-
-/* repaint the six lock canvases: on boot, on resize, and whenever a slot
-   changes state. Cheap, and it never depends on a font being loaded. */
-function drawAbilityLocks() {
-  const bar = document.getElementById('abilities');
-  if (!bar) return;
-  const cvs = bar.querySelectorAll('.ability .lock canvas');
-  for (let i = 0; i < cvs.length; i++) drawLockIcon(cvs[i]);
-}
-
 /* ------------------------- ability icon artwork ----------------------------
-   Every symbol in the ability bar is drawn here with the canvas 2D API —
+   Unlock-ceremony artwork is drawn here with the canvas 2D API —
    lines, arcs, rectangles and filled paths only. No font, no emoji, no
    Unicode glyph, no HTML entity and no text character takes part, so an icon
    can never change size because of type metrics or inherit a colour it was
@@ -7385,83 +7145,46 @@ function drawAbilityIcon(canvas, kind, fixedPx) {
   g.restore();
 }
 
-/* repaint all six slot icons: the Q art follows the chosen class */
-function drawAbilityIcons() {
-  const bar = document.getElementById('abilities');
-  if (!bar) return;
-  const kinds = {
-    abQ: CLASS_Q_ICON[game.playerClass || 'knight'] || 'bash',
-    abNova: 'nova', abDash: 'dash', abTurret: 'turret',
-    abOvercharge: 'overcharge', abBomb: 'bomb'
-  };
-  const slots = bar.querySelectorAll('.ability');
-  for (let i = 0; i < slots.length; i++) {
-    drawAbilityIcon(slots[i].querySelector('.icon canvas'), kinds[slots[i].id]);
-  }
-}
-
-/* icons and padlocks in one call: boot, resize, class change, unlock */
-function drawAbilityArt() {
-  drawAbilityIcons();
-  drawAbilityLocks();
-}
-
-/* dark grey padlocks on every slot the player has not earned yet */
+/* Update the six SVG buttons from the actual ability timers. Dash belongs to
+   the player, and every maximum uses the same modifiers as its cast function. */
 function syncAbilityHud() {
-  drawAbilityArt();                            /* drawn, never typed */
-  /* sync class ability icon and label */
-  const cls = game.playerClass || 'knight';
-
-  /* sync unlock/ready/cooldown states */
-  const abEls = {
-    q: document.getElementById('abQ'),
-    nova: document.getElementById('abNova'),
-    dash: document.getElementById('abDash'),
-    turret: document.getElementById('abTurret'),
-    overcharge: document.getElementById('abOvercharge'),
-    bomb: document.getElementById('abBomb')
+  const p = game.player;
+  const timers = {
+    q: [game.qCd, qCdMax()],
+    nova: [game.novaCd, 20 * cdScale()],
+    dash: [p ? p.dashCd : 0, dashCooldown()],
+    turret: [game.turretCd, 25 * cdScale()],
+    overcharge: [game.overchargeCd, 30 * cdScale()],
+    bomb: [game.bombCd, 18 * cdScale()]
   };
-
-  for (const [k, el] of Object.entries(abEls)) {
+  for (const [id, el] of Object.entries(UI.abilities)) {
     if (!el) continue;
-    /* every label in the bar: the class ability name on Q, fixed short names
-       on the earned slots, all hard-capped at six characters */
-    const lab = el.querySelector('.label');
-    if (lab) lab.textContent = String(k === 'q' ? classQLabel(cls) : (SLOT_LABEL[k] || '')).slice(0, LABEL_CAP);
-    const isUnlocked = game.abilities[k] || (k === 'q');
-    const isReady = isUnlocked && game[`${k}Cd`] <= 0;
-    const isCooling = isUnlocked && game[`${k}Cd`] > 0;
-
-    el.classList.remove('locked', 'ready', 'cooling', 'unlocked');
-    if (!isUnlocked) {
-      el.classList.add('locked');
-    } else if (isReady) {
-      el.classList.add('ready');
-    } else if (isCooling) {
-      el.classList.add('cooling');
-    }
-
-    /* pulse for just unlocked */
-    if (game.justUnlocked === k) {
-      el.classList.add('unlocked');
-      setTimeout(() => el.classList.remove('unlocked'), 4500);
-      game.justUnlocked = null;
-    }
-
-    /* update sweep */
-    const cdSpan = el.querySelector('.cd');
-    const sweepSpan = el.querySelector('.ab-sweep');
-    if (isCooling && cdSpan && sweepSpan) {
-      const cd = game[`${k}Cd`];
-      const maxCd = game[`${k}MaxCd`] || 5;
-      const pct = Math.max(0, Math.min(1, cd / maxCd));
-      const deg = pct * 360;
-      sweepSpan.style.background = `conic-gradient(rgba(255,255,255,.86) ${deg}deg, transparent ${deg}deg)`;
-    } else if (sweepSpan) {
-      sweepSpan.style.background = 'transparent';
-    }
+    const unlocked = id === 'q' || hasAbility(id);
+    const [cd, maxCd] = timers[id];
+    const cooling = unlocked && cd > 0;
+    el.classList.toggle('locked', !unlocked);
+    el.classList.toggle('unlocked', unlocked);
+    el.classList.toggle('cooling', cooling);
+    const button = el.querySelector('.ab-btn');
+    button.disabled = !unlocked;
+    button.setAttribute('aria-disabled', String(!unlocked || cooling));
+    button.style.setProperty('--cooldown-angle', (clamp(cd / Math.max(0.001, maxCd), 0, 1) * 360) + 'deg');
+    if (id === 'q') button.setAttribute('aria-label', getClass().q.name + ' (Q)');
   }
 }
+
+function useAbilityButton(id) {
+  if (game.screen !== 'playing' || isPaused || !hasAbility(id)) return;
+  Sound.ensure();
+  if (id === 'q') castClassAbility();
+  else if (id === 'nova') novaBlast();
+  else if (id === 'dash') dash();
+  else if (id === 'turret') dropTurret();
+  else if (id === 'overcharge') startOvercharge();
+  else if (id === 'bomb') throwBomb();
+  syncAbilityHud();
+}
+
 /* entering an arena hands the player a short grace window: enemies are already
    closing in the moment the fight starts, and without it the first contact tick
    landed on the same breath as the arena trigger. */
@@ -7512,7 +7235,7 @@ function grantArenaGrace(reason) {
 
 function updateArenas(dt) {
   const p = game.player;
-  const waveCount = ZONES[game.zoneIndex].waves.length;
+  const waveCount = ZONES[gameState.currentZone].waves.length;
 
   for (let i = 0; i < game.arenas.length; i++) {
     const a = game.arenas[i];
@@ -7563,11 +7286,13 @@ function clearArena(arena, index) {
   }
   game.particles.push({ ring: true, x: arena.x, y: arena.y, r: arena.r * 0.3, maxR: arena.r * 1.4, life: 0, maxLife: 0.7, color: '#fde68a' });
   updateObjective();
-  saveGame('level');
+  saveGame('arena');
 
   const allCleared = game.arenas.every((x) => x.cleared);
   if (allCleared && !game.bossUnlocked && !game.boss) {
-    setTimeout(() => {
+    if (bossArmTimer) clearTimeout(bossArmTimer);
+    bossArmTimer = setTimeout(() => {
+      bossArmTimer = 0;
       if ((game.screen === 'playing' || game.screen === 'upgrade') && !game.bossUnlocked) armBossZone();
     }, 1400);
   }
@@ -7609,8 +7334,8 @@ function completeZone() {
   addScore(1500);
   Sound.levelClear();
 
-  const uni = universeOf(game.zoneIndex);
-  const lvl = levelInUniverse(game.zoneIndex);
+  const uni = universeOf(gameState.currentZone);
+  const lvl = levelInUniverse(gameState.currentZone);
 
   /* the fifth level ends a universe — one card to bank it, one to open the next */
   if (lvl >= LEVELS_PER_UNIVERSE) {
@@ -7618,9 +7343,13 @@ function completeZone() {
     return;
   }
 
-  game.pendingZone = game.zoneIndex + 1;
+  game.pendingZone = gameState.currentZone + 1;
+  gameState.currentZone = game.pendingZone;
+  gameState.currentUniverse = Math.floor(gameState.currentZone / LEVELS_PER_UNIVERSE);
+  game.arenas = [];
+  game.portal = null;
   noteZoneReached(game.pendingZone);
-  saveGame('level');
+  saveGame('zone');
   const next = ZONES[game.pendingZone];
   UI.transEyebrow.textContent = 'Universe ' + uni.number + ' · Level ' + (lvl + 1);
   UI.transTitle.textContent = next.name;
@@ -7669,7 +7398,7 @@ let pendingUniverse = 0;
 /* level five of a universe was cleared: victory if that was the last one,
    otherwise the completion card that names the universe after it */
 function beginUniverseTransition() {
-  const uni = universeOf(game.zoneIndex);
+  const uni = universeOf(gameState.currentZone);
   const nextIndex = nextUniverseIndex(uni.index);
   if (nextIndex < 0) {
     showVictory();          /* Universe 6 is done: the true ending, nothing else */
@@ -7679,16 +7408,15 @@ function beginUniverseTransition() {
 }
 
 function showUniverseComplete(uni, nextIndex) {
-  const from = uni || universeOf(game.zoneIndex);
+  const from = uni || universeOf(gameState.currentZone);
   const target = nextIndex === undefined ? nextUniverseIndex(from.index) : nextIndex;
   const next = target >= 0 ? UNIVERSES[target] : null;
   pendingUniverse = target >= 0 ? next.index : LAST_UNIVERSE;
-  game.screen = 'universe';
   game.mouse.down = false;
   game.keys = {};
 
   let ups = 0;
-  for (const k in game.upgradeLevels) ups += game.upgradeLevels[k] || 0;
+  for (const k in gameState.upgrades) ups += gameState.upgrades[k] || 0;
   writeText(UI.ucKicker, 'Universe ' + from.number + ' complete');
   writeText(UI.ucName, from.name);
   writeText(UI.ucEra, from.era);
@@ -7703,14 +7431,18 @@ function showUniverseComplete(uni, nextIndex) {
   setUniversePanel('complete');
   showScreen('universeTransition');
   Sound.levelClear();
-  saveGame('level');
+  gameState.currentZone = pendingUniverse * LEVELS_PER_UNIVERSE;
+  gameState.currentUniverse = pendingUniverse;
+  game.arenas = [];
+  game.portal = null;
+  noteZoneReached(gameState.currentZone);
+  saveGame('zone');
 }
 
 /* the doors of the universe you are about to walk into */
 function showUniverseIntro(index) {
   const u = universeAt(index === undefined ? pendingUniverse : index);
   pendingUniverse = u.index;
-  game.screen = 'universeIntro';
   writeText(UI.uiKicker, 'Universe ' + u.number);
   writeText(UI.uiName, u.name);
   writeText(UI.uiEra, u.era);
@@ -7722,7 +7454,7 @@ function showUniverseIntro(index) {
     }).join('') + '<span class="uni-chip">' + u.boss.name + '</span>';
   }
   setUniversePanel('intro');
-  showScreen('universeTransition', 'universeIntro');
+  showScreen('universeTransition');
   Sound.portal();
 }
 
@@ -7738,14 +7470,12 @@ function loadUniverseStart(index) {
   const first = u.index * LEVELS_PER_UNIVERSE;
   pendingUniverse = u.index;
   game.pendingZone = first;
-  game.screen = 'playing';
   loadZone(first, { freshPlayer: false });
   noteZoneReached(first);
-  showScreen('game');       /* reveals the HUD and unpauses the loop */
-  startLoop();              /* belt and braces: the world is awake again */
+  showScreen('gameCanvas');
   showBanner(u.name.toUpperCase());
   updateObjective();
-  SaveSystem.save('universe');
+  saveGame('universe');
   return u.index;
 }
 
@@ -7769,9 +7499,9 @@ function updateObjective() {
 function availableUpgrades() {
   const cls = getClass();
   return allUpgrades().filter((u) => {
-    if ((game.upgradeLevels[u.id] || 0) >= u.max) return false;
+    if ((gameState.upgrades[u.id] || 0) >= u.max) return false;
     if (u.classOnly && u.classOnly !== cls.id) return false;
-    if (u.requires && !(game.upgradeLevels[u.requires] > 0)) return false;
+    if (u.requires && !(gameState.upgrades[u.requires] > 0)) return false;
     /* a swordsman has no barrel to overclock and no rounds to fill */
     if (u.needsBullets && cls.weapon === 'blade') return false;
     return true;
@@ -7791,9 +7521,8 @@ function rollUpgrades(n) {
 function showUpgrades() {
   const choices = rollUpgrades(3);
   if (!choices.length) return;
-  game.screen = 'upgrade';
   UI.upgradeCards.innerHTML = choices.map((u) => {
-    const lvl = (game.upgradeLevels[u.id] || 0) + 1;
+    const lvl = (gameState.upgrades[u.id] || 0) + 1;
     return '<div class="card" data-up="' + u.id + '">' +
       '<div class="glyph">' + u.glyph + '</div>' +
       '<div class="name">' + u.name + '</div>' +
@@ -7813,12 +7542,12 @@ function showUpgrades() {
 }
 
 function chooseUpgrade(up) {
-  game.upgradeLevels[up.id] = (game.upgradeLevels[up.id] || 0) + 1;
+  gameState.upgrades[up.id] = (gameState.upgrades[up.id] || 0) + 1;
   up.apply();
-  showScreen('game');
+  showScreen('gameCanvas');
   addText(game.player.x, game.player.y - 44, up.name.toUpperCase(), '#fde68a');
   Sound.gem();
-  SaveSystem.save('upgrade');
+  saveGame('upgrade');
 }
 
 /* =============================================================================
@@ -7832,13 +7561,14 @@ function chooseUpgrade(up) {
    wrapped: a blocked localStorage simply turns saving off instead of breaking
    the game. */
 
-const SAVE_KEY = 'survive_save_v1';
+const SAVE_KEY = 'surviveGameSave';
+const LEGACY_SAVE_KEY = 'survive_save_v1';
 const SAVE_BEST_KEY = 'survive_best_score';
 const SAVE_GEMS_KEY = 'survive_gems_total';
 const SAVE_MAX_ZONE_KEY = 'survive_max_zone';   /* frontier: unlocks zone select */
 const SAVE_TIME_KEY = 'survive_best_time';      /* fastest full clear, in ms */
 const SAVE_VERSION = 1;
-const AUTOSAVE_EVERY = 4;          /* seconds between background writes */
+const AUTOSAVE_EVERY = 4;
 
 const SaveSystem = (function () {
   let probeDone = false;
@@ -7899,32 +7629,38 @@ const SaveSystem = (function () {
     try { s.setItem(key, String(Math.max(0, Math.floor(value || 0)))); return true; } catch (e) { return false; }
   }
 
-  /* ---------------------------- what gets written --------------------------- */
+  /* currentZone is the global zone index (0–29), currentUniverse is 0–5.
+     Additional fields preserve the existing arena checkpoint. */
   function snapshot() {
     const p = game.player || makePlayer();
-    const zone = clamp(game.zoneIndex | 0, 0, ZONES.length - 1);
+    const zone = clamp(gameState.currentZone | 0, 0, ZONES.length - 1);
     const waves = ZONES[zone].waves.length;
+    const score = Math.max(0, Math.floor(Number(game.score) || 0));
     return {
       v: SAVE_VERSION,
-      zone: zone,
-      classId: getClass().id,
-      upgrades: Object.assign({}, game.upgradeLevels || {}),
+      currentUniverse: Math.floor(zone / LEVELS_PER_UNIVERSE),
+      currentZone: zone,
+      currentClass: gameState.currentClass,
+      score: score,
+      bestScore: Math.max(0, Math.floor(gameState.bestScore || 0), score),
+      gems: Math.max(0, Math.floor(game.gems || 0)),
+      lifetimeGems: Math.max(0, Math.floor(game.lifetimeGems || 0)),
+      unlockedAbilities: Object.assign({}, gameState.unlockedAbilities || {}),
+      upgrades: Object.assign({}, gameState.upgrades || {}),
+      bestTime: Math.max(0, Math.floor(gameState.bestTime || 0)),
+      multiplier: Math.max(1, Math.floor(gameState.multiplier || 1)),
+      gemsRun: Math.max(0, game.gemsRun | 0),
+      maxZone: clamp(Math.max(game.maxZone | 0, zone), 0, ZONES.length - 1),
+      bosses: (game.bossesDefeated || []).slice(0, ZONES.length),
       arenas: (game.arenas || []).map((a) => ({
         cleared: !!a.cleared,
         wave: clamp(Math.round(a.wave || 0), 0, waves)
       })),
-      score: Math.max(0, Math.floor(game.score || 0)),
-      gems: Math.max(0, game.gems | 0),
-      gemsRun: Math.max(0, game.gemsRun | 0),
       hp: Math.max(0, Math.round(p.hp)),
       maxHp: Math.max(1, Math.round(p.maxHp)),
       bossDefeated: !!game.portal,
       portal: game.portal ? { x: Math.round(game.portal.x), y: Math.round(game.portal.y) } : null,
-      best: Math.max(game.best | 0, Math.floor(game.score || 0)),
-      gemsTotal: Math.max(0, game.lifetimeGems | 0),
-      maxZone: clamp(Math.max(game.maxZone | 0, zone), 0, ZONES.length - 1),
-      abilities: Object.assign({}, game.abilities || {}),
-      bosses: (game.bossesDefeated || []).slice(0, ZONES.length),
+      runElapsed: Math.max(0, Math.round(RunClock.tick())),
       savedAt: Date.now()
     };
   }
@@ -7940,76 +7676,66 @@ const SaveSystem = (function () {
     if (ok) writeTotal++;
     autoTimer = 0;
     if (ok) {
-      if (snap.best > readCount(SAVE_BEST_KEY)) writeCount(SAVE_BEST_KEY, snap.best);
-      if (snap.gemsTotal > readCount(SAVE_GEMS_KEY)) writeCount(SAVE_GEMS_KEY, snap.gemsTotal);
+      gameState.bestScore = snap.bestScore;
+      if (snap.bestScore > readCount(SAVE_BEST_KEY)) writeCount(SAVE_BEST_KEY, snap.bestScore);
+      if (snap.lifetimeGems > readCount(SAVE_GEMS_KEY)) writeCount(SAVE_GEMS_KEY, snap.lifetimeGems);
       if (snap.maxZone > readCount(SAVE_MAX_ZONE_KEY)) writeCount(SAVE_MAX_ZONE_KEY, snap.maxZone);
-      game.best = Math.max(game.best | 0, snap.best);
-      if (typeof refreshSaveUi === 'function') refreshSaveUi();
+      refreshSaveUi();
     }
     return ok;
   }
 
-  /* ------------------------------- reading ---------------------------------- */
+  /* Read the canonical slot, falling back to the old slot for migration. */
   function load() {
-    const raw = readJSON(SAVE_KEY);
+    let raw = readJSON(SAVE_KEY);
+    if (!raw || typeof raw !== 'object') raw = readJSON(LEGACY_SAVE_KEY);
     if (!raw || typeof raw !== 'object') return null;
-    if (raw.v !== SAVE_VERSION) return null;
-    const zone = Math.round(Number(raw.zone));
-    if (!isFinite(zone) || zone < 0 || zone >= ZONES.length) return null;
-
+    const zoneValue = Number(raw.currentZone !== undefined ? raw.currentZone : raw.zone);
+    if (!isFinite(zoneValue) || zoneValue < 0 || zoneValue >= ZONES.length) return null;
+    const zone = Math.floor(zoneValue);
+    const number = (value, fallback) => {
+      const n = Number(value);
+      return isFinite(n) ? Math.max(0, Math.floor(n)) : (fallback || 0);
+    };
+    const classId = raw.currentClass || raw.classId;
+    const abilitySource = raw.unlockedAbilities || raw.abilities || {};
     const out = {
       v: SAVE_VERSION,
-      zone: zone,
-      classId: CLASSES.some((c) => c.id === raw.classId) ? raw.classId : 'knight',
-      upgrades: {},
-      arenas: [],
-      score: Math.max(0, Math.floor(Number(raw.score) || 0)),
-      gems: Math.max(0, Math.floor(Number(raw.gems) || 0)),
-      gemsRun: Math.max(0, Math.floor(Number(raw.gemsRun) || 0)),
-      hp: Math.max(0, Math.round(Number(raw.hp) || 0)),
-      maxHp: Math.max(1, Math.round(Number(raw.maxHp) || 1)),
-      bossDefeated: !!raw.bossDefeated,
-      portal: null,
-      best: Math.max(0, Math.floor(Number(raw.best) || 0)),
-      gemsTotal: Math.max(0, Math.floor(Number(raw.gemsTotal) || 0)),
-      maxZone: clamp(Math.max(Math.round(Number(raw.maxZone) || 0), zone), 0, ZONES.length - 1),
-      abilities: {},
-      bosses: [],
-      savedAt: Number(raw.savedAt) || 0
+      currentUniverse: Math.floor(zone / LEVELS_PER_UNIVERSE),
+      currentZone: zone,
+      currentClass: CLASSES.some((c) => c.id === classId) ? classId : 'knight',
+      score: number(raw.score),
+      bestScore: number(raw.bestScore !== undefined ? raw.bestScore : raw.best),
+      gems: number(raw.gems),
+      lifetimeGems: number(raw.lifetimeGems !== undefined ? raw.lifetimeGems : raw.gemsTotal),
+      unlockedAbilities: {}, upgrades: {},
+      bestTime: number(raw.bestTime, readCount(SAVE_TIME_KEY)),
+      multiplier: clamp(number(raw.multiplier, 1), 1, MULT_CAP),
+      gemsRun: number(raw.gemsRun),
+      maxZone: clamp(Math.max(number(raw.maxZone), zone), 0, ZONES.length - 1),
+      bosses: [], arenas: [],
+      hp: number(raw.hp), maxHp: Math.max(1, number(raw.maxHp, 1)),
+      bossDefeated: !!raw.bossDefeated, portal: null,
+      runElapsed: number(raw.runElapsed), savedAt: number(raw.savedAt)
     };
+    out.bestScore = Math.max(out.bestScore, out.score);
     if (raw.portal && isFinite(Number(raw.portal.x)) && isFinite(Number(raw.portal.y))) {
       out.portal = { x: clamp(Number(raw.portal.x), 60, WORLD - 60), y: clamp(Number(raw.portal.y), 60, WORLD - 60) };
     }
-
-    const ups = (raw.upgrades && typeof raw.upgrades === 'object') ? raw.upgrades : {};
-    const allChips = allUpgrades();
-    for (let i = 0; i < allChips.length; i++) {
-      const up = allChips[i];
-      const lvl = Math.round(Number(ups[up.id]) || 0);
-      if (lvl > 0) out.upgrades[up.id] = clamp(lvl, 0, up.max);
+    const ups = raw.upgrades && typeof raw.upgrades === 'object' ? raw.upgrades : {};
+    for (const up of allUpgrades()) {
+      const lvl = clamp(number(ups[up.id]), 0, up.max);
+      if (lvl > 0) out.upgrades[up.id] = lvl;
     }
-
-    /* abilities are permanent rewards: read them back defensively */
-    const abs = (raw.abilities && typeof raw.abilities === 'object') ? raw.abilities : {};
-    for (let i = 0; i < ABILITY_IDS.length; i++) {
-      out.abilities[ABILITY_IDS[i]] = !!abs[ABILITY_IDS[i]];
-    }
-    if (Array.isArray(raw.bosses)) {
-      for (let i = 0; i < ZONES.length; i++) out.bosses.push(!!raw.bosses[i]);
-    } else {
-      for (let i = 0; i < ZONES.length; i++) out.bosses.push(false);
-    }
-    /* a newer frontier implies the bosses behind it are down */
+    for (const id of ABILITY_IDS) out.unlockedAbilities[id] = !!abilitySource[id];
+    out.unlockedAbilities.overdrive = !!abilitySource.overdrive;
+    for (let i = 0; i < ZONES.length; i++) out.bosses.push(!!(Array.isArray(raw.bosses) && raw.bosses[i]));
     for (let i = 0; i < out.maxZone; i++) out.bosses[i] = true;
-
     if (Array.isArray(raw.arenas)) {
       const waves = ZONES[zone].waves.length;
       for (let i = 0; i < Math.min(raw.arenas.length, 3); i++) {
         const a = raw.arenas[i] || {};
-        out.arenas.push({
-          cleared: !!a.cleared,
-          wave: clamp(Math.round(Number(a.wave) || 0), 0, waves)
-        });
+        out.arenas.push({ cleared: !!a.cleared, wave: clamp(number(a.wave), 0, waves) });
       }
     }
     return out;
@@ -8022,6 +7748,7 @@ const SaveSystem = (function () {
     if (s) {
       try {
         s.removeItem(SAVE_KEY);
+        s.removeItem(LEGACY_SAVE_KEY);
         s.removeItem(SAVE_BEST_KEY);
         s.removeItem(SAVE_GEMS_KEY);
         s.removeItem(SAVE_MAX_ZONE_KEY);
@@ -8038,41 +7765,16 @@ const SaveSystem = (function () {
      and any fight that was running. */
   function apply(slot) {
     if (!slot) return false;
-
-    resetRun();                                  /* clean slate, timers cleared */
-    game.classId = slot.classId;
+    resetRun();
+    restoreSavedState(slot);
     game.player = makePlayer();
-
-    game.upgradeLevels = {};
-    const replay = allUpgrades();
-    for (let i = 0; i < replay.length; i++) {
-      const up = replay[i];
-      const lvl = clamp(Math.round(slot.upgrades[up.id] || 0), 0, up.max);
-      for (let k = 0; k < lvl; k++) {
-        game.upgradeLevels[up.id] = (game.upgradeLevels[up.id] || 0) + 1;
-        up.apply();
-      }
-    }
-
-    game.score = slot.score;
-    game.gems = slot.gems;
-    game.gemsRun = Math.max(0, slot.gemsRun | 0);
-    syncGemMultHud();
-    game.maxZone = clamp(Math.max(slot.maxZone | 0, slot.zone | 0), 0, ZONES.length - 1);
-    game.abilities = { dash: false, nova: false, turret: false, overcharge: false, bomb: false };
-    for (let i = 0; i < ABILITY_IDS.length; i++) {
-      game.abilities[ABILITY_IDS[i]] = !!slot.abilities[ABILITY_IDS[i]];
-    }
-    game.bossesDefeated = slot.bosses.slice(0, ZONES.length);
-    while (game.bossesDefeated.length < ZONES.length) game.bossesDefeated.push(false);
-
-    loadZone(slot.zone, { freshPlayer: false });
+    applyUpgradeLevels(slot.upgrades);
+    loadZone(slot.currentZone, { freshPlayer: false });
     applyShopUpgrades();
-
     const maxHp = game.player.maxHp;
-    game.player.hp = (slot.hp >= 1 && slot.hp <= maxHp) ? slot.hp : maxHp;
+    game.player.hp = slot.hp >= 1 && slot.hp <= maxHp ? slot.hp : maxHp;
 
-    const waves = ZONES[game.zoneIndex].waves.length;
+    const waves = ZONES[gameState.currentZone].waves.length;
     for (let i = 0; i < game.arenas.length; i++) {
       const a = game.arenas[i];
       const rec = slot.arenas[i];
@@ -8101,7 +7803,8 @@ const SaveSystem = (function () {
       armBossZone();
     }
 
-    showScreen('game');
+    showScreen('gameCanvas');
+    RunClock.resume();
     game.menuTime = 0;
     syncClassHud();
     updateObjective();
@@ -8114,9 +7817,9 @@ const SaveSystem = (function () {
 
   function summary(save) {
     if (!save) return '';
-    const cls = CLASSES.find((c) => c.id === save.classId) || CLASSES[0];
+    const cls = CLASSES.find((c) => c.id === save.currentClass) || CLASSES[0];
     const cleared = save.arenas.filter((a) => a.cleared).length;
-    return 'Zone ' + (save.zone + 1) + ' · ' + cls.name + ' · ' +
+    return universeOf(save.currentZone).name + ' · ' + ZONES[save.currentZone].name + ' · ' + cls.name + ' · ' +
       cleared + '/3 arenas · ' + Math.floor(save.score).toLocaleString('en-US') + ' pts';
   }
 
@@ -8152,13 +7855,13 @@ const SaveSystem = (function () {
       const cost = Math.max(0, Math.floor(Number(n) || 0));
       if (!cost) return -1;
       const slot = load();
-      const have = Math.max(game.lifetimeGems | 0, readCount(SAVE_GEMS_KEY), slot ? slot.gemsTotal | 0 : 0);
+      const have = Math.max(game.lifetimeGems | 0, readCount(SAVE_GEMS_KEY), slot ? slot.lifetimeGems | 0 : 0);
       if (have < cost) return -1;
       const left = have - cost;
       game.lifetimeGems = left;
       writeCount(SAVE_GEMS_KEY, left);
       const raw = readJSON(SAVE_KEY);
-      if (raw && typeof raw === 'object') { raw.gemsTotal = left; writeJSON(SAVE_KEY, raw); }
+      if (raw && typeof raw === 'object') { raw.lifetimeGems = left; writeJSON(SAVE_KEY, raw); }
       if (typeof refreshSaveUi === 'function') refreshSaveUi();
       return left;
     },
@@ -8182,9 +7885,8 @@ const SaveSystem = (function () {
 }());
 
 /* the gem multiplier: every GEMS_PER_TIER gems picked up in a run raises it by
-   one, and every kill is worth KILL_SCORE x the current tier. It never falls
+   one, and every kill is worth 10 x the current tier. It never falls
    during a run, so collecting is always worth it. */
-const KILL_SCORE = 10;
 const GEMS_PER_TIER = 12;
 const MULT_CAP = 8;
 
@@ -8205,30 +7907,25 @@ function addScore(points) {
   return game.score;
 }
 
-/* what one kill is worth: ten points, lifted by the gem multiplier */
-function killScore() {
-  return KILL_SCORE * gemMultiplier();
-}
-
 /* THE payout for an enemy death — the one place a kill becomes score.
    Every enemy dies inside damageEnemy (it is the only code that removes a body
-   from game.enemies), so every death lands here: the score, the +N that pops
-   above the corpse and climbs away, and the save that keeps it. */
+   from game.enemies), so every death lands here: the score, the +10 that pops
+   above the corpse and fades over 0.8 seconds, and the save that keeps it. */
 function awardKill(e) {
-  const points = killScore();
-  addScore(points);
-  if (e) addText(e.x, e.y - 22, '+' + points, '#ffe9a8', 17, 34);
+  syncGemMultHud();
+  gameState.score += 10 * gameState.multiplier;
+  if (e) addText(e.x, e.y - (e.r || 14) - 8, '+10', '#ffe9a8', 17, 40, 0.8);
   saveGame('kill');
-  return points;
+  return 10 * gameState.multiplier;
 }
 
 function syncGemMultHud() {
-  game.gemMult = gemMultiplier();
-  if (!UI.gemMult) return game.gemMult;
-  const text = '×' + game.gemMult;
+  gameState.multiplier = gemMultiplier();
+  if (!UI.gemMult) return gameState.multiplier;
+  const text = '×' + gameState.multiplier;
   if (UI.gemMult.textContent !== text) UI.gemMult.textContent = text;
-  UI.gemMult.classList.toggle('on', game.gemMult > 1);
-  return game.gemMult;
+  UI.gemMult.classList.toggle('on', gameState.multiplier > 1);
+  return gameState.multiplier;
 }
 
 /* gems are counted twice: in the run and for the lifetime total */
@@ -8248,90 +7945,61 @@ function addGems(n) {
   syncGemMultHud();
 }
 
-/* --------------------------- saveGame / loadGame ---------------------------
-   saveGame(reason) is the one door into storage: every kill, every gem, every
-   cleared arena, every dead boss and every screen change asks through it. The
-   write itself is coalesced (at most one every SAVE_GATE ms) so a room full of
-   gems cannot thrash localStorage — but a requested save always lands within
-   the same frame, and a forced flush lands it immediately.
-   ------------------------------------------------------------------------- */
-let saveWanted = null;          /* the reason waiting to be written */
-let saveGateAt = -1e9;          /* when the last write landed */
-const SAVE_GATE = 100;          /* ms between unforced writes */
-
-function flushSaveGame(force) {
-  if (!saveWanted) return false;
-  const t = nowMs();
-  /* still inside the gate: leave the queued write (and its timer) alone */
-  if (!force && t - saveGateAt < SAVE_GATE) return false;
-  if (saveTimer) { try { clearTimeout(saveTimer); } catch (e) {} saveTimer = 0; }
-  const reason = saveWanted;
-  saveWanted = null;
-  saveGateAt = t;
-  return SaveSystem.save(reason);
+/* One save entry point. Event saves are synchronous so a kill, pickup or
+   completed zone is on disk before the next frame can change the run. */
+function saveGame(reason, opts) {
+  return SaveSystem.save(reason || 'run', opts);
 }
+function flushSaveGame() { return false; }
 
-let saveTimer = 0;
-
-function saveGame(reason) {
-  saveWanted = reason || 'run';
-  flushSaveGame(false);         /* writes now unless one landed a moment ago */
-  /* a coalesced write must still land even if the game loop is parked (a menu,
-     a paused tab): the timer is the backstop, the frame flush the fast path */
-  if (saveWanted && !saveTimer && typeof setTimeout === 'function') {
-    saveTimer = setTimeout(function () {
-      saveTimer = 0;
-      flushSaveGame(true);
-    }, SAVE_GATE);
-  }
+/* Restore data only: boot stays on the menu. Continue applies the saved
+   upgrades to a fresh player and rebuilds the saved zone. */
+function restoreSavedState(slot) {
+  if (!slot) return false;
+  gameState.currentZone = slot.currentZone;
+  gameState.currentUniverse = slot.currentUniverse;
+  gameState.currentClass = slot.currentClass;
+  gameState.score = slot.score;
+  gameState.bestScore = Math.max(slot.bestScore, slot.score);
+  gameState.gems = slot.gems;
+  gameState.lifetimeGems = slot.lifetimeGems;
+  gameState.unlockedAbilities = Object.assign({}, slot.unlockedAbilities);
+  gameState.upgrades = Object.assign({}, slot.upgrades);
+  gameState.bestTime = slot.bestTime;
+  gameState.multiplier = slot.multiplier;
+  game.gemsRun = slot.gemsRun;
+  game.maxZone = slot.maxZone;
+  game.bossesDefeated = slot.bosses.slice();
+  RunClock.elapsed = slot.runElapsed || 0;
+  RunClock.best = slot.bestTime;
+  syncGemMultHud();
   return true;
 }
 
-/* loadGame(): the boot read. Pulls the saved run, banks what it carries (best
-   score, lifetime gems, frontier, abilities, boss record) and repaints the menu
-   line with the zone and universe the run was left in. */
 function loadGame() {
   const slot = SaveSystem.load();
-  if (slot) {
-    game.best = Math.max(game.best | 0, slot.best | 0);
-    game.lifetimeGems = Math.max(game.lifetimeGems | 0, slot.gemsTotal | 0);
-    game.maxZone = Math.max(game.maxZone | 0, slot.maxZone | 0);
-    if (!game.abilities) game.abilities = {};
-    for (let i = 0; i < ABILITY_IDS.length; i++) {
-      if (slot.abilities[ABILITY_IDS[i]]) game.abilities[ABILITY_IDS[i]] = true;
-    }
-    if (Array.isArray(slot.bosses) && slot.bosses.length) {
-      game.bossesDefeated = slot.bosses.slice(0, ZONES.length);
-    }
-  }
+  if (slot) restoreSavedState(slot);
   refreshSaveUi();
+  syncAbilityHud();
   return slot;
 }
 
 /* ------------------------- save slot UI (menu) ----------------------------- */
 function refreshSaveUi() {
   const slot = SaveSystem.load();
-  const best = Math.max(game.best | 0, slot ? slot.best | 0 : 0);
-  const gems = Math.max(game.lifetimeGems | 0, slot ? slot.gemsTotal | 0 : 0);
-  game.best = best;
-  game.lifetimeGems = gems;
-
+  const best = Math.max(gameState.bestScore | 0, slot ? slot.bestScore | 0 : 0);
+  const gems = Math.max(0, game.lifetimeGems | 0);
+  gameState.bestScore = best;
+  const zone = slot ? slot.currentZone : gameState.currentZone;
+  const uni = universeOf(zone);
+  const location = uni.name + ' · ' + ZONES[zone].name;
   if (UI.menuBest) UI.menuBest.textContent = 'BEST SCORE ' + best;
+  if (UI.menuSub) UI.menuSub.textContent = slot ? location : '1347 AD · Commander Rael';
   if (UI.continueWrap) UI.continueWrap.classList.toggle('show', !!slot);
-  if (UI.continueMeta && slot) UI.continueMeta.textContent = SaveSystem.summary(slot);
+  if (UI.continueMeta) UI.continueMeta.textContent = slot ? SaveSystem.summary(slot) : location;
   if (UI.spBest) UI.spBest.textContent = String(best);
   if (UI.spGems) UI.spGems.textContent = String(gems);
-  if (UI.spRun) {
-    if (!slot) {
-      UI.spRun.textContent = 'None';
-    } else {
-      /* where he was left: the universe, the level in it, and the zone itself */
-      const uni = universeOf(slot.zone);
-      const zone = ZONES[slot.zone] || ZONES[0];
-      UI.spRun.textContent = 'Universe ' + uni.number + ' · Level ' +
-        levelInUniverse(slot.zone) + ' — ' + zone.name;
-    }
-  }
+  if (UI.spRun) UI.spRun.textContent = 'Universe ' + uni.number + ' · Level ' + levelInUniverse(zone) + ' — ' + location;
 }
 
 /* the "Progress Saved" line only appears when the write really landed */
@@ -8771,6 +8439,7 @@ function collectAllGems() {
     const g = game.gemsList[i];
     addGems(1);
     addScore(8);
+    saveGame('gem');
     n++;
     for (let k = 0; k < 5; k++) {
       const a = rand(0, TAU);
@@ -8901,8 +8570,8 @@ function applyShopUpgrades() {
   game.shopCrit = 0.10 * shopLevel('critical');
   game.shopIronWill = shopLevel('ironwill') > 0;
   game.ironWillUsed = {};
-  if (!game.abilities) game.abilities = {};
-  game.abilities.overdrive = shopLevel('overdrive') > 0;
+  if (!gameState.unlockedAbilities) gameState.unlockedAbilities = {};
+  gameState.unlockedAbilities.overdrive = shopLevel('overdrive') > 0;
   applyCosmeticToPlayer(p);
   syncPet(true);
   syncConsumableHud();
@@ -8912,7 +8581,7 @@ function applyShopUpgrades() {
 
 /* ------------------------------- the shop UI -------------------------------- */
 let shopTab = 'upgrades';
-let shopReturn = { screen: 'menu', layer: 'menu' };
+let shopReturn = { screen: 'menu', layer: 'mainMenu' };
 let shopFlashTimer = 0;
 
 const SHOP_TABS = {
@@ -8939,7 +8608,7 @@ const SHOP_TABS = {
 };
 
 function shopRunActive() {
-  return shopReturn.screen === 'playing' || shopReturn.screen === 'transition' ||
+  return shopReturn.screen === 'playing' || shopReturn.screen === 'paused' || shopReturn.screen === 'transition' ||
     shopReturn.screen === 'upgrade' || shopReturn.screen === 'universe';
 }
 
@@ -9221,7 +8890,7 @@ function cosPreviewTick() {
 }
 
 function isCosPreviewOpen() {
-  return shopTab === 'cosmetics' && currentScreen === 'shopOverlay' && !!UI.cpCanvas;
+  return shopTab === 'cosmetics' && currentScreen === 'shopScreen' && !!UI.cpCanvas;
 }
 
 function startCosPreview() {
@@ -9939,7 +9608,7 @@ function petCardTick() {
 }
 
 function isPetTabOpen() {
-  return shopTab === 'pets' && currentScreen === 'shopOverlay';
+  return shopTab === 'pets' && currentScreen === 'shopScreen';
 }
 
 function startPetCards() {
@@ -10099,7 +9768,7 @@ function shopApplyLive(id) {
   else if (id === 'cooldown') game.shopCdScale = Math.pow(0.90, shopLevel('cooldown'));
   else if (id === 'critical') game.shopCrit = 0.10 * shopLevel('critical');
   else if (id === 'ironwill') game.shopIronWill = true;
-  else if (id === 'overdrive') { game.abilities.overdrive = true; syncAbilityHud(); }
+  else if (id === 'overdrive') { gameState.unlockedAbilities.overdrive = true; syncAbilityHud(); }
   updateHealthOrbs();
 }
 
@@ -10134,7 +9803,7 @@ function openShop(from) {
   shopReturn = { screen: back, layer: layer };
   game.mouse.down = false;
   renderShop();
-  showScreen('shopOverlay');
+  showScreen('shopScreen');
   startCosPreview();
   startPetCards();
 }
@@ -10142,15 +9811,15 @@ function openShop(from) {
 function closeShop() {
   stopCosPreview();
   stopPetCards();
-  const back = shopReturn.screen || 'menu';
   const layer = SCREENS[shopReturn.layer] ? shopReturn.layer : 'mainMenu';
-  showScreen(layer, back);
+  const back = shopReturn.screen || SCREENS[layer].state;
+  showScreen(layer);
   /* a class bought while browsing is unlocked the moment he steps back */
   if (back === 'class') drawClassCards();
   /* only bank the run if there really is one open behind the shop */
   if (back === 'playing' || back === 'transition' || back === 'upgrade' ||
-      back === 'universe' || back === 'universeIntro') {
-    SaveSystem.save('shop');
+      back === 'universe' || back === 'universeIntro' || back === 'paused') {
+    saveGame('shop');
   }
   renderShop();
 }
@@ -10200,14 +9869,20 @@ function onResetSaveClick() {
   /* two taps: the first arms the button, the second wipes the slot */
   const t = nowMs();
   if (resetArmedAt && (t - resetArmedAt) < 5000) {
-    saveWanted = null;              /* nothing queued may resurrect the slot */
     SaveSystem.clear();
-    game.best = 0;
+    gameState.bestScore = 0;
+    gameState.bestTime = 0;
+    gameState.upgrades = {};
+    gameState.currentZone = 0;
+    gameState.currentUniverse = 0;
+    gameState.multiplier = 1;
+    game.gemsRun = 0;
+    RunClock.reset();
     game.lifetimeGems = 0;
     game.score = 0;
     game.gems = 0;
     game.maxZone = 0;
-    game.abilities = { dash: false, nova: false, turret: false, overcharge: false, bomb: false };
+    gameState.unlockedAbilities = { dash: false, nova: false, turret: false, overcharge: false, bomb: false, overdrive: false };
     game.bossesDefeated = new Array(ZONES.length).fill(false);
     /* the shop is progress too: a full reset hands back an empty depot */
     try { window.localStorage.removeItem(SHOP_KEY); } catch (err) { /* ignore */ }
@@ -10299,7 +9974,7 @@ const RunClock = {
     const total = Math.round(this.stop());
     const previous = SaveSystem.bestTime();
     this.record = total > 0 && (previous <= 0 || total < previous);
-    if (this.record) SaveSystem.setBestTime(total);
+    if (this.record) gameState.bestTime = SaveSystem.setBestTime(total);
     this.best = this.record ? total : previous;
     return { total: total, best: this.best, record: this.record };
   }
@@ -10495,7 +10170,7 @@ function openClassScreen(zoneIndex) {
      Never in a class swap — there the whole point is picking a new one. */
   const slot = SaveSystem.load();
   if (UI.btnClassSkip) {
-    const saved = slot ? (CLASSES.find((c) => c.id === slot.classId) || CLASSES[0]) : null;
+    const saved = slot ? (CLASSES.find((c) => c.id === slot.currentClass) || CLASSES[0]) : null;
     if (saved && UI.skipClassName) UI.skipClassName.textContent = saved.name;
     UI.btnClassSkip.classList.toggle('show', !!saved && !pendingChangeClass);
   }
@@ -10547,14 +10222,14 @@ function openShopForClass() {
 
 /* replay a saved upgrade map onto a fresh player, rank by rank */
 function applyUpgradeLevels(levels) {
-  game.upgradeLevels = {};
+  gameState.upgrades = {};
   const map = levels || {};
   const allChips = allUpgrades();
   for (let i = 0; i < allChips.length; i++) {
     const up = allChips[i];
     const lvl = clamp(Math.round(Number(map[up.id]) || 0), 0, up.max);
     for (let k = 0; k < lvl; k++) {
-      game.upgradeLevels[up.id] = (game.upgradeLevels[up.id] || 0) + 1;
+      gameState.upgrades[up.id] = (gameState.upgrades[up.id] || 0) + 1;
       up.apply();
     }
   }
@@ -10577,7 +10252,7 @@ function startRun(classId, zoneIndex, opts) {
       kills: game.kills,
       maxZone: game.maxZone,
       bosses: (game.bossesDefeated || []).slice(),
-      upgrades: Object.assign({}, game.upgradeLevels || {})
+      upgrades: Object.assign({}, gameState.upgrades || {})
     };
     /* the knight's sword upgrades do not follow Rael into another doctrine */
     const allChips = allUpgrades();
@@ -10587,7 +10262,7 @@ function startRun(classId, zoneIndex, opts) {
     }
   }
 
-  game.classId = classId;
+  gameState.currentClass = classId;
   resetRun();
   if (kept) {
     game.score = kept.score;
@@ -10604,29 +10279,28 @@ function startRun(classId, zoneIndex, opts) {
      inside loadZone would throw away the carried upgrades */
   loadZone(zone, { freshPlayer: false });
   applyShopUpgrades();       /* permanent shop levels, stamped on at run start */
-  showScreen('game');
+  showScreen('gameCanvas');
   game.menuTime = 0;
   updateObjective();
   updateHealthOrbs();
   showBanner(getClass().name.toUpperCase());
   RunClock.resume();          /* a continued run keeps counting */
-  SaveSystem.save('start');   /* a new run replaces the old slot */
+  saveGame('start');   /* a new run replaces the old slot */
 }
 
 function endRun() {
   if (game.screen === 'gameover') return;
   BossMusic.stop();
-  game.screen = 'gameover';
   game.mouse.down = false;
   hideBossBar();
-  if (game.score > game.best) game.best = Math.floor(game.score);
+  if (game.score > gameState.bestScore) gameState.bestScore = Math.floor(game.score);
   /* the run is over: keep the progress but hand the zone back at full health */
-  const savedOnDeath = SaveSystem.save('gameover', { hp: game.player.maxHp });
+  const savedOnDeath = saveGame('gameover', { hp: game.player.maxHp });
   markProgressSaved(UI.goSaved, savedOnDeath);
-  UI.goZone.textContent = 'Zone ' + ZONES[game.zoneIndex].id + ' · ' + ZONES[game.zoneIndex].name;
+  UI.goZone.textContent = 'Zone ' + ZONES[gameState.currentZone].id + ' · ' + ZONES[gameState.currentZone].name;
   UI.goScore.textContent = String(Math.floor(game.score));
   UI.goGems.textContent = String(game.gems);
-  UI.goBest.textContent = 'Best score ' + Math.max(game.best, Math.floor(game.score));
+  UI.goBest.textContent = 'Best score ' + Math.max(gameState.bestScore, Math.floor(game.score));
   showScreen('gameOver');
 }
 
@@ -10635,19 +10309,18 @@ const TRUE_ENDING =
 
 function showVictory() {
   BossMusic.stop();
-  game.screen = 'victory';
   game.mouse.down = false;
   hideBossBar();
-  if (game.score > game.best) game.best = Math.floor(game.score);
-  const savedOnWin = SaveSystem.save('victory');
+  if (game.score > gameState.bestScore) gameState.bestScore = Math.floor(game.score);
+  const time = RunClock.finish();
+  const savedOnWin = saveGame('victory');
   markProgressSaved(UI.vicSaved, savedOnWin);
   UI.vicScore.textContent = String(Math.floor(game.score));
   UI.vicGems.textContent = String(game.gems);
-  UI.vicBest.textContent = 'Best score ' + Math.max(game.best, Math.floor(game.score));
+  UI.vicBest.textContent = 'Best score ' + Math.max(gameState.bestScore, Math.floor(game.score));
   if (UI.vicEnding) UI.vicEnding.textContent = TRUE_ENDING;
 
   /* freeze the speedrun clock and compare it with the saved best */
-  const time = RunClock.finish();
   if (UI.vicTimeVal) UI.vicTimeVal.textContent = RunClock.format(time.total);
   if (UI.vicRecord) UI.vicRecord.classList.toggle('show', time.record);
   if (UI.vicBestTime) {
@@ -10656,7 +10329,7 @@ function showVictory() {
     UI.vicBestTime.classList.toggle('is-hidden', !showBest);
   }
 
-  showScreen('victory');
+  showScreen('victoryScreen');
   Sound.portal();
 }
 
@@ -10667,18 +10340,17 @@ function changeClass() {
   if (game.screen !== 'gameover') return;
   Sound.ensure();
   /* same deal as a death save: keep everything, hand the zone back at full hp */
-  SaveSystem.save('classchange', { hp: game.player ? game.player.maxHp : undefined });
-  pendingStartZone = clamp(game.zoneIndex | 0, 0, ZONES.length - 1);
+  saveGame('classchange', { hp: game.player ? game.player.maxHp : undefined });
+  pendingStartZone = clamp(gameState.currentZone | 0, 0, ZONES.length - 1);
   pendingChangeClass = true;
   openClassScreen(pendingStartZone);
 }
 
 function retryZone() {
   pendingChangeClass = false;
-  game.screen = 'playing';
-  loadZone(game.zoneIndex);
-  showScreen('game');
-  SaveSystem.save('retry');
+  loadZone(gameState.currentZone);
+  showScreen('gameCanvas');
+  saveGame('retry');
 }
 
 function restartRun() {
@@ -10701,51 +10373,19 @@ function updateHealthOrbs() {
   UI.orbs.forEach((orb, i) => orb.classList.toggle('off', i >= hp));
 }
 
-const RING_LEN = 169.6;
-function setRing(el, readiness) {
-  if (!el) return;
-  const ring = el.querySelector('.ring');
-  if (!ring) return;
-  const r = clamp(readiness, 0, 1);
-  ring.style.strokeDashoffset = String(RING_LEN * (1 - r));
-  /* the same number drives the circular sweep, which unwinds clockwise */
-  el.style.setProperty('--cd', String(r));
-  el.classList.toggle('ready', r >= 0.999);
-  el.classList.toggle('cooling', r < 0.999);
-}
-
 /* the HUD writer. Every element is optional: one missing node must never be
    able to abort the frame half-way and leave the score frozen on screen. */
 function hudSet(el, value) {
   if (el && el.textContent !== value) el.textContent = value;
 }
 
-function hudCd(el, seconds) {
-  const cd = el && el.querySelector ? el.querySelector('.cd') : null;
-  if (cd) hudSet(cd, seconds > 0.05 ? String(Math.ceil(seconds)) : '');
-}
 
 function updateHud() {
+  hudSet(UI.scoreVal, String(Math.floor(game.score)));
+  syncAbilityHud();
   const p = game.player;
   if (!p) return;
-  hudSet(UI.scoreVal, String(Math.floor(game.score)));
   hudSet(UI.gemVal, String(game.gems));
-
-  setRing(UI.abilities.q, 1 - game.qCd / qCdMax());
-  if (hasAbility('nova')) setRing(UI.abilities.nova, 1 - game.novaCd / (20 * cdScale()));
-  if (hasAbility('dash')) setRing(UI.abilities.dash, 1 - p.dashCd / dashCooldown());
-  if (hasAbility('turret')) setRing(UI.abilities.turret, 1 - game.turretCd / (25 * cdScale()));
-  if (hasAbility('overcharge')) setRing(UI.abilities.overcharge, 1 - game.overchargeCd / (30 * cdScale()));
-  if (hasAbility('bomb')) setRing(UI.abilities.bomb, 1 - game.bombCd / (18 * cdScale()));
-  if (hasAbility('overdrive')) {
-    setRing(UI.abilities.overdrive, 1 - game.overdriveCd / (OVERDRIVE_CD * cdScale()));
-    UI.abilities.overdrive.classList.toggle('active', game.overdriveTimer > 0);
-  }
-
-  /* seconds left on the long cooldowns, ticking on the icon */
-  hudCd(UI.abilities.q, game.qCd);
-  hudCd(UI.abilities.overcharge, game.overchargeCd);
-  hudCd(UI.abilities.bomb, game.bombCd);
 
   /* speedrun clock and gem multiplier, top-right */
   RunClock.paint();
@@ -10798,9 +10438,7 @@ if (UI.shopGrid) {
     if (shopCosmeticOwned(id)) shopBuy('cosmetics', id);
   });
 }
-UI.btnNextUniverse.addEventListener('click', () => {
-  showUniverseIntro(pendingUniverse);
-});
+UI.btnNextUniverse.addEventListener('click', enterUniverse);
 UI.btnEnterUniverse.addEventListener('click', enterUniverse);
 document.getElementById('btnHowTo').addEventListener('click', () => {
   showScreen('howToPlay');
@@ -10810,8 +10448,8 @@ document.getElementById('btnHowToBack').addEventListener('click', () => {
 });
 document.getElementById('btnContinue').addEventListener('click', () => {
   loadZone(game.pendingZone);
-  showScreen('game');
-  SaveSystem.save('zone');
+  showScreen('gameCanvas');
+  saveGame('zone');
 });
 for (let i = 0; i < UI.classCards.length; i++) {
   const card = UI.classCards[i];
@@ -10850,7 +10488,7 @@ if (UI.btnClassSkip) {
     const swap = pendingChangeClass;
     pendingChangeClass = false;
     const slot = SaveSystem.load();
-    startRun(slot ? slot.classId : 'knight', pendingStartZone, swap ? { changeClass: true } : { carryUpgrades: true });
+    startRun(slot ? slot.currentClass : 'knight', pendingStartZone, swap ? { changeClass: true } : { carryUpgrades: true });
   });
 }
 UI.settingsBtn.addEventListener('click', (e) => {
@@ -10877,13 +10515,13 @@ document.addEventListener('keydown', (e) => {
 /* never lose the last few seconds of a run to a closed tab */
 window.addEventListener('beforeunload', () => {
   if (game.screen === 'playing' || game.screen === 'upgrade' || game.screen === 'transition') {
-    SaveSystem.save('exit');
+    saveGame('exit');
   }
 });
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden' &&
       (game.screen === 'playing' || game.screen === 'upgrade')) {
-    SaveSystem.save('hidden');
+    saveGame('hidden');
   }
 });
 const groundCache = {};
@@ -15035,7 +14673,7 @@ function updateBossKit(b, dt) {
 function drawBoss() {
   const b = game.boss;
   if (!b) return;
-  const zone = game.zoneIndex;
+  const zone = gameState.currentZone;
   const t = game.time;
   const flash = b.hitFlash > 0;
   const r = b.r;
@@ -16200,7 +15838,7 @@ const skyStars = (function () {
 })();
 
 function drawSkyBand() {
-  const z = ZONES[game.zoneIndex] || ZONES[0];
+  const z = ZONES[gameState.currentZone] || ZONES[0];
   const grad = ctx.createLinearGradient(0, 0, 0, SKY_H);
   grad.addColorStop(0, z.sky.top);
   grad.addColorStop(1, z.sky.bottom);
@@ -16397,8 +16035,8 @@ function groundPatternFor(zoneIndex) {
 /* Draws everything that lives in world space. The caller has already clipped
    to the playfield and applied the camera transform. */
 function drawGround() {
-  const z = ZONES[game.zoneIndex];
-  ctx.fillStyle = groundPatternFor(game.zoneIndex);
+  const z = ZONES[gameState.currentZone];
+  ctx.fillStyle = groundPatternFor(gameState.currentZone);
   ctx.fillRect(game.cam.x - 24, game.cam.y - 24, viewW() + 48, viewH() + 48);
 
   /* subtle zone tint over the floor */
@@ -18086,7 +17724,7 @@ function drawParticles() {
 
 /* ------------------------------ ambient weather ---------------------------- */
 function drawAmbient() {
-  const kind = ZONES[game.zoneIndex].ambient;
+  const kind = ZONES[gameState.currentZone].ambient;
   const t = game.time;
   ctx.save();
   if (kind === 'ember') {
@@ -18328,7 +17966,7 @@ function drawMinimap() {
 
   /* boss skull */
   if (!game.bossUnlocked && !game.boss) {
-    const bp = ZONES[game.zoneIndex].bossPos;
+    const bp = ZONES[gameState.currentZone].bossPos;
     mmCtx.save();
     mmCtx.translate(bp[0] * k, bp[1] * k);
     mmCtx.globalAlpha = 0.75;
@@ -18643,15 +18281,15 @@ function grantRandomUpgrade() {
     addScore(150);
     addText(p.x, p.y - 46, 'CHIP SALVAGED · +6 GEMS', '#fde68a');
     Sound.gem();
-    SaveSystem.save('pickup');
+    saveGame('pickup');
     return;
   }
   const up = pick(pool);
-  game.upgradeLevels[up.id] = (game.upgradeLevels[up.id] || 0) + 1;
+  gameState.upgrades[up.id] = (gameState.upgrades[up.id] || 0) + 1;
   up.apply();
   addText(p.x, p.y - 46, up.name.toUpperCase(), '#fde68a');
   Sound.ability();
-  SaveSystem.save('pickup');
+  saveGame('pickup');
   for (let i = 0; i < 18; i++) {
     const a = rand(0, TAU);
     spawnParticle(p.x, p.y, Math.cos(a) * rand(40, 170), Math.sin(a) * rand(40, 170), 0.45, 6, '#fde68a', 3);
@@ -19087,10 +18725,10 @@ function briefingObjectiveFor(zoneIndex) {
 }
 
 function showBriefing() {
-  const z = ZONES[game.zoneIndex];
+  const z = ZONES[gameState.currentZone];
   UI.briefZone.textContent = 'Zone ' + z.id;
   UI.briefTitle.textContent = z.name;
-  UI.briefObjective.innerHTML = briefingObjectiveFor(game.zoneIndex);
+  UI.briefObjective.innerHTML = briefingObjectiveFor(gameState.currentZone);
 
   /* restart the CSS animation even if the card is already up */
   UI.briefing.classList.remove('show');
@@ -19115,7 +18753,7 @@ function navigationTarget() {
 
   const allCleared = game.arenas.every(function (a) { return a.cleared; });
   if (allCleared || game.bossUnlocked) {
-    const bp = ZONES[game.zoneIndex].bossPos;
+    const bp = ZONES[gameState.currentZone].bossPos;
     return { x: bp[0], y: bp[1], kind: 'boss', radius: 54 };
   }
 
@@ -19419,6 +19057,7 @@ let rafId = 0;
 let loopPaused = true;          /* the title screen owns the screen at boot */
 
 function startLoop() {
+  if (currentScreen !== 'gameCanvas') return;
   /* lift the flag FIRST: a frame left queued by a pause must never be able to
      swallow the resume and park the world for good */
   loopPaused = false;
@@ -19436,22 +19075,13 @@ function stopLoop() {
 
 /* the screen manager calls this on every hand-over: only the game screen runs */
 function setLoopPausedFor(screenName) {
-  if (screenName === 'game') startLoop();
+  if (screenName === 'gameCanvas') startLoop();
   else stopLoop();
 }
-
-let screenGuardTimer = 0;
 
 function update(dt) {
   game.menuTime += dt;
   tickAbilityUnlock(dt);      /* the unlock card keeps its own 2s clock */
-
-  /* only the active layer may ever be displayed */
-  screenGuardTimer += dt;
-  if (screenGuardTimer >= 0.25) {
-    screenGuardTimer = 0;
-    enforceScreen();
-  }
 
   if (game.screen === 'menu' || game.screen === 'class' || game.screen === 'zones') return;
 
@@ -19468,8 +19098,7 @@ function update(dt) {
     game.slowmo = Math.max(0, game.slowmo - dt);
     if (game.slowmo === 0) game.timeScale = 1;
   }
-  // PAUSE SYSTEM: if paused, timeScale is 0, so sdt is 0.
-  // We also stop the speedrun timer (game.time) and all cooldowns (sdt = 0).
+  /* The screen manager parks RAF on pause; sdt also guards direct updates. */
   const sdt = (isPaused ? 0 : dt) * game.timeScale;
 
   if (!isPaused) {
@@ -19477,6 +19106,7 @@ function update(dt) {
     game.ambientClock += dt;
   }
 
+  updateHud();
   updatePlayer(sdt);
   updatePet(sdt);
   updateClassKit(sdt);
@@ -19500,7 +19130,6 @@ function update(dt) {
   updateParticles(sdt);
   updateFog();
   updateHud();
-  flushSaveGame(false);         /* a kill or a gem asked for this frame */
   SaveSystem.tick(dt);
 
   if (game.shake > 0) game.shake = Math.max(0, game.shake - dt * 1.7);
@@ -19585,7 +19214,6 @@ function resize() {
     UI.uiLayer.style.transform =
       'translate(' + (viewOffX / dpr) + 'px,' + (viewOffY / dpr) + 'px) scale(' + cssScale + ')';
   }
-  drawAbilityArt();     /* drawn icons and padlocks follow the same scale */
   /* store the independent ratios for the game elements */
   viewScaleX = scaleX;
   viewScaleY = scaleY;
@@ -19676,7 +19304,7 @@ function initTouchControls() {
     const now = nowMs();
     if (now - lastFire < 100) return; // debounce
     lastFire = now;
-    const cls = game.classId || 'knight';
+    const cls = gameState.currentClass || 'knight';
     if (cls === 'knight') { game.qCd = 0; }
     else if (cls === 'gunslinger') { game.novaCd = 0; }
     else if (cls === 'berserker') { game.dashCd = 0; }
@@ -19697,111 +19325,117 @@ function initTouchControls() {
 }
 /* --- PAUSE SYSTEM --- */
 let isPaused = false;
+let bossArmTimer = 0;
+let dangerFlashTimer = 0;
+let portalSoundTimer = 0;
+
+function hideLeaveConfirmation() {
+  const popup = document.getElementById('pauseConfirm');
+  if (popup) popup.hidden = true;
+}
+
+function resetGameLoop() {
+  stopLoop();
+  isPaused = false;
+  game.timeScale = 1;
+  game.slowmo = 0;
+  game.mouse.down = false;
+  game.keys = Object.create(null);
+  game.joyX = 0;
+  game.joyY = 0;
+  RunClock.stop();
+  BossMusic.stop();
+  for (const timer of [bossArmTimer, dangerFlashTimer, portalSoundTimer, game.bossIntroTimer, briefingTimer]) {
+    if (timer) clearTimeout(timer);
+  }
+  bossArmTimer = dangerFlashTimer = portalSoundTimer = 0;
+  game.bossIntroTimer = briefingTimer = null;
+  bannerTimer = 0;
+  unlockClock = 0;
+  unlockQueue.length = 0;
+  hideLeaveConfirmation();
+  hideAbilityUnlock();
+  UI.bossIntro.classList.remove('show');
+  UI.briefing.classList.remove('show');
+  UI.banner.classList.remove('show');
+  UI.dangerBorder.classList.remove('flash');
+  hideBossBar();
+}
+
 function togglePause() {
-  if (!game || game.screen !== 'playing') return;
-  isPaused = !isPaused;
-  const overlay = document.getElementById('pauseOverlay');
-  const btnChange = document.getElementById('btnChangeClassPause');
-  if (isPaused) {
-    overlay.classList.add('show');
-    stopLoop();
-    // Check if mid-fight (arenas list not empty or boss active)
-    const midFight = game.arenas.length > 0 || game.boss || game.bossFight;
-    if (midFight) {
-      btnChange.disabled = true;
-      btnChange.querySelector('.pause-tooltip').style.opacity = '1';
-    } else {
-      btnChange.disabled = false;
-      btnChange.querySelector('.pause-tooltip').style.opacity = '0';
-    }
-    game.timeScale = 0;
-  } else {
-    overlay.classList.remove('show');
-    startLoop();
-    game.timeScale = 1;
+  if (currentScreen === 'gameCanvas' && game.screen === 'playing') {
+    const btnChange = document.getElementById('btnChangeClassPause');
+    const midFight = game.arenas.length > 0 || !!game.boss || !!game.bossFight;
+    btnChange.disabled = midFight;
+    showScreen('pauseMenu');
+  } else if (currentScreen === 'pauseMenu') {
+    hideLeaveConfirmation();
+    showScreen('gameCanvas');
   }
 }
 
 function initPauseSystem() {
-  // Keyboard
   window.addEventListener('keydown', (e) => {
-    if ((e.key === 'Escape' || e.key === 'p' || e.key === 'P') && game && game.screen === 'playing') {
-      togglePause();
-      e.preventDefault();
+    if (e.repeat) return;
+    const popup = document.getElementById('pauseConfirm');
+    if (popup && !popup.hidden) {
+      if (e.key === 'Escape') { hideLeaveConfirmation(); e.preventDefault(); e.stopImmediatePropagation(); }
+      return;
     }
-  });
-
-  // Mobile button
-  const mobileBtn = document.getElementById('mobilePauseBtn');
-  if (mobileBtn) {
-    mobileBtn.addEventListener('touchstart', (e) => {
-      if (game && game.screen === 'playing') {
+    if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+      if (currentScreen === 'gameCanvas' || currentScreen === 'pauseMenu') {
         togglePause();
         e.preventDefault();
+        e.stopImmediatePropagation();
       }
-    }, { passive: false });
+    }
+  });
+  const mobileBtn = document.getElementById('mobilePauseBtn');
+  if (mobileBtn) {
+    mobileBtn.addEventListener('click', togglePause);
+    mobileBtn.addEventListener('touchstart', (e) => { togglePause(); e.preventDefault(); }, { passive: false });
   }
-
-  // Pause menu buttons
-  const btnResume = document.getElementById('btnResumePause');
-  if (btnResume) btnResume.addEventListener('click', togglePause);
-
-  const btnShop = document.getElementById('btnVisitShopPause');
-  if (btnShop) btnShop.addEventListener('click', () => {
-    if (isPaused) {
-      togglePause(); // unpause first
-      showScreen('shopOverlay');
+  document.getElementById('btnResumePause').addEventListener('click', togglePause);
+  document.getElementById('btnVisitShopPause').addEventListener('click', () => {
+    if (currentScreen === 'pauseMenu') openShop('pauseMenu');
+  });
+  document.getElementById('btnChangeClassPause').addEventListener('click', (e) => {
+    if (currentScreen === 'pauseMenu' && !e.currentTarget.disabled) {
+      pendingChangeClass = true;
+      openClassScreen(gameState.currentZone);
     }
   });
-
-  const btnClass = document.getElementById('btnChangeClassPause');
-  if (btnClass) btnClass.addEventListener('click', () => {
-    if (isPaused && !btnClass.disabled) {
-      togglePause(); // unpause first
-      showScreen('class');
-    }
+  document.getElementById('btnLeaveMenuPause').addEventListener('click', () => {
+    if (currentScreen !== 'pauseMenu') return;
+    document.getElementById('pauseConfirm').hidden = false;
+    document.getElementById('btnCancelLeave').focus();
   });
-
-  const btnLeave = document.getElementById('btnLeaveMenuPause');
-  if (btnLeave) btnLeave.addEventListener('click', () => {
-    if (!isPaused) return;
-    // Show confirmation popup
-    const confirmHtml = `
-      <div id="pauseConfirm" style="position:absolute; inset:0; background:rgba(0,0,0,.8); display:flex; align-items:center; justify-content:center; z-index:1002;">
-        <div style="background:#080b13; border:1px solid #e8c874; padding:24px; border-radius:6px; text-align:center; width:360px;">
-          <h2 style="font-family:Cinzel; color:#e8c874; margin-top:0;">Leave this zone?</h2>
-          <p style="font-family:Rajdhani; color:#eaf0fa; margin:12px 0;">Progress in this arena will be lost but your upgrades and zone progress are saved.</p>
-          <div style="display:flex; gap:16px; justify-content:center; margin-top:24px;">
-            <button class="pause-btn" style="width:120px; margin:0;" id="btnConfirmLeave">CONFIRM</button>
-            <button class="pause-btn" style="width:120px; margin:0;" id="btnCancelLeave">CANCEL</button>
-          </div>
-        </div>
-      </div>
-    `;
-    const container = document.createElement('div');
-    container.innerHTML = confirmHtml;
-    const overlay = document.getElementById('pauseOverlay');
-    overlay.appendChild(container.firstChild);
-
-    const btnConfirm = document.getElementById('btnConfirmLeave');
-    const btnCancel = document.getElementById('btnCancelLeave');
-    if (btnConfirm) btnConfirm.addEventListener('click', () => {
-      SaveSystem.save('pause-leave');
-      showScreen('menu');
-      togglePause();
-      container.remove();
-    });
-    if (btnCancel) btnCancel.addEventListener('click', () => {
-      container.remove();
-    });
+  document.getElementById('btnCancelLeave').addEventListener('click', () => {
+    hideLeaveConfirmation();
+    document.getElementById('btnLeaveMenuPause').focus();
+  });
+  document.getElementById('btnConfirmLeave').addEventListener('click', () => {
+    if (currentScreen !== 'pauseMenu') return;
+    RunClock.stop();
+    saveGame('pause-leave');
+    resetGameLoop();
+    showScreen('mainMenu');
+    refreshSaveUi();
   });
 }
-window.addEventListener('load', initPauseSystem);
+initPauseSystem();
+
+/* The SVG buttons use exactly the same casts and cooldown checks as the keys. */
+document.getElementById('abilities').addEventListener('click', (e) => {
+  const button = e.target.closest('[data-ability]');
+  if (button && !button.disabled) useAbilityButton(button.getAttribute('data-ability'));
+});
+window.addEventListener('load', resize);
 
 (function boot() {
   /* the saved run is read BEFORE the title screen paints, so the menu line
      already knows the universe, the level and the zone he was left in */
-  game.best = SaveSystem.best();
+  gameState.bestScore = SaveSystem.best();
   game.lifetimeGems = SaveSystem.lifetimeGems();
   game.maxZone = SaveSystem.maxZone();
   loadGame();                    /* slot + abilities + bosses + the menu line */
@@ -19812,12 +19446,9 @@ window.addEventListener('load', initPauseSystem);
   for (let i = 0; i < UI.classIcons.length; i++) {
     paintClassIcon(UI.classIcons[i], CLASSES[i].id);   /* markup, painted once */
   }
-  showScreen('mainMenu');        /* boot lands on the title screen, and only it */
-
   game.player = makePlayer();
   game.fog = new Uint8Array(FOG_COLS * FOG_COLS);
   game.arenas = [];
-  game.zoneIndex = 0;
 
   resize();
   updateHealthOrbs();
@@ -19825,6 +19456,7 @@ window.addEventListener('load', initPauseSystem);
   if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
     document.fonts.ready.then(() => {}).catch(function () {});
   }
+  showScreen('mainMenu');
 })();
 </script>
 </body>
