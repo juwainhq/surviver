@@ -400,12 +400,18 @@
   .ability.cooling .icon { opacity: .3; }
   .ability.cooling .label { color: #4b5563; }
   .ability.cooling .key { color: #4b5563; }
-.ability .lock{
+  /* Locked slot: a plain dark grey filled disc with a small padlock on it.
+     Both are drawn geometry, painted on the slot's <canvas> by drawLockIcon()
+     — two rectangles for the lock body, one arc for the shackle, 16x16 base
+     px. Nothing in the ability bar is an emoji, a Unicode symbol, an HTML
+     entity or a text character standing in for an icon, so there is no glyph
+     here that could ever inherit a font size or a colour and blow up. */
+  .ability .lock{
     position:absolute; inset:0; display:none;
     align-items:center; justify-content:center;
-    color:#4b5563;
+    pointer-events:none;
   }
-  .ability .lock svg{ width:20px; height:20px; display:block; fill:currentColor; }
+  .ability .lock canvas{ width:48px; height:48px; display:block; }
   .ability.locked .lock{ display:flex; }
   .ability.locked .icon,
   .ability.locked .cd,
@@ -1580,7 +1586,9 @@
   <!-- the HUD and all in-stage effects live in one scaled layer -->
   <div id="uiLayer">
 
-  /* --- MOBILE PAUSE BUTTON --- */
+  <!-- Mobile pause button. Its rules live in the <style> block in <head>:
+       a CSS comment down here is not a comment, it is text, and it paints
+       itself over the top-left of the HUD. -->
   <div id="mobilePauseBtn" aria-label="Pause">☰</div>
   <!-- ==================== MOBILE TOUCH CONTROLS ==================== -->
   <div id="touchControls">
@@ -1627,7 +1635,7 @@
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">Q</span>
           <span class="label" id="qLabel">BASH</span>
-          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+          <span class="lock" aria-hidden="true"><canvas class="lock-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
         </div>
       </div>
       <!-- E: NOVA (White 8-point star) -->
@@ -1642,7 +1650,7 @@
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">E</span>
           <span class="label">NOVA</span>
-          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+          <span class="lock" aria-hidden="true"><canvas class="lock-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
         </div>
       </div>
       <!-- SHIFT: DASH (Cyan Triangle) -->
@@ -1657,7 +1665,7 @@
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">SHIFT</span>
           <span class="label">DASH</span>
-          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+          <span class="lock" aria-hidden="true"><canvas class="lock-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
         </div>
       </div>
       <!-- F: TURRET (Green T) -->
@@ -1673,7 +1681,7 @@
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">F</span>
           <span class="label">TURRET</span>
-          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+          <span class="lock" aria-hidden="true"><canvas class="lock-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
         </div>
       </div>
       <!-- R: OVERCHARGE (Orange Lightning) -->
@@ -1688,7 +1696,7 @@
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">R</span>
           <span class="label">OVERCH</span>
-          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+          <span class="lock" aria-hidden="true"><canvas class="lock-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
         </div>
       </div>
       <!-- X: TIME BOMB (Red Circle + Plus + Dot) -->
@@ -1706,16 +1714,7 @@
           <span class="cd" aria-hidden="true"></span>
           <span class="key" aria-hidden="true">X</span>
           <span class="label">BOMB</span>
-          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
-        </div>
-      </div>
-    </div>
-          <span class="ab-sweep" aria-hidden="true"></span>
-          <span class="icon" aria-hidden="true"></span>
-          <span class="cd" aria-hidden="true"></span>
-          <span class="key" aria-hidden="true">X</span>
-          <span class="label">TIME BOMB</span>
-          <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zM9.5 7a2.5 2.5 0 0 1 5 0v2h-5V7zm3 10.4V19h-1v-1.6a1.6 1.6 0 1 1 1 0z"/></svg></span>
+          <span class="lock" aria-hidden="true"><canvas class="lock-cv" width="48" height="48" aria-hidden="true" focusable="false"></canvas></span>
         </div>
       </div>
     </div>
@@ -1783,12 +1782,11 @@
     <button class="pause-btn" id="btnLeaveMenuPause">LEAVE TO MENU</button>
   </div>
 
-<!-- ==================== OVERLAY SCREENS ==================== -->
+<!-- ==================== OVERLAY SCREENS ====================
      Every menu, card, shop and result screen is a plain HTML layer that
      is pinned over the whole viewport at z-index 1000. Nothing here is
      drawn on the game canvas: while one of them is open the canvas is
      paused outright.
-
      ========================================================= -->
 <div id="overlays">
   <!-- ==================== MAIN MENU ==================== -->
@@ -7329,8 +7327,74 @@ function grantBossAbility(zoneIndex) {
   return def;
 }
 
+/* ------------------------- locked slot artwork -----------------------------
+   A locked ability is a dark grey filled disc with a small padlock on it, and
+   every pixel of both is drawn with the canvas 2D API: two rectangles make the
+   lock body (the shell and the keyhole cut into it) and one arc makes the
+   shackle. No emoji, no Unicode glyph, no HTML entity and no text character is
+   used as an icon anywhere in the ability bar, so there is nothing left that a
+   missing font or an inherited colour could turn into a screen-sized smear.
+   The artwork is laid out in the HUD's 48x48 base space and the backing store
+   is rebuilt to match the on-screen scale, so it stays crisp at any size.
+   ------------------------------------------------------------------------ */
+const LOCK_BOX   = 48;   /* the slot is a 48x48 square in base space */
+const LOCK_DISC_R = 21;  /* radius of the dark grey filled circle */
+const LOCK_GLYPH = 16;   /* the padlock itself is 16x16 base px */
+
+function drawLockIcon(canvas) {
+  if (!canvas) return;
+  /* cssScale * dpr == viewScale, so viewScale base px == one device px */
+  const px = Math.round(clamp(LOCK_BOX * (viewScale || 1), LOCK_BOX, LOCK_BOX * 4));
+  if (canvas.width !== px) canvas.width = px;
+  if (canvas.height !== px) canvas.height = px;
+  const g = canvas.getContext('2d');
+  if (!g) return;
+  const k = px / LOCK_BOX;                    /* base px -> device px */
+  g.setTransform(k, 0, 0, k, 0, 0);
+  g.clearRect(0, 0, LOCK_BOX, LOCK_BOX);
+
+  /* the disc: one flat dark grey filled circle, nothing else behind the lock */
+  g.beginPath();
+  g.arc(LOCK_BOX / 2, LOCK_BOX / 2, LOCK_DISC_R, 0, TAU);
+  g.fillStyle = '#3a3f4a';
+  g.fill();
+
+  /* the padlock, dead centre, 16x16 base px */
+  const x0 = (LOCK_BOX - LOCK_GLYPH) / 2;     /* 16 */
+  const y0 = (LOCK_BOX - LOCK_GLYPH) / 2;     /* 16 */
+  const steel = '#d5dae3';
+
+  /* shackle: a small arc plus the two legs that drop into the body.
+     The glyph spans y0+1 .. y0+15, so the 16x16 box stays centred on the disc. */
+  g.strokeStyle = steel;
+  g.lineWidth = 2;
+  g.beginPath();
+  g.arc(x0 + 8, y0 + 5.6, 3.6, Math.PI, TAU);       /* half turn over the top */
+  g.stroke();
+  g.beginPath();
+  g.moveTo(x0 + 4.4, y0 + 5.6); g.lineTo(x0 + 4.4, y0 + 8.4);
+  g.moveTo(x0 + 11.6, y0 + 5.6); g.lineTo(x0 + 11.6, y0 + 8.4);
+  g.stroke();
+
+  /* body: rectangle one is the shell, rectangle two is the keyhole in it */
+  g.fillStyle = steel;
+  g.fillRect(x0 + 2.5, y0 + 8, 11, 7);
+  g.fillStyle = '#2b303b';
+  g.fillRect(x0 + 7, y0 + 10, 2, 3.2);
+}
+
+/* repaint the six lock canvases: on boot, on resize, and whenever a slot
+   changes state. Cheap, and it never depends on a font being loaded. */
+function drawAbilityLocks() {
+  const bar = document.getElementById('abilities');
+  if (!bar) return;
+  const cvs = bar.querySelectorAll('.ability .lock canvas');
+  for (let i = 0; i < cvs.length; i++) drawLockIcon(cvs[i]);
+}
+
 /* dark grey padlocks on every slot the player has not earned yet */
 function syncAbilityHud() {
+  drawAbilityLocks();                          /* drawn, never typed */
   /* sync class ability icon and label */
   const qLabel = document.getElementById('qLabel');
   const cls = game.playerClass || 'knight';
@@ -19511,6 +19575,7 @@ function resize() {
     UI.uiLayer.style.transform =
       'translate(' + (viewOffX / dpr) + 'px,' + (viewOffY / dpr) + 'px) scale(' + cssScale + ')';
   }
+  drawAbilityLocks();   /* the drawn padlocks follow the same scale factor */
   /* store the independent ratios for the game elements */
   viewScaleX = scaleX;
   viewScaleY = scaleY;
