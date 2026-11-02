@@ -3514,9 +3514,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#070c1e', bottom: '#16233f' },
     groundTint: null,
     waves: [
-      { count: 12, types: ['knight'] },
-      { count: 18, types: ['knight', 'archer'] },
-      { count: 25, types: ['knight', 'archer'], eliteMin: 2 }
+      { count: 8, types: ['knight'] },
+      { count: 12, types: ['knight', 'archer'] },
+      { count: 16, types: ['knight', 'archer'], eliteMin: 2 }
     ],
     arenas: [[1440, 1520], [4640, 1760], [2960, 4840]],
     bossPos: [3000, 800],
@@ -3534,9 +3534,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#040b07', bottom: '#0d2118' },
     groundTint: null,
     waves: [
-      { count: 12, types: ['archer'] },
-      { count: 18, types: ['archer', 'knight'] },
-      { count: 25, types: ['archer', 'knight', 'wizard'], eliteMin: 2 }
+      { count: 8, types: ['archer'] },
+      { count: 12, types: ['archer', 'knight'] },
+      { count: 16, types: ['archer', 'knight', 'wizard'], eliteMin: 2 }
     ],
     arenas: [[1280, 1320], [4760, 1520], [2900, 4800]],
     bossPos: [4720, 4720],
@@ -3554,9 +3554,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#06080e', bottom: '#1a2333' },
     groundTint: null,
     waves: [
-      { count: 12, types: ['knight'] },
-      { count: 18, types: ['knight', 'archer'] },
-      { count: 25, types: ['knight', 'archer', 'ghost'], eliteMin: 2 }
+      { count: 8, types: ['knight'] },
+      { count: 12, types: ['knight', 'archer'] },
+      { count: 16, types: ['knight', 'archer', 'ghost'], eliteMin: 2 }
     ],
     arenas: [[1400, 1800], [4600, 1280], [3120, 4680]],
     bossPos: [3000, 760],
@@ -3574,9 +3574,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#080414', bottom: '#1b1035' },
     groundTint: null,
     waves: [
-      { count: 12, types: ['wizard'] },
-      { count: 18, types: ['wizard', 'ghost'] },
-      { count: 25, types: ['wizard', 'ghost', 'archer'], eliteMin: 2 }
+      { count: 8, types: ['wizard'] },
+      { count: 12, types: ['wizard', 'ghost'] },
+      { count: 16, types: ['wizard', 'ghost', 'archer'], eliteMin: 2 }
     ],
     arenas: [[1520, 1280], [4720, 1960], [2960, 4760]],
     bossPos: [1240, 4720],
@@ -3594,9 +3594,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#02040a', bottom: '#061426' },
     groundTint: null,
     waves: [
+      { count: 8, types: ['knight', 'archer', 'wizard', 'ghost'] },
       { count: 12, types: ['knight', 'archer', 'wizard', 'ghost'] },
-      { count: 18, types: ['knight', 'archer', 'wizard', 'ghost'] },
-      { count: 25, types: ['knight', 'archer', 'wizard', 'ghost'], eliteMin: 2 }
+      { count: 16, types: ['knight', 'archer', 'wizard', 'ghost'], eliteMin: 2 }
     ],
     arenas: [[1400, 1440], [4640, 1440], [3000, 4720]],
     bossPos: [4540, 4600],
@@ -3953,8 +3953,8 @@ const DESTRUCTIBLES = [
 /* `turn` is how fast a body can swing its heading round, in radians per second:
    heavy knights bank slowly, ghosts whip around, wizards drift. */
 const ENEMY_DEFS = {
-  knight: { hp: 2, speed: 100, r: 16, color: '#ef4444', score: 12, contact: 1, turn: 4.2 },
-  archer: { hp: 1, speed: 88, r: 14, color: '#fb923c', score: 14, contact: 1, fire: 2.0, turn: 5.2 },
+  knight: { hp: 2, speed: 55, r: 16, color: '#ef4444', score: 12, contact: 1, turn: 4.2 },
+  archer: { hp: 1, speed: 60, r: 14, color: '#fb923c', score: 14, contact: 1, fire: 2.0, turn: 5.2 },
   wizard: { hp: 3, speed: 62, r: 17, color: '#a855f7', score: 20, contact: 1, fire: 3.0, turn: 3.2 },
   ghost:  { hp: 1, speed: 156, r: 13, color: '#e2e8f0', score: 10, contact: 1, turn: 8.0 },
 
@@ -7426,10 +7426,13 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
      Regular enemies use the table verbatim; the old per-zone power curve is
      intentionally no longer stacked on top of it. */
   const diff = universeDifficulty(gameState.currentUniverse);
-  /* each level beyond level 1 of the same universe: +15% enemy speed, +20% enemy HP */
+  /* Each level beyond level 1 of the same universe: +15% enemy speed, +20%
+     enemy HP. Difficulty scaling applies from Universe 2 onward only —
+     Universe 1 is the tutorial, so its enemies always use raw base stats. */
   const lvl = levelInUniverse(gameState.currentZone);
-  const lvlSpeed = 1 + 0.15 * (lvl - 1);
-  const lvlHp = 1 + 0.20 * (lvl - 1);
+  const scaling = gameState.currentUniverse >= 1;
+  const lvlSpeed = scaling ? 1 + 0.15 * (lvl - 1) : 1;
+  const lvlHp = scaling ? 1 + 0.20 * (lvl - 1) : 1;
   const eliteVariant = !!o.eliteVariant;
   const hp = Math.round(def.hp * diff.hp * lvlHp * (eliteVariant ? 2.5 : 1) * 10) / 10;
   const e = {
@@ -7489,20 +7492,34 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
   return e;
 }
 
-/* Wave spawning is a trickle, not a burst: one enemy every 0.6 seconds until
-   the wave count is reached, so the arena applies constant pressure. A wave
-   only counts as cleared once the queue is empty AND every spawned enemy is
-   dead. The final wave of every arena is guaranteed at least 2 elites, and
-   every level beyond level 1 of a universe adds +1 enemy per wave. */
-const WAVE_SPAWN_INTERVAL = 0.6;
+/* Wave spawning releases in bursts: a group of 4-6 enemies lands every 2.5
+   seconds until the wave count is reached, and the first group spawns
+   instantly the moment the arena activates (wave start), so combat opens hot
+   instead of trickling in one enemy at a time. A wave only counts as cleared
+   once the queue is empty AND every spawned enemy is dead. The final wave of
+   every arena is guaranteed at least 2 elites, and every level beyond level 1
+   of a universe adds +1 enemy per wave (difficulty scaling, Universe 2+). */
+const WAVE_GROUP_INTERVAL = 2.5;
+const WAVE_GROUP_MIN = 4;
+const WAVE_GROUP_MAX = 6;
+function releaseSpawnGroup(arena) {
+  const size = WAVE_GROUP_MIN + Math.floor(Math.random() * (WAVE_GROUP_MAX - WAVE_GROUP_MIN + 1));
+  const n = Math.min(arena.spawnQueue, size);
+  for (let k = 0; k < n; k++) {
+    arena.spawnQueue--;
+    spawnWaveEnemy(arena);
+  }
+}
 function spawnWave(arena, arenaIndex, waveIndex) {
   const z = ZONES[gameState.currentZone];
   const wave = z.waves[Math.min(waveIndex, z.waves.length - 1)];
   const diff = universeDifficulty(gameState.currentUniverse);
-  const levelBonus = levelInUniverse(gameState.currentZone) - 1;   /* +1 per wave per level */
+  /* +1 enemy per wave for each level past level 1 — difficulty scaling, so
+     it applies from Universe 2 onward; Universe 1 keeps its base wave sizes */
+  const levelBonus = gameState.currentUniverse >= 1 ? levelInUniverse(gameState.currentZone) - 1 : 0;
   const count = Math.max(1, Math.round(wave.count * diff.wave) + levelBonus);
   arena.spawnQueue = count;
-  arena.spawnTimer = 0;
+  arena.spawnTimer = WAVE_GROUP_INTERVAL;   /* next burst 2.5s after the instant first one */
   arena.spawnTotal = count;
   arena.spawnWaveIndex = waveIndex;
   arena.spawnTypes = wave.types;
@@ -7511,6 +7528,8 @@ function spawnWave(arena, arenaIndex, waveIndex) {
   arena.elitesSpawned = 0;
   arena.wave = waveIndex + 1;
   arena.remaining = count;
+  /* first burst (4-6 enemies) lands instantly on activation */
+  releaseSpawnGroup(arena);
   Sound.arenaStart();
   addText(arena.x, arena.y - 120, 'WAVE ' + (waveIndex + 1), '#fca5a5');
 }
@@ -7541,10 +7560,9 @@ function spawnWaveEnemy(arena) {
 function tickArenaSpawns(a, dt) {
   if (!a.spawnQueue || a.spawnQueue <= 0) return;
   a.spawnTimer -= dt;
-  while (a.spawnQueue > 0 && a.spawnTimer < 0) {
-    a.spawnTimer += WAVE_SPAWN_INTERVAL;
-    a.spawnQueue--;
-    spawnWaveEnemy(a);
+  while (a.spawnQueue > 0 && a.spawnTimer <= 0) {
+    a.spawnTimer += WAVE_GROUP_INTERVAL;
+    releaseSpawnGroup(a);
   }
 }
 
