@@ -15044,17 +15044,20 @@ function block(x, y, w, h, r, fill) {
    electric blue light on the floor. Every class shares this body; only the
    weapon on top changes. */
 const RAEL = {
-  helmet: '#2b3443',
-  helmetLit: '#3d4a5c',
-  helmetDark: '#151b24',
-  navy: '#16233c',
-  navyLit: '#233651',
-  navyDark: '#0b1220',
-  silver: '#b8c4d4',
-  silverDark: '#75849a',
-  leg: '#111a26',
-  boot: '#1c2734'
+  helmet: '#2a2a2a',        /* dark iron */
+  helmetLit: '#4a4a4a',     /* plate highlight */
+  helmetDark: '#151515',
+  navy: '#2a2a2a',          /* barrel chest: dark charcoal grey */
+  navyLit: '#4a4a4a',
+  navyDark: '#1a1a1a',
+  silver: '#3a3a3a',        /* dark iron pauldrons / sleeves */
+  silverDark: '#222222',
+  leg: '#242424',
+  boot: '#1c1c1c',
+  leather: '#5c3317',       /* medieval patch leather */
+  amber: '#d4a017'
 };
+
 
 function drawRaelBody(p, bob, flash, mirror) {
   const t = game.time;
@@ -15070,85 +15073,138 @@ function drawRaelBody(p, bob, flash, mirror) {
   const step = stepping ? Math.sin(p.walk * 1.75) : 0;
   const liftL = step * 1.7;
   const liftR = -step * 1.7;
-  /* idle: a gentle 2px rise and fall on a 1.2s cycle */
-  const idle = stepping ? 0 : Math.sin(t * (TAU / 1.2)) * 1;
+  /* walk animation: a slight left-right tilt on each step */
+  const tilt = stepping ? Math.sin(p.walk * 1.75) * 0.055 : 0;
   const sway = stepping ? Math.cos(p.walk * 0.875) * 0.5 : 0;
 
   ctx.save();
-  ctx.translate(p.x + sway, p.y + (bob || 0) + idle);
+  ctx.translate(p.x + sway, p.y + (bob || 0));
+  ctx.rotate(tilt);
   /* mirror about the body itself, so the turn squash stays centred on him */
   ctx.scale(mirror === undefined ? 1 : mirror, 1);
   if (skinA < 1) ctx.globalAlpha = skinA;
 
-  /* ---- boot glow pooling on the floor ---- */
+  /* ---- amber glow pooling on the floor under the boots ---- */
   for (let i = 0; i < 2; i++) {
     const bx = i === 0 ? -5.4 : 5.4;
     const lift = i === 0 ? liftL : liftR;
-    const glow = ctx.createRadialGradient(bx, 19 + lift * 0.4, 1, bx, 19 + lift * 0.4, 14);
-    glow.addColorStop(0, 'rgba(' + g.rgb + ',' + (0.30 + 0.10 * Math.sin(t * 2.4 + i)).toFixed(3) + ')');
+    const glow = ctx.createRadialGradient(bx, 23.4 + lift * 0.4, 1, bx, 23.4 + lift * 0.4, 13);
+    glow.addColorStop(0, 'rgba(' + g.rgb + ',' + (0.34 + 0.10 * Math.sin(t * 2.4 + i)).toFixed(3) + ')');
     glow.addColorStop(1, 'rgba(' + g.rgb + ',0)');
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.ellipse(bx, 19 + lift * 0.4, 14, 5, 0, 0, TAU);
+    ctx.ellipse(bx, 23.4 + lift * 0.4, 13, 4.6, 0, 0, TAU);
     ctx.fill();
   }
 
-  /* ---- legs: two short dark rectangles with a gap ---- */
-  block(-8.4, 4 + liftL * 0.4, 7, 12, 2.2, F(P.leg));
-  block(1.4, 4 + liftR * 0.4, 7, 12, 2.2, F(P.leg));
+  /* ---- legs: armored greaves, slightly wider at the knee ---- */
+  block(-8.6, 7 + liftL * 0.4, 7.2, 9.5, 2.2, F(P.leg));
+  block(1.4, 7 + liftR * 0.4, 7.2, 9.5, 2.2, F(P.leg));
+  block(-9.4, 12.5 + liftL * 0.4, 8.8, 5.6, 2.4, F(P.leg));   /* knee plate bulges wider */
+  block(0.6, 12.5 + liftR * 0.4, 8.8, 5.6, 2.4, F(P.leg));
+  ctx.strokeStyle = 'rgba(74,74,74,0.8)';
+  ctx.lineWidth = 0.8;
+  roundRect(ctx, -9.4, 12.5 + liftL * 0.4, 8.8, 5.6, 2.4); ctx.stroke();
+  roundRect(ctx, 0.6, 12.5 + liftR * 0.4, 8.8, 5.6, 2.4); ctx.stroke();
 
-  /* ---- boots, wider than the legs ---- */
+  /* ---- boots: flat dark iron with a small amber glow along the sole ---- */
   for (let i = 0; i < 2; i++) {
     const lift = i === 0 ? liftL : liftR;
-    const bx = i === 0 ? -10.2 : 0.6;
-    block(bx, 13.4 + lift, 9.6, 8.6, 2.8, F(P.boot));
-    /* the electric strip along the sole */
+    const bx = i === 0 ? -10.6 : 0.8;
+    block(bx, 17.6 + lift, 9.8, 6, 2.2, F(P.boot));
     ctx.fillStyle = F(g.glow);
     ctx.globalAlpha = flash ? 0.5 : 0.9;
-    roundRect(ctx, bx + 1.5, 19.4 + lift, 6.6, 1.6, 0.8);
+    roundRect(ctx, bx + 1.4, 22.2 + lift, 7, 1.5, 0.7);
     ctx.fill();
     ctx.globalAlpha = 1;
   }
 
-  /* ---- torso: wide barrel chest in dark navy ---- */
-  const chest = ctx.createLinearGradient(0, -8, 0, 7);
+  /* ---- arms: armored dark-grey sleeves ---- */
+  block(-17.2, -9, 4.6, 13.5, 2, F(P.silverDark));
+  block(12.6, -9, 4.6, 13.5, 2, F(P.silverDark));
+  ctx.strokeStyle = 'rgba(74,74,74,0.7)';
+  ctx.lineWidth = 0.8;
+  roundRect(ctx, -17.2, -9, 4.6, 13.5, 2); ctx.stroke();
+  roundRect(ctx, 12.6, -9, 4.6, 13.5, 2); ctx.stroke();
+
+  /* ---- torso: wide barrel chest in dark charcoal grey ---- */
+  const chest = ctx.createLinearGradient(0, -11, 0, 7);
   chest.addColorStop(0, F(P.navyLit));
   chest.addColorStop(0.55, F(P.navy));
   chest.addColorStop(1, F(P.navyDark));
   ctx.fillStyle = F(chest);
-  roundRect(ctx, -13, -8, 26, 15, 4.5);
+  roundRect(ctx, -13.5, -11, 27, 18, 5);
   ctx.fill();
-  /* a dark seam under the chest so the belt reads */
-  ctx.fillStyle = 'rgba(4,8,14,0.6)';
-  roundRect(ctx, -12.4, 4.4, 24.8, 3.4, 1.6);
+  /* dented plate texture: 3 horizontal dent lines hammered across the chest */
+  ctx.strokeStyle = 'rgba(8,8,8,0.65)';
+  ctx.lineWidth = 1.1;
+  for (let i = 0; i < 3; i++) {
+    const y0 = -7.5 + i * 4.6;
+    ctx.beginPath();
+    ctx.moveTo(-11.5, y0);
+    ctx.lineTo(-5, y0 + 1.1);
+    ctx.lineTo(2, y0 - 0.8);
+    ctx.lineTo(11.5, y0 + 0.9);
+    ctx.stroke();
+  }
+  /* plate highlight along the top edge */
+  ctx.strokeStyle = 'rgba(130,130,130,0.5)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-11, -10); ctx.quadraticCurveTo(0, -12, 11, -10); ctx.stroke();
+  /* leather belt: the medieval patch over the futuristic plate */
+  ctx.fillStyle = F(P.leather);
+  roundRect(ctx, -12.6, 4.8, 25.2, 3.4, 1.6);
   ctx.fill();
+  ctx.strokeStyle = 'rgba(20,10,4,0.7)';
+  ctx.lineWidth = 0.8;
+  roundRect(ctx, -12.6, 4.8, 25.2, 3.4, 1.6);
+  ctx.stroke();
 
-  /* ---- silver shoulder pads, protruding on each side ---- */
+  /* ---- shoulder pauldrons: chunky dark-iron rectangles with an amber glow edge ---- */
   for (let i = 0; i < 2; i++) {
     const side = i === 0 ? -1 : 1;
-    const px = side > 0 ? 10.6 : -18.6;
-    block(px, -7.4, 8, 8.2, 2.2, F(P.silver));
+    const px = side > 0 ? 11 : -19.4;
+    const pg = ctx.createLinearGradient(0, -12, 0, -3);
+    pg.addColorStop(0, F(P.helmetLit));
+    pg.addColorStop(1, F(P.helmet));
+    ctx.fillStyle = pg;
+    roundRect(ctx, px, -12, 8.4, 9, 2.4);
+    ctx.fill();
     ctx.strokeStyle = F(P.silverDark);
     ctx.lineWidth = 1;
-    roundRect(ctx, px + 0.5, -6.9, 7, 7.2, 2);
+    roundRect(ctx, px + 0.5, -11.5, 7.4, 8, 2);
     ctx.stroke();
-    /* a navy seam along the inner edge marks the pad as a separate plate */
-    ctx.fillStyle = 'rgba(10,18,30,0.55)';
-    ctx.fillRect(side > 0 ? px : px + 6.7, -6.9, 1.3, 7.2);
+    /* slight amber glow along the outer edge */
+    ctx.save();
+    ctx.shadowColor = g.glow;
+    ctx.shadowBlur = 6;
+    ctx.strokeStyle = 'rgba(' + g.rgb + ',0.75)';
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(side > 0 ? px + 8.2 : px + 0.2, -11.4);
+    ctx.lineTo(side > 0 ? px + 8.2 : px + 0.2, -3.8);
+    ctx.stroke();
+    ctx.restore();
   }
 
-  /* ---- glowing blue chest panel ---- */
+  /* ---- glowing amber core crystal in the centre of the chest ---- */
   const pulse = 0.7 + 0.3 * Math.sin(t * 3.4);
   ctx.save();
   ctx.shadowColor = g.glow;
-  ctx.shadowBlur = 9 * pulse;
-  ctx.fillStyle = F(g.glow);
-  roundRect(ctx, -5.6, -5, 11.2, 6.6, 1.8);
-  ctx.fill();
+  ctx.shadowBlur = 12 * pulse;
+  const core = ctx.createRadialGradient(-1, -3.5, 0.5, 0, -2.5, 5.5);
+  core.addColorStop(0, 'rgba(255,244,214,0.98)');
+  core.addColorStop(0.45, F(g.glow));
+  core.addColorStop(1, 'rgba(120,84,10,0.9)');
+  ctx.fillStyle = F(core);
+  ctx.beginPath(); ctx.arc(0, -2.5, 4.6, 0, TAU); ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.fillStyle = 'rgba(232,253,255,' + (0.45 + 0.4 * pulse).toFixed(2) + ')';
-  roundRect(ctx, -3.8, -3.8, 7.6, 2.4, 1);
-  ctx.fill();
+  /* crystal facets */
+  ctx.strokeStyle = 'rgba(255,240,190,0.85)';
+  ctx.lineWidth = 0.9;
+  ctx.beginPath();
+  ctx.moveTo(0, -6.9); ctx.lineTo(3.2, -2.5); ctx.lineTo(0, 1.9); ctx.lineTo(-3.2, -2.5);
+  ctx.closePath(); ctx.stroke();
   ctx.restore();
 
   /* Void Walker: purple energy cracks running through the black plate */
@@ -15159,7 +15215,7 @@ function drawRaelBody(p, bob, flash, mirror) {
     ctx.shadowBlur = 8;
     ctx.lineWidth = 1.1;
     for (let i = 0; i < 3; i++) {
-      const y0 = -6 + i * 4.4;
+      const y0 = -8 + i * 4.4;
       ctx.beginPath();
       ctx.moveTo(-10 + i * 2, y0);
       ctx.lineTo(-3 + i * 1.5, y0 + 2.2);
@@ -15170,42 +15226,51 @@ function drawRaelBody(p, bob, flash, mirror) {
     ctx.restore();
   }
 
-  /* ---- head: large rounded helmet ---- */
-  ctx.fillStyle = F(P.helmet);
-  roundRect(ctx, -9, -22, 18, 14.5, 5.5);
+  /* ---- head: rounded dark iron helmet, face fully hidden behind the visor ---- */
+  const helm = ctx.createLinearGradient(0, -27, 0, -12);
+  helm.addColorStop(0, F(P.helmetLit));
+  helm.addColorStop(0.6, F(P.helmet));
+  helm.addColorStop(1, F(P.helmetDark));
+  ctx.fillStyle = F(helm);
+  roundRect(ctx, -10, -27, 20, 15, 6.5);
   ctx.fill();
-  /* lit crown + dark jaw give the helmet its roundness */
-  ctx.fillStyle = F(P.helmetLit);
-  roundRect(ctx, -7.4, -21, 14.8, 5, 2.6);
-  ctx.fill();
-  ctx.fillStyle = F(P.helmetDark);
-  roundRect(ctx, -7.6, -11.2, 15.2, 3.2, 1.5);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(9,14,22,0.9)';
+  ctx.strokeStyle = 'rgba(8,8,8,0.9)';
   ctx.lineWidth = 1.2;
-  roundRect(ctx, -9, -22, 18, 14.5, 5.5);
+  roundRect(ctx, -10, -27, 20, 15, 6.5);
   ctx.stroke();
+  /* rivets along the brow */
+  ctx.fillStyle = F(P.silverDark);
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath(); ctx.arc(-6 + i * 4, -25.4, 0.8, 0, TAU); ctx.fill();
+  }
 
-  /* ---- visor: bright cyan band across the middle of the head ---- */
+  /* ---- two small dark-metal horns on top ---- */
+  ctx.fillStyle = F(P.helmetDark);
+  ctx.strokeStyle = 'rgba(74,74,74,0.8)';
+  ctx.lineWidth = 0.8;
+  for (let i = 0; i < 2; i++) {
+    const side = i === 0 ? -1 : 1;
+    ctx.beginPath();
+    ctx.moveTo(side * 5.2, -26.6);
+    ctx.quadraticCurveTo(side * 9.2, -31.8, side * 7, -34.6);
+    ctx.quadraticCurveTo(side * 6, -31, side * 3.4, -27.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  /* ---- narrow glowing amber visor slit ---- */
   ctx.save();
   ctx.shadowColor = g.visor;
   ctx.shadowBlur = 12;
   ctx.fillStyle = F(g.visor);
-  roundRect(ctx, -7, -17.6, 14, 5, 2.3);
+  roundRect(ctx, -7.4, -21.6, 14.8, 3, 1.5);
   ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.fillStyle = 'rgba(240,255,255,0.7)';
-  roundRect(ctx, -5.8, -16.7, 5.6, 1.6, 0.8);
+  ctx.fillStyle = 'rgba(255,246,220,0.85)';
+  roundRect(ctx, -6, -21, 6, 1.2, 0.6);
   ctx.fill();
   ctx.restore();
-
-  /* ---- antenna on the top right ---- */
-  ctx.fillStyle = F(P.silverDark);
-  ctx.fillRect(6.2, -28, 1.7, 6.4);
-  ctx.fillStyle = F(g.visor);
-  ctx.beginPath();
-  ctx.arc(7.05, -28.6, 2, 0, TAU);
-  ctx.fill();
 
   ctx.restore();
 }
@@ -18538,7 +18603,7 @@ function drawBoss() {
    thruster flames. The sprite mirrors to face the cursor, the weapon pivots on
    the shoulder so it always points at it, and a slow aura ring pulses underfoot.
    With one orb left every glow turns a flickering red. */
-const SOLDIER = { w: 40, h: 44, scale: 1, feet: 22 };
+const SOLDIER = { w: 40, h: 52, scale: 1, feet: 23 };   /* 40x52 time-traveller in patched armor */
 
 function hexTriplet(hex) {
   const h = String(hex).replace('#', '');
@@ -18603,11 +18668,13 @@ function soldierGlow(p) {
   return {
     low: low,
     flick: flick,
-    rgb: low ? '255,74,74' : '56,189,248',
-    glow: low ? '#ff4a4a' : '#38bdf8',
-    visor: low ? '#ff8080' : '#5ff0ff',
-    visorHot: low ? 'rgba(255,235,235,0.95)' : 'rgba(226,255,255,0.95)',
-    visorGlow: low ? 'rgba(255,60,60,0.95)' : 'rgba(34,211,238,0.95)'
+    rgb: low ? '255,74,74' : '212,160,23',
+    glow: low ? '#ff4a4a' : '#d4a017',
+    visor: low ? '#ff8080' : '#f5c842',
+    visorHot: low ? 'rgba(255,235,235,0.95)' : 'rgba(255,246,220,0.97)',
+    visorGlow: low ? 'rgba(255,60,60,0.95)' : 'rgba(245,200,66,0.95)',
+    trail: low ? '#ff4a4a' : '#d4a017',
+    wisp: low ? '#ff8080' : '#f5c842'
   };
 }
 
@@ -19273,9 +19340,10 @@ function drawPlayer() {
 
   /* very subtle bob while walking (plus a breath when standing still) */
   const dashing = p.dashTimer > 0;
+  /* idle animation: a very subtle 2px bob on a 1.5s cycle */
   const bob = dashing ? 0
     : p.moving ? Math.sin(p.walk) * 1.15
-      : Math.sin(game.time * 2) * 0.35;
+      : Math.sin(game.time * (TAU / 1.5)) * 2;
 
   /* ground shadow + aura ring */
   ctx.save();
@@ -19286,16 +19354,16 @@ function drawPlayer() {
   ctx.restore();
   drawSoldierAura(p, g);
 
-  /* arena entry: a cyan ward that pulses while the 1.5s grace window runs */
+  /* arena entry: an amber ward that pulses while the 1.5s grace window runs */
   if (game.arenaGrace > 0) {
     const t = game.arenaGrace;
     const pulse = 0.55 + 0.45 * Math.sin(game.time * 18);
     const grow = clamp(1 - t / ARENA_GRACE, 0, 1);
     ctx.save();
     ctx.globalAlpha = 0.35 + 0.4 * pulse;
-    ctx.strokeStyle = '#a5f3fc';
+    ctx.strokeStyle = '#f5c842';
     ctx.lineWidth = 2.2;
-    ctx.shadowColor = '#22d3ee';
+    ctx.shadowColor = '#d4a017';
     ctx.shadowBlur = 16;
     ctx.setLineDash([12, 8]);
     ctx.lineDashOffset = -game.time * 60;
@@ -19304,7 +19372,7 @@ function drawPlayer() {
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.globalAlpha = 0.12 + 0.16 * pulse;
-    ctx.fillStyle = '#a5f3fc';
+    ctx.fillStyle = '#f5c842';
     ctx.beginPath();
     ctx.ellipse(p.x, p.y + 6, p.r + 20 + grow * 8, (p.r + 20 + grow * 8) * 0.62, 0, 0, TAU);
     ctx.fill();
@@ -19332,10 +19400,10 @@ function drawPlayer() {
     ctx.rotate(game.time * 1.7);
     const pulse = 0.45 + 0.3 * Math.sin(game.time * 15);
     ctx.globalAlpha = pulse;
-    ctx.strokeStyle = 'rgba(125,211,252,0.9)';
+    ctx.strokeStyle = 'rgba(245,200,66,0.9)';
     ctx.lineWidth = 2.4;
     ctx.lineCap = 'round';
-    ctx.shadowColor = '#7dd3fc';
+    ctx.shadowColor = '#d4a017';
     ctx.shadowBlur = 10;
     for (let i = 0; i < 8; i++) {
       const a = i / 8 * TAU;
@@ -19381,7 +19449,7 @@ function drawPlayer() {
     ctx.restore();
   }
 
-  /* ---- dash trail: blue afterimages of the trooper ---- */
+  /* ---- dash trail: amber afterimages of the trooper ---- */
   if (p.trail && p.trail.length) {
     for (let i = 0; i < p.trail.length; i++) {
       const t = p.trail[i];
@@ -19390,11 +19458,11 @@ function drawPlayer() {
       ctx.globalAlpha = a * 0.30;
       ctx.translate(t.x, t.y);
       ctx.scale(t.dir, 1);
-      ctx.fillStyle = g.trail || '#38bdf8';
+      ctx.fillStyle = g.trail || g.glow;
       roundRect(ctx, -10, -22, 20, 44, 8);
       ctx.fill();
       ctx.globalAlpha = a * 0.5;
-      ctx.fillStyle = g.wisp || '#a5f3fc';
+      ctx.fillStyle = g.wisp || '#f5c842';
       roundRect(ctx, -7, -17.6, 14, 5, 2.3);
       ctx.fill();
       ctx.restore();
@@ -19404,10 +19472,10 @@ function drawPlayer() {
   if (dashing) {
     ctx.save();
     ctx.globalAlpha = 0.28;
-    ctx.strokeStyle = '#7dd3fc';
+    ctx.strokeStyle = '#f5c842';
     ctx.lineWidth = 7;
     ctx.lineCap = 'round';
-    ctx.shadowColor = 'rgba(56,189,248,0.8)';
+    ctx.shadowColor = 'rgba(212,160,23,0.8)';
     ctx.shadowBlur = 10;
     ctx.beginPath();
     ctx.moveTo(p.x - p.dashDir.x * 46, p.y - p.dashDir.y * 46);
