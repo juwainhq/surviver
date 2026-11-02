@@ -1409,6 +1409,83 @@
     border-radius:3px; white-space:nowrap; opacity:0; transition:opacity .18s;
   }
   .pause-btn:disabled:hover .pause-tooltip { opacity:1; }
+
+  /* ---- Permanent class progression --------------------------------------- */
+  #classBadge{ display:block; width:226px; }
+  .class-badge-row{ display:flex; align-items:center; gap:8px; }
+  #hudClassLevel{ margin-left:auto; color:#f5d991; font-size:12px; font-weight:700; white-space:nowrap; }
+  #classXpTrack{ height:5px; margin-top:7px; overflow:hidden; border:1px solid rgba(232,200,116,.35); border-radius:4px; background:rgba(0,0,0,.65); }
+  #classXpFill{ height:100%; width:0; background:linear-gradient(90deg,#aa7a2d,#ffdf9b); box-shadow:0 0 9px #e8c874; transition:width .22s ease; }
+  #classXpCaption{ display:flex; justify-content:space-between; margin-top:4px; font-size:10px; letter-spacing:1px; color:#d4c6a8; }
+  #hudSkillPoints{ color:#ffdf9b; font-weight:700; }
+  .class-level-meta{ margin-top:10px; padding-top:8px; border-top:1px solid rgba(232,200,116,.2); color:#e8c874; font-size:11px; letter-spacing:1px; text-align:center; }
+  .class-card-xp{ height:3px; background:rgba(232,200,116,.12); margin-top:6px; overflow:hidden; border-radius:2px; }
+  .class-card-xp i{ display:block; height:100%; background:#e8c874; }
+  #classLevelUp{ position:absolute; z-index:45; left:50%; top:48%; width:min(350px,85vw); padding:22px 26px 20px; transform:translate(-50%,-50%); text-align:center; pointer-events:none; opacity:0; visibility:hidden; border:1px solid #e8c874; border-radius:8px; background:linear-gradient(145deg,rgba(32,26,13,.97),rgba(6,9,16,.98)); box-shadow:0 0 50px rgba(232,200,116,.2),0 18px 65px #000; }
+  #classLevelUp.show{ opacity:1; visibility:visible; animation:levelUpArrive .38s ease-out; }
+  #classLevelUp::before{ content:''; position:absolute; inset:-2px; border-radius:8px; pointer-events:none; opacity:0; background:radial-gradient(ellipse,#fff4c9 0%,rgba(255,213,91,.65) 35%,transparent 75%); }
+  #classLevelUp.show::before{ animation:levelGoldFlash .8s ease-out; }
+  .level-up-eyebrow{ position:relative; font-size:12px; font-weight:700; letter-spacing:4px; color:#ffdf9b; }
+  .level-up-number{ position:relative; margin:3px 0; font-family:var(--font-head); font-size:62px; line-height:1.15; font-weight:900; color:#ffe4a1; text-shadow:0 0 22px rgba(255,204,77,.7); }
+  #levelUpReward{ position:relative; min-height:20px; color:#d8d5c9; font-size:13px; letter-spacing:1px; }
+  #btnLevelUpTree{ position:relative; pointer-events:auto; margin-top:15px; padding:9px 25px; border:1px solid #e8c874; border-radius:3px; background:rgba(232,200,116,.1); color:#ffe4a1; font:700 13px var(--font-stat); letter-spacing:2px; cursor:pointer; }
+  #btnLevelUpTree:hover,#btnLevelUpTree:focus-visible{ background:rgba(232,200,116,.25); box-shadow:0 0 16px rgba(232,200,116,.3); }
+  @keyframes levelUpArrive{ from{ opacity:0; transform:translate(-50%,-45%) scale(.92); } to{ opacity:1; transform:translate(-50%,-50%) scale(1); } }
+  @keyframes levelGoldFlash{ 0%{ opacity:.95; transform:scale(.94); } 35%{ opacity:.45; } 100%{ opacity:0; transform:scale(1.2); } }
+  #skillTree{ position:fixed; inset:0; z-index:1001; align-items:center; justify-content:center; padding:16px; background:radial-gradient(ellipse at 50% 0%,#202015 0%,#090d16 48%,#04060b 100%); color:#eaf0fa; }
+  .skill-panel{ width:min(1040px,100%); max-height:calc(100dvh - 32px); overflow:auto; padding:22px 28px 18px; border:1px solid rgba(232,200,116,.4); border-radius:9px; background:rgba(6,9,15,.82); box-shadow:0 24px 100px #000; scrollbar-color:#8b7443 #0b101a; }
+  .skill-header{ display:flex; justify-content:space-between; align-items:center; gap:20px; }
+  .skill-eyebrow{ color:#bfa774; font-size:10px; font-weight:700; letter-spacing:3px; }
+  #skillTreeTitle{ margin:4px 0 2px; font:700 30px var(--font-head); letter-spacing:3px; color:#ffe3a4; }
+  #skillTreeClass{ color:#b9c4d5; font-size:14px; letter-spacing:1px; }
+  .skill-points-box{ min-width:116px; padding:10px 16px; text-align:center; border:1px solid rgba(232,200,116,.5); border-radius:5px; background:rgba(232,200,116,.06); }
+  .skill-points-box span{ display:block; font-size:10px; letter-spacing:1.7px; color:#d7c398; }
+  #skillTreePoints{ display:block; font-size:32px; line-height:1.1; color:#ffdf9b; }
+  .skill-xp-summary{ display:flex; align-items:center; gap:13px; margin:16px 0 10px; font-size:12px; color:#cfbea0; }
+  #skillTreeLevel{ color:#ffe3a4; font-weight:700; white-space:nowrap; }
+  .skill-tree-xp-track{ height:5px; flex:1; background:#1b202a; border-radius:4px; overflow:hidden; }
+  #skillTreeXpFill{ height:100%; background:linear-gradient(90deg,#ab8039,#ffdf9b); transition:width .2s; }
+  #skillTreeXp{ min-width:95px; text-align:right; white-space:nowrap; }
+  .skill-grid-scroll{ overflow-x:auto; padding:3px 0; scrollbar-color:#8b7443 #0b101a; }
+  #skillTreeRows{ min-width:700px; }
+  .skill-row{ display:grid; grid-template-columns:102px 1fr; align-items:center; min-height:132px; border-top:1px solid rgba(232,200,116,.13); }
+  .skill-row-heading{ padding-right:10px; }
+  .skill-row-heading span{ display:block; color:#77684b; font-size:10px; letter-spacing:2px; }
+  .skill-row-heading h2{ margin:4px 0; color:#d7c398; font:600 13px var(--font-head); }
+  .skill-row-nodes{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+  .skill-node{ position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; min-width:0; padding:5px 2px; border:0; background:none; color:#697383; font-family:var(--font-stat); cursor:pointer; }
+  .skill-node+.skill-node::before{ content:''; position:absolute; top:37px; right:50%; width:calc(100% + 12px); height:2px; background:#252c36; pointer-events:none; }
+  .skill-node.available+.skill-node::before{ background:#252c36; }
+  .skill-node.owned+.skill-node::before{ background:linear-gradient(90deg,#b68b3e,#e8c874); box-shadow:0 0 6px rgba(232,200,116,.3); }
+  .skill-disc{ position:relative; z-index:1; display:flex; align-items:center; justify-content:center; width:64px; height:64px; border:2px solid #303847; border-radius:50%; background:radial-gradient(circle at 35% 25%,#19212e,#0b1019); transition:border-color .2s,box-shadow .2s,transform .2s; }
+  .skill-disc svg{ width:29px; height:29px; }
+  .skill-node-name{ position:relative; z-index:1; min-height:31px; margin-top:6px; font-size:12px; font-weight:700; line-height:1.2; }
+  .skill-node-cost{ position:relative; z-index:1; margin-top:2px; font-size:10px; letter-spacing:1px; }
+  .skill-node.available{ color:#dbe4f1; }
+  .skill-node.available .skill-disc{ border-color:#b7c7dc; color:#d9e6f7; animation:skillAvailablePulse 2s ease-in-out infinite; }
+  .skill-node.owned{ color:#ffe3a4; }
+  .skill-node.owned .skill-disc{ border-color:#f2cd7b; color:#ffe4a1; background:radial-gradient(circle at 35% 25%,#514022,#1d180e); box-shadow:0 0 17px rgba(232,200,116,.35),inset 0 0 12px rgba(232,200,116,.12); }
+  .skill-node.locked .skill-disc{ opacity:.6; }
+  .skill-node:hover .skill-disc,.skill-node:focus-visible .skill-disc{ transform:translateY(-2px); border-color:#ffdf9b; }
+  .skill-node:focus-visible{ outline:1px dashed #e8c874; outline-offset:2px; border-radius:5px; }
+  @keyframes skillAvailablePulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(190,211,238,.05); } 50%{ box-shadow:0 0 0 5px rgba(190,211,238,.07),0 0 16px rgba(190,211,238,.22); } }
+  .skill-legend{ display:flex; justify-content:center; gap:23px; padding:10px 0; border-top:1px solid rgba(232,200,116,.13); font-size:11px; color:#9aa6b8; }
+  .skill-legend span{ display:flex; align-items:center; gap:6px; }
+  .legend-dot{ width:8px; height:8px; border:1px solid #566172; border-radius:50%; background:#171e29; }
+  .legend-dot.available{ border-color:#b7c7dc; background:#8094ae; }
+  .legend-dot.owned{ border-color:#ffdf9b; background:#e8c874; box-shadow:0 0 7px #e8c87466; }
+  .skill-footer{ display:flex; align-items:center; justify-content:space-between; gap:20px; }
+  .skill-footer p{ margin:0; color:#9aa6b8; font-size:12px; line-height:1.5; }
+  #skillTreeStatus{ display:block; color:#e8c874; min-height:18px; }
+  #btnSkillTreeBack{ flex:0 0 auto; min-width:120px; margin:0; padding:10px 22px; }
+  #skillTooltip{ position:fixed; z-index:1100; width:260px; max-width:calc(100vw - 24px); padding:13px 15px; pointer-events:none; border:1px solid #9d8552; border-radius:5px; background:#0a0e17; box-shadow:0 10px 35px #000; color:#dbe4f1; font:14px/1.45 var(--font-stat); }
+  #skillTooltip[hidden]{ display:none; }
+  #skillTooltipName{ display:block; margin-bottom:5px; color:#ffe3a4; font-weight:700; }
+  #skillTooltipState{ display:block; margin-top:8px; color:#bfa774; font-size:11px; }
+  @media(max-width:760px){ .skill-panel{ padding:16px; } #skillTreeTitle{ font-size:24px; } .skill-header{ gap:10px; } .skill-points-box{ min-width:95px; padding:8px; } .skill-footer{ align-items:flex-start; } .skill-legend{ gap:12px; } }
+  @media(max-height:660px){ .skill-panel{ padding-top:14px; } .skill-row{ min-height:122px; } .skill-xp-summary{ margin:10px 0 6px; } }
+  @media(prefers-reduced-motion:reduce){ .skill-node.available .skill-disc{ animation:none; } #classLevelUp.show,#classLevelUp.show::before{ animation:none; } #classXpFill{ transition:none; } }
+
 </style>
 </head>
 <body>
@@ -1460,8 +1537,10 @@
     <div id="consumables" aria-label="Consumables"></div>
 
     <div id="classBadge">
-      <div id="badgeIcon" class="badge-icon" aria-hidden="true"></div>
-      <span id="className">Vanguard Knight</span>
+      <div class="class-badge-row"><div id="badgeIcon" class="badge-icon" aria-hidden="true"></div>
+      <span id="className">Vanguard Knight</span><span id="hudClassLevel">LV. 1</span></div>
+      <div id="classXpTrack" role="progressbar" aria-label="Class experience" aria-valuemin="0" aria-valuemax="80" aria-valuenow="0"><div id="classXpFill"></div></div>
+      <div id="classXpCaption"><span id="classXpText">0 / 80 XP</span><span id="hudSkillPoints">0 SP</span></div>
     </div>
 
     <canvas id="minimap" width="300" height="300"></canvas>
@@ -1476,6 +1555,12 @@
 
     <div id="dangerBorder"></div>
     <div id="banner"></div>
+    <div id="classLevelUp" role="status" aria-live="polite" aria-atomic="true">
+      <div class="level-up-eyebrow">LEVEL UP</div>
+      <div class="level-up-number" id="levelUpNumber">2</div>
+      <div id="levelUpReward">Your legend grows.</div>
+      <button id="btnLevelUpTree" type="button">VIEW TREE</button>
+    </div>
   </div>
 
   <!-- ==================== BOSS ENTRANCE ==================== -->
@@ -1546,6 +1631,7 @@
     <h1 id="pauseTitle">PAUSED</h1>
     <button class="pause-btn" id="btnResumePause">RESUME</button>
     <button class="pause-btn" id="btnVisitShopPause">VISIT SHOP</button>
+    <button class="pause-btn" id="btnSkillTreePause" type="button">SKILL TREE</button>
     <button class="pause-btn" id="btnChangeClassPause">CHANGE CLASS
       <span class="pause-tooltip">finish the current arena first</span>
     </button>
@@ -1584,7 +1670,7 @@
       <div class="sp-row"><span>Saved run</span><b id="spRun">No saved run</b></div>
       <div class="sp-rule"></div>
       <button id="btnResetSave" type="button">Reset save</button>
-      <div id="spNote">Clears the saved run, the best score, the gem bank and every shop purchase.</div>
+      <div id="spNote">Clears the saved run, score, gems and shop purchases. Class levels and skill trees are kept.</div>
     </div>
 
     <div id="continueWrap">
@@ -1600,6 +1686,21 @@
     <div id="menuBest">BEST SCORE 0</div>
   </div>
 
+  <!-- ==================== CLASS SKILL TREE ==================== -->
+  <div id="skillTree" class="screen" role="dialog" aria-modal="true" aria-labelledby="skillTreeTitle">
+    <div class="skill-panel">
+      <header class="skill-header">
+        <div><div class="skill-eyebrow">PERMANENT CLASS PROGRESSION</div><h1 id="skillTreeTitle">SKILL TREE</h1><div id="skillTreeClass">Vanguard Knight</div></div>
+        <div class="skill-points-box"><span>SKILL POINTS</span><strong id="skillTreePoints">0</strong></div>
+      </header>
+      <div class="skill-xp-summary"><span id="skillTreeLevel">LEVEL 1 / 20</span><div class="skill-tree-xp-track"><div id="skillTreeXpFill"></div></div><span id="skillTreeXp">0 / 80 XP</span></div>
+      <div class="skill-grid-scroll"><div id="skillTreeRows" aria-label="Class skill nodes"></div></div>
+      <div class="skill-legend"><span><i class="legend-dot owned"></i>Purchased</span><span><i class="legend-dot available"></i>Available</span><span><i class="legend-dot"></i>Locked</span></div>
+      <footer class="skill-footer"><p>Earn 1 skill point at levels 5, 10, 15 and 20. Unlock each row from left to right.<span id="skillTreeStatus" aria-live="polite">Class levels and skills are saved separately for every class.</span></p><button class="btn" id="btnSkillTreeBack" type="button">BACK</button></footer>
+    </div>
+    <div id="skillTooltip" role="tooltip" hidden><strong id="skillTooltipName"></strong><span id="skillTooltipDesc"></span><span id="skillTooltipState"></span></div>
+  </div>
+
   <!-- ==================== HOW TO PLAY ==================== -->
   <div id="howToPlay" class="screen">
     <div class="htp-inner">
@@ -1611,6 +1712,8 @@
       <div class="row"><b>Q</b> Class ability · <b>E</b> Ability 2 · <b>SHIFT</b> Ability 3 · <b>F</b> Ability 4 · <b>R</b> Ability 5</div>
       <div class="row"><b>1 2 3</b> use a satchel supply</div>
       <div class="row">Each class has four unique unlockable abilities. Boss 1 unlocks E, boss 2 unlocks SHIFT, boss 3 unlocks F, and boss 4 unlocks R.</div>
+      <div class="row">Class XP: regular enemies 10 · elites (Oni, Mutant, Mech, Chaos Titan) 25 · bosses 150. Reach level 20; earn a skill point every 5 levels.</div>
+      <div class="row">Open SKILL TREE from pause or a level-up banner. Each class keeps its own level, XP and permanent skills across every zone and universe.</div>
       <div class="row">Clear every arena, beat the champion, then walk into the portal it leaves behind. Six universes, five levels each.</div>
       <button class="btn" id="btnHowToBack" type="button">Back</button>
     </div>
@@ -2006,6 +2109,7 @@ const Sound = (function () {
       [98, 147, 196].forEach((f, i) => tone({ freq: f, dur: 0.6, type: 'sawtooth', vol: 0.06, delay: i * 0.13 }));
       noise({ freq: 300, dur: 0.7, vol: 0.05 });
     },
+    classLevelUp() { [659, 880, 1319].forEach((f, i) => tone({ freq: f, dur: 0.19, type: 'sine', vol: 0.055, delay: i * 0.085 })); },
     levelClear() { [523, 659, 784, 1047].forEach((f, i) => tone({ freq: f, dur: 0.22, type: 'triangle', vol: 0.05, delay: i * 0.1 })); },
     ability()    { tone({ freq: 660, to: 1320, dur: 0.22, type: 'sine', vol: 0.055 }); },
     /* the unlock fanfare: a rising perfect-fifth arpeggio under a shimmer */
@@ -2323,6 +2427,23 @@ const UI = {
     document.getElementById('iconTech')
   ],
   className: document.getElementById('className'),
+  hudClassLevel: document.getElementById('hudClassLevel'),
+  classXpTrack: document.getElementById('classXpTrack'),
+  classXpFill: document.getElementById('classXpFill'),
+  classXpText: document.getElementById('classXpText'),
+  hudSkillPoints: document.getElementById('hudSkillPoints'),
+  classLevelUp: document.getElementById('classLevelUp'),
+  levelUpNumber: document.getElementById('levelUpNumber'),
+  levelUpReward: document.getElementById('levelUpReward'),
+  skillTree: document.getElementById('skillTree'),
+  skillTreeClass: document.getElementById('skillTreeClass'),
+  skillTreePoints: document.getElementById('skillTreePoints'),
+  skillTreeLevel: document.getElementById('skillTreeLevel'),
+  skillTreeXpFill: document.getElementById('skillTreeXpFill'),
+  skillTreeXp: document.getElementById('skillTreeXp'),
+  skillTreeRows: document.getElementById('skillTreeRows'),
+  skillTreeStatus: document.getElementById('skillTreeStatus'),
+  skillTooltip: document.getElementById('skillTooltip'),
   badgeIcon: document.getElementById('badgeIcon'),
   bossBar: document.getElementById('bossBar'),
   bossName: document.getElementById('bossName'),
@@ -2448,6 +2569,7 @@ const SCREENS = {
   zoneSelect:         { display: 'flex',  state: 'zones' },
   gameCanvas:         { display: 'block', state: 'playing' },
   pauseMenu:          { display: 'flex',  state: 'paused' },
+  skillTree:          { display: 'flex',  state: 'skills' },
   shopScreen:         { display: 'flex',  state: 'shop' },
   upgradeCard:        { display: 'flex',  state: 'upgrade' },
   levelTransition:    { display: 'flex',  state: 'transition' },
@@ -2484,7 +2606,9 @@ function showScreen(id) {
   game.keys = Object.create(null);
   game.joyX = 0;
   game.joyY = 0;
-  isPaused = id === 'pauseMenu';
+  isPaused = id === 'pauseMenu' || id === 'skillTree';
+  if (id !== 'gameCanvas' && UI.classLevelUp) UI.classLevelUp.classList.remove('show');
+  if (id !== 'skillTree' && UI.skillTooltip) UI.skillTooltip.hidden = true;
 
   requested.style.setProperty('display', def.display, 'important');
   requested.hidden = false;
@@ -2621,6 +2745,30 @@ const ARENA_LAYOUTS = [
 ];
 const BOSS_SPOTS = [[1500, 400], [2360, 2360], [1500, 380], [620, 2360], [2270, 2300]];
 
+/* ---------------------------------------------------------------------------
+   UNIVERSE DIFFICULTY
+   Every regular enemy spawned in a universe is multiplied by this table.
+   Boss champions keep their authored HP (the 30 fixed boss health pools), but
+   their speed and damage still ride the same universe curve so the late rifts
+   stay dangerous.  Wave size is rounded to the nearest whole enemy.
+   --------------------------------------------------------------------------- */
+const UNIVERSE_DIFFICULTY = [
+  { speed: 1.0, damage: 1.0, hp: 1.0, wave: 1.0 },   /* U1 · Medieval   */
+  { speed: 1.3, damage: 1.5, hp: 1.4, wave: 1.3 },   /* U2 · Egypt      */
+  { speed: 1.6, damage: 2.0, hp: 2.0, wave: 1.6 },   /* U3 · Japan      */
+  { speed: 2.0, damage: 2.8, hp: 2.8, wave: 2.0 },   /* U4 · Wasteland  */
+  { speed: 2.5, damage: 3.5, hp: 4.0, wave: 2.5 },   /* U5 · Deep Space */
+  { speed: 3.2, damage: 5.0, hp: 6.0, wave: 3.2 }    /* U6 · The Void   */
+];
+function universeDifficulty(index) {
+  const i = clamp((index === undefined ? gameState.currentUniverse : index) | 0, 0, UNIVERSE_DIFFICULTY.length - 1);
+  return UNIVERSE_DIFFICULTY[i];
+}
+function enemyDamageMult(source) {
+  return universeDifficulty().damage * (source && source.eliteVariant ? 1.5 : 1);
+}
+function enemyDamage(amount, source) { return amount * enemyDamageMult(source); }
+
 const UNIVERSE_BLUEPRINTS = [
   {
     id: 'medieval',
@@ -2645,7 +2793,7 @@ const UNIVERSE_BLUEPRINTS = [
     accent: '#f5b642',
     tile: 'sand', ambient: 'sand', obstacle: 'desert', skyArt: 'sun',
     sky: { top: '#2a0d06', bottom: '#f0873a' },
-    enemies: ['anubis', 'mummy', 'scorpion'],
+    enemies: ['anubis', 'mummy', 'scorpion', 'sandshade'],
     power: 1.35,
     boss: { name: 'The Pharaoh', hp: 100, r: 46, color: '#f5b642', speed: 66, kit: 'pharaoh' },
     levelTitles: ['The Sun-Scorched Dunes', 'Colonnade of Kings', 'The Necropolis', 'Temple of Ra', 'The Pharaoh\u2019s Throne'],
@@ -2673,7 +2821,7 @@ const UNIVERSE_BLUEPRINTS = [
     accent: '#f472b6',
     tile: 'dojo', ambient: 'petals', obstacle: 'dojo', skyArt: 'petals',
     sky: { top: '#2b0a1e', bottom: '#f7a8c8' },
-    enemies: ['samurai', 'ninja', 'oni'],
+    enemies: ['samurai', 'ninja', 'oni', 'ronin'],
     power: 1.7,
     boss: { name: 'Shogun Kage', hp: 110, r: 44, color: '#f472b6', speed: 96, kit: 'shogun' },
     levelTitles: ['The Burning Torii', 'Bamboo Approach', 'The Empty Dojo', 'Hall of Blades', 'Shogun\u2019s Keep'],
@@ -2701,7 +2849,7 @@ const UNIVERSE_BLUEPRINTS = [
     accent: '#a3b42c',
     tile: 'concrete', ambient: 'ash', obstacle: 'wasteland', skyArt: 'dust',
     sky: { top: '#23240c', bottom: '#8a9432' },
-    enemies: ['raider', 'mutant', 'drone'],
+    enemies: ['raider', 'mutant', 'drone', 'scavengerbot'],
     power: 2.0,
     boss: { name: 'Warlord Rex', hp: 120, r: 50, color: '#a3b42c', speed: 84, kit: 'warlord' },
     levelTitles: ['Ash Highway', 'The Rust Yard', 'Dead Mall', 'Reactor Breach', 'Warlord\u2019s Fortress'],
@@ -2729,7 +2877,7 @@ const UNIVERSE_BLUEPRINTS = [
     accent: '#38bdf8',
     tile: 'metal', ambient: 'stars', obstacle: 'spaceship', skyArt: 'stars',
     sky: { top: '#000308', bottom: '#0b1730' },
-    enemies: ['aliendrone', 'voidwraith', 'mech'],
+    enemies: ['aliendrone', 'voidwraith', 'mech', 'voidleech'],
     power: 2.3,
     boss: { name: 'The Hive Queen', hp: 130, r: 52, color: '#7c3aed', speed: 62, kit: 'hivequeen' },
     levelTitles: ['Docking Ring', 'Cryo Corridor', 'Reactor Spine', 'The Bridge', 'Hive Core'],
@@ -2757,7 +2905,7 @@ const UNIVERSE_BLUEPRINTS = [
     accent: '#a855f7',
     tile: 'voidgrid', ambient: 'void', obstacle: 'voidcrystal', skyArt: 'void',
     sky: { top: '#05010c', bottom: '#1b0433' },
-    enemies: ['shade', 'timewraith', 'titan'],
+    enemies: ['shade', 'timewraith', 'titan', 'echo'],
     power: 2.6,
     boss: { name: 'The Architect of Oblivion', hp: 200, r: 56, color: '#9333ea', speed: 70, kit: 'architect' },
     levelTitles: ['The Last Door', 'Fractured Yesterday', 'Where Time Died', 'The Hollow Throne', 'Oblivion'],
@@ -2840,8 +2988,8 @@ function makeUniverseLevel(uni, i) {
     skyArt: uni.skyArt,
     groundTint: null,
     waves: [
-      { count: count, types: [types[0], types[1]] },
-      { count: count + 2, types: [types[1], types[2], types[0]] }
+      { count: count, types: types[3] ? [types[0], types[1], types[3]] : [types[0], types[1]] },
+      { count: count + 2, types: types[3] ? [types[1], types[2], types[0], types[3]] : [types[1], types[2], types[0]] }
     ],
     arenas: ARENA_LAYOUTS[(i + uni.index * 2) % ARENA_LAYOUTS.length],
     bossPos: BOSS_SPOTS[(i + uni.index) % BOSS_SPOTS.length],
@@ -2925,26 +3073,31 @@ const ENEMY_DEFS = {
   anubis:   { hp: 3, speed: 104, r: 16, color: '#eab308', score: 22, contact: 1, turn: 4.6, ai: 'spear',    art: 'anubis' },
   mummy:    { hp: 4, speed: 60,  r: 18, color: '#d6c7a1', score: 24, contact: 0, slow: 1.8, turn: 2.4, ai: 'mummy', art: 'mummy' },
   scorpion: { hp: 1, speed: 196, r: 11, color: '#f59e0b', score: 18, contact: 0, poison: 3, turn: 9.0, ai: 'scorpion', art: 'scorpion' },
+  sandshade: { hp: 3, speed: 120, r: 15, color: '#d8b06a', score: 26, contact: 0, turn: 5.0, ai: 'sandshade', art: 'sandshade', role: 'melee' },
 
   /* ---- Universe 3 · Feudal Japan --------------------------------------- */
   samurai: { hp: 4, speed: 96,  r: 17, color: '#dc2626', score: 26, contact: 1, turn: 4.2, ai: 'samurai', art: 'samurai' },
   ninja:   { hp: 2, speed: 168, r: 13, color: '#64748b', score: 22, contact: 1, turn: 7.0, ai: 'ninja',   art: 'ninja' },
-  oni:     { hp: 9, speed: 56,  r: 26, color: '#2563eb', score: 40, contact: 3, turn: 2.2, ai: 'oni',     art: 'oni' },
+  oni:     { elite: true, hp: 9, speed: 56,  r: 26, color: '#2563eb', score: 40, contact: 3, turn: 2.2, ai: 'oni',     art: 'oni' },
+  ronin:   { hp: 5, speed: 110, r: 17, color: '#f43f5e', score: 30, contact: 1, turn: 5.0, ai: 'ronin', art: 'ronin', role: 'melee' },
 
   /* ---- Universe 4 · Post-Apocalypse ------------------------------------ */
   raider: { hp: 3,  speed: 92,  r: 16, color: '#b45309', score: 26, contact: 1, turn: 4.4, ai: 'raider', art: 'raider' },
-  mutant: { hp: 10, speed: 72,  r: 24, color: '#65a30d', score: 40, contact: 2, turn: 2.6, ai: 'mutant', art: 'mutant' },
+  mutant: { elite: true, hp: 10, speed: 72,  r: 24, color: '#65a30d', score: 40, contact: 2, turn: 2.6, ai: 'mutant', art: 'mutant' },
   drone:  { hp: 3,  speed: 122, r: 14, color: '#38bdf8', score: 28, contact: 1, turn: 5.4, fly: true, ai: 'combatdrone', art: 'drone' },
+  scavengerbot: { hp: 3, speed: 160, r: 13, color: '#fbbf24', score: 30, contact: 0, turn: 6.0, fly: true, ai: 'scavengerbot', art: 'scavengerbot', role: 'ranged', fire: 2.6 },
 
   /* ---- Universe 5 · Deep Space ----------------------------------------- */
   aliendrone: { hp: 2,  speed: 202, r: 12, color: '#e2e8f0', score: 24, contact: 1, turn: 6.2, fly: true, ai: 'plasma', art: 'plasma' },
   voidwraith: { hp: 4,  speed: 122, r: 15, color: '#a78bfa', score: 30, contact: 2, turn: 6.0, fly: true, ai: 'wraith', art: 'wraith' },
-  mech:       { hp: 14, speed: 50,  r: 24, color: '#94a3b8', score: 46, contact: 2, turn: 2.0, ai: 'mech',   art: 'mech' },
+  mech:       { elite: true, hp: 14, speed: 50,  r: 24, color: '#94a3b8', score: 46, contact: 2, turn: 2.0, ai: 'mech',   art: 'mech' },
+  voidleech:  { hp: 2, speed: 210, r: 11, color: '#a3e635', score: 32, contact: 0, turn: 8.0, ai: 'voidleech', art: 'voidleech', role: 'melee' },
 
   /* ---- Universe 6 · The Void -------------------------------------------- */
   shade:      { hp: 5,  speed: 190, r: 14, color: '#c084fc', score: 34, contact: 1, turn: 6.6, ai: 'shade',  art: 'shade' },
   timewraith: { hp: 4,  speed: 132, r: 15, color: '#818cf8', score: 32, contact: 2, turn: 6.0, fly: true, ai: 'rewind', art: 'wraithTime' },
-  titan:      { hp: 20, speed: 46,  r: 30, color: '#7c3aed', score: 60, contact: 3, turn: 1.8, ai: 'titan',  art: 'titan' }
+  titan:      { elite: true, hp: 20, speed: 46,  r: 30, color: '#7c3aed', score: 60, contact: 3, turn: 1.8, ai: 'titan',  art: 'titan' },
+  echo:       { hp: 8, speed: 80, r: 16, color: '#e879f9', score: 44, contact: 1, turn: 6.0, ai: 'echo', art: 'echo', role: 'ranged' }
 };
 
 /* ------------------------------ upgrades -----------------------------------
@@ -2959,7 +3112,9 @@ const ENEMY_LABELS = {
   samurai: 'Samurai', ninja: 'Ninja', oni: 'Oni Demon',
   raider: 'Raider', mutant: 'Mutant', drone: 'Combat Drone',
   aliendrone: 'Alien Drone', voidwraith: 'Void Wraith', mech: 'Mech Guardian',
-  shade: 'Void Shade', timewraith: 'Time Wraith', titan: 'Chaos Titan'
+  shade: 'Void Shade', timewraith: 'Time Wraith', titan: 'Chaos Titan',
+  sandshade: 'Sand Shade', ronin: 'Ronin', scavengerbot: 'Scavenger Bot',
+  voidleech: 'Void Leech', echo: 'Echo'
 };
 
 const UPGRADE_POOL = [
@@ -3057,6 +3212,7 @@ const gameState = {
   screen: 'menu',
   currentUniverse: 0,
   currentZone: 0,
+  currentShooter: null,   /* enemy currently firing, so bullets inherit elite damage */
   time: 0,
   menuTime: 0,
   timeScale: 1,
@@ -3126,6 +3282,7 @@ const gameState = {
   classFx: [],
   playerMines: [],
   timeLoopHistory: [],
+  skillCombat: {},
   bossesDefeated: [false, false, false, false, false],
   qCd: 0,              /* the class ability's own cooldown */
   novaCd: 0,
@@ -3151,6 +3308,14 @@ const gameState = {
 };
 const game = gameState;
 const gs = gameState;
+/* Explicit universe index alias.  The save slot still uses `universe`, and
+   currentUniverse remains the canonical field used by loadZone()/spawnEnemy(). */
+Object.defineProperty(gameState, 'universeIndex', {
+  get() { return this.currentUniverse; },
+  set(v) { this.currentUniverse = clamp(v | 0, 0, UNIVERSE_DIFFICULTY.length - 1); },
+  enumerable: true,
+  configurable: true
+});
 /* Scoring uses gs.mult; keep it tied to the existing gem multiplier. */
 Object.defineProperty(gs, 'mult', {
   get() { return this.multiplier; },
@@ -3231,7 +3396,8 @@ function makePlayer() {
     poisonT: 0,         /* scorpion venom: 1 damage spread over three seconds */
     poisonAcc: 0,
     ghillieT: 0, ghillieShot: false, vanishT: 0, vanishKillReset: false,
-    frenzyT: 0, jetBoostT: 0, overloadPierceT: 0
+    frenzyT: 0, jetBoostT: 0, overloadPierceT: 0,
+    skillHpBonus: 0, skillSpeedBonus: 1
   };
 }
 
@@ -3283,6 +3449,7 @@ function resetRun() {
   game.classFx.length = 0;
   game.playerMines.length = 0;
   game.timeLoopHistory.length = 0;
+  resetSkillCombat();
   /* abilities are a permanent reward: a new run never clears them */
   syncAbilityHud();
 }
@@ -3351,6 +3518,7 @@ function loadZone(zoneIndex, opts) {
   game.classFx.length = 0;
   game.playerMines.length = 0;
   game.timeLoopHistory.length = 0;
+  resetSkillCombat();
   game.timeScale = 1;
   game.slowmo = 0;
   game.killsThisZone = 0;
@@ -3772,7 +3940,7 @@ function updatePlayer(dt) {
     p.poisonAcc = (p.poisonAcc || 0) + dt;
     if (p.poisonAcc >= 1) {
       p.poisonAcc -= 1;
-      hurtPlayer(1 / 3, true);
+      hurtPlayer(universeDifficulty().damage / 3, true);
       for (let i = 0; i < 5; i++) {
         spawnParticle(p.x + rand(-8, 8), p.y + rand(-8, 8), rand(-30, 30), rand(-70, -20), 0.5, 4, '#86efac', 2);
       }
@@ -4083,6 +4251,623 @@ const CLASSES = [
   }
 ];
 
+
+/* =============================================================================
+   PERMANENT CLASS LEVELS AND SKILL TREES
+   Each doctrine owns a separate localStorage slot. Run resets never touch it.
+   ============================================================================= */
+const CLASS_MAX_LEVEL = 20;
+const CLASS_XP_PER_LEVEL = 80;
+const CLASS_PROGRESS_PREFIX = 'surviveClassProgress.';
+const CLASS_XP_VALUES = { regular: 10, elite: 25, boss: 150 };
+function skillNode(id, name, desc, icon) { return { id, name, desc, icon, cost: 1 }; }
+const CLASS_SKILL_TREES = {
+  knight: [
+    { name: 'Offense', nodes: [
+      skillNode('blade_mastery', 'Blade Mastery', '+15% sword damage.', 'sword'),
+      skillNode('heavy_strike', 'Heavy Strike', 'Sword stuns enemies 0.5s.', 'hammer'),
+      skillNode('cleave', 'Cleave', 'Sword arc widens to 160°.', 'cleave'),
+      skillNode('executioner', 'Executioner', 'Sword kills enemies below 20% HP instantly.', 'execute')
+    ] },
+    { name: 'Defense', nodes: [
+      skillNode('iron_skin', 'Iron Skin', '+1 max health orb.', 'shield'),
+      skillNode('last_stand', 'Last Stand', 'Below 1 orb: +50% damage.', 'heart'),
+      skillNode('fortress', 'Fortress', 'Shield ability cooldown -40%.', 'fortress'),
+      skillNode('unbreakable', 'Unbreakable', 'Revive once per zone at 1 orb.', 'revive')
+    ] },
+    { name: 'Mobility', nodes: [
+      skillNode('war_boots', 'War Boots', '+12% movement speed.', 'boots'),
+      skillNode('charge_master', 'Charge Master', 'Shield Bash cooldown -5s.', 'dash'),
+      skillNode('blade_dance', 'Blade Dance', 'Sword swing speed +30%.', 'speed'),
+      skillNode('unstoppable', 'Unstoppable', 'Dashing through enemies deals sword damage.', 'dash')
+    ] }
+  ],
+  gunslinger: [
+    { name: 'Offense', nodes: [
+      skillNode('hair_trigger', 'Hair Trigger', '+20% fire rate.', 'speed'),
+      skillNode('hollow_points', 'Hollow Points', '+1 pierce through enemies.', 'bullet'),
+      skillNode('dum_dum_rounds', 'Dum-Dum Rounds', '10% chance to explode on hit.', 'blast'),
+      skillNode('assassin_rounds', 'Assassin Rounds', 'Headshots every 7th bullet deal 4x damage.', 'target')
+    ] },
+    { name: 'Utility', nodes: [
+      skillNode('speed_loader', 'Speed Loader', 'Reload between bursts -0.1s.', 'reload'),
+      skillNode('smoke_screen', 'Smoke Screen', 'Smoke Roll leaves a larger cloud.', 'smoke'),
+      skillNode('suppressor', 'Suppressor', 'Shooting does not reveal your position to enemies.', 'stealth'),
+      skillNode('tactical_roll', 'Tactical Roll', 'Dash cooldown -2s.', 'dash')
+    ] },
+    { name: 'Power', nodes: [
+      skillNode('extended_mag', 'Extended Mag', '+4 bullets before cooldown.', 'magazine'),
+      skillNode('overload_amplifier', 'Overload Amplifier', 'Overload duration +4s.', 'power'),
+      skillNode('bullet_rain', 'Bullet Rain', 'Bullet Storm fires 16 directions.', 'storm'),
+      skillNode('gunslingers_creed', 'Gunslinger’s Creed', 'Below 2 orbs: fire rate doubled.', 'heart')
+    ] }
+  ],
+  sniper: [
+    { name: 'Precision', nodes: [
+      skillNode('scope_mastery', 'Scope Mastery', '+25% bullet range.', 'target'),
+      skillNode('armor_piercing', 'Armor Piercing', 'Bullets penetrate shields and armor.', 'bullet'),
+      skillNode('subsonic', 'Subsonic', 'Bullets travel 30% slower but deal 2x damage.', 'bullet'),
+      skillNode('headhunter', 'Headhunter', 'Every 5th shot auto-crits for 3x damage.', 'target')
+    ] },
+    { name: 'Stealth', nodes: [
+      skillNode('ghost_protocol', 'Ghost Protocol', 'Moving slowly keeps you partially invisible.', 'stealth'),
+      skillNode('silent_step', 'Silent Step', '-50% enemy detection range.', 'stealth'),
+      skillNode('patience_rewarded', 'Patience Rewarded', 'Standing still 2s boosts next shot to 4x damage.', 'target'),
+      skillNode('one_shot_one_kill', 'One Shot One Kill', 'Instantly kill any non-boss enemy regardless of HP.', 'execute')
+    ] },
+    { name: 'Tech', nodes: [
+      skillNode('spotter_drone', 'Spotter Drone', 'Minimap reveals all enemies.', 'drone'),
+      skillNode('mine_layer', 'Mine Layer', 'Mines arm faster and deal more damage.', 'mine'),
+      skillNode('time_dilation', 'Time Dilation', 'Eagle Eye slows time to 15% instead of 30%.', 'time'),
+      skillNode('railgun_mastery', 'Railgun Mastery', 'Railgun pierces boss armor dealing full damage.', 'power')
+    ] }
+  ],
+  mage: [
+    { name: 'Orbs', nodes: [
+      skillNode('orb_mastery', 'Orb Mastery', '+1 extra homing orb.', 'orb'),
+      skillNode('seeking_algorithm', 'Seeking Algorithm', 'Orbs track 40% faster.', 'target'),
+      skillNode('chain_reaction', 'Chain Reaction', 'Orb kills chain to the nearest enemy.', 'chain'),
+      skillNode('singularity', 'Singularity', 'Orbs spiral in a vortex pattern.', 'vortex')
+    ] },
+    { name: 'Time', nodes: [
+      skillNode('chrono_efficiency', 'Chrono Efficiency', 'All time abilities last 25% longer.', 'time'),
+      skillNode('paradox_shield', 'Paradox Shield', 'Taking damage briefly rewinds the hit.', 'revive'),
+      skillNode('time_rift_mastery', 'Time Rift Mastery', 'Chrono Burst freezes 2s longer.', 'time'),
+      skillNode('epoch', 'Epoch', 'Time Loop rewinds 8 seconds instead of 5.', 'rewind')
+    ] },
+    { name: 'Power', nodes: [
+      skillNode('mana_surge', 'Mana Surge', '+30% orb damage.', 'orb'),
+      skillNode('dark_matter', 'Dark Matter', 'Temporal Rift black hole size doubled.', 'vortex'),
+      skillNode('familiar_bond', 'Familiar Bond', 'Familiar orb deals 2x damage.', 'orb'),
+      skillNode('time_lord', 'Time Lord', 'Cooldowns reduce by 1s per kill.', 'time')
+    ] }
+  ],
+  berserker: [
+    { name: 'Rage', nodes: [
+      skillNode('blood_lust', 'Blood Lust', 'Kills restore 5% of max HP.', 'heart'),
+      skillNode('frenzy', 'Frenzy', 'Each consecutive kill boosts damage by 10%, stacking to 5x.', 'rage'),
+      skillNode('carnage', 'Carnage', 'Ground Slam radius +60%.', 'blast'),
+      skillNode('unstoppable_rage', 'Unstoppable Rage', 'Below 1 orb: all damage tripled until healed above 1 orb.', 'rage')
+    ] },
+    { name: 'Body', nodes: [
+      skillNode('war_hardened', 'War Hardened', '+2 max health orbs.', 'shield'),
+      skillNode('thick_skull', 'Thick Skull', 'Reduce incoming damage by 15%.', 'fortress'),
+      skillNode('adrenaline', 'Adrenaline', 'Taking damage boosts speed +20% for 3s.', 'boots'),
+      skillNode('battle_trance', 'Battle Trance', 'Killing 10 enemies quickly makes the next hit a one-shot.', 'execute')
+    ] },
+    { name: 'Momentum', nodes: [
+      skillNode('savage_rush', 'Savage Rush', 'Frenzy Dash hits 3 times.', 'dash'),
+      skillNode('berserkers_path', 'Berserker’s Path', 'Moving through enemies damages them.', 'rage'),
+      skillNode('pain_is_power', 'Pain is Power', 'Lower HP means higher damage, up to +100%.', 'heart'),
+      skillNode('last_warrior', 'Last Warrior', 'When the last orb is lost, trigger Juggernaut once per zone.', 'revive')
+    ] }
+  ],
+  shadow: [
+    { name: 'Blades', nodes: [
+      skillNode('serrated_edge', 'Serrated Edge', 'Daggers cause 3s bleed for 1 damage/s.', 'sword'),
+      skillNode('multishot', 'Multishot', 'Throw 3 daggers at once in a spread.', 'cleave'),
+      skillNode('shadowmark', 'Shadowmark', 'Marked enemies take +50% damage from all sources.', 'target'),
+      skillNode('lethal_tempo', 'Lethal Tempo', 'Each consecutive dagger hit speeds up throw rate.', 'speed')
+    ] },
+    { name: 'Shadow', nodes: [
+      skillNode('fade', 'Fade', 'Taking damage triggers brief 1s invisibility.', 'stealth'),
+      skillNode('shadow_meld', 'Shadow Meld', 'Standing still 1.5s turns you fully invisible.', 'stealth'),
+      skillNode('ghost_walk', 'Ghost Walk', 'Dashing leaves a shadow clone as a decoy.', 'clone'),
+      skillNode('death_from_shadows', 'Death from Shadows', 'First attack from invisibility deals 5x damage.', 'execute')
+    ] },
+    { name: 'Assassination', nodes: [
+      skillNode('marked_for_death', 'Marked for Death', 'Death Mark duration +4s.', 'target'),
+      skillNode('smoke_master', 'Smoke Master', 'Poison Cloud duration +4s.', 'smoke'),
+      skillNode('shadow_step', 'Shadow Step', 'Vanish teleports to the cursor instead of becoming invisible.', 'dash'),
+      skillNode('one_in_the_chamber', 'One In The Chamber', 'Kill while invisible to reset Vanish instantly.', 'rewind')
+    ] }
+  ],
+  tech: [
+    { name: 'Turrets', nodes: [
+      skillNode('reinforced_frame', 'Reinforced Frame', '+50% turret health.', 'fortress'),
+      skillNode('dual_barrels', 'Dual Barrels', 'Turrets fire twice as fast.', 'turret'),
+      skillNode('smart_targeting', 'Smart Targeting', 'Turrets prioritize bosses and elites.', 'target'),
+      skillNode('overclock', 'Overclock', 'Turrets deal 2x damage for 8s after being placed.', 'power')
+    ] },
+    { name: 'Disc', nodes: [
+      skillNode('bouncing_algorithm', 'Bouncing Algorithm', 'Disc bounces 6 times instead of 4.', 'disc'),
+      skillNode('explosive_disc', 'Explosive Disc', 'Disc explodes on its last bounce, dealing area damage.', 'blast'),
+      skillNode('magnetic_disc', 'Magnetic Disc', 'Disc pulls small enemies toward it.', 'vortex'),
+      skillNode('disc_mastery', 'Disc Mastery', 'Disc cooldown -1s per bounce.', 'disc')
+    ] },
+    { name: 'Systems', nodes: [
+      skillNode('emp_mastery', 'EMP Mastery', 'EMP duration +2s.', 'power'),
+      skillNode('nano_repair', 'Nano Repair', 'Turret explosions on Overload heal the player for 1 orb.', 'heart'),
+      skillNode('drone_upgrade', 'Drone Upgrade', 'Drones deal 2x damage.', 'drone'),
+      skillNode('overclock_system', 'Overclock System', 'System Overload cooldown -15s; turrets respawn instantly.', 'reload')
+    ] }
+  ]
+};
+const SKILL_ICON_PATHS = {
+  sword: '<path d="m5 19 11-11 3-5 2 2-5 3L5 19zM4 14l6 6M3 21l3-3"/>',
+  hammer: '<path d="m5 20 9-9M10 4l4-2 7 7-2 4zM8 6l10 10"/>',
+  cleave: '<path d="M4 18a9 9 0 0 1 16-9M16 5l4 4 1-6M6 18l12-12"/>',
+  execute: '<circle cx="12" cy="12" r="8"/><path d="m8 8 8 8M16 8l-8 8M12 1v4M12 19v4"/>',
+  shield: '<path d="m12 3 8 3v6c0 4-4 7-8 9-4-2-8-5-8-9V6z"/>',
+  heart: '<path d="M12 21 3 12C-2 4 8 0 12 7c4-7 14-3 9 5z"/>',
+  fortress: '<path d="M4 21V5h4v4h8V5h4v16zM9 21v-6h6v6M2 21h20"/>',
+  revive: '<path d="M4 10a8 8 0 1 1 1 8M4 4v6h6M12 8v8M8 12h8"/>',
+  boots: '<path d="M7 3h8v10l6 3v5H3v-5l4-3zM7 7h8M3 17h10"/>',
+  dash: '<path d="M3 7h9M2 12h7M3 17h9m2-12 7 7-7 7"/>',
+  speed: '<path d="M4 18a9 9 0 1 1 16 0M12 13l5-6M7 18h10"/>',
+  bullet: '<path d="M8 20V8l4-6 4 6v12zM8 16h8M5 20h14"/>',
+  blast: '<path d="m12 2 3 6 7-2-4 6 4 6-7-2-3 6-3-6-7 2 4-6-4-6 7 2z"/>',
+  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 1v5M12 18v5M1 12h5M18 12h5"/>',
+  reload: '<path d="M20 9a8 8 0 0 0-14-3L3 9m0-6v6h6M4 15a8 8 0 0 0 14 3l3-3m0 6v-6h-6"/>',
+  smoke: '<path d="M5 18a4 4 0 0 1-1-8 5 5 0 0 1 9-4 4 4 0 0 1 6 4 4 4 0 0 1 0 8zM8 21h8"/>',
+  stealth: '<path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6zM4 3l16 18"/><circle cx="12" cy="12" r="2"/>',
+  magazine: '<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h6M9 18h6"/>',
+  power: '<path d="m13 2-9 12h7l-1 8 10-13h-7z"/>',
+  storm: '<path d="M12 12V2M12 12l9-5M12 12l9 5M12 12v10M12 12l-9 5M12 12 3 7"/>',
+  drone: '<path d="M8 8h8v8H8zM8 8 4 4M16 8l4-4M8 16l-4 4M16 16l4 4"/><circle cx="4" cy="4" r="2"/><circle cx="20" cy="4" r="2"/><circle cx="4" cy="20" r="2"/><circle cx="20" cy="20" r="2"/>',
+  mine: '<circle cx="12" cy="13" r="6"/><path d="M12 2v5M12 19v3M1 13h5M18 13h5M4 5l4 4M16 17l4 4M4 21l4-4M16 9l4-4"/>',
+  time: '<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 3M8 1h8"/>',
+  orb: '<circle cx="12" cy="12" r="5"/><ellipse cx="12" cy="12" rx="11" ry="5" transform="rotate(-35 12 12)"/>',
+  chain: '<path d="m10 7 2-2a5 5 0 0 1 7 7l-2 2M14 17l-2 2a5 5 0 0 1-7-7l2-2M8 16l8-8"/>',
+  vortex: '<path d="M21 12a9 9 0 1 0-9 9 7 7 0 1 0-7-7 4 4 0 1 0 4-4"/>',
+  rewind: '<path d="M4 10a8 8 0 1 1 0 5M4 4v6h6M12 7v5l-3 3"/>',
+  rage: '<path d="m5 3 14 18M19 3 5 21M3 5l4-2 1 5M21 5l-4-2-1 5"/>',
+  clone: '<circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2.5"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M15 14a5 5 0 0 1 7 4v3"/>',
+  turret: '<path d="M4 21h16M7 21v-8h10v8M12 13V5M8 5h13M10 9h4"/>',
+  disc: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="m5 5 5 5M14 14l5 5M19 5l-5 5M10 14l-5 5"/>'
+};
+function skillIconSVG(icon) {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (SKILL_ICON_PATHS[icon] || SKILL_ICON_PATHS.power) + '</svg>';
+}
+const classProgress = {};
+let classLevelUpClock = 0;
+let skillTreeReturn = 'pauseMenu';
+let skillTreeClassId = 'knight';
+let skillTooltipButton = null;
+function classProgressKey(id) { return CLASS_PROGRESS_PREFIX + id; }
+function xpForLevel(level) { return Math.max(1, level) * CLASS_XP_PER_LEVEL; }
+function freshClassProgress(id) { return { version: 1, classId: id, level: 1, xp: 0, totalXp: 0, skillPoints: 0, owned: [] }; }
+function normalizeClassProgress(id, raw) {
+  const out = freshClassProgress(id);
+  if (!raw || typeof raw !== 'object') return out;
+  const integer = (v, max) => Number.isFinite(Number(v)) ? clamp(Math.floor(Number(v)), 0, max) : 0;
+  out.level = clamp(integer(raw.level, CLASS_MAX_LEVEL), 1, CLASS_MAX_LEVEL);
+  out.totalXp = integer(raw.totalXp, 100000000);
+  const tree = CLASS_SKILL_TREES[id] || [];
+  const saved = Array.isArray(raw.owned) ? raw.owned : [];
+  for (const row of tree) {
+    for (const node of row.nodes) {
+      if (!saved.includes(node.id)) break;
+      if (out.owned.length < Math.floor(out.level / 5)) out.owned.push(node.id);
+    }
+  }
+  out.skillPoints = Math.floor(out.level / 5) - out.owned.length;
+  out.xp = out.level === CLASS_MAX_LEVEL ? 0 : integer(raw.xp, xpForLevel(out.level) - 1);
+  return out;
+}
+function getClassProgress(id) {
+  const key = id || gameState.currentClass || 'knight';
+  if (!classProgress[key]) classProgress[key] = freshClassProgress(key);
+  return classProgress[key];
+}
+function saveClassProgress(id) {
+  const record = getClassProgress(id);
+  try { localStorage.setItem(classProgressKey(record.classId), JSON.stringify(record)); return true; }
+  catch (e) { return false; }
+}
+function loadAllClassProgress() {
+  for (const cls of CLASSES) {
+    let raw = null;
+    try { raw = JSON.parse(localStorage.getItem(classProgressKey(cls.id)) || 'null'); } catch (e) { /* corrupt or unavailable storage */ }
+    classProgress[cls.id] = normalizeClassProgress(cls.id, raw);
+  }
+  syncClassXpHud();
+}
+function hasSkill(id, classId) {
+  const key = classId || gameState.currentClass;
+  return getClassProgress(key).owned.includes(id);
+}
+function currentSkill(id) { return !!game.player && hasSkill(id, game.player.classId); }
+function skillState(node, row, record) {
+  if (record.owned.includes(node.id)) return 'owned';
+  if (row.nodes[0].id === node.id || record.owned.includes(row.nodes[row.nodes.indexOf(node) - 1].id)) return 'available';
+  return 'locked';
+}
+function awardClassXP(amount, source) {
+  const id = gameState.currentClass;
+  const record = getClassProgress(id);
+  const xp = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!xp || record.level >= CLASS_MAX_LEVEL) return 0;
+  record.xp += xp;
+  record.totalXp += xp;
+  let gained = 0;
+  while (record.level < CLASS_MAX_LEVEL && record.xp >= xpForLevel(record.level)) {
+    record.xp -= xpForLevel(record.level);
+    record.level++;
+    gained++;
+    if (record.level % 5 === 0) record.skillPoints++;
+  }
+  if (record.level === CLASS_MAX_LEVEL) record.xp = 0;
+  const saved = saveClassProgress(id);
+  syncClassXpHud();
+  if (gained) showClassLevelUp(record, gained, source, saved);
+  if (currentScreen === 'skillTree') renderSkillTree();
+  return xp;
+}
+function showClassLevelUp(record, gained, source, saved) {
+  UI.levelUpNumber.textContent = String(record.level);
+  UI.levelUpReward.textContent = (record.level % 5 === 0 ? '+1 SKILL POINT · ' : '') + (saved === false ? 'Storage unavailable — keep this tab open' : record.level === 20 ? 'MAX LEVEL · YOUR LEGEND IS COMPLETE' : getClass().name);
+  UI.classLevelUp.classList.remove('show');
+  void UI.classLevelUp.offsetWidth;
+  UI.classLevelUp.classList.add('show');
+  classLevelUpClock = 5.5;
+  Sound.classLevelUp();
+  if (game.player) {
+    const p = game.player;
+    game.particles.push({ ring: true, x: p.x, y: p.y, r: 10, maxR: 150, life: 0, maxLife: 0.65, color: '#ffdf9b' });
+  }
+}
+function hideClassLevelUp() {
+  classLevelUpClock = 0;
+  if (UI.classLevelUp) UI.classLevelUp.classList.remove('show');
+}
+function tickClassLevelUp(dt) {
+  if (classLevelUpClock <= 0) return;
+  classLevelUpClock = Math.max(0, classLevelUpClock - dt);
+  if (!classLevelUpClock) UI.classLevelUp.classList.remove('show');
+}
+function syncClassXpHud() {
+  const r = getClassProgress();
+  const max = xpForLevel(r.level);
+  const atMax = r.level >= CLASS_MAX_LEVEL;
+  const text = atMax ? 'MAX LEVEL' : r.xp + ' / ' + max + ' XP';
+  if (UI.hudClassLevel) UI.hudClassLevel.textContent = 'LV. ' + r.level;
+  if (UI.classXpFill) UI.classXpFill.style.width = (atMax ? 100 : r.xp / max * 100) + '%';
+  if (UI.classXpText) UI.classXpText.textContent = text;
+  if (UI.hudSkillPoints) UI.hudSkillPoints.textContent = r.skillPoints + ' SP';
+  if (UI.classXpTrack) {
+    UI.classXpTrack.setAttribute('aria-valuemax', String(max));
+    UI.classXpTrack.setAttribute('aria-valuenow', String(atMax ? max : r.xp));
+    UI.classXpTrack.setAttribute('aria-valuetext', 'Level ' + r.level + ', ' + text);
+  }
+}
+function openSkillTree(source) {
+  if (currentScreen !== 'pauseMenu' && currentScreen !== 'gameCanvas') return;
+  skillTreeReturn = currentScreen === 'pauseMenu' ? 'pauseMenu' : 'gameCanvas';
+  skillTreeClassId = gameState.currentClass;
+  hideClassLevelUp();
+  saveGame('skill-tree');
+  showScreen('skillTree');
+  renderSkillTree();
+  UI.skillTreeStatus.textContent = 'Class levels and skills are saved separately for every class.';
+  document.getElementById('btnSkillTreeBack').focus({ preventScroll: true });
+}
+function closeSkillTree() {
+  if (currentScreen !== 'skillTree') return;
+  hideSkillTooltip();
+  saveGame('skill-tree-close');
+  showScreen(skillTreeReturn);
+  if (skillTreeReturn === 'pauseMenu') document.getElementById('btnSkillTreePause').focus({ preventScroll: true });
+}
+function renderSkillTree() {
+  const id = skillTreeClassId;
+  const cls = CLASSES.find(c => c.id === id) || CLASSES[0];
+  const record = getClassProgress(id);
+  UI.skillTreeClass.textContent = cls.name;
+  UI.skillTreePoints.textContent = String(record.skillPoints);
+  UI.skillTreeLevel.textContent = 'LEVEL ' + record.level + ' / 20';
+  UI.skillTreeXp.textContent = record.level === 20 ? 'MAX LEVEL' : record.xp + ' / ' + xpForLevel(record.level) + ' XP';
+  UI.skillTreeXpFill.style.width = (record.level === 20 ? 100 : record.xp / xpForLevel(record.level) * 100) + '%';
+  UI.skillTreeRows.replaceChildren();
+  hideSkillTooltip();
+  CLASS_SKILL_TREES[id].forEach((row, ri) => {
+    const section = document.createElement('section');
+    section.className = 'skill-row';
+    section.setAttribute('aria-label', row.name);
+    const heading = document.createElement('div');
+    heading.className = 'skill-row-heading';
+    const number = document.createElement('span'); number.textContent = 'ROW 0' + (ri + 1);
+    const title = document.createElement('h2'); title.textContent = row.name;
+    heading.append(number, title);
+    const nodes = document.createElement('div'); nodes.className = 'skill-row-nodes';
+    row.nodes.forEach(node => {
+      const state = skillState(node, row, record);
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'skill-node ' + state;
+      btn.dataset.skill = node.id; btn.dataset.row = String(ri);
+      btn.setAttribute('aria-label', node.name + ', ' + node.cost + ' skill point, ' + state + '. ' + node.desc);
+      btn.setAttribute('aria-disabled', String(state !== 'available' || record.skillPoints < node.cost));
+      if (state === 'owned') btn.setAttribute('aria-pressed', 'true');
+      const disc = document.createElement('span'); disc.className = 'skill-disc'; disc.innerHTML = skillIconSVG(node.icon);
+      const name = document.createElement('span'); name.className = 'skill-node-name'; name.textContent = node.name;
+      const cost = document.createElement('span'); cost.className = 'skill-node-cost'; cost.textContent = state === 'owned' ? 'OWNED' : node.cost + ' SP';
+      btn.append(disc, name, cost);
+      btn.addEventListener('pointerenter', () => showSkillTooltip(btn, node, row, record));
+      btn.addEventListener('pointerleave', hideSkillTooltip);
+      btn.addEventListener('focus', () => showSkillTooltip(btn, node, row, record));
+      btn.addEventListener('blur', hideSkillTooltip);
+      btn.addEventListener('click', () => purchaseSkill(id, node.id));
+      nodes.append(btn);
+    });
+    section.append(heading, nodes); UI.skillTreeRows.append(section);
+  });
+}
+function showSkillTooltip(btn, node, row, record) {
+  if (currentScreen !== 'skillTree') return;
+  skillTooltipButton = btn;
+  const state = skillState(node, row, record);
+  document.getElementById('skillTooltipName').textContent = node.name;
+  document.getElementById('skillTooltipDesc').textContent = node.desc;
+  document.getElementById('skillTooltipState').textContent = state === 'owned' ? 'PURCHASED · permanent for this class' : state === 'locked' ? 'LOCKED · purchase the node to the left first' : record.skillPoints < node.cost ? 'AVAILABLE · earn a skill point every 5 levels' : 'AVAILABLE · click to purchase for 1 skill point';
+  UI.skillTooltip.hidden = false;
+  btn.setAttribute('aria-describedby', 'skillTooltip');
+  const rect = btn.getBoundingClientRect();
+  const tip = UI.skillTooltip;
+  const left = clamp(rect.left + rect.width / 2 - tip.offsetWidth / 2, 12, window.innerWidth - tip.offsetWidth - 12);
+  let top = rect.top - tip.offsetHeight - 10;
+  if (top < 12) top = rect.bottom + 10;
+  tip.style.left = left + 'px';
+  tip.style.top = clamp(top, 12, window.innerHeight - tip.offsetHeight - 12) + 'px';
+}
+function hideSkillTooltip() {
+  if (UI.skillTooltip) UI.skillTooltip.hidden = true;
+  if (skillTooltipButton) skillTooltipButton.removeAttribute('aria-describedby');
+  skillTooltipButton = null;
+}
+function purchaseSkill(classId, nodeId) {
+  if (currentScreen !== 'skillTree' || classId !== skillTreeClassId) return false;
+  const record = getClassProgress(classId);
+  const row = CLASS_SKILL_TREES[classId].find(r => r.nodes.some(n => n.id === nodeId));
+  const node = row && row.nodes.find(n => n.id === nodeId);
+  if (!node) return false;
+  const state = skillState(node, row, record);
+  if (state === 'owned') { UI.skillTreeStatus.textContent = node.name + ' is already owned.'; return false; }
+  if (state !== 'available') { UI.skillTreeStatus.textContent = 'Purchase the node to the left first.'; return false; }
+  if (record.skillPoints < node.cost) { UI.skillTreeStatus.textContent = 'Not enough skill points. Earn 1 at levels 5, 10, 15 and 20.'; return false; }
+  record.owned.push(node.id);
+  record.skillPoints -= node.cost;
+  const saved = saveClassProgress(classId);
+  if (game.player && game.player.classId === classId) applyClassSkillStats();
+  renderSkillTree();
+  UI.skillTreeStatus.textContent = saved ? node.name + ' purchased. This skill is permanent.' : 'Skill applied, but storage is unavailable. Keep this tab open.';
+  Sound.ability();
+  const next = UI.skillTreeRows.querySelector('[data-skill="' + nodeId + '"]');
+  if (next) next.focus({ preventScroll: true });
+  return true;
+}
+function classHealthBonus(id) { return hasSkill('iron_skin', id) ? 1 : hasSkill('war_hardened', id) ? 2 : 0; }
+function applyClassSkillStats() {
+  const p = game.player;
+  if (!p) return;
+  const id = p.classId;
+  const hpBonus = classHealthBonus(id);
+  const oldBonus = p.skillHpBonus || 0;
+  p.maxHp += hpBonus - oldBonus;
+  p.hp = clamp(p.hp + Math.max(0, hpBonus - oldBonus), 0, p.maxHp);
+  p.skillHpBonus = hpBonus;
+  const speedBonus = hasSkill('war_boots', id) ? 1.12 : 1;
+  p.speed *= speedBonus / (p.skillSpeedBonus || 1);
+  p.skillSpeedBonus = speedBonus;
+  updateHealthOrbs();
+}
+
+
+/* =============================================================================
+   SKILL TREE COMBAT RUNTIME
+   Transient counters live here; permanent ownership lives in classProgress.
+   ============================================================================= */
+function resetSkillCombat() {
+  game.skillCombat = {
+    stillT: 0, patienceReady: false, partialInvisible: false, shadowMeld: false,
+    fadeT: 0, fadeCd: 0, adrenalineT: 0, noiseT: 0,
+    frenzyStacks: 0, frenzyT: 0, tranceTimes: [], oneShot: false, rageLatched: false,
+    lethalStacks: 0, lethalT: 0, dashHits: new Set(), frenzyHits: new Map(),
+    unbreakableUsed: false, lastWarriorUsed: false, paradoxCd: 0,
+    ambushReady: false, invisLast: false
+  };
+}
+function skillCombat() {
+  if (!game.skillCombat || !game.skillCombat.dashHits) resetSkillCombat();
+  return game.skillCombat;
+}
+function skillAttackMeta(kind) {
+  const sc = skillCombat();
+  const meta = { kind, weapon: true, mult: 1 };
+  if (currentSkill('death_from_shadows') && sc.ambushReady) { meta.mult *= 5; sc.ambushReady = false; }
+  if (kind === 'sniper' && currentSkill('patience_rewarded') && sc.patienceReady) {
+    meta.mult *= 4; sc.patienceReady = false; sc.stillT = 0;
+    if (game.player) addText(game.player.x, game.player.y - 42, 'PATIENCE', '#e2e8f0');
+  }
+  if (sc.oneShot) { meta.oneShot = true; sc.oneShot = false; }
+  if (currentSkill('armor_piercing') && (kind === 'sniper' || kind === 'railgun')) meta.piercing = true;
+  if (currentSkill('railgun_mastery') && kind === 'railgun') meta.piercing = true;
+  return meta;
+}
+function skillDamageMult(kind) {
+  const p = game.player;
+  if (!p) return 1;
+  const sc = skillCombat();
+  let m = 1;
+  if (currentSkill('last_stand') && p.hp < 1) m *= 1.5;
+  if (currentSkill('frenzy')) m *= Math.min(5, 1 + sc.frenzyStacks * 0.1);
+  if (currentSkill('unstoppable_rage') && sc.rageLatched) m *= 3;
+  if (currentSkill('pain_is_power')) m *= 1 + clamp(1 - p.hp / Math.max(1, p.maxHp), 0, 1);
+  if (kind === 'orb' && currentSkill('mana_surge')) m *= 1.3;
+  if (kind === 'familiar' && currentSkill('familiar_bond')) m *= 2;
+  if (kind === 'drone' && currentSkill('drone_upgrade')) m *= 2;
+  return m;
+}
+function applySkillHit(target, dmg, meta) {
+  if (!target || !meta || meta.noSkill) return dmg;
+  const p = game.player, sc = skillCombat();
+  let m = meta.mult || 1;
+  if (currentSkill('shadowmark') && p && p.markT > 0 && p.markTarget === target) m *= 1.5;
+  if (meta.kind === 'dagger' && currentSkill('serrated_edge')) { target.bleedT = 3; target.bleedAcc = target.bleedAcc || 0; }
+  if (meta.kind === 'dagger' && currentSkill('lethal_tempo')) { sc.lethalStacks = Math.min(12, sc.lethalStacks + 1); sc.lethalT = 2.5; }
+  if (meta.kind === 'sword' && currentSkill('heavy_strike')) target.disabledT = Math.max(target.disabledT || 0, 0.5);
+  if (meta.kind === 'sword' && currentSkill('executioner') && target.hp / target.maxHp < 0.2) dmg = Math.max(dmg, target.hp + (target.shield || 0) + 1);
+  if ((meta.kind === 'sniper' || meta.kind === 'railgun') && (meta.sniperInstant || currentSkill('one_shot_one_kill')) && !target.isBoss) dmg = Math.max(dmg, target.hp + (target.shield || 0) + 1);
+  if (meta.oneShot) dmg = Math.max(dmg, target.hp + (target.shield || 0) + 1);
+  return dmg * m;
+}
+function skillDetection(e, d, baseSee) {
+  if (!baseSee) return false;
+  const p = game.player, sc = skillCombat();
+  let range = 1200;
+  if (currentSkill('silent_step')) range *= 0.5;
+  if (currentSkill('ghost_protocol') && sc.partialInvisible) range *= 0.5;
+  if (currentSkill('suppressor')) {
+    if (sc.noiseT > 0) return true;
+    range = Math.min(range, 420);
+  }
+  return d <= range || (e && e.hitFlash > 0);
+}
+function onSkillKill(e, meta) {
+  const p = game.player;
+  if (!p) return;
+  const sc = skillCombat();
+  meta = meta || {};
+  if (currentSkill('blood_lust')) {
+    p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.05);
+    updateHealthOrbs();
+  }
+  if (currentSkill('frenzy')) { sc.frenzyStacks = Math.min(40, sc.frenzyStacks + 1); sc.frenzyT = 6; }
+  if (currentSkill('battle_trance')) {
+    sc.tranceTimes.push(game.time);
+    sc.tranceTimes = sc.tranceTimes.filter(t => game.time - t <= 4);
+    if (sc.tranceTimes.length >= 10) { sc.oneShot = true; sc.tranceTimes.length = 0; addText(p.x, p.y - 48, 'BATTLE TRANCE', '#ffb27a'); }
+  }
+  if (currentSkill('time_lord')) {
+    game.qCd = Math.max(0, game.qCd - 1); game.novaCd = Math.max(0, game.novaCd - 1);
+    game.turretCd = Math.max(0, game.turretCd - 1); game.overchargeCd = Math.max(0, game.overchargeCd - 1);
+    p.dashCd = Math.max(0, p.dashCd - 1);
+  }
+  if (currentSkill('one_in_the_chamber') && (p.vanishT > 0 || sc.shadowMeld || sc.fadeT > 0)) {
+    setAbilityCooldown('shift', 0);
+    addText(p.x, p.y - 44, 'VANISH RESET', '#c4b5fd');
+  }
+  if (meta.kind === 'orb' && currentSkill('chain_reaction')) {
+    const target = nearestEnemyTo(e.x, e.y, 420, e);
+    if (target) {
+      game.beams.push({ kind: 'chain', x1: e.x, y1: e.y, x2: target.x, y2: target.y, life: 0, maxLife: 0.18, width: 4, colour: '#c4b5fd', core: '#ffffff' });
+      damageEnemy(target, Math.max(1, (meta.dmg || p.damage) * 0.7), true, true, { kind: 'orb-chain', noSkill: true });
+    }
+  }
+}
+function updateSkillCombat(dt) {
+  const p = game.player;
+  if (!p) return;
+  const sc = skillCombat();
+  sc.fadeT = Math.max(0, sc.fadeT - dt);
+  sc.fadeCd = Math.max(0, sc.fadeCd - dt);
+  sc.adrenalineT = Math.max(0, sc.adrenalineT - dt);
+  sc.noiseT = Math.max(0, sc.noiseT - dt);
+  sc.paradoxCd = Math.max(0, sc.paradoxCd - dt);
+  sc.frenzyT = Math.max(0, sc.frenzyT - dt);
+  if (sc.frenzyT <= 0) sc.frenzyStacks = 0;
+  sc.lethalT = Math.max(0, sc.lethalT - dt);
+  if (sc.lethalT <= 0) sc.lethalStacks = 0;
+
+  const moving = p.moving || p.dashTimer > 0 || p.bashTimer > 0;
+  sc.stillT = moving ? 0 : sc.stillT + dt;
+  sc.partialInvisible = currentSkill('ghost_protocol') && p.moving && Math.hypot(p.vx, p.vy) < p.speed * 0.45;
+  sc.shadowMeld = currentSkill('shadow_meld') && sc.stillT >= 1.5;
+  if (currentSkill('patience_rewarded') && sc.stillT >= 2) sc.patienceReady = true;
+  const invisible = p.vanishT > 0 || p.phaseTimer > 0 || p.ghillieT > 0 || sc.shadowMeld || sc.fadeT > 0;
+  if (invisible && currentSkill('death_from_shadows')) sc.ambushReady = true;
+  sc.invisLast = invisible;
+
+  if (currentSkill('unstoppable_rage')) {
+    if (p.hp < 1) sc.rageLatched = true;
+    else if (p.hp >= 1) sc.rageLatched = false;
+  } else sc.rageLatched = false;
+
+  /* bleed ticks from Serrated Edge */
+  for (let i = game.enemies.length - 1; i >= 0; i--) {
+    const e = game.enemies[i];
+    if (e.frenzyCd > 0) e.frenzyCd = Math.max(0, e.frenzyCd - dt);
+    if (e.bleedT > 0) {
+      e.bleedT = Math.max(0, e.bleedT - dt);
+      e.bleedAcc = (e.bleedAcc || 0) + dt;
+      if (e.bleedAcc >= 1) { e.bleedAcc -= 1; damageEnemy(e, 1, true, true, { kind: 'bleed', noSkill: true }); }
+    }
+  }
+  const b = game.boss;
+  if (b && b.bleedT > 0) {
+    b.bleedT = Math.max(0, b.bleedT - dt);
+    b.bleedAcc = (b.bleedAcc || 0) + dt;
+    if (b.bleedAcc >= 1) { b.bleedAcc -= 1; damageBoss(1, { kind: 'bleed', noSkill: true }); }
+  }
+
+  /* Unstoppable: a knight's dash carries sword damage. */
+  if (p.dashTimer <= 0) { sc.dashHits.clear(); sc.ghostWalkDash = false; }
+  else if (currentSkill('ghost_walk') && !sc.ghostWalkDash) {
+    sc.ghostWalkDash = true;
+    game.decoy = { x: p.x, y: p.y, t: 4, spin: 0 };
+  }
+  if (p.dashTimer > 0 && currentSkill('unstoppable')) {
+    for (let i = game.enemies.length - 1; i >= 0; i--) {
+      const e = game.enemies[i];
+      if (sc.dashHits.has(e) || dist(p.x, p.y, e.x, e.y) > p.r + e.r + 22) continue;
+      sc.dashHits.add(e);
+      damageEnemy(e, buffedDamage(swordDamage(), 'sword'), true, false, { kind: 'sword', weapon: true });
+    }
+    if (game.boss && !game.boss.entering && !sc.dashHits.has(game.boss) && dist(p.x, p.y, game.boss.x, game.boss.y) < p.r + game.boss.r + 22) {
+      sc.dashHits.add(game.boss);
+      damageBoss(buffedDamage(swordDamage(), 'sword') * 0.8, { kind: 'sword', weapon: true });
+    }
+  }
+
+  /* Berserker's Path: body contact while moving cuts enemies. */
+  if (currentSkill('berserkers_path') && moving) {
+    for (let i = game.enemies.length - 1; i >= 0; i--) {
+      const e = game.enemies[i];
+      if (dist(p.x, p.y, e.x, e.y) < p.r + e.r + 8) damageEnemy(e, buffedDamage(p.damage, 'path') * dt * 1.6, true, true, { kind: 'path', noSkill: true });
+    }
+  }
+}
+function skillSpeedMult() {
+  const sc = skillCombat();
+  return sc.adrenalineT > 0 ? 1.2 : 1;
+}
+function skillFireRateMult() {
+  const p = game.player;
+  let m = 1;
+  if (currentSkill('hair_trigger')) m *= 1.2;
+  if (currentSkill('gunslingers_creed') && p && p.hp < 2) m *= 2;
+  if (currentSkill('lethal_tempo')) m *= 1 + skillCombat().lethalStacks * 0.08;
+  return m;
+}
+function skillCooldownSeconds(slot, base) {
+  let cd = base;
+  const cls = getClass();
+  if (cls.id === 'knight' && slot === 'q' && currentSkill('charge_master')) cd = Math.max(0.5, cd - 5);
+  if (cls.id === 'knight' && (slot === 'q' || slot === 'shift') && currentSkill('fortress')) cd *= 0.6;
+  if (cls.id === 'gunslinger' && slot === 'shift' && currentSkill('tactical_roll')) cd = Math.max(0.5, cd - 2);
+  if (cls.id === 'tech' && slot === 'q' && currentSkill('overclock_system')) cd = Math.max(1, cd - 15);
+  return cd;
+}
+
 /* the four doctrines Rael starts with; the rest are bought with gems */
 const FREE_CLASSES = ['knight', 'gunslinger', 'sniper', 'mage'];
 
@@ -4110,7 +4895,7 @@ function getClass(id) {
 /* the class Q recharge, after its own passive and the Reactor Coils upgrade */
 function qCdMax(c) {
   const cls = c || getClass();
-  return cls.q.cd * (cls.q.cdScale || 1) * cdScale();
+  return skillCooldownSeconds('q', cls.q.cd * (cls.q.cdScale || 1) * cdScale());
 }
 
 /* ------------------------------ knight sword -------------------------------
@@ -4134,16 +4919,17 @@ function swordTier() {
   return clamp(game.player ? (game.player.swordTier | 0) : 0, 0, SWORD_TIERS.length - 1);
 }
 function swordDef() { return SWORD_TIERS[swordTier()]; }
-function swordArc() { return swordDef().arc; }
+function swordArc() { return currentSkill('cleave') ? Math.max(swordDef().arc, Math.PI * 160 / 180) : swordDef().arc; }
 function swordDamage() {
   const base = game.player ? game.player.damage : 1;
-  return base * 1.65 + swordDef().dmg;
+  return (base * 1.65 + swordDef().dmg) * (currentSkill('blade_mastery') ? 1.15 : 1);
 }
 
 function syncClassHud() {
   const c = getClass();
   UI.className.textContent = c.name;
   paintClassIcon(UI.badgeIcon, c.id);
+  syncClassXpHud();
   syncAbilityHud();
   /* keep the class id on the HUD as a styling hook */
   const hud = document.getElementById('hud');
@@ -4291,19 +5077,20 @@ function swingSword() {
   p.swingSign = -dir;
 
   const half = arc / 2;
-  p.swingT = SWORD_SWING_TIME;
-  p.swingCd = SWORD_COOLDOWN / (shopMagazineMult() * odm());
+  p.swingT = SWORD_SWING_TIME / (currentSkill('blade_dance') ? 1.3 : 1);
+  p.swingCd = SWORD_COOLDOWN / (shopMagazineMult() * odm() * (currentSkill('blade_dance') ? 1.3 : 1));
   p.swingFrom = p.angle - half * dir;
   p.swingTo = p.angle + half * dir;
 
-  const dmg = buffedDamage(swordDamage()) * odm();
+  const meta = skillAttackMeta('sword');
+  const dmg = buffedDamage(swordDamage(), 'sword') * odm();
   let hits = 0;
 
   for (let i = game.enemies.length - 1; i >= 0; i--) {
     const e = game.enemies[i];
     if (!inSwordArc(p.x, p.y, p.angle, e.x, e.y, e.r, arc, SWORD_RANGE)) continue;
     const a = Math.atan2(e.y - p.y, e.x - p.x);
-    damageEnemy(e, dmg, true);
+    damageEnemy(e, dmg, true, false, meta);
     /* the flat of the blade shoves whatever survives */
     e.x = clamp(e.x + Math.cos(a) * 9, 40, WORLD - 40);
     e.y = clamp(e.y + Math.sin(a) * 9, 40, WORLD - 40);
@@ -4315,7 +5102,7 @@ function swingSword() {
   }
   if (game.boss && !game.boss.entering &&
       inSwordArc(p.x, p.y, p.angle, game.boss.x, game.boss.y, game.boss.r, arc, SWORD_RANGE)) {
-    damageBoss(dmg * 0.8);
+    damageBoss(dmg * 0.8, meta);
     hits++;
   }
 
@@ -4383,6 +5170,7 @@ function nearestTarget(x, y, maxRange) {
   let bestD = maxRange || 900;
   for (let i = 0; i < game.enemies.length; i++) {
     const e = game.enemies[i];
+    if (e.underground) continue;
     const d = dist(x, y, e.x, e.y);
     if (d < bestD) { bestD = d; best = e; }
   }
@@ -4394,11 +5182,14 @@ function nearestTarget(x, y, maxRange) {
 
 function firePistols(charged) {
   const p = game.player;
+  const attack = skillAttackMeta('pistol');
   const spread = p.arc ? [-0.075, 0, 0.075] : [-0.014, 0.014];
   for (let i = 0; i < spread.length; i++) {
     const a = p.angle + spread[i];
     p.shotCount = (p.shotCount | 0) + 1;
-    const boom = !!p.explosiveRounds && p.shotCount % 5 === 0;
+    const assassin = currentSkill('assassin_rounds') && p.shotCount % 7 === 0;
+    const boom = (!!p.explosiveRounds && p.shotCount % 5 === 0) || (currentSkill('dum_dum_rounds') && Math.random() < 0.10);
+    const meta = Object.assign({}, attack, { oneShot: i === 0 && attack.oneShot, assassin });
     const side = (i % 2 === 0 ? -1 : 1) * 6.5;
     game.bullets.push({
       kind: 'pistol',
@@ -4408,12 +5199,19 @@ function firePistols(charged) {
       vy: Math.sin(a) * p.bulletSpeed,
       r: charged ? 6 : 3.6,
       life: 0.72,
-      dmg: buffedDamage(p.damage),
+      dmg: buffedDamage(p.damage, 'pistol') * (assassin ? 4 : 1),
       knock: 4,
-      pierce: (p.pierce || 0) + (p.overloadPierceT > 0 ? 99 : 0),
+      pierce: (p.pierce || 0) + (currentSkill('hollow_points') ? 1 : 0) + (p.overloadPierceT > 0 ? 99 : 0),
       explosive: boom,
-      hits: null
+      hits: null,
+      skillMeta: meta
     });
+  }
+  if (!currentSkill('suppressor')) skillCombat().noiseT = 1.2;
+  if (currentSkill('extended_mag') || currentSkill('speed_loader')) {
+    p.magShots = (p.magShots || 0) + spread.length;
+    const cap = 12 + (currentSkill('extended_mag') ? 4 : 0);
+    if (p.magShots >= cap) { p.magShots = 0; p.reloadT = Math.max(0.05, 0.35 - (currentSkill('speed_loader') ? 0.1 : 0)); }
   }
   Sound.pistol();
   for (let i = 0; i < 2; i++) {
@@ -4428,36 +5226,50 @@ function firePistols(charged) {
 function fireSniper(charged) {
   const p = game.player;
   const a = p.angle;
+  const meta = skillAttackMeta('sniper');
+  meta.sniperInstant = true;
+  p.sniperShotCount = (p.sniperShotCount | 0) + 1;
+  if (currentSkill('headhunter') && p.sniperShotCount % 5 === 0) { meta.mult *= 3; meta.crit = true; }
+  const range = 2400 * (currentSkill('scope_mastery') ? 1.25 : 1);
+  const baseDmg = buffedDamage(p.damage * (charged ? 1.35 : 1), 'sniper');
+  if (!currentSkill('suppressor')) skillCombat().noiseT = 1.2;
+
+  if (currentSkill('subsonic')) {
+    const speed = Math.max(120, p.bulletSpeed * 0.7);
+    game.bullets.push({
+      kind: 'sniper', x: p.x + Math.cos(a) * (p.r + 16), y: p.y + Math.sin(a) * (p.r + 16),
+      vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, r: charged ? 7 : 5,
+      life: range / speed, dmg: baseDmg * 2, knock: 8, pierce: 99, hits: [], skillMeta: meta
+    });
+    Sound.sniperShot();
+    game.shake = Math.max(game.shake, 0.22);
+    return;
+  }
+
   const x1 = p.x + Math.cos(a) * (p.r + 16);
   const y1 = p.y + Math.sin(a) * (p.r + 16);
-  const x2 = p.x + Math.cos(a) * 2400;
-  const y2 = p.y + Math.sin(a) * 2400;
-  game.beams.push({
-    kind: 'sniper', x1, y1, x2, y2, life: 0, maxLife: 0.2,
-    width: charged ? 11 : 7, colour: '#e0f2fe', core: '#ffffff'
-  });
+  const x2 = p.x + Math.cos(a) * range;
+  const y2 = p.y + Math.sin(a) * range;
+  game.beams.push({ kind: 'sniper', x1, y1, x2, y2, life: 0, maxLife: 0.2, width: charged ? 11 : 7, colour: '#e0f2fe', core: '#ffffff' });
   const pad = charged ? 16 : 11;
-  /* where the round lands, for Explosive Rounds: the first body it meets */
-  let landX = p.x + Math.cos(a) * 700;
-  let landY = p.y + Math.sin(a) * 700;
-  let landed = false;
+  let landX = p.x + Math.cos(a) * 700, landY = p.y + Math.sin(a) * 700, landed = false;
+  let oneShot = !!meta.oneShot;
   for (let i = game.enemies.length - 1; i >= 0; i--) {
     const e = game.enemies[i];
     if (!segHitsCircle(x1, y1, x2, y2, e.x, e.y, e.r + pad)) continue;
     if (!landed) { landX = e.x; landY = e.y; landed = true; }
-    damageEnemy(e, 9999, false);
+    const hitMeta = Object.assign({}, meta, { oneShot, projectile: true, fromX: p.x, fromY: p.y });
+    oneShot = false;
+    damageEnemy(e, 9999, false, false, hitMeta);
+    if (meta.crit) critFlash(e.x, e.y);
   }
-  if (game.boss && !game.boss.entering &&
-      segHitsCircle(x1, y1, x2, y2, game.boss.x, game.boss.y, game.boss.r + pad)) {
-    damageBoss(buffedDamage(p.damage * (charged ? 1.35 : 1)));
+  if (game.boss && !game.boss.entering && segHitsCircle(x1, y1, x2, y2, game.boss.x, game.boss.y, game.boss.r + pad)) {
+    damageBoss(baseDmg, meta);
+    if (meta.crit) critFlash(game.boss.x, game.boss.y);
   }
-  /* one hit per prop, all from the same 40px distance rule */
   hitBreakablesAlong(x1, y1, x2, y2, 'sniper');
   p.shotCount = (p.shotCount | 0) + 1;
-  if (p.explosiveRounds && p.shotCount % 5 === 0) {
-    /* the fifth rail round carries a charge: it bursts where it lands */
-    explodeAt(landX, landY, buffedDamage(p.damage * 0.6), '#fbbf24');
-  }
+  if (p.explosiveRounds && p.shotCount % 5 === 0) explodeAt(landX, landY, buffedDamage(p.damage * 0.6), '#fbbf24');
   Sound.sniperShot();
   game.shake = Math.max(game.shake, 0.3);
   for (let i = 0; i < 10; i++) {
@@ -4469,7 +5281,8 @@ function fireSniper(charged) {
 
 function fireMageOrbs(charged) {
   const p = game.player;
-  const n = (p.arc ? 4 : 3) + (p.mageOrbs | 0);
+  const attack = skillAttackMeta('orb');
+  const n = (p.arc ? 4 : 3) + (p.mageOrbs | 0) + (currentSkill('orb_mastery') ? 1 : 0);
   for (let i = 0; i < n; i++) {
     const a = p.angle + (i - (n - 1) / 2) * 0.42;
     p.shotCount = (p.shotCount | 0) + 1;
@@ -4482,12 +5295,15 @@ function fireMageOrbs(charged) {
       vy: Math.sin(a) * p.bulletSpeed,
       r: charged ? 10 : 7,
       life: 3.2,
-      dmg: buffedDamage(p.damage * (charged ? 1.25 : 1)),
+      dmg: buffedDamage(p.damage * (charged ? 1.25 : 1), 'orb'),
       knock: 2,
       explosive: boom,
       homing: true,
-      turn: 2.6,
-      spin: rand(0, TAU)
+      turn: 2.6 * (currentSkill('seeking_algorithm') ? 1.4 : 1),
+      vortex: currentSkill('singularity'),
+      vortexDir: i % 2 === 0 ? 1 : -1,
+      spin: rand(0, TAU),
+      skillMeta: Object.assign({}, attack, { oneShot: i === 0 && attack.oneShot })
     });
   }
   Sound.mageOrb();
@@ -4497,6 +5313,7 @@ function fireMageOrbs(charged) {
 
 function fireClassWeapon(dt) {
   const p = game.player;
+  if (p.reloadT > 0) { p.reloadT = Math.max(0, p.reloadT - dt); return; }
   if (p.fireTimer > 0) p.fireTimer -= dt;
   const charged = game.overchargeTimer > 0;
   const cls = getClass();
@@ -4517,7 +5334,7 @@ function fireClassWeapon(dt) {
     else if (cls.weapon === 'daggers') fireDaggers(charged);
     else if (cls.weapon === 'disc') fireDisc(charged);
     else fireMageOrbs(charged);
-    p.fireTimer = (p.fireRate * (charged ? 0.5 : 1)) / odm();
+    p.fireTimer = (p.fireRate * (charged ? 0.5 : 1)) / (odm() * skillFireRateMult());
   }
 }
 
@@ -4624,9 +5441,11 @@ function updateAxes(dt) {
    ------------------------------------------------------------------------- */
 function fireDaggers(charged) {
   const p = game.player;
-  for (let i = 0; i < 2; i++) {
-    const a = p.angle + (i === 0 ? -0.05 : 0.05);
-    const side = (i === 0 ? -1 : 1) * 5;
+  const attack = skillAttackMeta('dagger');
+  const n = currentSkill('multishot') ? 3 : 2;
+  for (let i = 0; i < n; i++) {
+    const a = p.angle + (i - (n - 1) / 2) * (currentSkill('multishot') ? 0.16 : 0.1);
+    const side = (i - (n - 1) / 2) * 5;
     game.bullets.push({
       kind: 'dagger',
       x: p.x + Math.cos(a) * (p.r + 4) - Math.sin(a) * side,
@@ -4635,12 +5454,13 @@ function fireDaggers(charged) {
       vy: Math.sin(a) * p.bulletSpeed,
       r: 4.6,
       life: 0.85,
-      dmg: buffedDamage(p.damage),
+      dmg: buffedDamage(p.damage, 'dagger'),
       knock: 3,
       pierce: 1,
       explosive: false,
       hits: null,
-      spins: 0
+      spins: 0,
+      skillMeta: Object.assign({}, attack, { oneShot: i === 0 && attack.oneShot })
     });
   }
   Sound.pistol();
@@ -4669,8 +5489,11 @@ function fireDisc(charged) {
     spin: 0,
     life: 2.4,
     hits: [],
-    bounces: 4,
-    dmg: buffedDamage(p.damage * 1.3)
+    bounces: currentSkill('bouncing_algorithm') ? 6 : 4,
+    explosiveDisc: currentSkill('explosive_disc'),
+    magnetic: currentSkill('magnetic_disc'),
+    dmg: buffedDamage(p.damage * 1.3, 'disc'),
+    skillMeta: skillAttackMeta('disc')
   });
   Sound.turretShot();
   for (let i = 0; i < 3; i++) {
@@ -4706,6 +5529,17 @@ function updateDiscs(dt) {
       d.vy = Math.sin(d.ang) * d.speed;
     }
 
+    if (d.magnetic) {
+      for (let j = 0; j < game.enemies.length; j++) {
+        const e = game.enemies[j];
+        if (e.elite || e.r > 18) continue;
+        const dd = dist(d.x, d.y, e.x, e.y);
+        if (dd > 180 || dd < 1) continue;
+        const pull = (1 - dd / 180) * 220 * dt;
+        e.x += (d.x - e.x) / dd * pull;
+        e.y += (d.y - e.y) / dd * pull;
+      }
+    }
     d.x += d.vx * dt;
     d.y += d.vy * dt;
 
@@ -4722,7 +5556,8 @@ function updateDiscs(dt) {
       if (dist(d.x, d.y, e.x, e.y) > e.r + 16) continue;
       d.hits.push(e);
       d.bounces -= 1;
-      damageEnemy(e, d.dmg, true);
+      if (currentSkill('disc_mastery')) game.player.fireTimer = Math.max(0, (game.player.fireTimer || 0) - 1);
+      damageEnemy(e, d.dmg, true, false, Object.assign({}, d.skillMeta || { kind: 'disc' }, { projectile: true, fromX: d.x, fromY: d.y }));
       for (let k = 0; k < 5; k++) {
         const a2 = rand(0, TAU);
         spawnParticle(e.x, e.y, Math.cos(a2) * rand(50, 190), Math.sin(a2) * rand(50, 190),
@@ -4733,10 +5568,12 @@ function updateDiscs(dt) {
         dist(d.x, d.y, game.boss.x, game.boss.y) < game.boss.r + 16) {
       d.hits.push(game.boss);
       d.bounces -= 1;
-      damageBoss(d.dmg);
+      if (currentSkill('disc_mastery')) game.player.fireTimer = Math.max(0, (game.player.fireTimer || 0) - 1);
+      damageBoss(d.dmg, d.skillMeta || { kind: 'disc' });
     }
 
     if (d.bounces <= 0 || d.life <= 0) {
+      if (d.explosiveDisc && d.bounces <= 0) explodeAt(d.x, d.y, d.dmg * 1.2, '#6ee7b7');
       for (let k = 0; k < 8; k++) {
         const a2 = rand(0, TAU);
         spawnParticle(d.x, d.y, Math.cos(a2) * rand(40, 170), Math.sin(a2) * rand(40, 170),
@@ -4867,13 +5704,14 @@ function castDeathMark() {
     return;
   }
   p.markTarget = target;
-  p.markT = MARK_TIME;
+  p.markT = MARK_TIME + (currentSkill('marked_for_death') ? 4 : 0);
   Sound.ability();
   addText(target.x, target.y - 30, 'MARKED', '#c4b5fd');
   game.particles.push({ ring: true, x: target.x, y: target.y, r: 8, maxR: target.r * 4, life: 0, maxLife: 0.5, color: '#c4b5fd' });
 }
 
 /* ---- tech specialist: System Overload ------------------------------------ */
+function turretBaseHp() { return 6 * (currentSkill('reinforced_frame') ? 1.5 : 1); }
 function deployTurretAt(x, y) {
   if (game.turrets.length >= 2) {
     const p = game.player;
@@ -4883,6 +5721,7 @@ function deployTurretAt(x, y) {
   game.turrets.push({
     x: clamp(x, 40, WORLD - 40), y: clamp(y, 40, WORLD - 40),
     life: 1e9, maxLife: 1e9, permanent: true,
+    hp: turretBaseHp(), maxHp: turretBaseHp(), overclockT: currentSkill('overclock') ? 8 : 0,
     angle: 0, spin: 0, fireTimer: 0.2, range: 400
   });
   Sound.turretDrop();
@@ -4905,6 +5744,11 @@ function systemOverload() {
     game.particles.push({ ring: true, x: live[i].x, y: live[i].y, r: 8, maxR: 130, life: 0, maxLife: 0.42, color: '#34d399' });
   }
   game.turrets.length = 0;
+  if (currentSkill('nano_repair') && live.length && game.player) {
+    game.player.hp = Math.min(game.player.maxHp, game.player.hp + 1);
+    updateHealthOrbs();
+    addText(game.player.x, game.player.y - 56, '+1 ORB', '#6ee7b7');
+  }
   /* two fresh towers are standing before the smoke even settles */
   deployTurretAt(p.x - 38, p.y + 10);
   deployTurretAt(p.x + 38, p.y + 10);
@@ -4987,8 +5831,9 @@ function updateBulletStorm(dt) {
   if (game.stormFire > 0) return;
   game.stormFire = 0.17;
   const charged = game.overchargeTimer > 0;
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * TAU;
+  const stormN = currentSkill('bullet_rain') ? 16 : 8;
+  for (let i = 0; i < stormN; i++) {
+    const a = (i / stormN) * TAU;
     game.bullets.push({
       kind: 'storm',
       x: p.x + Math.cos(a) * (p.r + 8),
@@ -5021,11 +5866,11 @@ function railgun() {
   for (let i = game.enemies.length - 1; i >= 0; i--) {
     const e = game.enemies[i];
     if (!segHitsCircle(x1, y1, x2, y2, e.x, e.y, e.r + pad)) continue;
-    damageEnemy(e, 20, false);
+    damageEnemy(e, 20, false, false, skillAttackMeta('railgun'));
   }
   if (game.boss && !game.boss.entering &&
       segHitsCircle(x1, y1, x2, y2, game.boss.x, game.boss.y, game.boss.r + pad)) {
-    damageBoss(20);
+    damageBoss(20, skillAttackMeta('railgun'));
   }
   hitBreakablesAlong(x1, y1, x2, y2, 'railgun');
   Sound.railgun();
@@ -5056,7 +5901,8 @@ function temporalRift() {
   }
   tx = clamp(tx, 80, WORLD - 80);
   ty = clamp(ty, 80, WORLD - 80);
-  game.rift = { x: tx, y: ty, life: 5, maxLife: 5, r: 0, spin: 0, tick: 0 };
+  const riftLife = 5 * (currentSkill('chrono_efficiency') ? 1.25 : 1);
+  game.rift = { x: tx, y: ty, life: riftLife, maxLife: riftLife, r: 0, spin: 0, tick: 0 };
   Sound.rift();
   game.shake = Math.max(game.shake, 0.4);
   addText(p.x, p.y - 40, 'TEMPORAL RIFT', '#c4b5fd');
@@ -5074,7 +5920,7 @@ function updateRift(dt) {
   if (!r) return;
   r.life -= dt;
   r.spin += dt * 1.9;
-  r.r = Math.min(215 * (game.shopBlast || 1), r.r + dt * 620);
+  r.r = Math.min(215 * (game.shopBlast || 1) * (currentSkill('dark_matter') ? 2 : 1), r.r + dt * 620);
   if (r.life <= 0) {
     Sound.riftEnd();
     for (let i = 0; i < 26; i++) {
@@ -5232,6 +6078,7 @@ function dropTurret() {
   game.shake = Math.max(game.shake, 0.22);
   game.turrets.push({
     x: p.x, y: p.y, life: 12, maxLife: 12,
+    hp: turretBaseHp(), maxHp: turretBaseHp(), overclockT: currentSkill('overclock') ? 8 : 0,
     angle: p.angle, spin: 0, fireTimer: 0.25, range: 380
   });
   addText(p.x, p.y - 40, 'TURRET ONLINE', '#fbbf24');
@@ -5247,6 +6094,8 @@ function updateTurrets(dt) {
   for (let i = game.turrets.length - 1; i >= 0; i--) {
     const t = game.turrets[i];
     if (!t.permanent) t.life -= dt;
+    if (t.overclockT > 0) t.overclockT = Math.max(0, t.overclockT - dt);
+    if (t.hp <= 0) t.life = 0;
     if (t.life <= 0) {
       Sound.turretOff();
       for (let k = 0; k < 14; k++) {
@@ -5261,13 +6110,17 @@ function updateTurrets(dt) {
     /* acquire the nearest thing in range */
     let target = null;
     let bestD = t.range;
+    const smart = currentSkill('smart_targeting');
     for (let j = 0; j < game.enemies.length; j++) {
-      const d = dist(t.x, t.y, game.enemies[j].x, game.enemies[j].y);
-      if (d < bestD) { bestD = d; target = game.enemies[j]; }
+      const e = game.enemies[j];
+      const d = dist(t.x, t.y, e.x, e.y);
+      const score = d - (smart && e.elite ? 220 : 0);
+      if (d <= t.range && score < bestD) { bestD = score; target = e; }
     }
     if (game.boss) {
       const d = dist(t.x, t.y, game.boss.x, game.boss.y);
-      if (d < bestD) { bestD = d; target = game.boss; }
+      const score = d - (smart ? 360 : 0);
+      if (d <= t.range && score < bestD) { bestD = score; target = game.boss; }
     }
 
     if (target) {
@@ -5275,14 +6128,15 @@ function updateTurrets(dt) {
       t.spin += dt * 3;
       t.fireTimer -= dt;
       if (t.fireTimer <= 0) {
-        t.fireTimer = 0.42;
+        t.fireTimer = currentSkill('dual_barrels') ? 0.21 : 0.42;
         game.bullets.push({
           kind: 'turret',
           x: t.x + Math.cos(t.angle) * 20,
           y: t.y + Math.sin(t.angle) * 20,
           vx: Math.cos(t.angle) * 780,
           vy: Math.sin(t.angle) * 780,
-          r: 6, life: 0.7, dmg: 1.2, knock: 5
+          r: 6, life: 0.7, dmg: 1.2 * (t.overclockT > 0 ? 2 : 1), knock: 5,
+          skillMeta: { kind: 'turret' }
         });
         Sound.turretShot();
         spawnParticle(t.x + Math.cos(t.angle) * 22, t.y + Math.sin(t.angle) * 22,
@@ -5451,7 +6305,7 @@ function hurtPlayer(amount, raw) {
   if (!raw) {
     /* Berserker Rage: nothing reaches him while the red is up */
     if (p.rageT > 0) return;
-    if (classBuff('juggernaut') > 0 || p.ghillieT > 0 || p.vanishT > 0) return;
+    if (classBuff('juggernaut') > 0 || p.ghillieT > 0 || p.vanishT > 0 || skillCombat().fadeT > 0 || skillCombat().shadowMeld) return;
     /* Phase Cloak: out of phase, nothing can find him to hit him */
     if (p.phaseTimer > 0) return;
     if (p.invuln > 0 || p.dashTimer > 0) return;
@@ -5484,7 +6338,19 @@ function hurtPlayer(amount, raw) {
     updateHealthOrbs();
     return;
   }
+  if (currentSkill('thick_skull')) amount *= 0.85;
+  const hpBeforeHit = p.hp;
   p.hp -= amount;
+  if (currentSkill('adrenaline')) skillCombat().adrenalineT = 3;
+  if (currentSkill('fade') && skillCombat().fadeCd <= 0) { skillCombat().fadeT = 1; skillCombat().fadeCd = 5; p.phaseTimer = Math.max(p.phaseTimer, 1); }
+  if (currentSkill('paradox_shield') && skillCombat().paradoxCd <= 0 && hpBeforeHit > p.hp) {
+    skillCombat().paradoxCd = 8;
+    p.hp = Math.min(p.maxHp, hpBeforeHit);
+    p.invuln = Math.max(p.invuln, 0.35);
+    addText(p.x, p.y - 34, 'PARADOX', '#c4b5fd');
+    Sound.rewind();
+  }
+  if (currentSkill('frenzy')) { skillCombat().frenzyStacks = 0; skillCombat().frenzyT = 0; }
   if (!raw) {
     p.invuln = 1.15;
     game.shake = Math.max(game.shake, 0.5);
@@ -5507,6 +6373,19 @@ function hurtPlayer(amount, raw) {
   game.particles.push({ ring: true, x: p.x, y: p.y - 2, r: 6, maxR: 44, life: 0, maxLife: 0.3, color: '#ff8080' });
   updateHealthOrbs();
   if (p.hp <= 0) {
+    if (currentSkill('unbreakable') && !skillCombat().unbreakableUsed) {
+      skillCombat().unbreakableUsed = true;
+      p.hp = 1; p.invuln = 2.2; p.hitFlash = 0;
+      addText(p.x, p.y - 46, 'UNBREAKABLE', '#fde68a');
+      Sound.ability(); updateHealthOrbs(); return;
+    }
+    if (currentSkill('last_warrior') && !skillCombat().lastWarriorUsed) {
+      skillCombat().lastWarriorUsed = true;
+      p.hp = 1; p.invuln = 2.2; p.hitFlash = 0;
+      setClassBuff('juggernaut', 4);
+      addText(p.x, p.y - 46, 'LAST WARRIOR', '#ffd6a5');
+      Sound.overcharge(); updateHealthOrbs(); return;
+    }
     /* Second Wind: once a zone, death is refused */
     if (p.secondWind && !game.secondWindUsed) {
       game.secondWindUsed = true;
@@ -5551,19 +6430,25 @@ function hurtPlayer(amount, raw) {
    ============================================================================= */
 
 /* ------------------------------ spawning ----------------------------------- */
-function spawnEnemy(type, x, y, arenaIndex) {
+function spawnEnemy(type, x, y, arenaIndex, opts) {
   const def = ENEMY_DEFS[type] || ENEMY_DEFS.knight;
-  /* each level carries a power level from its universe: Egypt starts tougher
-     than the village and the Void is the hardest thing in the game */
-  const power = (ZONES[gameState.currentZone] && ZONES[gameState.currentZone].power) || 1;
-  const scale = 0.85 + power * 0.18;
+  const o = opts || {};
+  /* The universe index saved in gameState selects the exact multiplier set.
+     Regular enemies use the table verbatim; the old per-zone power curve is
+     intentionally no longer stacked on top of it. */
+  const diff = universeDifficulty(gameState.currentUniverse);
+  const eliteVariant = !!o.eliteVariant;
+  const hp = Math.round(def.hp * diff.hp * (eliteVariant ? 2.5 : 1) * 10) / 10;
   const e = {
     type,
     x, y,
-    r: def.r,
-    hp: Math.round(def.hp * power * 10) / 10,
-    maxHp: Math.round(def.hp * power * 10) / 10,
-    speed: def.speed * scale,
+    r: def.r * (eliteVariant ? 1.3 : 1),
+    hp,
+    maxHp: hp,
+    speed: def.speed * diff.speed,
+    damageMult: diff.damage * (eliteVariant ? 1.5 : 1),
+    elite: !!def.elite || eliteVariant,
+    eliteVariant,
     fly: !!def.fly,
     special: !!def.ai,
     ai: def.ai || null,
@@ -5573,6 +6458,7 @@ function spawnEnemy(type, x, y, arenaIndex) {
     rewindCd: 0,
     hist: [],
     invis: 0,
+    revealT: 0,
     arena: (typeof arenaIndex === 'number') ? arenaIndex : null,
     fireTimer: def.fire ? def.fire * rand(0.5, 1.1) : 0,
     hitFlash: 0,
@@ -5586,8 +6472,25 @@ function spawnEnemy(type, x, y, arenaIndex) {
     errTimer: 0,
     contactCd: 0,
     freeze: 0, disabledT: 0, slowT: 0, poisonT: 0, poisonAcc: 0, poisonDmg: 1,
-    orbit: Math.random() < 0.5 ? 1 : -1
+    orbit: Math.random() < 0.5 ? 1 : -1,
+    aiTier: gameState.currentUniverse,
+    coordSide: (typeof o.coordSide === 'number') ? o.coordSide : (game.enemies.length % 2 === 0 ? 1 : -1),
+    lineSlot: (typeof o.lineSlot === 'number') ? o.lineSlot : game.enemies.length,
+    dodgeT: 0, dodgeA: 0,
+    alertT: 0,
+    feintT: 0, feintState: 0, feintCd: rand(1, 3),
+    shield: 0, maxShield: 0
   };
+  if (eliteVariant && type === 'knight') {
+    e.shield = Math.max(2, Math.ceil(e.maxHp * 0.5));
+    e.maxShield = e.shield;
+  }
+  if (eliteVariant && type === 'ghost') { e.invis = 1; e.revealT = 0; }
+  if (type === 'sandshade') { e.underground = true; e.burrowT = rand(1.4, 2.4); e.invis = 1; }
+  if (type === 'ronin') { e.guard = true; e.guardCd = 0; }
+  if (type === 'scavengerbot') { e.stolen = 0; }
+  if (type === 'voidleech') { e.attached = false; e.attachT = 0; e.drainTick = 0; e.attachCd = 0; }
+  if (type === 'echo') { e.echoAbilityCd = rand(2.5, 4.5); e.echoAbilityIndex = 0; e.echoStormT = 0; e.echoChargeT = 0; e.echoBuffT = 0; }
   game.enemies.push(e);
   petWarnSpawn(x, y);
   return e;
@@ -5597,14 +6500,22 @@ function spawnWave(arena, arenaIndex, waveIndex) {
   const z = ZONES[gameState.currentZone];
   const wave = z.waves[Math.min(waveIndex, z.waves.length - 1)];
   const types = wave.types;
-  const count = wave.count;
+  const diff = universeDifficulty(gameState.currentUniverse);
+  const count = Math.max(1, Math.round(wave.count * diff.wave));
+  const elitesAllowed = gameState.currentUniverse >= 2;   /* U3 onward */
   for (let i = 0; i < count; i++) {
     const a = (i / count) * TAU + rand(-0.2, 0.2);
     /* every enemy of a new wave arrives at least 300px from the player */
     const spot = waveSpawnPoint(arena, a);
     const x = spot.x;
     const y = spot.y;
-    spawnEnemy(pick(types), x, y, arenaIndex);
+    /* Every third enemy spawned in the wave gets a 25% elite roll. */
+    const eliteVariant = elitesAllowed && ((i + 1) % 3 === 0) && Math.random() < 0.25;
+    spawnEnemy(pick(types), x, y, arenaIndex, {
+      eliteVariant,
+      coordSide: i % 2 === 0 ? 1 : -1,
+      lineSlot: i
+    });
     for (let k = 0; k < 6; k++) {
       const pa = rand(0, TAU);
       spawnParticle(x, y, Math.cos(pa) * rand(20, 90), Math.sin(pa) * rand(20, 90), 0.4, 7, '#f87171', 2);
@@ -5631,6 +6542,149 @@ function applyPoison(seconds) {
   if (!p) return;
   p.poisonT = Math.max(p.poisonT || 0, seconds);
   p.poisonAcc = p.poisonAcc || 0;
+}
+
+/* ---- Echo: a hostile mirror of the player's current class ------------------ */
+function echoFireWeapon(e, ang, d) {
+  const cls = getClass();
+  const w = cls.weapon;
+  const buff = e.echoBuffT > 0 ? 1.5 : 1;
+  if (w === 'blade' || w === 'axes') {
+    if (d < 135) {
+      hurtPlayer(enemyDamage(1.2 * buff, e));
+      game.beams.push({ kind: 'slash', x1: e.x, y1: e.y,
+        x2: e.x + Math.cos(ang) * 120, y2: e.y + Math.sin(ang) * 120,
+        life: 0, maxLife: 0.16, width: 8, colour: '#e879f9', core: '#ffffff' });
+    }
+    e.fireTimer = w === 'axes' ? 0.7 : 0.85;
+  } else if (w === 'pistols') {
+    fireEnemyBullet(e.x, e.y, ang - 0.06, 940, 'laser', 3.5, 0.5 * buff);
+    fireEnemyBullet(e.x, e.y, ang + 0.06, 940, 'laser', 3.5, 0.5 * buff);
+    e.fireTimer = 0.14;
+  } else if (w === 'rail') {
+    const b = fireEnemyBullet(e.x, e.y, ang, 2200, 'laser', 5, 1.5 * buff);
+    b.piercing = true;
+    game.beams.push({ kind: 'sniper', x1: e.x, y1: e.y,
+      x2: e.x + Math.cos(ang) * 900, y2: e.y + Math.sin(ang) * 900,
+      life: 0, maxLife: 0.14, width: 5, colour: '#e879f9', core: '#ffffff' });
+    e.fireTimer = 1.0;
+  } else if (w === 'orbs') {
+    for (let k = -1; k <= 1; k++) {
+      const b = fireEnemyBullet(e.x, e.y, ang + k * 0.35, 190, 'orb', 7, 0.8 * buff);
+      b.homing = 1.6;
+    }
+    e.fireTimer = 0.6;
+  } else if (w === 'daggers') {
+    fireEnemyBullet(e.x, e.y, ang - 0.08, 980, 'shuriken', 4.5, 1.0 * buff);
+    fireEnemyBullet(e.x, e.y, ang + 0.08, 980, 'shuriken', 4.5, 1.0 * buff);
+    e.fireTimer = 0.36;
+  } else { /* disc */
+    const b = fireEnemyBullet(e.x, e.y, ang, 700, 'shuriken', 6, 1.2 * buff);
+    b.homing = 0.7;
+    e.fireTimer = 0.5;
+  }
+  Sound.enemyShot();
+}
+
+function echoCastAbility(e, id, ang, d) {
+  const cls = getClass();
+  const p = game.player;
+  const kit = CLASS_ABILITIES[cls.id] || [];
+  const def = kit.find(a => a.id === id);
+  const name = def ? def.name : (cls.q.id === id ? cls.q.name : 'ECHO');
+  addText(e.x, e.y - e.r - 18, name.toUpperCase(), '#e879f9', 12, 22, 0.8);
+  const ring = (color, r) => game.particles.push({ ring: true, x: e.x, y: e.y, r: 8, maxR: r || 150, life: 0, maxLife: 0.4, color: color || '#e879f9' });
+  const radial = (n, speed, kind, dmg) => { for (let k = 0; k < n; k++) fireEnemyBullet(e.x, e.y, ang + (k / n) * TAU, speed, kind, 5, dmg); };
+  const dash = () => { e.echoChargeT = 0.34; e.echoChargeA = ang; };
+  const beam = (dmg) => {
+    const x2 = e.x + Math.cos(ang) * 1400, y2 = e.y + Math.sin(ang) * 1400;
+    game.beams.push({ kind: 'railgun', x1: e.x, y1: e.y, x2, y2, life: 0, maxLife: 0.3, width: 14, colour: '#e879f9', core: '#ffffff' });
+    if (segHitsCircle(e.x, e.y, x2, y2, p.x, p.y, 20)) hurtPlayer(enemyDamage(dmg, e));
+  };
+  const hazard = () => { game.bossHazards.push({ type: 'poison', x: clamp(p.x, 60, WORLD - 60), y: clamp(p.y, 60, WORLD - 60), r: 110, t: 5, maxT: 5 }); };
+
+  switch (id) {
+    case 'bash': case 'knight_charge': case 'berserker_frenzy': case 'gunslinger_smoke': case 'tech_jet':
+      dash(); ring('#fcd34d'); break;
+    case 'knight_whirlwind': case 'berserker_slam': case 'mage_burst': case 'tech_emp': case 'tech_overload':
+      radial(10, 320, 'shock', 1); ring('#e879f9', 180);
+      if (d < 170) hurtPlayer(enemyDamage(1.4, e));
+      break;
+    case 'knight_bladestorm':
+      radial(8, 720, 'shuriken', 1.2); ring('#fde68a'); break;
+    case 'knight_warcry': case 'berserker_blood': case 'berserker_juggernaut': case 'gunslinger_overload': case 'rage':
+      e.echoBuffT = 5; ring('#f87171'); break;
+    case 'storm': case 'gunslinger_ricochet':
+      e.echoStormT = 1.1; ring('#a5f3fc'); break;
+    case 'railgun': case 'sniper_piercing':
+      beam(2); break;
+    case 'sniper_ghillie': case 'shadow_vanish':
+      e.echoInvisT = 3; e.invis = 1; ring('#c4b5fd'); break;
+    case 'sniper_mines': case 'shadow_poison': case 'rift':
+      hazard(); ring('#86efac'); break;
+    case 'sniper_eagle': case 'mage_blink':
+      if (id === 'mage_blink') {
+        const a = rand(0, TAU);
+        e.x = clamp(p.x + Math.cos(a) * 180, 60, WORLD - 60);
+        e.y = clamp(p.y + Math.sin(a) * 180, 60, WORLD - 60);
+      }
+      e.echoBuffT = 3; ring('#c7d2fe'); break;
+    case 'mage_familiar': case 'tech_drones': case 'gunslinger_turret':
+      for (let k = 0; k < 3; k++) { const b = fireEnemyBullet(e.x, e.y, ang + (k - 1) * 0.5, 260, 'orb', 6, 0.8); b.homing = 1.4; }
+      ring('#6ee7b7'); break;
+    case 'mage_timeloop':
+      e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.25); ring('#a78bfa'); break;
+    case 'shadow_clone':
+      for (let k = 0; k < 8; k++) spawnParticle(e.x, e.y, rand(-120, 120), rand(-120, 120), 0.4, 5, '#c4b5fd', 3);
+      break;
+    case 'shadow_execute': case 'mark':
+      if (p.hp / Math.max(1, p.maxHp) < 0.3) hurtPlayer(enemyDamage(2, e));
+      ring('#f87171'); break;
+    case 'overload':
+      radial(12, 380, 'plasma', 1); ring('#6ee7b7'); break;
+    default:
+      radial(6, 340, 'plasma', 1); ring('#e879f9'); break;
+  }
+}
+
+function updateEchoEnemy(e, dt, ang, d, canSee) {
+  const cls = getClass();
+  e.echoClass = cls.id;
+  e.echoWeapon = cls.weapon;
+  const melee = cls.weapon === 'blade' || cls.weapon === 'axes';
+  if (e.echoBuffT > 0) e.echoBuffT = Math.max(0, e.echoBuffT - dt);
+  if (e.echoInvisT > 0) { e.echoInvisT = Math.max(0, e.echoInvisT - dt); e.invis = e.echoInvisT > 0 ? 1 : 0; }
+  if (e.echoStormT > 0) {
+    e.echoStormT = Math.max(0, e.echoStormT - dt);
+    e.fireTimer -= dt * 3;
+  }
+  if (e.echoChargeT > 0) {
+    e.echoChargeT = Math.max(0, e.echoChargeT - dt);
+    e.wantX = Math.cos(e.echoChargeA) * 2.2;
+    e.wantY = Math.sin(e.echoChargeA) * 2.2;
+    if (d < e.r + game.player.r + 8 && e.contactCd <= 0) { e.contactCd = 0.5; hurtPlayer(enemyDamage(1, e)); }
+    return;
+  }
+  if (melee) {
+    e.wantX = Math.cos(ang); e.wantY = Math.sin(ang);
+  } else {
+    const want = cls.weapon === 'rail' ? 420 : 260;
+    const radial = d > want + 45 ? 1 : (d < want - 55 ? -1 : 0);
+    const perp = ang + Math.PI / 2;
+    e.wantX = Math.cos(ang) * radial + Math.cos(perp) * Math.sin(e.t * 1.8) * 0.5;
+    e.wantY = Math.sin(ang) * radial + Math.sin(perp) * Math.sin(e.t * 1.8) * 0.5;
+  }
+  e.fireTimer -= dt;
+  if (canSee && e.fireTimer <= 0 && d < 820) echoFireWeapon(e, ang, d);
+  e.echoAbilityCd -= dt;
+  if (canSee && e.echoAbilityCd <= 0 && d < 760) {
+    const ids = [cls.q.id];
+    for (const slot of ABILITY_SLOTS) if (hasAbility(slot)) { const def = classAbilityDef(slot, cls.id); if (def) ids.push(def.id); }
+    const id = ids[e.echoAbilityIndex % ids.length];
+    e.echoAbilityIndex++;
+    e.echoAbilityCd = 6;
+    echoCastAbility(e, id, ang, d);
+  }
 }
 
 function updateSpecialEnemy(e, dt, ang, d, canSee) {
@@ -5723,7 +6777,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
         const a = rand(0, TAU);
         spawnParticle(e.x, e.y + e.r * 0.4, Math.cos(a) * rand(80, 260), Math.sin(a) * rand(80, 260), 0.35, 7, '#93c5fd', 3);
       }
-      if (d < 145) hurtPlayer(2);
+      if (d < 145) hurtPlayer(enemyDamage(2, e));
     }
   } else if (ai === 'raider') {
     standoff(270);
@@ -5804,7 +6858,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
       if (cls.weapon === 'blade') {
         e.wantX = Math.cos(ang) * 1.6;
         e.wantY = Math.sin(ang) * 1.6;
-        if (d < 120) hurtPlayer(1);
+        if (d < 120) hurtPlayer(enemyDamage(1, e));
       } else if (cls.weapon === 'rail') {
         fireEnemyBullet(e.x, e.y, ang, 1500, 'laser', 4, 1);
       } else {
@@ -5832,6 +6886,115 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
       Sound.rewind();
     }
     standoff(200);
+  } else if (ai === 'sandshade') {
+    /* Burrows underground, telegraphs, then erupts under Rael for burst damage. */
+    if (e.underground) {
+      e.invis = 1;
+      if (e.phase === 'telegraph') {
+        e.wantX = 0; e.wantY = 0;
+        if (e.stateT <= 0) {
+          e.underground = false; e.phase = 'surface'; e.surfaceT = 1.35; e.invis = 0;
+          e.x = e.emergeX; e.y = e.emergeY;
+          game.shake = Math.max(game.shake, 0.35);
+          game.particles.push({ ring: true, x: e.x, y: e.y, r: 8, maxR: 90, life: 0, maxLife: 0.35, color: '#d8b06a' });
+          for (let k = 0; k < 16; k++) {
+            const a = rand(0, TAU);
+            spawnParticle(e.x, e.y, Math.cos(a) * rand(60, 240), Math.sin(a) * rand(60, 240), 0.4, 6, '#d8b06a', 3);
+          }
+          if (dist(e.x, e.y, p.x, p.y) < 80) hurtPlayer(enemyDamage(2, e));
+          Sound.enemyShot();
+        }
+      } else {
+        e.burrowT -= dt;
+        e.wantX = Math.cos(ang) * 0.8; e.wantY = Math.sin(ang) * 0.8;
+        if (e.burrowT <= 0) {
+          e.phase = 'telegraph'; e.stateT = 0.55;
+          e.emergeX = p.x; e.emergeY = p.y;
+          e.x = p.x; e.y = p.y;
+          game.particles.push({ ring: true, x: p.x, y: p.y, r: 6, maxR: 70, life: 0, maxLife: 0.55, color: '#f5d496' });
+        }
+      }
+    } else {
+      e.invis = 0;
+      e.surfaceT -= dt;
+      e.wantX = Math.cos(ang); e.wantY = Math.sin(ang);
+      if (e.surfaceT <= 0) {
+        e.underground = true; e.phase = 'burrow'; e.burrowT = rand(1.5, 2.5); e.invis = 1;
+        for (let k = 0; k < 10; k++) spawnParticle(e.x, e.y, rand(-80, 80), rand(-80, 80), 0.35, 5, '#d8b06a', 3);
+      }
+    }
+  } else if (ai === 'ronin') {
+    /* Sword stance blocks frontal bullets; the guard drops while it slashes. */
+    if (e.guardCd > 0) e.guardCd = Math.max(0, e.guardCd - dt);
+    e.guard = e.guardCd <= 0 && e.stateT <= 0;
+    if (e.stateT > 0) {
+      e.wantX *= 0.05; e.wantY *= 0.05;
+    } else if (d > 115) {
+      e.wantX = Math.cos(ang); e.wantY = Math.sin(ang);
+    } else if (e.fireTimer <= 0) {
+      e.stateT = 0.35; e.fireTimer = 1.6; e.guardCd = 0.9;
+      Sound.enemyShot();
+    }
+  } else if (ai === 'scavengerbot') {
+    /* Races Rael to dropped gems; kill it to make it drop the stash. */
+    let gem = null, best = 900;
+    for (let k = 0; k < game.gemsList.length; k++) {
+      const g = game.gemsList[k];
+      if (g.delay > 0) continue;
+      const dd = dist(e.x, e.y, g.x, g.y);
+      if (dd < best) { best = dd; gem = g; }
+    }
+    if (gem) {
+      const a = angleTo(e.x, e.y, gem.x, gem.y);
+      e.wantX = Math.cos(a) * 1.2; e.wantY = Math.sin(a) * 1.2;
+      if (best < 24) {
+        const idx = game.gemsList.indexOf(gem);
+        if (idx >= 0) game.gemsList.splice(idx, 1);
+        e.stolen = (e.stolen || 0) + 1;
+        addText(e.x, e.y - 24, 'GEM STOLEN', '#fbbf24', 12, 20, 0.7);
+        Sound.gem();
+      }
+    } else {
+      standoff(260);
+      e.fireTimer -= dt;
+      if (canSee && e.fireTimer <= 0 && d < 620) {
+        e.fireTimer = 2.6;
+        fireEnemyBullet(e.x, e.y, ang, 620, 'laser', 3.5, 1);
+        Sound.enemyShot();
+      }
+    }
+    if (e.stolen > 0 && d < 240) {
+      e.wantX = -Math.cos(ang); e.wantY = -Math.sin(ang);
+    }
+  } else if (ai === 'voidleech') {
+    /* Attaches and drains one health orb over five seconds; dashing shakes it. */
+    if (e.attachCd > 0) e.attachCd = Math.max(0, e.attachCd - dt);
+    if (e.attached) {
+      if (p.dashTimer > 0 || p.bashTimer > 0 || p.frenzyT > 0) {
+        e.attached = false; e.attachCd = 2.2;
+        const a = angleTo(p.x, p.y, e.x, e.y);
+        e.x = p.x + Math.cos(a) * 70; e.y = p.y + Math.sin(a) * 70;
+        e.disabledT = 0.6;
+        addText(p.x, p.y - 40, 'SHAKEN OFF', '#a3e635', 13, 24, 0.7);
+        Sound.dash();
+      } else {
+        e.attachT -= dt; e.drainTick += dt;
+        e.x = p.x + Math.cos(e.t * 2) * (p.r * 0.6);
+        e.y = p.y + Math.sin(e.t * 2) * (p.r * 0.6) - 6;
+        e.wantX = 0; e.wantY = 0;
+        if (e.drainTick >= 1) { e.drainTick -= 1; hurtPlayer(0.2, true); }
+        if (e.attachT <= 0) { e.attached = false; e.attachCd = 2.5; }
+      }
+    } else {
+      e.wantX = Math.cos(ang) * 1.25; e.wantY = Math.sin(ang) * 1.25;
+      if (d < p.r + e.r + 5 && e.attachCd <= 0) {
+        e.attached = true; e.attachT = 5; e.drainTick = 0;
+        addText(p.x, p.y - 40, 'VOID LEECH', '#a3e635', 13, 24, 0.8);
+        Sound.enemyShot();
+      }
+    }
+  } else if (ai === 'echo') {
+    updateEchoEnemy(e, dt, ang, d, canSee);
   } else if (ai === 'titan') {
     /* chaos titan: whatever the last five universes did, all at once */
     e.wantX = Math.cos(ang) * 0.75;
@@ -5880,18 +7043,129 @@ function updateClassKit(dt) {
 }
 
 /* ------------------------------ enemy update ------------------------------- */
+function isRangedEnemy(e) {
+  const def = ENEMY_DEFS[e.type] || {};
+  if (e.type === 'echo') {
+    const w = getClass().weapon;
+    return w !== 'blade' && w !== 'axes';
+  }
+  return def.role === 'ranged' || !!def.fire ||
+    ['archer', 'wizard', 'anubis', 'ninja', 'raider', 'drone', 'aliendrone', 'mech', 'titan', 'shade', 'timewraith'].indexOf(e.type) >= 0;
+}
+
+/* Cumulative intelligence tiers.  U1 is a straight chase; every later universe
+   keeps the earlier tricks and adds its own. */
+function applyUniverseAI(e, dt, ang, d, canSee, wantX, wantY) {
+  const tier = gameState.currentUniverse | 0;
+  const p = game.player;
+  if (e.attached) return { x: 0, y: 0 };
+
+  if (tier === 0) {
+    /* U1 · tutorial: walk straight at Rael, no dodging or strafing. */
+    return { x: Math.cos(ang), y: Math.sin(ang) };
+  }
+
+  /* U2+ · sidestep incoming player bullets (20% chance, rolled once per bullet). */
+  if (e.dodgeT > 0) {
+    return { x: Math.cos(e.dodgeA) * 1.4, y: Math.sin(e.dodgeA) * 1.4 };
+  }
+  if (canSee) {
+    for (let i = 0; i < game.bullets.length; i++) {
+      const b = game.bullets[i];
+      if (!b.dodgeChecked) b.dodgeChecked = new Set();
+      if (b.dodgeChecked.has(e)) continue;
+      const dd = dist(b.x, b.y, e.x, e.y);
+      if (dd > 190) continue;
+      b.dodgeChecked.add(e);
+      if (Math.random() < 0.20) {
+        const ba = Math.atan2(b.vy, b.vx);
+        e.dodgeA = ba + (e.orbit >= 0 ? Math.PI / 2 : -Math.PI / 2);
+        e.dodgeT = 0.28;
+        return { x: Math.cos(e.dodgeA) * 1.4, y: Math.sin(e.dodgeA) * 1.4 };
+      }
+    }
+  }
+
+  const ranged = isRangedEnemy(e);
+
+  /* U5+ · melee feint: fake a charge, then dodge sideways. */
+  if (tier >= 4 && !ranged) {
+    if (e.feintState === 1) {
+      e.feintT -= dt;
+      if (e.feintT <= 0) { e.feintState = 2; e.feintT = 0.26; e.dodgeA = ang + e.orbit * Math.PI / 2; }
+      return { x: Math.cos(ang) * 1.7, y: Math.sin(ang) * 1.7 };
+    }
+    if (e.feintState === 2) {
+      e.feintT -= dt;
+      if (e.feintT <= 0) { e.feintState = 0; e.feintCd = rand(2.2, 3.6); }
+      return { x: Math.cos(e.dodgeA) * 1.5, y: Math.sin(e.dodgeA) * 1.5 };
+    }
+    if (d < 300 && d > 70 && e.feintCd <= 0) {
+      e.feintState = 1; e.feintT = 0.34;
+      return { x: Math.cos(ang) * 1.7, y: Math.sin(ang) * 1.7 };
+    }
+  }
+
+  /* U6 · ranged form a firing line; shared aggro is handled in updateEnemies. */
+  if (tier >= 5 && ranged) {
+    const slot = ((e.lineSlot | 0) % 5) - 2;
+    const perp = ang + Math.PI / 2;
+    const want = 280;
+    const radial = d > want + 45 ? 1 : (d < want - 55 ? -1 : 0);
+    return {
+      x: Math.cos(ang) * radial + Math.cos(perp) * slot * 0.28,
+      y: Math.sin(ang) * radial + Math.sin(perp) * slot * 0.28
+    };
+  }
+
+  /* U4+ · coordinate: pairs approach from opposite sides; ranged retreat. */
+  if (tier >= 3) {
+    if (ranged && d < 230) {
+      return { x: -Math.cos(ang) + Math.cos(ang + Math.PI / 2) * e.orbit * 0.4,
+               y: -Math.sin(ang) + Math.sin(ang + Math.PI / 2) * e.orbit * 0.4 };
+    }
+    if (!ranged && d > 90) {
+      const side = ang + e.coordSide * 0.75;
+      return { x: Math.cos(side), y: Math.sin(side) };
+    }
+  }
+
+  /* U3+ · ranged strafe while attacking; melee try to flank. */
+  if (tier >= 2) {
+    if (ranged) {
+      const perp = ang + Math.PI / 2;
+      const s = Math.sin(e.t * 2.1 + e.zig) * 0.75;
+      return { x: wantX + Math.cos(perp) * s, y: wantY + Math.sin(perp) * s };
+    }
+    if (d > 80) {
+      const flank = ang + e.orbit * 0.55;
+      return { x: Math.cos(flank), y: Math.sin(flank) };
+    }
+  }
+
+  return { x: wantX, y: wantY };
+}
+
 function updateEnemies(dt) {
   const p = game.player;
   /* Phase Cloak: an out-of-phase Rael is not a target. The horde keeps sweeping
      along its last heading instead of turning to follow him, and nobody shoots. */
-  const phaseSee = !(p.phaseTimer > 0 || p.ghillieT > 0 || p.vanishT > 0);
+  const phaseSee = !(p.phaseTimer > 0 || p.ghillieT > 0 || p.vanishT > 0 || skillCombat().fadeT > 0 || skillCombat().shadowMeld);
   const cloakRange = p.cloakRange || 0;
 
   for (let i = game.enemies.length - 1; i >= 0; i--) {
     const e = game.enemies[i];
+    game.currentShooter = e;
     e.t += dt;
     if (e.hitFlash > 0) e.hitFlash = Math.max(0, e.hitFlash - dt);
     if (e.contactCd > 0) e.contactCd = Math.max(0, e.contactCd - dt);
+    if (e.dodgeT > 0) e.dodgeT = Math.max(0, e.dodgeT - dt);
+    if (e.alertT > 0) e.alertT = Math.max(0, e.alertT - dt);
+    if (e.feintCd > 0) e.feintCd = Math.max(0, e.feintCd - dt);
+    if (e.revealT > 0) {
+      e.revealT = Math.max(0, e.revealT - dt);
+      if (e.revealT === 0 && e.eliteVariant && e.type === 'ghost') e.invis = 1;
+    }
     /* Freeze Grenade: a frozen body holds perfectly still and hits nothing */
     if (e.freeze > 0) {
       e.freeze = Math.max(0, e.freeze - dt);
@@ -5916,7 +7190,20 @@ function updateEnemies(dt) {
 
     const d = dist(e.x, e.y, p.x, p.y);
     /* Shadow Assassin: past the cloak radius the horde loses him completely */
-    const canSee = phaseSee && !(cloakRange > 0 && d > cloakRange);
+    const baseSee = skillDetection(e, d, phaseSee && !(cloakRange > 0 && d > cloakRange));
+    let canSee = baseSee;
+    /* U6 · shared aggro: one sighting instantly alerts every nearby enemy. */
+    if ((gameState.currentUniverse | 0) >= 5) {
+      if (baseSee) {
+        e.alertT = 1.4;
+        for (let j = 0; j < game.enemies.length; j++) {
+          const o = game.enemies[j];
+          if (o !== e && dist(e.x, e.y, o.x, o.y) < 600) o.alertT = Math.max(o.alertT || 0, 1.4);
+        }
+      } else if (e.alertT > 0) {
+        canSee = true;
+      }
+    }
     /* where they think he is: the decoy first, then Rael, then a phantom heading */
     const lure = game.decoy;
     const tx = lure ? lure.x : (canSee ? p.x : e.x + Math.cos(e.heading) * 320);
@@ -5955,7 +7242,11 @@ function updateEnemies(dt) {
       e.fireTimer -= dt;
       if (canSee && e.fireTimer <= 0 && d < 760) {
         e.fireTimer = ENEMY_DEFS.archer.fire;
-        fireEnemyBullet(e.x, e.y, ang, 330, 'arrow', 4, 1);
+        if (e.eliteVariant) {
+          for (let k = -1; k <= 1; k++) fireEnemyBullet(e.x, e.y, ang + k * 0.18, 330, 'arrow', 4, 1);
+        } else {
+          fireEnemyBullet(e.x, e.y, ang, 330, 'arrow', 4, 1);
+        }
       }
     } else if (e.type === 'wizard') {
       const want = 320;
@@ -5967,6 +7258,7 @@ function updateEnemies(dt) {
         e.fireTimer = ENEMY_DEFS.wizard.fire;
         const b = fireEnemyBullet(e.x, e.y, ang, 210, 'orb', 8, 1);
         b.homing = 1.5;
+        if (e.eliteVariant) b.splitOnImpact = true;
       }
     } else {
       /* ghost: fast, erratic, loosely tracking — the wander target still has to
@@ -5983,6 +7275,11 @@ function updateEnemies(dt) {
       wantX = Math.cos(e.wanderA);
       wantY = Math.sin(e.wanderA);
     }
+
+    /* Universe intelligence layer (straight chase -> dodge -> flank ->
+       coordinate -> feint/predict -> shared aggro + firing lines). */
+    const ai = applyUniverseAI(e, dt, ang, d, canSee, wantX, wantY);
+    wantX = ai.x; wantY = ai.y;
 
     /* smooth steering: turn toward the wanted direction at a limited rate */
     const wantLen = Math.hypot(wantX, wantY);
@@ -6017,7 +7314,7 @@ function updateEnemies(dt) {
     if (canSee && d < e.r + p.r + 2 && e.contactCd <= 0) {
       const cdef = ENEMY_DEFS[e.type] || ENEMY_DEFS.knight;
       e.contactCd = cdef.contact ? 0.9 : 0.4;
-      if (cdef.contact) hurtPlayer(cdef.contact);
+      if (cdef.contact) hurtPlayer(cdef.contact * (e.damageMult || enemyDamageMult(e)));
       if (cdef.slow) {
         p.slowT = Math.max(p.slowT || 0, cdef.slow);
         addText(p.x, p.y - 30, 'SLOWED', '#d6c7a1');
@@ -6026,8 +7323,11 @@ function updateEnemies(dt) {
         applyPoison(cdef.poison);
         addText(p.x, p.y - 30, 'POISONED', '#86efac');
       }
+      /* Elite Ghosts are completely invisible until the moment they strike. */
+      if (e.eliteVariant && e.type === 'ghost') { e.invis = 0; e.revealT = 1.2; }
     }
   }
+  game.currentShooter = null;
 }
 
 /* swept test so fast bolts can never tunnel through (or skip) a target */
@@ -6049,7 +7349,11 @@ function updateBullets(dt) {
     if (b.homing) {
       const tgt = nearestTarget(b.x, b.y, 900);
       if (tgt) {
-        const want = Math.atan2(tgt.y - b.y, tgt.x - b.x);
+        let want = Math.atan2(tgt.y - b.y, tgt.x - b.x);
+        if (b.vortex) {
+          const d = dist(b.x, b.y, tgt.x, tgt.y);
+          want += (b.vortexDir || 1) * clamp(1 - d / 420, 0, 1) * 1.1;
+        }
         const cur = Math.atan2(b.vy, b.vx);
         let turn = want - cur;
         while (turn > Math.PI) turn -= TAU;
@@ -6079,6 +7383,7 @@ function updateBullets(dt) {
 
     for (let j = 0; j < game.enemies.length; j++) {
       const e = game.enemies[j];
+      if (e.underground) continue;                      /* buried Sand Shades whiff bullets */
       if (b.hits && b.hits.indexOf(e) >= 0) continue;   /* already pierced this one */
       const t = segCircleT(px, py, b.x, b.y, e.x, e.y, b.r + e.r);
       if (t !== null && t < bestT) { bestT = t; hitKind = 'enemy'; hitObj = e; }
@@ -6093,7 +7398,8 @@ function updateBullets(dt) {
     if (brk && brk.t < bestT) { bestT = brk.t; hitKind = 'break'; hitObj = brk.obj; hitBreakKind = brk.kind; }
 
     if (hitKind === 'enemy') {
-      damageEnemy(hitObj, b.dmg * odm(), false);
+      damageEnemy(hitObj, b.dmg * odm(), false, false, Object.assign({}, b.skillMeta || { kind: b.kind }, { projectile: true, fromX: px, fromY: py }));
+      if (b.skillMeta && b.skillMeta.oneShot) b.skillMeta.oneShot = false;
       if (b.knock) {
         const a = Math.atan2(b.vy, b.vx);
         hitObj.x = clamp(hitObj.x + Math.cos(a) * b.knock, 40, WORLD - 40);
@@ -6112,7 +7418,7 @@ function updateBullets(dt) {
         hit = true;
       }
     }
-    else if (hitKind === 'boss') { damageBoss(b.dmg * odm()); hit = true; }
+    else if (hitKind === 'boss') { damageBoss(b.dmg * odm(), b.skillMeta || { kind: b.kind }); if (b.skillMeta && b.skillMeta.oneShot) b.skillMeta.oneShot = false; hit = true; }
     else if (hitKind === 'break') {
       damageBreakableObject(hitObj, hitBreakKind, b.kind || 'bullet', b.x, b.y);
       hit = true;
@@ -6163,6 +7469,24 @@ function segCircleT(x1, y1, x2, y2, cx, cy, rad) {
 }
 
 function fireEnemyBullet(x, y, angle, speed, kind, r, dmg) {
+  const p = game.player;
+  const tier = gameState.currentUniverse | 0;
+  /* U5+ enemies lead a moving target instead of aiming at where Rael was. */
+  if (p && tier >= 4 && game.currentShooter) {
+    const direct = angleTo(x, y, p.x, p.y);
+    let off = angle - direct;
+    while (off > Math.PI) off -= TAU;
+    while (off < -Math.PI) off += TAU;
+    if (Math.abs(off) < 0.4) {
+      const d = dist(x, y, p.x, p.y);
+      const lead = clamp(d / Math.max(1, speed), 0, 0.9) * 0.75;
+      const tx = p.x + (p.vx || 0) * lead;
+      const ty = p.y + (p.vy || 0) * lead;
+      angle = angleTo(x, y, tx, ty) + off;
+    }
+  }
+  const shooter = game.currentShooter;
+  const mult = universeDifficulty().damage * (shooter && shooter.eliteVariant ? 1.5 : 1);
   const b = {
     x: x + Math.cos(angle) * 18,
     y: y + Math.sin(angle) * 18,
@@ -6170,13 +7494,39 @@ function fireEnemyBullet(x, y, angle, speed, kind, r, dmg) {
     vy: Math.sin(angle) * speed,
     r: r || 5,
     kind: kind || 'arrow',
-    dmg: dmg || 1,
+    dmg: (dmg || 1) * mult,
     life: kind === 'wall' ? 2.6 : 6,
     homing: 0,
-    spin: rand(0, TAU)
+    spin: rand(0, TAU),
+    splitOnImpact: false
   };
   game.enemyBullets.push(b);
   return b;
+}
+
+/* Elite Wizard orbs fracture into two smaller homing orbs on impact. */
+function splitEnemyOrb(b) {
+  if (!b || !b.splitOnImpact || b.isSplitChild) return;
+  const base = Math.atan2(b.vy, b.vx);
+  for (let k = -1; k <= 1; k += 2) {
+    const a = base + k * 0.7;
+    const sp = Math.hypot(b.vx, b.vy) * 1.05;
+    game.enemyBullets.push({
+      x: b.x + Math.cos(a) * 10,
+      y: b.y + Math.sin(a) * 10,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp,
+      r: Math.max(3, b.r * 0.62),
+      kind: 'orb',
+      dmg: b.dmg * 0.5,
+      life: 3.2,
+      homing: 1.2,
+      spin: rand(0, TAU),
+      splitOnImpact: false,
+      isSplitChild: true
+    });
+  }
+  game.particles.push({ ring: true, x: b.x, y: b.y, r: 4, maxR: 42, life: 0, maxLife: 0.25, color: '#e9d5ff' });
 }
 
 function updateEnemyBullets(dt) {
@@ -6212,11 +7562,23 @@ function updateEnemyBullets(dt) {
         const a = rand(0, TAU);
         spawnParticle(b.x, b.y, Math.cos(a) * rand(30, 90), Math.sin(a) * rand(30, 90), 0.2, 4, '#9aa1a9', 3);
       }
+      splitEnemyOrb(b);
       game.enemyBullets.splice(i, 1);
       continue;
     }
+    let hitTurret = false;
+    for (let ti = 0; ti < game.turrets.length; ti++) {
+      const t = game.turrets[ti];
+      if (dist2(b.x, b.y, t.x, t.y) <= (b.r + 18) * (b.r + 18)) {
+        t.hp -= b.dmg || 1; hitTurret = true;
+        spawnParticle(t.x, t.y, rand(-60, 60), rand(-60, 60), 0.2, 4, '#fbbf24', 2);
+        break;
+      }
+    }
+    if (hitTurret) { splitEnemyOrb(b); game.enemyBullets.splice(i, 1); continue; }
     if (p.phaseTimer <= 0 && dist2(b.x, b.y, p.x, p.y) <= (b.r + p.r) * (b.r + p.r)) {
       hurtPlayer(b.dmg || 1);
+      splitEnemyOrb(b);
       game.enemyBullets.splice(i, 1);
     }
   }
@@ -6236,9 +7598,35 @@ function nearestEnemyTo(x, y, range, skip) {
 
 /* `noChain` stops a chain bolt's own kill from arcing again, so the lightning
    never runs away across the whole arena in one frame. */
-function damageEnemy(e, dmg, silent, noChain) {
-  if (!e || e.dead) return;
-  if (e.shield > 0) {
+function damageEnemy(e, dmg, silent, noChain, meta) {
+  if (!e || e.dead) return false;
+  meta = meta || {};
+  meta.dmg = dmg;
+  e.lastHitMeta = meta;
+  /* Sand Shades are buried: projectiles whiff, abilities still dig them out. */
+  if (e.underground && meta.projectile && !meta.ability) {
+    spawnParticle(e.x, e.y, rand(-30, 30), rand(-60, -20), 0.25, 4, '#d8b06a', 2);
+    return false;
+  }
+  /* Ronin sword stance turns frontal bullets.  Backstabs and abilities land. */
+  if (e.type === 'ronin' && e.guard && meta.projectile && meta.weapon && !meta.ability) {
+    const fx = typeof meta.fromX === 'number' ? meta.fromX : game.player.x;
+    const fy = typeof meta.fromY === 'number' ? meta.fromY : game.player.y;
+    const incoming = angleTo(e.x, e.y, fx, fy);
+    if (Math.abs(angleDelta(e.heading, incoming)) < 1.15) {
+      e.hitFlash = 0.08;
+      addText(e.x, e.y - e.r - 12, 'BLOCK', '#fda4af', 12, 18, 0.5);
+      for (let k = 0; k < 5; k++) {
+        const a = incoming + Math.PI + rand(-0.7, 0.7);
+        spawnParticle(e.x + Math.cos(incoming) * e.r, e.y + Math.sin(incoming) * e.r,
+          Math.cos(a) * rand(60, 180), Math.sin(a) * rand(60, 180), 0.2, 4, '#fda4af', 3);
+      }
+      Sound.enemyShot();
+      return false;
+    }
+  }
+  dmg = applySkillHit(e, dmg, meta);
+  if (e.shield > 0 && !meta.piercing) {
     const absorbed = Math.min(e.shield, dmg);
     e.shield -= absorbed;
     dmg -= absorbed;
@@ -6263,6 +7651,7 @@ function damageEnemy(e, dmg, silent, noChain) {
   const def = ENEMY_DEFS[e.type] || ENEMY_DEFS.knight;
   /* 10 points x the gem multiplier, plus the floating +10 above the body */
   awardKill(e);
+  onSkillKill(e, e.lastHitMeta);
   game.kills += 1;
   game.killsThisZone += 1;
   petOnKill();
@@ -6329,7 +7718,11 @@ function damageEnemy(e, dmg, silent, noChain) {
     }
   }
 
+  if (e.type === 'scavengerbot' && e.stolen > 0) {
+    for (let k = 0; k < e.stolen; k++) spawnGem(e.x + rand(-18, 18), e.y + rand(-18, 18));
+  }
   if (Math.random() < 0.42) spawnGem(e.x, e.y);
+  return true;
 }
 
 /* ------------------------------ boss --------------------------------------- */
@@ -6345,8 +7738,9 @@ function spawnBoss(opts) {
     maxHp: def.hp,
     name: def.name,
     color: def.color,
-    speed: def.speed,
+    speed: def.speed * universeDifficulty(gameState.currentUniverse).speed,
     phase: 1,
+    isBoss: true,
     kit: def.kit || null,   /* the universe champions run their own routines */
     t: 0,
     angle: 0,
@@ -6594,7 +7988,7 @@ function updateBoss(dt) {
   b.x = clamp(b.x, b.r + 30, WORLD - b.r - 30);
   b.y = clamp(b.y, b.r + 30, WORLD - b.r - 30);
   clampToBossArena(b);
-  if (d < b.r + p.r + 4) hurtPlayer(1);
+  if (d < b.r + p.r + 4) hurtPlayer(enemyDamage(1));
 
   const speedUp = 1 + (b.phase - 1) * 0.18;
 
@@ -6794,10 +8188,14 @@ function updateBoss(dt) {
   UI.bossFill.style.width = (ratio * 100).toFixed(1) + '%';
 }
 
-function damageBoss(dmg) {
+function damageBoss(dmg, meta) {
   const b = game.boss;
   if (!b) return;
-  if (b.entering) return;   /* the entrance cannot be interrupted */
+  if (b.entering) return;
+  meta = meta || {};
+  meta.dmg = dmg;
+  b.lastHitMeta = meta;
+  dmg = applySkillHit(b, dmg, meta);   /* the entrance cannot be interrupted */
   const marker = game.player;
   if (marker && marker.markT > 0 && marker.markTarget === b) dmg *= 3;
   if ((game.shopCrit || 0) > 0 && Math.random() < game.shopCrit) {
@@ -6805,7 +8203,7 @@ function damageBoss(dmg) {
     critFlash(b.x, b.y - b.r * 0.4);
   }
   /* the Hive Queen's regenerating shield eats damage before her body does */
-  if (b.kit === 'hivequeen' && (b.shield || 0) > 0) {
+  if (b.kit === 'hivequeen' && (b.shield || 0) > 0 && !meta.piercing) {
     const eaten = Math.min(b.shield, dmg);
     b.shield -= eaten;
     b.hitFlash = 0.1;
@@ -6831,6 +8229,7 @@ function killBoss() {
   if (!b || b.dead) return;
   b.dead = true;
   awardKill(b);
+  onSkillKill(b, b.lastHitMeta);
   const bx = b.x, by = b.y;
   game.boss = null;
   addScore(2000);
@@ -7309,7 +8708,7 @@ function syncAbilityHud() {
     const button = el.querySelector('.ab-btn');
     const unlocked = hasAbility(slot);
     const cd = abilityCooldown(slot);
-    const maxCd = def ? def.cd * cdScale() : 1;
+    const maxCd = def ? skillCooldownSeconds(slot, def.cd * cdScale()) : 1;
     const cooling = unlocked && cd > 0;
     el.classList.toggle('locked', !unlocked);
     el.classList.toggle('unlocked', unlocked);
@@ -7340,7 +8739,7 @@ function castAbilitySlot(slot) {
   Sound.ensure();
   const result = cast();
   if (result === false) return;
-  setAbilityCooldown(slot, def.cd * cdScale());
+  setAbilityCooldown(slot, skillCooldownSeconds(slot, def.cd * cdScale()));
   syncAbilityHud();
 }
 
@@ -7465,20 +8864,22 @@ const CLASS_ABILITY_CASTS = {
     const dir = (mv.x || mv.y) ? mv : { x: Math.cos(p.angle), y: Math.sin(p.angle) };
     p.dashDir = dir; p.dashTimer = 0.24; p.vx = 0; p.vy = 0;
     p.invuln = Math.max(p.invuln, 0.3);
-    addClassFx({ type: 'smoke', x: p.x, y: p.y, r: 130, t: 4, maxT: 4 });
+    const smokeR = 130 * (currentSkill('smoke_screen') ? 1.6 : 1);
+    addClassFx({ type: 'smoke', x: p.x, y: p.y, r: smokeR, t: 4, maxT: 4 });
     Sound.dash();
     addText(p.x, p.y - 40, 'SMOKE ROLL', '#cbd5e1');
   },
   gunslinger_turret() {
     const p = game.player;
-    game.turrets.push({ x: p.x, y: p.y, life: 12, maxLife: 12, angle: p.angle, spin: 0, fireTimer: 0.25, range: 380 });
+    game.turrets.push({ x: p.x, y: p.y, life: 12, maxLife: 12, hp: turretBaseHp(), maxHp: turretBaseHp(), overclockT: currentSkill('overclock') ? 8 : 0, angle: p.angle, spin: 0, fireTimer: 0.25, range: 380 });
     Sound.turretDrop();
     addText(p.x, p.y - 40, 'TURRET ONLINE', '#fbbf24');
   },
   gunslinger_overload() {
     const p = game.player;
-    game.overchargeTimer = 8;
-    p.overloadPierceT = 8;
+    const overloadT = 8 + (currentSkill('overload_amplifier') ? 4 : 0);
+    game.overchargeTimer = overloadT;
+    p.overloadPierceT = overloadT;
     Sound.overcharge();
     addText(p.x, p.y - 44, 'OVERLOAD', '#fca5a5');
   },
@@ -7490,11 +8891,12 @@ const CLASS_ABILITY_CASTS = {
     const x1 = p.x + Math.cos(a) * (p.r + 14), y1 = p.y + Math.sin(a) * (p.r + 14);
     const x2 = p.x + Math.cos(a) * 2600, y2 = p.y + Math.sin(a) * 2600;
     game.beams.push({ kind: 'railgun', x1, y1, x2, y2, life: 0, maxLife: 0.4, width: 22, colour: '#e2e8f0', core: '#ffffff' });
+    const pierceMeta = skillAttackMeta('railgun');
     for (let i = game.enemies.length - 1; i >= 0; i--) {
       const e = game.enemies[i];
-      if (segHitsCircle(x1, y1, x2, y2, e.x, e.y, e.r + 16)) damageEnemy(e, buffedDamage(p.damage * 2.5), false);
+      if (segHitsCircle(x1, y1, x2, y2, e.x, e.y, e.r + 16)) damageEnemy(e, buffedDamage(p.damage * 2.5, 'railgun'), false, false, pierceMeta);
     }
-    if (game.boss && !game.boss.entering && segHitsCircle(x1, y1, x2, y2, game.boss.x, game.boss.y, game.boss.r + 16)) damageBoss(buffedDamage(p.damage * 2));
+    if (game.boss && !game.boss.entering && segHitsCircle(x1, y1, x2, y2, game.boss.x, game.boss.y, game.boss.r + 16)) damageBoss(buffedDamage(p.damage * 2, 'railgun'), pierceMeta);
     Sound.sniperShot();
     addText(p.x, p.y - 44, 'PIERCING SHOT', '#e2e8f0');
   },
@@ -7509,7 +8911,7 @@ const CLASS_ABILITY_CASTS = {
     const p = game.player;
     for (let i = 0; i < 3; i++) {
       const a = p.angle + (i - 1) * 0.7;
-      game.playerMines.push({ x: clamp(p.x + Math.cos(a) * 70, 60, WORLD - 60), y: clamp(p.y + Math.sin(a) * 70, 60, WORLD - 60), arm: 0, t: 20 });
+      game.playerMines.push({ x: clamp(p.x + Math.cos(a) * 70, 60, WORLD - 60), y: clamp(p.y + Math.sin(a) * 70, 60, WORLD - 60), arm: 0, t: 20, armRate: currentSkill('mine_layer') ? 4 : 2, dmg: currentSkill('mine_layer') ? 16 : 10 });
     }
     Sound.turretDrop();
     addText(p.x, p.y - 40, 'MINE FIELD', '#fbbf24');
@@ -7517,7 +8919,7 @@ const CLASS_ABILITY_CASTS = {
   sniper_eagle() {
     setClassBuff('eagleEye', 4);
     game.slowmo = Math.max(game.slowmo, 4);
-    game.timeScale = 0.3;
+    game.timeScale = currentSkill('time_dilation') ? 0.15 : 0.3;
     Sound.rift();
     addText(game.player.x, game.player.y - 46, 'EAGLE EYE', '#c7d2fe');
   },
@@ -7525,7 +8927,8 @@ const CLASS_ABILITY_CASTS = {
   /* ---- Chrono Mage ---- */
   mage_burst() {
     const p = game.player;
-    eachEnemy(e => { e.freeze = Math.max(e.freeze || 0, 3); });
+    const freezeT = (3 + (currentSkill('time_rift_mastery') ? 2 : 0)) * (currentSkill('chrono_efficiency') ? 1.25 : 1);
+    eachEnemy(e => { e.freeze = Math.max(e.freeze || 0, freezeT); });
     game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 340, life: 0, maxLife: 0.55, color: '#a78bfa' });
     Sound.nova();
     addText(p.x, p.y - 44, 'CHRONO BURST', '#c4b5fd');
@@ -7563,9 +8966,10 @@ const CLASS_ABILITY_CASTS = {
   /* ---- Berserker ---- */
   berserker_slam() {
     const p = game.player;
-    damageEnemiesNear(p.x, p.y, 190, buffedDamage(p.damage * 3), 90);
+    const slamR = 190 * (currentSkill('carnage') ? 1.6 : 1);
+    damageEnemiesNear(p.x, p.y, slamR, buffedDamage(p.damage * 3), 90);
     game.shake = Math.max(game.shake, 0.8);
-    game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 210, life: 0, maxLife: 0.45, color: '#ff7a45' });
+    game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: slamR * 1.1, life: 0, maxLife: 0.45, color: '#ff7a45' });
     Sound.bombBoom();
     addText(p.x, p.y - 46, 'GROUND SLAM', '#ff9d5c');
   },
@@ -7574,6 +8978,7 @@ const CLASS_ABILITY_CASTS = {
     const mv = moveVector();
     const dir = (mv.x || mv.y) ? mv : { x: Math.cos(p.angle), y: Math.sin(p.angle) };
     p.dashDir = dir; p.dashTimer = 0.28; p.frenzyT = 0.28; p.vx = 0; p.vy = 0;
+    skillCombat().frenzyHits.clear();
     p.invuln = Math.max(p.invuln, 0.34);
     Sound.dash();
     addText(p.x, p.y - 40, 'FRENZY DASH', '#ffb27a');
@@ -7606,6 +9011,15 @@ const CLASS_ABILITY_CASTS = {
   },
   shadow_vanish() {
     const p = game.player;
+    if (currentSkill('shadow_step')) {
+      const to = mouseWorldPos();
+      for (let i = 0; i < 12; i++) spawnParticle(p.x, p.y, rand(-120, 120), rand(-120, 120), 0.3, 5, '#a78bfa', 3);
+      p.x = to.x; p.y = to.y; p.vx = 0; p.vy = 0;
+      p.invuln = Math.max(p.invuln, 0.25);
+      Sound.dash();
+      addText(p.x, p.y - 40, 'SHADOW STEP', '#a78bfa');
+      return;
+    }
     p.vanishT = 5; p.vanishKillReset = true;
     p.phaseTimer = Math.max(p.phaseTimer, 5);
     Sound.dash();
@@ -7614,7 +9028,8 @@ const CLASS_ABILITY_CASTS = {
   shadow_poison() {
     const p = game.player;
     const to = mouseWorldPos();
-    addClassFx({ type: 'poison', x: to.x, y: to.y, r: 150, t: 6, maxT: 6 });
+    const poisonT = 6 + (currentSkill('smoke_master') ? 4 : 0);
+    addClassFx({ type: 'poison', x: to.x, y: to.y, r: 150, t: poisonT, maxT: poisonT });
     Sound.bombThrow();
     addText(p.x, p.y - 40, 'POISON CLOUD', '#86efac');
   },
@@ -7637,7 +9052,8 @@ const CLASS_ABILITY_CASTS = {
   /* ---- Tech Specialist ---- */
   tech_emp() {
     const p = game.player;
-    eachEnemy(e => { e.disabledT = Math.max(e.disabledT || 0, 3); });
+    const empT = 3 + (currentSkill('emp_mastery') ? 2 : 0);
+    eachEnemy(e => { e.disabledT = Math.max(e.disabledT || 0, empT); });
     game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 360, life: 0, maxLife: 0.5, color: '#6ee7b7' });
     Sound.nova();
     addText(p.x, p.y - 44, 'EMP BLAST', '#6ee7b7');
@@ -7676,16 +9092,22 @@ function updateClassAbilities(dt) {
   /* Time Loop keeps a rolling five-second snapshot of position and health. */
   const hist = game.timeLoopHistory;
   if (!hist.length || game.time - hist[hist.length - 1].t > 0.1) hist.push({ t: game.time, x: p.x, y: p.y, hp: p.hp });
-  while (hist.length && game.time - hist[0].t > 5.2) hist.shift();
+  while (hist.length && game.time - hist[0].t > (currentSkill('epoch') ? 8.2 : 5.2)) hist.shift();
 
   /* Frenzy Dash damages bodies it passes through. */
   if (p.frenzyT > 0) {
+    const savage = currentSkill('savage_rush');
+    const sc = skillCombat();
     for (let i = game.enemies.length - 1; i >= 0; i--) {
       const e = game.enemies[i];
-      if (dist(p.x, p.y, e.x, e.y) < 70 + e.r && e.contactCd <= 0) {
-        damageEnemy(e, buffedDamage(p.damage * 1.5), true);
-        e.contactCd = 0.3;
-      }
+      if (dist(p.x, p.y, e.x, e.y) >= 70 + e.r) continue;
+      const hits = sc.frenzyHits.get(e) || 0;
+      if (savage) {
+        if (hits >= 3 || (e.frenzyCd || 0) > 0) continue;
+        sc.frenzyHits.set(e, hits + 1); e.frenzyCd = 0.09;
+      } else if (e.contactCd > 0) continue;
+      else e.contactCd = 0.3;
+      damageEnemy(e, buffedDamage(p.damage * 1.5), true, false, { kind: 'frenzy', weapon: true });
     }
   }
   /* Juggernaut shoves everything away while it burns. */
@@ -7708,7 +9130,7 @@ function updateClassAbilities(dt) {
   /* player-owned proximity mines */
   for (let i = game.playerMines.length - 1; i >= 0; i--) {
     const m = game.playerMines[i];
-    m.arm = Math.min(1, m.arm + dt * 2);
+    m.arm = Math.min(1, m.arm + dt * (m.armRate || 2));
     m.t -= dt;
     let boom = m.t <= 0;
     if (!boom && m.arm >= 1) {
@@ -7717,7 +9139,7 @@ function updateClassAbilities(dt) {
       }
       if (!boom && game.boss && dist(m.x, m.y, game.boss.x, game.boss.y) < 60) boom = true;
     }
-    if (boom) { explodeAt(m.x, m.y, 10, '#e2e8f0'); game.playerMines.splice(i, 1); }
+    if (boom) { explodeAt(m.x, m.y, m.dmg || 10, '#e2e8f0'); game.playerMines.splice(i, 1); }
   }
 
   /* lingering class effects */
@@ -7734,7 +9156,7 @@ function updateClassAbilities(dt) {
     } else if (fx.type === 'poison') {
       for (let j = 0; j < game.enemies.length; j++) {
         const e = game.enemies[j];
-        if (dist(fx.x, fx.y, e.x, e.y) < fx.r + e.r) { e.poisonT = Math.max(e.poisonT || 0, 6); e.poisonDmg = 1; }
+        if (dist(fx.x, fx.y, e.x, e.y) < fx.r + e.r) { e.poisonT = Math.max(e.poisonT || 0, fx.maxT || 6); e.poisonDmg = 1; }
       }
       if (Math.random() < 0.5) spawnParticle(fx.x + rand(-fx.r, fx.r), fx.y + rand(-fx.r, fx.r), rand(-20, 20), rand(-40, -10), 0.6, rand(5, 10), '#86efac', 1);
     } else if (fx.type === 'familiar') {
@@ -7746,7 +9168,7 @@ function updateClassAbilities(dt) {
       if (target && fx.fireTimer <= 0) {
         fx.fireTimer = 0.5;
         const a = Math.atan2(target.y - fx.y, target.x - fx.x);
-        game.bullets.push({ kind: 'orb', x: fx.x, y: fx.y, vx: Math.cos(a) * 320, vy: Math.sin(a) * 320, r: 6, life: 2, dmg: buffedDamage(p.damage * 0.6), knock: 2, homing: true, turn: 3, spin: 0 });
+        game.bullets.push({ kind: 'orb', x: fx.x, y: fx.y, vx: Math.cos(a) * 320, vy: Math.sin(a) * 320, r: 6, life: 2, dmg: buffedDamage(p.damage * 0.6, 'familiar'), knock: 2, homing: true, turn: 3, spin: 0, skillMeta: { kind: 'familiar' } });
       }
       if (Math.random() < 0.3) spawnParticle(fx.x, fx.y, rand(-20, 20), rand(-20, 20), 0.3, 4, '#c4b5fd', 2);
     } else if (fx.type === 'drone') {
@@ -7759,7 +9181,7 @@ function updateClassAbilities(dt) {
         fx.fireTimer -= dt;
         if (fx.fireTimer <= 0 && dist(fx.x, fx.y, target.x, target.y) < 360) {
           fx.fireTimer = 0.45;
-          game.bullets.push({ kind: 'turret', x: fx.x, y: fx.y, vx: Math.cos(a) * 760, vy: Math.sin(a) * 760, r: 4, life: 0.7, dmg: buffedDamage(p.damage * 0.45), knock: 2 });
+          game.bullets.push({ kind: 'turret', x: fx.x, y: fx.y, vx: Math.cos(a) * 760, vy: Math.sin(a) * 760, r: 4, life: 0.7, dmg: buffedDamage(p.damage * 0.45, 'drone'), knock: 2, skillMeta: { kind: 'drone' } });
         }
       } else {
         fx.x = p.x + Math.cos(fx.angle) * 80;
@@ -8366,6 +9788,7 @@ const SaveSystem = (function () {
     applyUpgradeLevels(slot.upgrades);
     loadZone(slot.currentZone, { freshPlayer: false });
     applyShopUpgrades();
+    applyClassSkillStats();
     const maxHp = game.player.maxHp;
     game.player.hp = slot.hp >= 1 && slot.hp <= maxHp ? slot.hp : maxHp;
 
@@ -8509,6 +9932,8 @@ function addScore(points) {
    from game.enemies), so every death lands here: the score, the +10 that pops
    above the corpse and fades over 0.8 seconds, and the save that keeps it. */
 function awardKill(e) {
+  const xp = e && e.isBoss ? CLASS_XP_VALUES.boss : e && e.elite ? CLASS_XP_VALUES.elite : CLASS_XP_VALUES.regular;
+  awardClassXP(xp, e && e.isBoss ? 'boss' : e && e.elite ? 'elite' : 'regular');
   syncGemMultHud();
   if (game.player && game.player.vanishKillReset) {
     game.player.vanishKillReset = false;
@@ -9141,10 +10566,10 @@ function shopBlastMult() { return 1 + 0.20 * shopLevel('blast'); }
 function odm() { return (game.overdriveTimer || 0) > 0 ? 2 : 1; }
 function shopFireBoost() { return (1 + 0.15 * shopLevel('magazine')) * odm(); }
 /* Damage Shard: every shot fired while it burns hits twice as hard */
-function buffedDamage(v) {
+function buffedDamage(v, kind) {
   const p = game.player;
   const rage = p && p.rageT > 0 ? 3 : 1;
-  let classMult = classDamageMult();
+  let classMult = classDamageMult() * skillDamageMult(kind);
   if (p && p.ghillieShot) { classMult *= 5; p.ghillieShot = false; }
   return v * ((game.damageBuffT || 0) > 0 ? 2 : 1) * rage * classMult;
 }
@@ -9153,8 +10578,9 @@ function rageSpeedMult() { const p = game.player; return p && p.rageT > 0 ? 3 : 
 /* Speed Serum: half again as fast on foot while it lasts */
 function speedBuffMult() {
   const p = game.player;
-  if (p && p.jetBoostT > 0) return 2.5;
-  return (game.speedBuffT || 0) > 0 ? 1.5 : 1;
+  let m = skillSpeedMult();
+  if (p && p.jetBoostT > 0) return 2.5 * m;
+  return ((game.speedBuffT || 0) > 0 ? 1.5 : 1) * m;
 }
 function shopMagazineMult() { return 1 + 0.15 * shopLevel('magazine'); }
 
@@ -10508,7 +11934,7 @@ function onResetSaveClick() {
     syncAbilityHud();
     if (game.screen === 'zones') drawZoneCards();
     disarmResetSave();
-    if (UI.spNote) UI.spNote.textContent = 'Save data cleared — run, gems and every shop purchase wiped.';
+    if (UI.spNote) UI.spNote.textContent = 'Save data cleared — run, gems and shop wiped. Class levels and skill trees kept.';
     refreshSaveUi();
     return;
   }
@@ -10517,7 +11943,7 @@ function onResetSaveClick() {
     UI.btnResetSave.classList.add('armed');
     UI.btnResetSave.textContent = 'Confirm reset?';
   }
-  if (UI.spNote) UI.spNote.textContent = 'This wipes the saved run, best score, gem bank and shop. Tap again to confirm.';
+  if (UI.spNote) UI.spNote.textContent = 'This wipes the saved run, best score, gem bank and shop. Class levels and skill trees are kept. Tap again to confirm.';
 }
 
 /* ------------------------------ speedrun clock ------------------------------
@@ -10814,6 +12240,19 @@ function drawClassCards() {
   }
   paintClassIcon(UI.badgeIcon, getClass().id);
   syncClassCardLocks();
+  for (let i = 0; i < UI.classCards.length; i++) {
+    const card = UI.classCards[i];
+    if (!card) continue;
+    const r = getClassProgress(CLASSES[i].id);
+    let meta = card.querySelector('.class-level-meta');
+    if (!meta) { meta = document.createElement('div'); meta.className = 'class-level-meta'; card.append(meta); }
+    meta.replaceChildren();
+    const label = document.createElement('span');
+    label.textContent = 'LEVEL ' + r.level + ' / 20 · ' + (r.level === 20 ? 'MAX' : r.xp + ' / ' + xpForLevel(r.level) + ' XP') + (r.skillPoints ? ' · ' + r.skillPoints + ' SP' : '');
+    const track = document.createElement('div'); track.className = 'class-card-xp';
+    const fill = document.createElement('i'); fill.style.width = (r.level === 20 ? 100 : r.xp / xpForLevel(r.level) * 100) + '%';
+    track.append(fill); meta.append(label, track);
+  }
 }
 
 /* an unowned class wears its gem price and drops the shine */
@@ -10898,6 +12337,7 @@ function startRun(classId, zoneIndex, opts) {
      inside loadZone would throw away the carried upgrades */
   loadZone(zone, { freshPlayer: false });
   applyShopUpgrades();       /* permanent shop levels, stamped on at run start */
+  applyClassSkillStats();
   showScreen('gameCanvas');
   game.menuTime = 0;
   updateObjective();
@@ -11002,6 +12442,7 @@ function hudSet(el, value) {
 function updateHud() {
   if (UI.scoreVal) UI.scoreVal.textContent = gs.score;
   syncAbilityHud();
+  syncClassXpHud();
   const p = game.player;
   if (!p) return;
   hudSet(UI.gemVal, String(game.gems));
@@ -12567,7 +14008,7 @@ function drawRaelBody(p, bob, flash, mirror) {
   const F = (v) => (flash || v);
   /* the worn paint job swaps the whole plate palette */
   const P = raelPalette(p);
-  const skinA = (p.cosmeticAlpha || 1);
+  const skinA = (p.cosmeticAlpha || 1) * (skillCombat().partialInvisible ? 0.55 : 1) * (skillCombat().shadowMeld ? 0.35 : 1);
 
   /* legs alternate left-right every 0.15s (p.walk runs at 12 rad/s, so 1.75x
      puts one foot forward every 0.15s) */
@@ -12728,9 +14169,10 @@ function drawRaelWeapon(p, bob, flash) {
 
   const idle = p.moving ? 0 : Math.sin(t * (TAU / 1.2)) * 1;
   const sx = Math.cos(p.angle) >= 0 ? 1 : -1;
+  const skinA = (p.cosmeticAlpha || 1) * (skillCombat().partialInvisible ? 0.55 : 1) * (skillCombat().shadowMeld ? 0.35 : 1);
 
   ctx.save();
-  if (p.cosmeticAlpha && p.cosmeticAlpha < 1) ctx.globalAlpha = p.cosmeticAlpha;
+  if (skinA < 1) ctx.globalAlpha = skinA;
   ctx.translate(p.x + sx * 3, p.y + (bob || 0) + idle - 3);
   ctx.rotate(p.angle);
   if (Math.cos(p.angle) < 0) ctx.scale(1, -1);
@@ -14482,18 +15924,173 @@ function artTitan(e, flash) {
   ctx.restore();
 }
 
+/* ---- Universe signature enemies ------------------------------------------ */
+function artSandShade(e, flash) {
+  const dir = enemyDir(e), t = e.t;
+  const sand = flash || '#d8b06a', dark = flash || '#a8834a';
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.scale(dir, 1);
+  const bob = Math.sin(t * 4) * 1.4;
+  /* legs */
+  ctx.fillStyle = dark;
+  ctx.fillRect(-6, 3, 5, 12); ctx.fillRect(2, 3, 5, 12);
+  /* body */
+  ctx.fillStyle = sand;
+  ctx.beginPath(); ctx.ellipse(0, -7 + bob, 8, 11, 0, 0, TAU); ctx.fill();
+  /* arms / claws */
+  ctx.strokeStyle = sand; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-7, -10 + bob); ctx.lineTo(-14, -2 + bob); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(7, -10 + bob); ctx.lineTo(15, -4 + bob); ctx.stroke();
+  /* head */
+  ctx.fillStyle = sand;
+  ctx.beginPath(); ctx.ellipse(1, -20 + bob, 6, 6.5, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = flash || '#3b2a12';
+  ctx.beginPath(); ctx.arc(-1, -21 + bob, 1.4, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(4, -21 + bob, 1.4, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
+function artRonin(e, flash) {
+  const dir = enemyDir(e), t = e.t;
+  const cloth = flash || '#7f1d1d', armor = flash || '#1f2937', steel = flash || '#e5e7eb';
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.scale(dir, 1);
+  const bob = Math.sin(t * 3) * 1.1;
+  /* legs */
+  ctx.fillStyle = armor;
+  ctx.fillRect(-6, 4, 5, 12); ctx.fillRect(2, 4, 5, 12);
+  /* torso */
+  ctx.fillStyle = cloth;
+  ctx.beginPath(); ctx.ellipse(0, -6 + bob, 8, 11, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = armor;
+  ctx.fillRect(-8, -10 + bob, 16, 4);
+  /* head + straw hat */
+  ctx.fillStyle = flash || '#d6b98c';
+  ctx.beginPath(); ctx.ellipse(1, -19 + bob, 5.5, 6, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = flash || '#8a6a24';
+  ctx.beginPath(); ctx.ellipse(1, -23 + bob, 10, 3.2, 0, 0, TAU); ctx.fill();
+  /* katana: held in a guarding stance when e.guard */
+  ctx.save();
+  ctx.translate(8, -8 + bob);
+  ctx.rotate(e.guard ? -0.9 : -0.2);
+  ctx.fillStyle = flash || '#3a352f'; ctx.fillRect(-2, -1.6, 6, 3.2);
+  ctx.fillStyle = steel; ctx.fillRect(4, -1.2, 24, 2.4);
+  ctx.restore();
+  ctx.restore();
+}
+
+function artScavengerBot(e, flash) {
+  const t = e.t;
+  ctx.save();
+  ctx.translate(e.x, e.y + Math.sin(t * 4) * 2.2);
+  /* rotor */
+  ctx.strokeStyle = 'rgba(148,163,184,0.55)'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.ellipse(0, -12, 14, 3, 0, 0, TAU); ctx.stroke();
+  /* body */
+  ctx.fillStyle = flash || '#475569';
+  ctx.beginPath(); ctx.roundRect(-9, -7, 18, 13, 4); ctx.fill();
+  /* eye */
+  ctx.fillStyle = flash || '#fbbf24';
+  ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 9;
+  ctx.beginPath(); ctx.arc(0, -1, 3.2, 0, TAU); ctx.fill();
+  ctx.shadowBlur = 0;
+  /* gem bag */
+  ctx.fillStyle = flash || '#78350f';
+  ctx.beginPath(); ctx.roundRect(-6, 5, 12, 9, 3); ctx.fill();
+  const n = Math.min(4, e.stolen || 0);
+  for (let k = 0; k < n; k++) {
+    ctx.fillStyle = '#6ee7b7';
+    ctx.beginPath();
+    ctx.moveTo(-4 + k * 3, 7); ctx.lineTo(-2 + k * 3, 9); ctx.lineTo(-4 + k * 3, 11); ctx.lineTo(-6 + k * 3, 9);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function artVoidLeech(e, flash) {
+  const t = e.t;
+  const body = flash || '#65a30d', glow = flash || '#a3e635';
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.rotate(Math.sin(t * 3) * 0.2);
+  /* segmented worm */
+  for (let k = 0; k < 4; k++) {
+    ctx.fillStyle = k % 2 ? body : glow;
+    ctx.beginPath(); ctx.ellipse(-k * 5, Math.sin(t * 6 + k) * 1.5, 6 - k, 5 - k * 0.6, 0, 0, TAU); ctx.fill();
+  }
+  /* mouth */
+  ctx.fillStyle = flash || '#1a2e05';
+  ctx.beginPath(); ctx.arc(6, 0, 3.4, 0, TAU); ctx.fill();
+  ctx.strokeStyle = glow; ctx.lineWidth = 1.2;
+  for (let k = 0; k < 5; k++) {
+    const a = (k / 5) * TAU;
+    ctx.beginPath(); ctx.moveTo(6 + Math.cos(a) * 2, Math.sin(a) * 2); ctx.lineTo(6 + Math.cos(a) * 4.5, Math.sin(a) * 4.5); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function artEcho(e, flash) {
+  /* A perfect mirror wears Rael's own body and weapon, tinted by the Void. */
+  const proxy = {
+    x: e.x, y: e.y, angle: e.heading,
+    moving: (e.throttle || 0) > 0.1, walk: e.t * 10, dashTimer: 0,
+    hp: e.hp, maxHp: e.maxHp, cosmetic: null,
+    cosmeticAlpha: e.invis ? 0.22 : 0.92
+  };
+  ctx.save();
+  ctx.shadowColor = '#e879f9'; ctx.shadowBlur = 14;
+  drawRaelBody(proxy, 0, flash || null, enemyDir(e));
+  drawRaelWeapon(proxy, 0, flash || null);
+  const w = getClass().weapon;
+  if (w === 'blade' || w === 'axes') {
+    ctx.strokeStyle = flash || '#e879f9'; ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(e.x + Math.cos(e.heading) * 8, e.y + Math.sin(e.heading) * 8);
+    ctx.lineTo(e.x + Math.cos(e.heading) * 30, e.y + Math.sin(e.heading) * 30 - 10);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 const ENEMY_ART = {
   anubis: artAnubis, mummy: artMummy, scorpion: artScorpion,
   samurai: artSamurai, ninja: artNinja, oni: artOni,
   raider: artRaider, mutant: artMutant, drone: artDrone,
   plasma: artPlasma, wraith: artWraith, mech: artMech,
-  shade: artShade, wraithTime: artWraithTime, titan: artTitan
+  shade: artShade, wraithTime: artWraithTime, titan: artTitan,
+  sandshade: artSandShade, ronin: artRonin, scavengerbot: artScavengerBot,
+  voidleech: artVoidLeech, echo: artEcho
 };
 
 function drawEnemy(e) {
   const r = e.r;
   const flash = e.hitFlash > 0 ? '#ffffff' : null;
   const box = CHAR[e.type] || { w: r * 2.4, h: r * 2.9 };
+
+  /* Elite Ghosts are completely invisible until they attack. */
+  if (e.eliteVariant && e.type === 'ghost' && e.invis > 0 && e.revealT <= 0) return;
+
+  /* Buried Sand Shades only show a ripple / telegraph on the sand. */
+  if (e.type === 'sandshade' && e.underground) {
+    ctx.save();
+    const t = game.time;
+    if (e.phase === 'telegraph') {
+      const k = 1 - clamp(e.stateT / 0.55, 0, 1);
+      ctx.strokeStyle = 'rgba(245,212,150,' + (0.35 + 0.5 * k).toFixed(2) + ')';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(e.x, e.y, 18 + k * 46, 0, TAU); ctx.stroke();
+      ctx.fillStyle = 'rgba(216,176,106,0.25)';
+      ctx.beginPath(); ctx.arc(e.x, e.y, 16 + k * 30, 0, TAU); ctx.fill();
+    } else {
+      ctx.strokeStyle = 'rgba(216,176,106,0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(e.x, e.y, 12 + Math.sin(t * 5) * 2, 5, 0, 0, TAU); ctx.stroke();
+    }
+    ctx.restore();
+    return;
+  }
 
   /* a grounded shadow under the feet, so nothing floats without a contact point */
   ctx.save();
@@ -14503,11 +16100,45 @@ function drawEnemy(e) {
   ctx.fill();
   ctx.restore();
 
+  /* Elite variants carry a red outline glow and a crown marker. */
+  if (e.eliteVariant) {
+    ctx.save();
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 18;
+    ctx.strokeStyle = 'rgba(248,113,113,0.9)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(e.x, e.y - box.h * 0.1, r * 1.15, box.h * 0.62, 0, 0, TAU);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   if (e.art && ENEMY_ART[e.art]) ENEMY_ART[e.art](e, flash);
   else if (e.type === 'knight') drawEnemyKnight(e, flash);
   else if (e.type === 'archer') drawEnemyArcher(e, flash);
   else if (e.type === 'wizard') drawEnemyWizard(e, flash);
   else drawEnemyGhost(e, flash);
+
+  if (e.eliteVariant) {
+    ctx.save();
+    ctx.fillStyle = '#f87171';
+    ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 10;
+    const cy = e.y - box.h * 0.78;
+    ctx.beginPath();
+    ctx.moveTo(e.x, cy - 6); ctx.lineTo(e.x + 5, cy); ctx.lineTo(e.x, cy + 6); ctx.lineTo(e.x - 5, cy);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  /* Elite Knight shield: a separate bar that must break before HP. */
+  if (e.maxShield > 0) {
+    const w = Math.max(24, r * 1.5);
+    const sy = e.y - box.h * 0.62 - 8;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(e.x - w / 2, sy, w, 4);
+    ctx.fillStyle = '#7dd3fc';
+    ctx.fillRect(e.x - w / 2, sy, w * clamp(e.shield / e.maxShield, 0, 1), 4);
+  }
 
   if (e.maxHp > 1 && e.hp < e.maxHp) {
     const w = Math.max(22, r * 1.4);
@@ -14631,7 +16262,7 @@ function updateMines(dt) {
     const d = dist(m.x, m.y, p.x, p.y);
     if (m.t <= 0 || (m.arm >= 1 && d < 52)) {
       explodeAt(m.x, m.y, 1.6, '#f97316');
-      if (d < 90) hurtPlayer(1);
+      if (d < 90) hurtPlayer(enemyDamage(1));
       game.mines.splice(i, 1);
     }
   }
@@ -14717,7 +16348,7 @@ const BOSS_KITS = {
         if (bm.t > bm.charge && bm.t < bm.charge + bm.fire) {
           const x2 = b.x + Math.cos(bm.angle) * 1400;
           const y2 = b.y + Math.sin(bm.angle) * 1400;
-          if (segHitsCircle(b.x, b.y, x2, y2, p.x, p.y, 18)) hurtPlayer(1);
+          if (segHitsCircle(b.x, b.y, x2, y2, p.x, p.y, 18)) hurtPlayer(enemyDamage(1));
           for (let i = 0; i < 3; i++) {
             const dd = rand(60, 900);
             spawnParticle(b.x + Math.cos(bm.angle) * dd, b.y + Math.sin(bm.angle) * dd,
@@ -14843,7 +16474,7 @@ const BOSS_KITS = {
       if (k.slash <= 0) {
         k.slash = 2.0;
         if (dist(b.x, b.y, p.x, p.y) < b.r + 70) {
-          hurtPlayer(1);
+          hurtPlayer(enemyDamage(1));
           game.beams.push({
             kind: 'slash', x1: b.x, y1: b.y,
             x2: b.x + Math.cos(bossAim(b)) * 120, y2: b.y + Math.sin(bossAim(b)) * 120,
@@ -14932,7 +16563,7 @@ const BOSS_KITS = {
         k.drive -= dt;
         b.x = clamp(b.x + Math.cos(k.angle) * 520 * dt, 100, WORLD - 100);
         b.y = clamp(b.y + Math.sin(k.angle) * 520 * dt, 100, WORLD - 100);
-        if (dist(b.x, b.y, p.x, p.y) < b.r + p.r + 6) hurtPlayer(2);
+        if (dist(b.x, b.y, p.x, p.y) < b.r + p.r + 6) hurtPlayer(enemyDamage(2));
         if (Math.random() < 0.7) {
           spawnParticle(b.x, b.y + b.r * 0.5, rand(-40, 40), rand(-20, 20), 0.4, 8, '#4b5563', 3);
         }
@@ -15206,7 +16837,7 @@ const BOSS_KITS = {
         if (bm.t > bm.charge && bm.t < bm.charge + bm.fire) {
           const x2 = b.x + Math.cos(bm.angle) * 1500;
           const y2 = b.y + Math.sin(bm.angle) * 1500;
-          if (segHitsCircle(b.x, b.y, x2, y2, p.x, p.y, 18)) hurtPlayer(1);
+          if (segHitsCircle(b.x, b.y, x2, y2, p.x, p.y, 18)) hurtPlayer(enemyDamage(1));
         }
         if (bm.t > bm.charge + bm.fire) k.beamObj = null;
       }
@@ -15443,7 +17074,7 @@ function updateBossKit(b, dt) {
   if (b.contactCd > 0) b.contactCd = Math.max(0, b.contactCd - dt);
   if (p && b.contactCd <= 0 && dist(b.x, b.y, p.x, p.y) < b.r + p.r + 2) {
     b.contactCd = 0.9;
-    hurtPlayer(1);
+    hurtPlayer(enemyDamage(1));
   }
 }
 
@@ -18306,6 +19937,16 @@ function drawTurrets() {
     ctx.beginPath(); ctx.arc(t.x, t.y - 2, 3.6, 0, TAU); ctx.fill();
     ctx.restore();
 
+    /* turret health (Reinforced Frame) */
+    if (t.maxHp && t.hp < t.maxHp) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(t.x - 16, t.y - 26, 32, 4);
+      ctx.fillStyle = '#6ee7b7';
+      ctx.fillRect(t.x - 16, t.y - 26, 32 * clamp(t.hp / t.maxHp, 0, 1), 4);
+      ctx.restore();
+    }
+
     /* remaining life arc */
     ctx.save();
     ctx.strokeStyle = 'rgba(251,191,36,0.85)';
@@ -18832,6 +20473,17 @@ function drawMinimap() {
     mmCtx.arc(game.portal.x * k, game.portal.y * k, 6, 0, TAU);
     mmCtx.fill();
     mmCtx.shadowBlur = 0;
+  }
+
+  /* Spotter Drone reveals every enemy, even through fog. */
+  if (currentSkill('spotter_drone')) {
+    for (let i = 0; i < game.enemies.length; i++) {
+      const e = game.enemies[i];
+      if (e.underground) continue;
+      if (e.eliteVariant && e.type === 'ghost' && e.invis > 0 && e.revealT <= 0) continue;
+      mmCtx.fillStyle = e.eliteVariant ? '#f87171' : (e.elite ? '#fbbf24' : '#ef4444');
+      mmCtx.beginPath(); mmCtx.arc(e.x * k, e.y * k, e.elite ? 4 : 2.6, 0, TAU); mmCtx.fill();
+    }
   }
 
   /* dotted guide line from the player to the next objective */
@@ -19910,6 +21562,7 @@ function setLoopPausedFor(screenName) {
 function update(dt) {
   game.menuTime += dt;
   tickAbilityUnlock(dt);      /* the unlock card keeps its own 2s clock */
+  tickClassLevelUp(dt);
 
   if (game.screen === 'menu' || game.screen === 'class' || game.screen === 'zones') return;
 
@@ -19936,6 +21589,7 @@ function update(dt) {
 
   updateHud();
   updatePlayer(classBuff('eagleEye') > 0 ? dt : sdt);
+  updateSkillCombat(sdt);
   updateClassAbilities(dt);
   updatePet(sdt);
   updateClassKit(sdt);
@@ -20226,6 +21880,21 @@ function initPauseSystem() {
     mobileBtn.addEventListener('touchstart', (e) => { togglePause(); e.preventDefault(); }, { passive: false });
   }
   document.getElementById('btnResumePause').addEventListener('click', togglePause);
+  document.getElementById('btnSkillTreePause').addEventListener('click', () => openSkillTree('pauseMenu'));
+  document.getElementById('btnLevelUpTree').addEventListener('click', () => openSkillTree('levelUp'));
+  document.getElementById('btnSkillTreeBack').addEventListener('click', closeSkillTree);
+  document.getElementById('skillTreeRows').addEventListener('scroll', hideSkillTooltip);
+  window.addEventListener('resize', hideSkillTooltip);
+  window.addEventListener('keydown', (e) => {
+    if (currentScreen !== 'skillTree') return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); closeSkillTree(); return; }
+    if (e.key === 'Tab') {
+      const buttons = Array.from(UI.skillTree.querySelectorAll('button'));
+      const first = buttons[0], last = buttons[buttons.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
   document.getElementById('btnVisitShopPause').addEventListener('click', () => {
     if (currentScreen === 'pauseMenu') openShop('pauseMenu');
   });
@@ -20275,6 +21944,7 @@ window.addEventListener('load', resize);
   gameState.bestScore = SaveSystem.best();
   game.lifetimeGems = SaveSystem.lifetimeGems();
   game.maxZone = SaveSystem.maxZone();
+  loadAllClassProgress();        /* independent permanent progression for all seven classes */
   loadGame();                    /* slot + abilities + bosses + the menu line */
   Shop.load();                   /* the depot reads its levels and satchel first */
   syncAbilityUnlocks(true);      /* silent: replay anything the frontier implies */
@@ -20284,6 +21954,7 @@ window.addEventListener('load', resize);
     paintClassIcon(UI.classIcons[i], CLASSES[i].id);   /* markup, painted once */
   }
   game.player = makePlayer();
+  applyClassSkillStats();
   game.fog = new Uint8Array(FOG_COLS * FOG_COLS);
   game.arenas = [];
 
