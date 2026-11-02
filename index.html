@@ -2260,6 +2260,18 @@ html,body{ background:var(--bg); color:var(--text); }
   74% { opacity:1; transform:scaleY(1) translateX(0); }
   100%{ opacity:0; transform:scaleY(.92) translateX(10px); }
 }
+<style id="orb-badge-style">
+  #abQ{ position:relative; }
+  .orb-badge{
+    position:absolute; top:-7px; right:-7px; z-index:3;
+    min-width:16px; height:16px; padding:0 3px; box-sizing:border-box;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-head); font-size:10px; font-weight:700;
+    color:#1a1208; background:radial-gradient(circle at 35% 30%, #ffe9a8, var(--gold-bright) 55%, var(--gold));
+    border:1px solid #8b6914; border-radius:50%;
+    box-shadow:0 0 10px rgba(245,200,66,.8), 0 2px 5px rgba(0,0,0,.6);
+    pointer-events:none;
+  }
 </style>
 </head>
 <body>
@@ -2373,7 +2385,7 @@ html,body{ background:var(--bg); color:var(--text); }
       <button class="ab-btn" type="button" data-ability="q" aria-label="Class ability (Q)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 20 6v6c0 4.5-3.5 7.5-8 9-4.5-1.5-8-4.5-8-9V6z"/></svg>
         <span class="ab-sweep" aria-hidden="true"></span>
-      </button><span class="key">Q</span>
+      </button><span class="key">Q</span><span id="orbBadge" class="orb-badge" hidden>1</span>
     </div>
     <div class="ability locked" id="abE">
       <button class="ab-btn" type="button" data-ability="e" aria-label="Ability 2 (E)" disabled>
@@ -3220,6 +3232,7 @@ const UI = {
   levelUpNumber: document.getElementById('levelUpNumber'),
   levelUpReward: document.getElementById('levelUpReward'),
   levelUpToasts: document.getElementById('levelUpToasts'),
+  orbBadge: document.getElementById('orbBadge'),
   skillTree: document.getElementById('skillTree'),
   skillTreeClass: document.getElementById('skillTreeClass'),
   skillTreePoints: document.getElementById('skillTreePoints'),
@@ -5795,7 +5808,7 @@ function qCdMax(c) {
    front of him. Forged upgrades widen and colour the blade.
    ------------------------------------------------------------------------- */
 const SWORD_RANGE = 96;                       /* reach of the steel, in world px */
-const SWORD_ARC = (Math.PI * 2) / 3;          /* 120 degrees per swing */
+const SWORD_ARC = (Math.PI * 5) / 12;         /* 75 degrees per swing at base — Cleave widens it to 160° */
 const SWORD_SWING_TIME = 0.2;                 /* how long the swoosh lives */
 const SWORD_COOLDOWN = 0.4;                   /* minimum gap between swings */
 
@@ -6075,7 +6088,8 @@ function nearestTarget(x, y, maxRange) {
 function firePistols(charged) {
   const p = game.player;
   const attack = skillAttackMeta('pistol');
-  const spread = p.arc ? [-0.075, 0, 0.075] : [-0.014, 0.014];
+  const pistolCount = 1 + (firstUpgradeOwned() ? 1 : 0);   /* 1 pistol at base, the second comes with the first skill-tree upgrade */
+  const spread = pistolCount >= 2 ? (p.arc ? [-0.075, 0, 0.075] : [-0.014, 0.014]) : [0];
   for (let i = 0; i < spread.length; i++) {
     const a = p.angle + spread[i];
     p.shotCount = (p.shotCount | 0) + 1;
@@ -6184,7 +6198,7 @@ function fireSniper(charged) {
 function fireMageOrbs(charged) {
   const p = game.player;
   const attack = skillAttackMeta('orb');
-  const n = (p.arc ? 4 : 3) + (p.mageOrbs | 0) + (currentSkill('orb_mastery') ? 1 : 0);
+  const n = mageOrbCount();   /* base 1 orb; +1 Orb Mastery; +1 Singularity */
   for (let i = 0; i < n; i++) {
     const a = p.angle + (i - (n - 1) / 2) * 0.42;
     p.shotCount = (p.shotCount | 0) + 1;
@@ -6213,6 +6227,30 @@ function fireMageOrbs(charged) {
     rand(-30, 30), rand(-30, 30), 0.22, 6, '#c4b5fd', 2);
 }
 
+/* ---- progression principle: every class starts with the simplest version of
+   its weapon and only improves through skill-tree purchases. The first node a
+   player buys in a class's tree is that class's "first upgrade". ---- */
+function firstUpgradeOwned() {
+  const rec = getClassProgress(gameState.currentClass);
+  return !!(rec && rec.owned && rec.owned.length > 0);
+}
+/* chrono mage: 1 orb at base, +1 from Orb Mastery, +1 from Singularity */
+function mageOrbCount() {
+  return 1 + (currentSkill('orb_mastery') ? 1 : 0) + (currentSkill('singularity') ? 1 : 0);
+}
+/* small orb-count badge next to the mage's weapon slot */
+function syncOrbBadge() {
+  const el = UI.orbBadge;
+  if (!el) return;
+  if (getClass().weapon === 'orbs') {
+    el.hidden = false;
+    const n = String(mageOrbCount());
+    if (el.textContent !== n) el.textContent = n;
+  } else {
+    el.hidden = true;
+  }
+}
+
 function fireClassWeapon(dt) {
   const p = game.player;
   if (p.reloadT > 0) { p.reloadT = Math.max(0, p.reloadT - dt); return; }
@@ -6236,7 +6274,10 @@ function fireClassWeapon(dt) {
     else if (cls.weapon === 'daggers') fireDaggers(charged);
     else if (cls.weapon === 'disc') fireDisc(charged);
     else fireMageOrbs(charged);
-    p.fireTimer = (p.fireRate * (charged ? 0.5 : 1)) / (odm() * skillFireRateMult());
+    /* the sniper starts with a slow musket; the first skill-tree upgrade quickens it */
+    let rate = p.fireRate;
+    if (cls.weapon === 'rail' && !firstUpgradeOwned()) rate *= 1.75;
+    p.fireTimer = (rate * (charged ? 0.5 : 1)) / (odm() * skillFireRateMult());
   }
 }
 
@@ -13498,6 +13539,7 @@ function updateHud() {
   if (UI.scoreVal) UI.scoreVal.textContent = gs.score;
   syncAbilityHud();
   syncClassXpHud();
+  syncOrbBadge();
   const p = game.player;
   if (!p) return;
   hudSet(UI.gemVal, String(game.gems));
@@ -15447,9 +15489,15 @@ function drawRaelWeapon(p, bob, flash) {
   const muzzleAge = t - (p.muzzleAt === undefined ? -9 : p.muzzleAt);
 
   if (cls.weapon === 'pistols') {
-    /* one proper flintlock aimed at the cursor */
+    /* one flintlock at base; the second pistol appears after the first skill-tree upgrade */
     const hot = clamp(1 - muzzleAge / 0.09, 0, 1);
-    drawFlintlockPistol(F, hot);
+    const pistolCount = 1 + (firstUpgradeOwned() ? 1 : 0);
+    for (let i = 0; i < pistolCount; i++) {
+      ctx.save();
+      if (i > 0) { ctx.translate(-2, 7.5); ctx.rotate(0.14); }   /* off-hand pistol held lower */
+      drawFlintlockPistol(F, i === 0 ? hot : 0);
+      ctx.restore();
+    }
   } else if (cls.weapon === 'rail') {
     /* long musket: 70px dark barrel, 15px-wide curving wood stock, brass bead */
     const hot = clamp(1 - muzzleAge / 0.12, 0, 1);
