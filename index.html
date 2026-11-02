@@ -6143,7 +6143,8 @@ function fireSniper(charged) {
   const y1 = p.y + Math.sin(a) * (p.r + 16);
   const x2 = p.x + Math.cos(a) * range;
   const y2 = p.y + Math.sin(a) * range;
-  game.beams.push({ kind: 'sniper', x1, y1, x2, y2, life: 0, maxLife: 0.2, width: charged ? 11 : 7, colour: '#e0f2fe', core: '#ffffff' });
+  /* the beam is drawn crossing the full screen, even though the damage scan stops at range */
+  game.beams.push({ kind: 'sniper', x1, y1, x2: p.x + Math.cos(a) * 5200, y2: p.y + Math.sin(a) * 5200, life: 0, maxLife: 0.2, width: charged ? 11 : 7, colour: '#fde68a', core: '#ffffff' });
   const pad = charged ? 16 : 11;
   let landX = p.x + Math.cos(a) * 700, landY = p.y + Math.sin(a) * 700, landed = false;
   let oneShot = !!meta.oneShot;
@@ -15280,61 +15281,58 @@ function drawRaelBody(p, bob, flash, mirror) {
    points at the cursor no matter which way the body is facing. */
 
 /* ---- art helper: one 17th-century flintlock pistol, barrel along +x ---- */
+
+/* ---- art helper: one proper flintlock pistol, barrel along +x ---- */
 function drawFlintlockPistol(F, muzzleHot) {
-  /* barrel: long octagonal dark-steel tube */
-  const steel = ctx.createLinearGradient(0, -2.6, 0, 2.6);
+  /* grip: curved dark wood, ~12px wide, 18px long, with grain lines */
+  ctx.fillStyle = F('#4a2f1d');
+  ctx.beginPath();
+  ctx.moveTo(9, -2.5);
+  ctx.quadraticCurveTo(7, 8, 2, 15.5);
+  ctx.quadraticCurveTo(0, 17.8, -2, 15);
+  ctx.quadraticCurveTo(3, 7, 5, -2.5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(122,84,52,0.85)';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(7.2, 1); ctx.quadraticCurveTo(5.2, 7.5, 3, 13.6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(5.6, 0); ctx.quadraticCurveTo(4, 6, 2.2, 11.6); ctx.stroke();
+  /* barrel: octagonal dark steel, 40px long, 5px wide */
+  const steel = ctx.createLinearGradient(0, -2.5, 0, 2.5);
   steel.addColorStop(0, F('#5b6470'));
-  steel.addColorStop(0.45, F('#2e343d'));
-  steel.addColorStop(1, F('#171b21'));
+  steel.addColorStop(0.5, F('#2e343d'));
+  steel.addColorStop(1, F('#14181d'));
   ctx.fillStyle = steel;
-  roundRect(ctx, 6, -2.6, 24, 5.2, 1.6);
+  roundRect(ctx, 8, -2.5, 40, 5, 1.8);
   ctx.fill();
   /* octagon facet lines */
   ctx.strokeStyle = 'rgba(200,212,226,0.35)';
   ctx.lineWidth = 0.7;
-  ctx.beginPath(); ctx.moveTo(7, -1.1); ctx.lineTo(29, -1.1); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(7, 1.1); ctx.lineTo(29, 1.1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(9, -1); ctx.lineTo(47, -1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(9, 1); ctx.lineTo(47, 1); ctx.stroke();
   /* muzzle ring */
   ctx.fillStyle = F('#0d1013');
-  roundRect(ctx, 28.6, -3, 2.4, 6, 1);
+  roundRect(ctx, 46.6, -2.9, 2.6, 5.8, 1);
   ctx.fill();
-  /* lock: small rectangular box on the side of the barrel */
+  /* lock: 8x6 dark grey box on the side + tiny hammer */
   ctx.fillStyle = F('#3a4048');
-  roundRect(ctx, 9, -5.4, 7.5, 4.4, 1);
+  roundRect(ctx, 14, -8, 8, 6, 1);
   ctx.fill();
   ctx.strokeStyle = 'rgba(190,200,214,0.4)';
   ctx.lineWidth = 0.6;
-  ctx.strokeRect(9.4, -5, 6.7, 3.6);
-  /* hammer (cock) at the back of the lock */
+  ctx.strokeRect(14.4, -7.6, 7.2, 5.2);
   ctx.fillStyle = F('#565f6b');
   ctx.beginPath();
-  ctx.moveTo(9.6, -5.2);
-  ctx.quadraticCurveTo(7.6, -8.8, 5.4, -7.8);
-  ctx.quadraticCurveTo(7.2, -6.4, 8.4, -4.6);
+  ctx.moveTo(14.6, -7.8);
+  ctx.quadraticCurveTo(12.6, -11.6, 10.2, -10.4);
+  ctx.quadraticCurveTo(11.8, -8.8, 13.2, -6.8);
   ctx.closePath();
   ctx.fill();
-  /* frizzen */
-  ctx.strokeStyle = F('#7c8794');
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(15.4, -5.2); ctx.lineTo(17.8, -6.8); ctx.stroke();
-  /* trigger: small curved loop below the lock */
+  /* trigger loop below the lock */
   ctx.strokeStyle = F('#8b95a3');
   ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.arc(12.6, 1.4, 1.9, 0.15 * Math.PI, 1.15 * Math.PI); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(12.6, -1); ctx.lineTo(12.6, 1.4); ctx.stroke();
-  /* curved dark-wood grip with grain lines */
-  ctx.fillStyle = F('#4a2f1d');
-  ctx.beginPath();
-  ctx.moveTo(6.4, -1.4);
-  ctx.quadraticCurveTo(5.2, 5.4, 1.2, 8.6);
-  ctx.quadraticCurveTo(-0.6, 9.8, -1.4, 8.2);
-  ctx.quadraticCurveTo(1.6, 4.6, 3.4, -1.4);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(122,84,52,0.8)';
-  ctx.lineWidth = 0.7;
-  ctx.beginPath(); ctx.moveTo(5.2, 1.4); ctx.quadraticCurveTo(3.4, 4.6, 1.8, 7.4); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(3.9, 0.4); ctx.quadraticCurveTo(2.6, 3.4, 1.2, 6.2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(18.5, 3.6, 2.2, 0.15 * Math.PI, 1.15 * Math.PI); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(18.5, -1.6); ctx.lineTo(18.5, 3.6); ctx.stroke();
   /* muzzle flash: small orange burst while the shot is hot */
   if (muzzleHot > 0) {
     ctx.save();
@@ -15345,90 +15343,78 @@ function drawFlintlockPistol(F, muzzleHot) {
     ctx.beginPath();
     for (let i = 0; i < 6; i++) {
       const a = i / 6 * TAU + 0.4;
-      const r1 = 2 + 5.5 * muzzleHot;
-      ctx.moveTo(30.8, 0);
-      ctx.lineTo(30.8 + Math.cos(a) * r1, Math.sin(a) * r1);
-      ctx.lineTo(30.8 + Math.cos(a + 0.5) * r1 * 0.45, Math.sin(a + 0.5) * r1 * 0.45);
+      const r1 = 2 + 6 * muzzleHot;
+      ctx.moveTo(49.5, 0);
+      ctx.lineTo(49.5 + Math.cos(a) * r1, Math.sin(a) * r1);
+      ctx.lineTo(49.5 + Math.cos(a + 0.5) * r1 * 0.45, Math.sin(a + 0.5) * r1 * 0.45);
     }
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = '#fff7ed';
-    ctx.beginPath(); ctx.arc(30.8, 0, 1.8 + 2.4 * muzzleHot, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(49.5, 0, 1.8 + 2.6 * muzzleHot, 0, TAU); ctx.fill();
     ctx.restore();
   }
 }
 
-/* ---- art helper: a slim balanced throwing dagger, point along +x ---- */
+/* ---- art helper: a slim balanced dagger held in hand, point along +x ---- */
 function drawHeldDagger(F) {
-  /* wrapped handle */
+  /* wrapped handle: 5px wide, 12px long */
   ctx.fillStyle = F('#241631');
-  roundRect(ctx, -9, -2.2, 8, 4.4, 1.6);
+  roundRect(ctx, -12, -2.5, 12, 5, 1.6);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(167,139,250,0.6)';
+  ctx.strokeStyle = 'rgba(150,140,170,0.7)';
   ctx.lineWidth = 0.8;
   for (let i = 0; i < 3; i++) {
-    ctx.beginPath(); ctx.moveTo(-8 + i * 2.4, -2.2); ctx.lineTo(-6.6 + i * 2.4, 2.2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-11 + i * 3.2, -2.5); ctx.lineTo(-9.6 + i * 3.2, 2.5); ctx.stroke();
   }
-  /* small crossguard */
+  /* tiny crossguard: 10px wide, 3px tall */
   ctx.fillStyle = F('#3f4753');
-  roundRect(ctx, -1.6, -4, 2.2, 8, 1);
+  roundRect(ctx, -1, -5, 3, 10, 1);
   ctx.fill();
-  /* thin tapered blade */
-  const g = ctx.createLinearGradient(0, -1.8, 0, 1.8);
-  g.addColorStop(0, F('#e2e8f0'));
-  g.addColorStop(0.5, F('#94a3b8'));
-  g.addColorStop(1, F('#475569'));
+  /* slim dark blade: 3px wide, 28px long, tapered */
+  const g = ctx.createLinearGradient(0, -1.5, 0, 1.5);
+  g.addColorStop(0, F('#4b5563'));
+  g.addColorStop(0.5, F('#2b313c'));
+  g.addColorStop(1, F('#171b22'));
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(0.4, -1.6); ctx.lineTo(20, -0.5); ctx.lineTo(24, 0); ctx.lineTo(20, 0.5); ctx.lineTo(0.4, 1.6);
+  ctx.moveTo(2, -1.5); ctx.lineTo(28, -0.6); ctx.lineTo(31, 0); ctx.lineTo(28, 0.6); ctx.lineTo(2, 1.5);
   ctx.closePath();
   ctx.fill();
   /* center line */
-  ctx.strokeStyle = 'rgba(15,23,42,0.7)';
-  ctx.lineWidth = 0.7;
-  ctx.beginPath(); ctx.moveTo(1.5, 0); ctx.lineTo(21, 0); ctx.stroke();
+  ctx.strokeStyle = 'rgba(230,235,245,0.5)';
+  ctx.lineWidth = 0.6;
+  ctx.beginPath(); ctx.moveTo(3, 0); ctx.lineTo(28.5, 0); ctx.stroke();
 }
 
-/* ---- art helper: the tech energy disc — shield x saw blade ---- */
+/* ---- art helper: the tech energy disc — flat dark circle, amber ring, cross ---- */
 function drawEnergyDisc(cx, cy, r, spin) {
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(spin);
-  /* saw teeth around the rim */
-  ctx.fillStyle = '#1e3a5f';
-  ctx.beginPath();
-  const teeth = 10;
-  for (let i = 0; i < teeth; i++) {
-    const a0 = i / teeth * TAU, a1 = (i + 0.5) / teeth * TAU, a2 = (i + 1) / teeth * TAU;
-    ctx.lineTo(Math.cos(a0) * r, Math.sin(a0) * r);
-    ctx.lineTo(Math.cos(a1) * (r + 2.6), Math.sin(a1) * (r + 2.6));
-    ctx.lineTo(Math.cos(a2) * r, Math.sin(a2) * r);
-  }
-  ctx.closePath();
-  ctx.fill();
-  /* flat disc body */
-  const g = ctx.createRadialGradient(0, 0, 1, 0, 0, r);
-  g.addColorStop(0, '#0b1220');
-  g.addColorStop(0.7, '#12233a');
-  g.addColorStop(1, '#1e3a5f');
+  /* flat dark-grey disc */
+  const g = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.2, 0, 0, r);
+  g.addColorStop(0, '#4a4a4a');
+  g.addColorStop(0.7, '#2a2a2a');
+  g.addColorStop(1, '#1a1a1a');
   ctx.fillStyle = g;
   ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
-  /* glowing blue edge lines */
-  ctx.strokeStyle = '#38bdf8';
-  ctx.lineWidth = 1.8;
-  ctx.shadowColor = '#22d3ee';
-  ctx.shadowBlur = 12;
-  ctx.beginPath(); ctx.arc(0, 0, r - 0.6, 0, TAU); ctx.stroke();
-  ctx.strokeStyle = 'rgba(103,232,249,0.8)';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(0, 0, r * 0.55, 0, TAU); ctx.stroke();
-  /* central emitter core */
-  ctx.fillStyle = 'rgba(56,189,248,0.9)';
-  ctx.beginPath(); ctx.arc(0, 0, 3.6, 0, TAU); ctx.fill();
-  ctx.fillStyle = '#e0f2fe';
-  ctx.beginPath(); ctx.arc(0, 0, 2.2, 0, TAU); ctx.fill();
-  ctx.fillStyle = '#f0f9ff';
-  ctx.beginPath(); ctx.arc(0, 0, 1.2, 0, TAU); ctx.fill();
+  /* glowing amber ring edge */
+  ctx.strokeStyle = '#d4a017';
+  ctx.lineWidth = 2.4;
+  ctx.shadowColor = '#f5c842';
+  ctx.shadowBlur = 14;
+  ctx.beginPath(); ctx.arc(0, 0, r - 1, 0, TAU); ctx.stroke();
+  /* cross pattern inside */
+  ctx.strokeStyle = 'rgba(245,200,66,0.9)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.62, 0); ctx.lineTo(r * 0.62, 0);
+  ctx.moveTo(0, -r * 0.62); ctx.lineTo(0, r * 0.62);
+  ctx.stroke();
+  /* hub */
+  ctx.fillStyle = '#f5c842';
+  ctx.beginPath(); ctx.arc(0, 0, 2.4, 0, TAU); ctx.fill();
   ctx.restore();
 }
 
@@ -15441,157 +15427,125 @@ function drawRaelWeapon(p, bob, flash) {
   if (cls.weapon === 'axes') return;       /* the twin axes are drawn separately */
 
   const idle = p.moving ? 0 : Math.sin(t * (TAU / 1.2)) * 1;
-  const sx = Math.cos(p.angle) >= 0 ? 1 : -1;
   const skinA = (p.cosmeticAlpha || 1) * (skillCombat().partialInvisible ? 0.55 : 1) * (skillCombat().shadowMeld ? 0.35 : 1);
 
   ctx.save();
   if (skinA < 1) ctx.globalAlpha = skinA;
-  ctx.translate(p.x + sx * 3, p.y + (bob || 0) + idle - 3);
+  /* held in the hand: 16px out in the facing direction, rotating to the cursor */
+  ctx.translate(p.x + Math.cos(p.angle) * 16, p.y + (bob || 0) + idle + Math.sin(p.angle) * 16);
   ctx.rotate(p.angle);
   if (Math.cos(p.angle) < 0) ctx.scale(1, -1);
 
-  /* the gauntlet that visibly holds the weapon in the hand */
+  /* the gauntlet stays on the player's hand, 16px behind the weapon origin */
   ctx.fillStyle = F('#3a2c1a');
-  roundRect(ctx, -3, -3.2, 8.4, 6.4, 3);
+  roundRect(ctx, -19.5, -3.2, 8.4, 6.4, 3);
   ctx.fill();
   ctx.fillStyle = F('#8a6a42');
-  roundRect(ctx, -3.6, -2.6, 4.6, 5.2, 2);
+  roundRect(ctx, -20.1, -2.6, 4.6, 5.2, 2);
   ctx.fill();
 
   const muzzleAge = t - (p.muzzleAt === undefined ? -9 : p.muzzleAt);
 
   if (cls.weapon === 'pistols') {
-    /* dual flintlocks: both rotate with the arm to aim at the cursor */
+    /* one proper flintlock aimed at the cursor */
     const hot = clamp(1 - muzzleAge / 0.09, 0, 1);
-    for (let i = 0; i < 2; i++) {
-      ctx.save();
-      ctx.translate(i === 0 ? 1.5 : -1.5, i === 0 ? -4.6 : 4.6);
-      ctx.rotate(i === 0 ? -0.05 : 0.14);     /* off-hand held slightly lower */
-      drawFlintlockPistol(F, hot);
-      ctx.restore();
-    }
+    drawFlintlockPistol(F, hot);
   } else if (cls.weapon === 'rail') {
-    /* matchlock arquebus: barrel longer than the whole 44px body */
+    /* long musket: 70px dark barrel, 15px-wide curving wood stock, brass bead */
     const hot = clamp(1 - muzzleAge / 0.12, 0, 1);
-    /* stock: dark wood curving at the butt */
     ctx.fillStyle = F('#4a2f1d');
     ctx.beginPath();
-    ctx.moveTo(-16, 1.8);
-    ctx.quadraticCurveTo(-13, -3.4, -6, -3.2);
-    ctx.lineTo(8, -3.2);
-    ctx.lineTo(8, 3.2);
-    ctx.lineTo(-6, 3.2);
-    ctx.quadraticCurveTo(-14.5, 3.6, -16, 1.8);
+    ctx.moveTo(-22, 3.5);
+    ctx.quadraticCurveTo(-18, -6, -8, -5.5);
+    ctx.lineTo(10, -4);
+    ctx.lineTo(10, 4);
+    ctx.lineTo(-8, 4.5);
+    ctx.quadraticCurveTo(-19, 5.5, -22, 3.5);
     ctx.closePath();
     ctx.fill();
     ctx.strokeStyle = 'rgba(122,84,52,0.75)';
-    ctx.lineWidth = 0.7;
-    ctx.beginPath(); ctx.moveTo(-13, -1); ctx.quadraticCurveTo(-7, 0.4, 4, -0.6); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-13, 1.4); ctx.quadraticCurveTo(-6, 2.2, 5, 1.6); ctx.stroke();
-    /* very long dark-steel barrel */
-    const steel = ctx.createLinearGradient(0, -2.8, 0, 2.8);
+    ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(-19, -1.5); ctx.quadraticCurveTo(-10, 0, 6, -1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-19, 1.8); ctx.quadraticCurveTo(-9, 2.8, 7, 1.8); ctx.stroke();
+    /* barrel: 70px long, 4px wide, dark steel */
+    const steel = ctx.createLinearGradient(0, -2, 0, 2);
     steel.addColorStop(0, F('#6b7480'));
     steel.addColorStop(0.5, F('#333a44'));
     steel.addColorStop(1, F('#14181e'));
     ctx.fillStyle = steel;
-    roundRect(ctx, 4, -2.8, 62, 5.6, 2);
+    roundRect(ctx, 8, -2, 70, 4, 1.6);
     ctx.fill();
-    /* brass bands along the barrel */
+    /* brass bands */
     ctx.fillStyle = F('#b08d2e');
-    for (const bx of [16, 30, 44, 56]) ctx.fillRect(bx, -3, 2.6, 6);
+    ctx.fillRect(22, -2.4, 2.6, 4.8);
+    ctx.fillRect(40, -2.4, 2.6, 4.8);
+    ctx.fillRect(58, -2.4, 2.6, 4.8);
+    /* brass sight bead: tiny 3px circle at the barrel tip */
+    ctx.fillStyle = F('#e3b341');
+    ctx.beginPath(); ctx.arc(78, -3.2, 1.5, 0, TAU); ctx.fill();
     /* muzzle */
     ctx.fillStyle = F('#0c0e12');
-    roundRect(ctx, 64.6, -3.2, 2.6, 6.4, 1.2);
+    roundRect(ctx, 76.6, -2.4, 2.6, 4.8, 1);
     ctx.fill();
-    /* matchlock: plate + serpentine lever + trigger */
+    /* lock + trigger */
     ctx.fillStyle = F('#3a4048');
-    roundRect(ctx, 8, -6.2, 8, 5, 1);
+    roundRect(ctx, 12, -7.5, 8, 5.5, 1);
     ctx.fill();
     ctx.strokeStyle = F('#8b95a3');
-    ctx.lineWidth = 1.3;
-    ctx.beginPath(); ctx.moveTo(12, -6); ctx.quadraticCurveTo(15.5, -9.5, 18, -7); ctx.stroke();
-    ctx.beginPath(); ctx.arc(13, 1.4, 2, 0.1 * Math.PI, 1.1 * Math.PI); ctx.stroke();
-    ctx.fillStyle = F('#565f6b');
-    ctx.beginPath(); ctx.arc(9.5, -6.4, 1.5, 0, TAU); ctx.fill();
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(16, -7.2); ctx.quadraticCurveTo(19.5, -10.5, 22, -8); ctx.stroke();
+    ctx.beginPath(); ctx.arc(17, 2.4, 2, 0.1 * Math.PI, 1.1 * Math.PI); ctx.stroke();
     if (hot > 0) {
       ctx.save();
       ctx.globalAlpha = Math.min(1, hot * 8);
       ctx.shadowColor = '#fde68a';
       ctx.shadowBlur = 18;
       ctx.fillStyle = '#fffbeb';
-      ctx.beginPath(); ctx.arc(68, 0, 3 + 5 * hot, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(80, 0, 3 + 5 * hot, 0, TAU); ctx.fill();
       ctx.restore();
     }
   } else if (cls.weapon === 'daggers') {
-    ctx.translate(2, 2.2);
-    ctx.rotate(-0.12);
     drawHeldDagger(F);
   } else if (cls.weapon === 'disc') {
-    /* launcher cradle with a live energy disc spinning in it */
+    /* launcher cradle + the 18px energy disc */
     ctx.fillStyle = F('#1f2c3a');
-    roundRect(ctx, -1, -3.6, 11, 7.2, 2.4);
+    roundRect(ctx, -6, -3.6, 12, 7.2, 2.4);
     ctx.fill();
-    drawEnergyDisc(13, 0, 6.4, t * 7);
+    drawEnergyDisc(16, 0, 18, t * 7);
   } else {
-    /* chrono staff: tall twisted shaft that floats and bobs, clockface orb on top */
-    const lift = Math.sin(t * 2.2) * 2.6;
+    /* chrono staff: twisted dark-brown shaft 6x50, golden ring + amber crystal top */
+    const lift = Math.sin(t * 2.2) * 2.5;      /* the staff bobs slowly */
     ctx.translate(0, lift);
     const shaft = ctx.createLinearGradient(0, -3, 0, 3);
-    shaft.addColorStop(0, F('#5a4128'));
-    shaft.addColorStop(0.5, F('#3b2a1a'));
-    shaft.addColorStop(1, F('#241708'));
+    shaft.addColorStop(0, F('#6b4a2a'));
+    shaft.addColorStop(0.5, F('#4a3018'));
+    shaft.addColorStop(1, F('#2c1c0c'));
     ctx.fillStyle = shaft;
-    roundRect(ctx, -8, -2.6, 34, 5.2, 2.4);
+    roundRect(ctx, -10, -3, 50, 6, 3);
     ctx.fill();
-    /* the twist: diagonal wraps along the shaft */
-    ctx.strokeStyle = 'rgba(122,84,52,0.9)';
-    ctx.lineWidth = 1.1;
-    for (let i = 0; i < 7; i++) {
-      const x = -7 + i * 4.6;
-      ctx.beginPath(); ctx.moveTo(x, -2.6); ctx.lineTo(x + 2.6, 2.6); ctx.stroke();
-    }
-    /* ornate gold collar */
-    ctx.fillStyle = F('#b08d2e');
-    ctx.fillRect(24, -3.4, 2.4, 6.8);
-    /* the clockface orb */
-    const ox = 30, oy = 0;
-    const pulse = 1 + 0.12 * Math.sin(t * 4);
-    ctx.save();
-    ctx.strokeStyle = 'rgba(245,200,66,0.9)';
-    ctx.lineWidth = 2;
-    ctx.shadowColor = '#f5c842';
-    ctx.shadowBlur = 16;
-    ctx.beginPath(); ctx.arc(ox, oy, 10.5 * pulse, 0, TAU); ctx.stroke();   /* pulsing golden ring */
-    ctx.restore();
-    const face = ctx.createRadialGradient(ox - 2, oy - 2, 1, ox, oy, 9);
-    face.addColorStop(0, '#fff7db');
-    face.addColorStop(0.55, '#f5c842');
-    face.addColorStop(1, '#8a6410');
-    ctx.fillStyle = face;
-    ctx.beginPath(); ctx.arc(ox, oy, 8.6, 0, TAU); ctx.fill();
-    ctx.strokeStyle = '#6b4e0e';
+    /* twist wraps along the shaft */
+    ctx.strokeStyle = 'rgba(20,12,4,0.85)';
     ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.arc(ox, oy, 8.6, 0, TAU); ctx.stroke();
-    /* clock ticks */
-    ctx.strokeStyle = '#4a350a';
-    ctx.lineWidth = 0.9;
-    for (let i = 0; i < 12; i++) {
-      const a = i / 12 * TAU;
-      ctx.beginPath();
-      ctx.moveTo(ox + Math.cos(a) * 6.6, oy + Math.sin(a) * 6.6);
-      ctx.lineTo(ox + Math.cos(a) * 8.2, oy + Math.sin(a) * 8.2);
-      ctx.stroke();
+    for (let i = 0; i < 8; i++) {
+      const x = -9 + i * 6;
+      ctx.beginPath(); ctx.moveTo(x, -3); ctx.lineTo(x + 3.4, 3); ctx.stroke();
     }
-    /* hands sweep with the run clock */
-    const minA = t * 1.2, hrA = t * 0.1;
-    ctx.strokeStyle = '#2c1f08';
-    ctx.lineCap = 'round';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + Math.cos(minA - Math.PI / 2) * 6.2, oy + Math.sin(minA - Math.PI / 2) * 6.2); ctx.stroke();
-    ctx.lineWidth = 1.1;
-    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + Math.cos(hrA - Math.PI / 2) * 4, oy + Math.sin(hrA - Math.PI / 2) * 4); ctx.stroke();
-    ctx.fillStyle = '#2c1f08';
-    ctx.beginPath(); ctx.arc(ox, oy, 1.1, 0, TAU); ctx.fill();
+    /* ornate top: 12px golden ring with a pulsing amber crystal inside */
+    const ox = 44, oy = 0;
+    const pulse = 1 + 0.14 * Math.sin(t * 4);
+    ctx.save();
+    ctx.strokeStyle = F('#d4a017');
+    ctx.lineWidth = 2.6;
+    ctx.shadowColor = '#f5c842';
+    ctx.shadowBlur = 14;
+    ctx.beginPath(); ctx.arc(ox, oy, 12, 0, TAU); ctx.stroke();
+    const crys = ctx.createRadialGradient(ox - 1.5, oy - 1.5, 0.5, ox, oy, 7 * pulse);
+    crys.addColorStop(0, 'rgba(255,246,220,1)');
+    crys.addColorStop(0.5, F('#f5c842'));
+    crys.addColorStop(1, 'rgba(212,160,23,0.85)');
+    ctx.fillStyle = F(crys);
+    ctx.beginPath(); ctx.arc(ox, oy, 6.4 * pulse, 0, TAU); ctx.fill();
+    ctx.restore();
   }
   ctx.restore();
 }
@@ -19079,78 +19033,78 @@ function drawCosmeticFlourish(p, g, bob, dir, layer) {
 
 /* the longsword itself: always in his hand, always pointed at the cursor */
 
+
 function drawKnightSword(p, bob) {
   const tier = swordTier();
   const def = SWORD_TIERS[tier];
 
-  /* mid-swing the blade rides the arc; the arm pivots with it */
+  /* at rest the sword points at the cursor; mid-swing it rides the arc */
   let ang = p.angle;
   if (p.swingT > 0) {
     const k = 1 - p.swingT / SWORD_SWING_TIME;
     ang = lerp(p.swingFrom, p.swingTo, 1 - Math.pow(1 - k, 2.2));
   }
 
-  /* the blade is held out on the leading hand, not across the chest */
+  /* held at the player's right side, 16px out in the facing direction */
   const side = Math.cos(p.angle) >= 0 ? 1 : -1;
-  const hx = p.x + Math.cos(ang) * 10 + Math.cos(ang + Math.PI / 2) * side * 6;
-  const hy = p.y + (bob || 0) + Math.sin(ang) * 10 + Math.sin(ang + Math.PI / 2) * side * 6 - 5;
+  const hx = p.x + Math.cos(ang) * 16 + Math.cos(ang + Math.PI / 2) * side * 5;
+  const hy = p.y + (bob || 0) + Math.sin(ang) * 16 + Math.sin(ang + Math.PI / 2) * side * 5;
 
   ctx.save();
   ctx.translate(hx, hy);
-  ctx.rotate(ang);                    /* the sword rotates to face the mouse cursor */
-  ctx.scale(0.85, 0.85);
+  ctx.rotate(ang);
 
-  /* --- pommel: round weighted disc --- */
-  const pom = ctx.createRadialGradient(-20.5, -1, 0.5, -19.5, 0, 3.6);
+  /* pommel: round iron disc at the end of the grip */
+  const pom = ctx.createRadialGradient(-24, -1, 0.5, -23, 0, 4.4);
   pom.addColorStop(0, '#5a616b');
   pom.addColorStop(0.6, '#33383f');
   pom.addColorStop(1, '#1b1e23');
   ctx.fillStyle = pom;
-  ctx.beginPath(); ctx.arc(-19.5, 0, 3.4, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(-23, 0, 4.2, 0, TAU); ctx.fill();
   ctx.strokeStyle = 'rgba(210,220,235,0.5)';
-  ctx.lineWidth = 0.7;
-  ctx.beginPath(); ctx.arc(-19.5, 0, 3.4, 0, TAU); ctx.stroke();
+  ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.arc(-23, 0, 4.2, 0, TAU); ctx.stroke();
 
-  /* --- grip: brown leather with alternating dark diagonal wraps --- */
-  ctx.fillStyle = '#5b3a1e';
-  roundRect(ctx, -17.6, -2.2, 12.4, 4.4, 1.8);
+  /* grip: 8px wide, 18px long, brown leather with diagonal wrap lines */
+  ctx.fillStyle = '#5c3317';
+  roundRect(ctx, -20.5, -4, 18, 8, 2);
   ctx.fill();
   ctx.strokeStyle = '#2a1808';
-  ctx.lineWidth = 1.15;
+  ctx.lineWidth = 1.2;
   for (let i = 0; i < 5; i++) {
-    const x = -16.6 + i * 2.5;
-    ctx.beginPath(); ctx.moveTo(x, -2.2); ctx.lineTo(x + 1.6, 2.2); ctx.stroke();
+    const x = -19.5 + i * 3.4;
+    ctx.beginPath(); ctx.moveTo(x, -4); ctx.lineTo(x + 2, 4); ctx.stroke();
   }
   ctx.strokeStyle = 'rgba(214,164,102,0.5)';
   ctx.lineWidth = 0.5;
   for (let i = 0; i < 5; i++) {
-    const x = -15.6 + i * 2.5;
-    ctx.beginPath(); ctx.moveTo(x, -2.2); ctx.lineTo(x + 1.6, 2.2); ctx.stroke();
+    const x = -18.5 + i * 3.4;
+    ctx.beginPath(); ctx.moveTo(x, -4); ctx.lineTo(x + 2, 4); ctx.stroke();
   }
 
-  /* --- crossguard: wide dark-iron bar with slightly curved ends --- */
-  const iron = ctx.createLinearGradient(0, -12, 0, 12);
+  /* crossguard: 20px wide, 5px tall, dark iron horizontal bar with curved ends */
+  const iron = ctx.createLinearGradient(0, -10, 0, 10);
   iron.addColorStop(0, '#4a505a');
   iron.addColorStop(0.5, '#2b3038');
   iron.addColorStop(1, '#191d23');
   ctx.fillStyle = iron;
-  roundRect(ctx, -7, -11.6, 4.6, 23.2, 2.2);
+  roundRect(ctx, -2.5, -10, 5, 20, 2);
   ctx.fill();
-  ctx.beginPath(); ctx.arc(-4.7, -11.8, 2.6, 0, TAU); ctx.fill();   /* curved tips */
-  ctx.beginPath(); ctx.arc(-4.7, 11.8, 2.6, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, -10, 2.6, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 10, 2.6, 0, TAU); ctx.fill();
   ctx.strokeStyle = 'rgba(190,200,215,0.35)';
   ctx.lineWidth = 0.7;
-  roundRect(ctx, -7, -11.6, 4.6, 23.2, 2.2);
+  roundRect(ctx, -2.5, -10, 5, 20, 2);
   ctx.stroke();
 
-  /* --- blade: long tapered silver rectangle --- */
+  /* blade: 60px long, 4px wide at the base tapering to 2px at the tip */
   const bladePath = function () {
     ctx.beginPath();
-    ctx.moveTo(-2.4, -3.5);
-    ctx.lineTo(50, -2.7);
-    ctx.lineTo(63, 0);
-    ctx.lineTo(50, 2.7);
-    ctx.lineTo(-2.4, 3.5);
+    ctx.moveTo(2.5, -2);
+    ctx.lineTo(58, -1);
+    ctx.lineTo(63.5, 0);
+    ctx.lineTo(58, 1);
+    ctx.lineTo(2.5, 2);
     ctx.closePath();
   };
 
@@ -19165,7 +19119,7 @@ function drawKnightSword(p, bob) {
     ctx.restore();
   }
 
-  const steel = ctx.createLinearGradient(0, -3.5, 0, 3.5);
+  const steel = ctx.createLinearGradient(0, -2, 0, 2);
   steel.addColorStop(0, '#8d9db2');
   steel.addColorStop(0.3, '#e6f0ff');
   steel.addColorStop(0.5, '#ffffff');
@@ -19175,19 +19129,19 @@ function drawKnightSword(p, bob) {
   bladePath();
   ctx.fill();
 
-  /* center ridge: a thin darker stripe down the middle of the blade */
+  /* center ridge: thin darker stripe down the middle */
   ctx.strokeStyle = 'rgba(58,70,88,0.6)';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(-1, 0); ctx.lineTo(52, 0); ctx.stroke();
-  /* fuller (blood groove): thin lines running 70% of the blade from the guard */
+  ctx.lineWidth = 0.9;
+  ctx.beginPath(); ctx.moveTo(3.5, 0); ctx.lineTo(58, 0); ctx.stroke();
+  /* fuller: thin groove over 70% of the blade (60px * 0.7 = 42px from the guard) */
   ctx.strokeStyle = 'rgba(40,50,66,0.55)';
-  ctx.lineWidth = 0.8;
-  ctx.beginPath(); ctx.moveTo(0, -1.5); ctx.lineTo(43.5, -1.15); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(0, 1.5); ctx.lineTo(43.5, 1.15); ctx.stroke();
+  ctx.lineWidth = 0.7;
+  ctx.beginPath(); ctx.moveTo(4, -1.1); ctx.lineTo(46, -0.7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(4, 1.1); ctx.lineTo(46, 0.7); ctx.stroke();
   /* bright cutting edge */
   ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-  ctx.lineWidth = 0.9;
-  ctx.beginPath(); ctx.moveTo(-1, -3.4); ctx.lineTo(50, -2.6); ctx.lineTo(62.4, 0); ctx.stroke();
+  ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(3, -1.9); ctx.lineTo(58, -0.95); ctx.lineTo(63, 0); ctx.stroke();
 
   if (def.glow) {
     ctx.save();
@@ -19201,12 +19155,11 @@ function drawKnightSword(p, bob) {
     ctx.lineWidth = 1.4;
     ctx.shadowColor = def.glow;
     ctx.shadowBlur = 12;
-    ctx.beginPath(); ctx.moveTo(0, -3.5); ctx.lineTo(50, -2.7); ctx.lineTo(63, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(4, -2); ctx.lineTo(58, -1); ctx.lineTo(63.5, 0); ctx.stroke();
     ctx.shadowBlur = 0;
   }
   ctx.restore();
 }
-
 
 function drawSwordSwoosh() {
   const R = SWORD_RANGE * 0.86;
@@ -20856,54 +20809,55 @@ function drawObstacles() {
    shadow daggers, the bouncing disc, the death-mark ring and the rage aura.
    ------------------------------------------------------------------------- */
 
+
 function drawAxe(p, ang, lift, side, spin) {
   ctx.save();
-  ctx.translate(p.x, p.y + lift - 3);
+  /* held 16px out in the facing direction */
+  ctx.translate(p.x + Math.cos(ang) * 16, p.y + lift + Math.sin(ang) * 16);
   ctx.rotate(ang + (spin || 0));
-  ctx.translate(7, side * 4.5);
-  /* short thick wooden haft */
-  const wood = ctx.createLinearGradient(0, -2.4, 0, 2.4);
+  ctx.translate(0, side * 4);
+  /* handle: 6px wide, 22px long, dark brown */
+  const wood = ctx.createLinearGradient(0, -3, 0, 3);
   wood.addColorStop(0, '#7a5732');
   wood.addColorStop(0.5, '#5b4028');
   wood.addColorStop(1, '#3a2814');
   ctx.fillStyle = wood;
-  roundRect(ctx, -9, -2.4, 27, 4.8, 2.2);
+  roundRect(ctx, -12, -3, 22, 6, 2.6);
   ctx.fill();
   /* leather wrap on the grip */
   ctx.strokeStyle = '#1f1208';
   ctx.lineWidth = 1.1;
   for (let i = 0; i < 4; i++) {
-    const x = -8 + i * 2.2;
-    ctx.beginPath(); ctx.moveTo(x, -2.4); ctx.lineTo(x + 1.4, 2.4); ctx.stroke();
+    const x = -11 + i * 2.4;
+    ctx.beginPath(); ctx.moveTo(x, -3); ctx.lineTo(x + 1.6, 3); ctx.stroke();
   }
-  /* wide crescent axe head in dark iron */
-  ctx.fillStyle = '#2f3338';
+  /* crescent head: 20px wide, 16px tall, dark iron */
+  const head = ctx.createLinearGradient(0, -8, 0, 8);
+  head.addColorStop(0, '#4a4a4a');
+  head.addColorStop(0.5, '#2a2a2a');
+  head.addColorStop(1, '#161616');
+  ctx.fillStyle = head;
   ctx.beginPath();
-  ctx.moveTo(16, -2);
-  ctx.quadraticCurveTo(30, -14, 34, -2);
-  ctx.quadraticCurveTo(35, 0, 34, 2);
-  ctx.quadraticCurveTo(30, 14, 16, 2);
+  ctx.moveTo(10, -8);
+  ctx.quadraticCurveTo(28, -9, 30, 0);
+  ctx.quadraticCurveTo(28, 9, 10, 8);
   ctx.closePath();
   ctx.fill();
-  /* lighter edge highlight along the outer crescent */
-  ctx.strokeStyle = '#aab4c2';
-  ctx.lineWidth = 1.7;
+  /* sharp bright edge highlight on the blade curve */
+  ctx.strokeStyle = '#e8edf5';
+  ctx.lineWidth = 1.8;
   ctx.beginPath();
-  ctx.moveTo(16.6, -2.2);
-  ctx.quadraticCurveTo(30, -13.4, 33.6, -1.6);
+  ctx.moveTo(11, -7.6);
+  ctx.quadraticCurveTo(27.5, -8.4, 29.6, 0);
   ctx.stroke();
-  ctx.strokeStyle = 'rgba(170,180,194,0.8)';
+  ctx.strokeStyle = 'rgba(232,237,245,0.75)';
   ctx.lineWidth = 1.4;
   ctx.beginPath();
-  ctx.moveTo(16.6, 2.2);
-  ctx.quadraticCurveTo(30, 13.4, 33.6, 1.6);
+  ctx.moveTo(11, 7.6);
+  ctx.quadraticCurveTo(27.5, 8.4, 29.6, 0);
   ctx.stroke();
-  /* haft cap through the head */
-  ctx.fillStyle = '#241708';
-  ctx.beginPath(); ctx.arc(17, 0, 2, 0, TAU); ctx.fill();
   ctx.restore();
 }
-
 
 function drawBerserkerAxes(p, bob) {
   const t = game.time;
@@ -20924,18 +20878,19 @@ function drawBerserkerAxes(p, bob) {
 }
 
 
+
 function drawShadowDagger(b) {
   const a = Math.atan2(b.vy, b.vx);
   const spin = a + (b.spin || 0);            /* tumbling fast in flight */
-  /* motion-blur ghosts trailing behind */
+  /* dark motion-blur trail behind the spinning dagger */
   for (let gI = 1; gI <= 3; gI++) {
     ctx.save();
-    ctx.globalAlpha = 0.16 / gI;
+    ctx.globalAlpha = 0.18 / gI;
     ctx.translate(b.x - b.vx * 0.012 * gI, b.y - b.vy * 0.012 * gI);
     ctx.rotate(spin);
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = '#141821';
     ctx.beginPath();
-    ctx.moveTo(13, 0); ctx.lineTo(-1, -2.4); ctx.lineTo(-7, 0); ctx.lineTo(-1, 2.4);
+    ctx.moveTo(16, 0); ctx.lineTo(-10, -1.5); ctx.lineTo(-12, 0); ctx.lineTo(-10, 1.5);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -20943,36 +20898,33 @@ function drawShadowDagger(b) {
   ctx.save();
   ctx.translate(b.x, b.y);
   ctx.rotate(spin);
-  ctx.shadowColor = '#a78bfa';
-  ctx.shadowBlur = 12;
-  /* thin tapered blade */
-  const g = ctx.createLinearGradient(0, -2, 0, 2);
-  g.addColorStop(0, '#e2e8f0');
-  g.addColorStop(0.5, '#94a3b8');
-  g.addColorStop(1, '#475569');
+  /* slim dark blade: 28px long, 3px wide */
+  const g = ctx.createLinearGradient(0, -1.5, 0, 1.5);
+  g.addColorStop(0, '#4b5563');
+  g.addColorStop(0.5, '#2b313c');
+  g.addColorStop(1, '#171b22');
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(14, 0); ctx.lineTo(-1, -2.6); ctx.lineTo(-7, 0); ctx.lineTo(-1, 2.6);
+  ctx.moveTo(16, 0); ctx.lineTo(-10, -1.5); ctx.lineTo(-12, 0); ctx.lineTo(-10, 1.5);
   ctx.closePath();
   ctx.fill();
   /* center line */
-  ctx.strokeStyle = 'rgba(15,23,42,0.75)';
-  ctx.lineWidth = 0.8;
-  ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-4, 0); ctx.stroke();
-  /* small crossguard */
+  ctx.strokeStyle = 'rgba(230,235,245,0.5)';
+  ctx.lineWidth = 0.6;
+  ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-9, 0); ctx.stroke();
+  /* tiny crossguard: 10px wide, 3px tall */
   ctx.fillStyle = '#3f4753';
-  roundRect(ctx, -8.6, -3.4, 2, 6.8, 0.8);
+  roundRect(ctx, -14, -5, 3, 10, 1);
   ctx.fill();
-  /* wrapped handle */
+  /* wrapped handle: 5px wide, 12px long */
   ctx.fillStyle = '#241631';
-  roundRect(ctx, -14, -2, 5.6, 4, 1.4);
+  roundRect(ctx, -26, -2.5, 12, 5, 1.4);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(167,139,250,0.65)';
+  ctx.strokeStyle = 'rgba(150,140,170,0.7)';
   ctx.lineWidth = 0.7;
   for (let i = 0; i < 3; i++) {
-    ctx.beginPath(); ctx.moveTo(-13 + i * 1.7, -2); ctx.lineTo(-12 + i * 1.7, 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-25 + i * 3.4, -2.5); ctx.lineTo(-23.6 + i * 3.4, 2.5); ctx.stroke();
   }
-  ctx.shadowBlur = 0;
   ctx.restore();
 }
 
@@ -20981,20 +20933,20 @@ function drawDiscs() {
   if (!game.discs || !game.discs.length) return;
   for (let i = 0; i < game.discs.length; i++) {
     const d = game.discs[i];
-    /* cyan glow-trail ghosts behind the spinning disc */
+    /* amber glow-trail ghosts behind the spinning disc */
     for (let gI = 1; gI <= 3; gI++) {
       ctx.save();
       ctx.globalAlpha = 0.16 / gI;
-      ctx.strokeStyle = '#22d3ee';
+      ctx.strokeStyle = '#d4a017';
       ctx.lineWidth = 2.4;
-      ctx.shadowColor = '#22d3ee';
+      ctx.shadowColor = '#f5c842';
       ctx.shadowBlur = 8;
       ctx.beginPath();
-      ctx.arc(d.x - d.vx * 0.014 * gI, d.y - d.vy * 0.014 * gI, 10, 0, TAU);
+      ctx.arc(d.x - d.vx * 0.014 * gI, d.y - d.vy * 0.014 * gI, 18, 0, TAU);
       ctx.stroke();
       ctx.restore();
     }
-    drawEnergyDisc(d.x, d.y, 10, d.spin);
+    drawEnergyDisc(d.x, d.y, 18, d.spin);
   }
   ctx.shadowBlur = 0;
 }
@@ -21067,57 +21019,38 @@ function drawBullets() {
 /* a slow violet orb with a spinning halo — the chrono mage's homing shot */
 
 /* the chrono mage's homing shot: a small golden clockface circle */
+
+/* the chrono mage's homing shot: a small glowing 8px amber circle */
 function drawTimeOrb(b) {
-  const t = game.time;
-  const R = b.r * 1.9;
   ctx.save();
-  /* golden streak tail */
-  const tail = ctx.createLinearGradient(b.x - b.vx * 0.07, b.y - b.vy * 0.07, b.x, b.y);
-  tail.addColorStop(0, 'rgba(245,200,66,0)');
-  tail.addColorStop(1, 'rgba(245,200,66,0.55)');
+  /* short amber streak tail */
+  const tail = ctx.createLinearGradient(b.x - b.vx * 0.06, b.y - b.vy * 0.06, b.x, b.y);
+  tail.addColorStop(0, 'rgba(212,160,23,0)');
+  tail.addColorStop(1, 'rgba(212,160,23,0.55)');
   ctx.strokeStyle = tail;
-  ctx.lineWidth = b.r * 1.1;
+  ctx.lineWidth = 5;
   ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(b.x - b.vx * 0.07, b.y - b.vy * 0.07);
+  ctx.moveTo(b.x - b.vx * 0.06, b.y - b.vy * 0.06);
   ctx.lineTo(b.x, b.y);
   ctx.stroke();
-  /* soft golden glow body */
-  const g = ctx.createRadialGradient(b.x, b.y, 0.5, b.x, b.y, R);
-  g.addColorStop(0, 'rgba(255,247,219,0.98)');
-  g.addColorStop(0.45, 'rgba(245,200,66,0.95)');
-  g.addColorStop(0.8, 'rgba(212,160,23,0.55)');
-  g.addColorStop(1, 'rgba(138,100,16,0)');
+  /* soft amber glow */
+  const R = 13 + 1.5 * Math.sin(game.time * 9 + (b.spin || 0));
+  const g = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, R);
+  g.addColorStop(0, 'rgba(255,240,190,0.95)');
+  g.addColorStop(0.45, 'rgba(245,200,66,0.85)');
+  g.addColorStop(1, 'rgba(212,160,23,0)');
   ctx.fillStyle = g;
   ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, TAU); ctx.fill();
-  /* clockface */
+  /* the 8px amber circle itself */
   ctx.shadowColor = '#f5c842';
-  ctx.shadowBlur = 10;
-  ctx.fillStyle = '#fff3cf';
-  ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
-  ctx.strokeStyle = '#8a6410';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
-  /* ticks */
-  ctx.strokeStyle = '#6b4e0e';
-  ctx.lineWidth = 0.7;
-  for (let i = 0; i < 8; i++) {
-    const a = i / 8 * TAU + (b.spin || 0);
-    ctx.beginPath();
-    ctx.moveTo(b.x + Math.cos(a) * (b.r - 1.6), b.y + Math.sin(a) * (b.r - 1.6));
-    ctx.lineTo(b.x + Math.cos(a) * (b.r - 0.4), b.y + Math.sin(a) * (b.r - 0.4));
-    ctx.stroke();
-  }
-  /* spinning hands */
-  const ha = (b.spin || 0) * 2, ma = (b.spin || 0) * 5 + t;
-  ctx.strokeStyle = '#2c1f08';
-  ctx.lineCap = 'round';
-  ctx.lineWidth = 1.1;
-  ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x + Math.cos(ma - Math.PI / 2) * (b.r - 1.8), b.y + Math.sin(ma - Math.PI / 2) * (b.r - 1.8)); ctx.stroke();
-  ctx.lineWidth = 0.9;
-  ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x + Math.cos(ha - Math.PI / 2) * (b.r - 3), b.y + Math.sin(ha - Math.PI / 2) * (b.r - 3)); ctx.stroke();
-  ctx.fillStyle = '#2c1f08';
-  ctx.beginPath(); ctx.arc(b.x, b.y, 0.9, 0, TAU); ctx.fill();
+  ctx.shadowBlur = 12;
+  const c = ctx.createRadialGradient(b.x - 2, b.y - 2, 0.5, b.x, b.y, 8);
+  c.addColorStop(0, '#fff6d8');
+  c.addColorStop(0.6, '#f5c842');
+  c.addColorStop(1, '#d4a017');
+  ctx.fillStyle = c;
+  ctx.beginPath(); ctx.arc(b.x, b.y, 8, 0, TAU); ctx.fill();
   ctx.restore();
 }
 
