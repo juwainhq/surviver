@@ -3514,9 +3514,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#070c1e', bottom: '#16233f' },
     groundTint: null,
     waves: [
-      { count: 12, types: ['knight'] },
-      { count: 18, types: ['knight', 'archer'] },
-      { count: 25, types: ['knight', 'archer'], eliteMin: 2 }
+      { count: 8, types: ['knight'] },
+      { count: 12, types: ['knight', 'archer'] },
+      { count: 16, types: ['knight', 'archer'], eliteMin: 2 }
     ],
     arenas: [[1440, 1520], [4640, 1760], [2960, 4840]],
     bossPos: [3000, 800],
@@ -3534,9 +3534,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#040b07', bottom: '#0d2118' },
     groundTint: null,
     waves: [
-      { count: 12, types: ['archer'] },
-      { count: 18, types: ['archer', 'knight'] },
-      { count: 25, types: ['archer', 'knight', 'wizard'], eliteMin: 2 }
+      { count: 8, types: ['archer'] },
+      { count: 12, types: ['archer', 'knight'] },
+      { count: 16, types: ['archer', 'knight', 'wizard'], eliteMin: 2 }
     ],
     arenas: [[1280, 1320], [4760, 1520], [2900, 4800]],
     bossPos: [4720, 4720],
@@ -3554,9 +3554,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#06080e', bottom: '#1a2333' },
     groundTint: null,
     waves: [
-      { count: 12, types: ['knight'] },
-      { count: 18, types: ['knight', 'archer'] },
-      { count: 25, types: ['knight', 'archer', 'ghost'], eliteMin: 2 }
+      { count: 8, types: ['knight'] },
+      { count: 12, types: ['knight', 'archer'] },
+      { count: 16, types: ['knight', 'archer', 'ghost'], eliteMin: 2 }
     ],
     arenas: [[1400, 1800], [4600, 1280], [3120, 4680]],
     bossPos: [3000, 760],
@@ -3574,9 +3574,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#080414', bottom: '#1b1035' },
     groundTint: null,
     waves: [
-      { count: 12, types: ['wizard'] },
-      { count: 18, types: ['wizard', 'ghost'] },
-      { count: 25, types: ['wizard', 'ghost', 'archer'], eliteMin: 2 }
+      { count: 8, types: ['wizard'] },
+      { count: 12, types: ['wizard', 'ghost'] },
+      { count: 16, types: ['wizard', 'ghost', 'archer'], eliteMin: 2 }
     ],
     arenas: [[1520, 1280], [4720, 1960], [2960, 4760]],
     bossPos: [1240, 4720],
@@ -3594,9 +3594,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#02040a', bottom: '#061426' },
     groundTint: null,
     waves: [
+      { count: 8, types: ['knight', 'archer', 'wizard', 'ghost'] },
       { count: 12, types: ['knight', 'archer', 'wizard', 'ghost'] },
-      { count: 18, types: ['knight', 'archer', 'wizard', 'ghost'] },
-      { count: 25, types: ['knight', 'archer', 'wizard', 'ghost'], eliteMin: 2 }
+      { count: 16, types: ['knight', 'archer', 'wizard', 'ghost'], eliteMin: 2 }
     ],
     arenas: [[1400, 1440], [4640, 1440], [3000, 4720]],
     bossPos: [4540, 4600],
@@ -3953,8 +3953,8 @@ const DESTRUCTIBLES = [
 /* `turn` is how fast a body can swing its heading round, in radians per second:
    heavy knights bank slowly, ghosts whip around, wizards drift. */
 const ENEMY_DEFS = {
-  knight: { hp: 2, speed: 100, r: 16, color: '#ef4444', score: 12, contact: 1, turn: 4.2 },
-  archer: { hp: 1, speed: 88, r: 14, color: '#fb923c', score: 14, contact: 1, fire: 2.0, turn: 5.2 },
+  knight: { hp: 2, speed: 55, r: 16, color: '#ef4444', score: 12, contact: 1, turn: 4.2 },
+  archer: { hp: 1, speed: 60, r: 14, color: '#fb923c', score: 14, contact: 1, fire: 2.0, turn: 5.2 },
   wizard: { hp: 3, speed: 62, r: 17, color: '#a855f7', score: 20, contact: 1, fire: 3.0, turn: 3.2 },
   ghost:  { hp: 1, speed: 156, r: 13, color: '#e2e8f0', score: 10, contact: 1, turn: 8.0 },
 
@@ -7426,10 +7426,13 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
      Regular enemies use the table verbatim; the old per-zone power curve is
      intentionally no longer stacked on top of it. */
   const diff = universeDifficulty(gameState.currentUniverse);
-  /* each level beyond level 1 of the same universe: +15% enemy speed, +20% enemy HP */
+  /* Each level beyond level 1 of the same universe: +15% enemy speed, +20%
+     enemy HP. Difficulty scaling applies from Universe 2 onward only —
+     Universe 1 is the tutorial, so its enemies always use raw base stats. */
   const lvl = levelInUniverse(gameState.currentZone);
-  const lvlSpeed = 1 + 0.15 * (lvl - 1);
-  const lvlHp = 1 + 0.20 * (lvl - 1);
+  const scaling = gameState.currentUniverse >= 1;
+  const lvlSpeed = scaling ? 1 + 0.15 * (lvl - 1) : 1;
+  const lvlHp = scaling ? 1 + 0.20 * (lvl - 1) : 1;
   const eliteVariant = !!o.eliteVariant;
   const hp = Math.round(def.hp * diff.hp * lvlHp * (eliteVariant ? 2.5 : 1) * 10) / 10;
   const e = {
@@ -7489,20 +7492,34 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
   return e;
 }
 
-/* Wave spawning is a trickle, not a burst: one enemy every 0.6 seconds until
-   the wave count is reached, so the arena applies constant pressure. A wave
-   only counts as cleared once the queue is empty AND every spawned enemy is
-   dead. The final wave of every arena is guaranteed at least 2 elites, and
-   every level beyond level 1 of a universe adds +1 enemy per wave. */
-const WAVE_SPAWN_INTERVAL = 0.6;
+/* Wave spawning releases in bursts: a group of 4-6 enemies lands every 2.5
+   seconds until the wave count is reached, and the first group spawns
+   instantly the moment the arena activates (wave start), so combat opens hot
+   instead of trickling in one enemy at a time. A wave only counts as cleared
+   once the queue is empty AND every spawned enemy is dead. The final wave of
+   every arena is guaranteed at least 2 elites, and every level beyond level 1
+   of a universe adds +1 enemy per wave (difficulty scaling, Universe 2+). */
+const WAVE_GROUP_INTERVAL = 2.5;
+const WAVE_GROUP_MIN = 4;
+const WAVE_GROUP_MAX = 6;
+function releaseSpawnGroup(arena) {
+  const size = WAVE_GROUP_MIN + Math.floor(Math.random() * (WAVE_GROUP_MAX - WAVE_GROUP_MIN + 1));
+  const n = Math.min(arena.spawnQueue, size);
+  for (let k = 0; k < n; k++) {
+    arena.spawnQueue--;
+    spawnWaveEnemy(arena);
+  }
+}
 function spawnWave(arena, arenaIndex, waveIndex) {
   const z = ZONES[gameState.currentZone];
   const wave = z.waves[Math.min(waveIndex, z.waves.length - 1)];
   const diff = universeDifficulty(gameState.currentUniverse);
-  const levelBonus = levelInUniverse(gameState.currentZone) - 1;   /* +1 per wave per level */
+  /* +1 enemy per wave for each level past level 1 — difficulty scaling, so
+     it applies from Universe 2 onward; Universe 1 keeps its base wave sizes */
+  const levelBonus = gameState.currentUniverse >= 1 ? levelInUniverse(gameState.currentZone) - 1 : 0;
   const count = Math.max(1, Math.round(wave.count * diff.wave) + levelBonus);
   arena.spawnQueue = count;
-  arena.spawnTimer = 0;
+  arena.spawnTimer = WAVE_GROUP_INTERVAL;   /* next burst 2.5s after the instant first one */
   arena.spawnTotal = count;
   arena.spawnWaveIndex = waveIndex;
   arena.spawnTypes = wave.types;
@@ -7511,6 +7528,8 @@ function spawnWave(arena, arenaIndex, waveIndex) {
   arena.elitesSpawned = 0;
   arena.wave = waveIndex + 1;
   arena.remaining = count;
+  /* first burst (4-6 enemies) lands instantly on activation */
+  releaseSpawnGroup(arena);
   Sound.arenaStart();
   addText(arena.x, arena.y - 120, 'WAVE ' + (waveIndex + 1), '#fca5a5');
 }
@@ -7541,10 +7560,9 @@ function spawnWaveEnemy(arena) {
 function tickArenaSpawns(a, dt) {
   if (!a.spawnQueue || a.spawnQueue <= 0) return;
   a.spawnTimer -= dt;
-  while (a.spawnQueue > 0 && a.spawnTimer < 0) {
-    a.spawnTimer += WAVE_SPAWN_INTERVAL;
-    a.spawnQueue--;
-    spawnWaveEnemy(a);
+  while (a.spawnQueue > 0 && a.spawnTimer <= 0) {
+    a.spawnTimer += WAVE_GROUP_INTERVAL;
+    releaseSpawnGroup(a);
   }
 }
 
@@ -15360,107 +15378,106 @@ function drawRaelBody(p, bob, flash, mirror) {
 
 /* ---- art helper: one proper flintlock pistol, barrel along +x ---- */
 function drawFlintlockPistol(F, muzzleHot) {
-  /* grip: curved dark wood, ~12px wide, 18px long, with grain lines */
+  /* grip: curved dark wood, 8px long curving down, with a grain line */
   ctx.fillStyle = F('#4a2f1d');
   ctx.beginPath();
-  ctx.moveTo(9, -2.5);
-  ctx.quadraticCurveTo(7, 8, 2, 15.5);
-  ctx.quadraticCurveTo(0, 17.8, -2, 15);
-  ctx.quadraticCurveTo(3, 7, 5, -2.5);
+  ctx.moveTo(6, -1);
+  ctx.quadraticCurveTo(4.6, 4.2, 1.6, 7.6);
+  ctx.quadraticCurveTo(0.2, 8.6, -0.8, 7.2);
+  ctx.quadraticCurveTo(2, 3.6, 3.2, -1.4);
   ctx.closePath();
   ctx.fill();
   ctx.strokeStyle = 'rgba(122,84,52,0.85)';
-  ctx.lineWidth = 0.8;
-  ctx.beginPath(); ctx.moveTo(7.2, 1); ctx.quadraticCurveTo(5.2, 7.5, 3, 13.6); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(5.6, 0); ctx.quadraticCurveTo(4, 6, 2.2, 11.6); ctx.stroke();
-  /* barrel: octagonal dark steel, 40px long, 5px wide */
-  const steel = ctx.createLinearGradient(0, -2.5, 0, 2.5);
+  ctx.lineWidth = 0.6;
+  ctx.beginPath(); ctx.moveTo(4.4, 0.4); ctx.quadraticCurveTo(3, 4, 1.4, 7); ctx.stroke();
+  /* barrel: octagonal dark steel, 14px long, 3px wide */
+  const steel = ctx.createLinearGradient(0, -1.5, 0, 1.5);
   steel.addColorStop(0, F('#5b6470'));
   steel.addColorStop(0.5, F('#2e343d'));
   steel.addColorStop(1, F('#14181d'));
   ctx.fillStyle = steel;
-  roundRect(ctx, 8, -2.5, 40, 5, 1.8);
+  roundRect(ctx, 6, -1.5, 14, 3, 1.1);
   ctx.fill();
   /* octagon facet lines */
   ctx.strokeStyle = 'rgba(200,212,226,0.35)';
-  ctx.lineWidth = 0.7;
-  ctx.beginPath(); ctx.moveTo(9, -1); ctx.lineTo(47, -1); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(9, 1); ctx.lineTo(47, 1); ctx.stroke();
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(6.8, -0.5); ctx.lineTo(19.2, -0.5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(6.8, 0.5); ctx.lineTo(19.2, 0.5); ctx.stroke();
   /* muzzle ring */
   ctx.fillStyle = F('#0d1013');
-  roundRect(ctx, 46.6, -2.9, 2.6, 5.8, 1);
+  roundRect(ctx, 19.2, -1.8, 1.8, 3.6, 0.7);
   ctx.fill();
-  /* lock: 8x6 dark grey box on the side + tiny hammer */
+  /* lock: 6x4 dark grey box on the side + tiny hammer */
   ctx.fillStyle = F('#3a4048');
-  roundRect(ctx, 14, -8, 8, 6, 1);
+  roundRect(ctx, 8, -5.4, 6, 4, 0.8);
   ctx.fill();
   ctx.strokeStyle = 'rgba(190,200,214,0.4)';
-  ctx.lineWidth = 0.6;
-  ctx.strokeRect(14.4, -7.6, 7.2, 5.2);
+  ctx.lineWidth = 0.5;
+  ctx.strokeRect(8.4, -5, 5.2, 3.2);
   ctx.fillStyle = F('#565f6b');
   ctx.beginPath();
-  ctx.moveTo(14.6, -7.8);
-  ctx.quadraticCurveTo(12.6, -11.6, 10.2, -10.4);
-  ctx.quadraticCurveTo(11.8, -8.8, 13.2, -6.8);
+  ctx.moveTo(8.3, -5.3);
+  ctx.quadraticCurveTo(6.8, -8, 5.2, -7.2);
+  ctx.quadraticCurveTo(6.4, -5.9, 7.5, -4.4);
   ctx.closePath();
   ctx.fill();
   /* trigger loop below the lock */
   ctx.strokeStyle = F('#8b95a3');
-  ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.arc(18.5, 3.6, 2.2, 0.15 * Math.PI, 1.15 * Math.PI); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(18.5, -1.6); ctx.lineTo(18.5, 3.6); ctx.stroke();
+  ctx.lineWidth = 0.9;
+  ctx.beginPath(); ctx.arc(10.6, 2.2, 1.5, 0.15 * Math.PI, 1.15 * Math.PI); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(10.6, -1.2); ctx.lineTo(10.6, 2.2); ctx.stroke();
   /* muzzle flash: small orange burst while the shot is hot */
   if (muzzleHot > 0) {
     ctx.save();
     ctx.globalAlpha = Math.min(1, muzzleHot * 11);
     ctx.shadowColor = '#fb923c';
-    ctx.shadowBlur = 14;
+    ctx.shadowBlur = 9;
     ctx.fillStyle = '#ffd8a8';
     ctx.beginPath();
     for (let i = 0; i < 6; i++) {
       const a = i / 6 * TAU + 0.4;
-      const r1 = 2 + 6 * muzzleHot;
-      ctx.moveTo(49.5, 0);
-      ctx.lineTo(49.5 + Math.cos(a) * r1, Math.sin(a) * r1);
-      ctx.lineTo(49.5 + Math.cos(a + 0.5) * r1 * 0.45, Math.sin(a + 0.5) * r1 * 0.45);
+      const r1 = 1.4 + 4 * muzzleHot;
+      ctx.moveTo(21, 0);
+      ctx.lineTo(21 + Math.cos(a) * r1, Math.sin(a) * r1);
+      ctx.lineTo(21 + Math.cos(a + 0.5) * r1 * 0.45, Math.sin(a + 0.5) * r1 * 0.45);
     }
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = '#fff7ed';
-    ctx.beginPath(); ctx.arc(49.5, 0, 1.8 + 2.6 * muzzleHot, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(21, 0, 1.2 + 1.8 * muzzleHot, 0, TAU); ctx.fill();
     ctx.restore();
   }
 }
 
 /* ---- art helper: a slim balanced dagger held in hand, point along +x ---- */
 function drawHeldDagger(F) {
-  /* wrapped handle: 5px wide, 12px long */
+  /* wrapped handle: 6px long, 3px wide */
   ctx.fillStyle = F('#241631');
-  roundRect(ctx, -12, -2.5, 12, 5, 1.6);
+  roundRect(ctx, -6, -1.5, 6, 3, 1.1);
   ctx.fill();
   ctx.strokeStyle = 'rgba(150,140,170,0.7)';
-  ctx.lineWidth = 0.8;
-  for (let i = 0; i < 3; i++) {
-    ctx.beginPath(); ctx.moveTo(-11 + i * 3.2, -2.5); ctx.lineTo(-9.6 + i * 3.2, 2.5); ctx.stroke();
+  ctx.lineWidth = 0.6;
+  for (let i = 0; i < 2; i++) {
+    ctx.beginPath(); ctx.moveTo(-5 + i * 2.6, -1.5); ctx.lineTo(-4 + i * 2.6, 1.5); ctx.stroke();
   }
-  /* tiny crossguard: 10px wide, 3px tall */
+  /* tiny crossguard: 6px wide, 2px tall */
   ctx.fillStyle = F('#3f4753');
-  roundRect(ctx, -1, -5, 3, 10, 1);
+  roundRect(ctx, -1, -3, 2, 6, 0.8);
   ctx.fill();
-  /* slim dark blade: 3px wide, 28px long, tapered */
-  const g = ctx.createLinearGradient(0, -1.5, 0, 1.5);
+  /* slim blade: 12px long, 2px wide, tapering to a point */
+  const g = ctx.createLinearGradient(0, -1, 0, 1);
   g.addColorStop(0, F('#4b5563'));
   g.addColorStop(0.5, F('#2b313c'));
   g.addColorStop(1, F('#171b22'));
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(2, -1.5); ctx.lineTo(28, -0.6); ctx.lineTo(31, 0); ctx.lineTo(28, 0.6); ctx.lineTo(2, 1.5);
+  ctx.moveTo(1, -1); ctx.lineTo(11, -0.4); ctx.lineTo(13, 0); ctx.lineTo(11, 0.4); ctx.lineTo(1, 1);
   ctx.closePath();
   ctx.fill();
   /* center line */
   ctx.strokeStyle = 'rgba(230,235,245,0.5)';
-  ctx.lineWidth = 0.6;
-  ctx.beginPath(); ctx.moveTo(3, 0); ctx.lineTo(28.5, 0); ctx.stroke();
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(1.6, 0); ctx.lineTo(12, 0); ctx.stroke();
 }
 
 /* ---- art helper: the tech energy disc — flat dark circle, amber ring, cross ---- */
@@ -15507,17 +15524,18 @@ function drawRaelWeapon(p, bob, flash) {
 
   ctx.save();
   if (skinA < 1) ctx.globalAlpha = skinA;
-  /* held in the hand: 16px out in the facing direction, rotating to the cursor */
-  ctx.translate(p.x + Math.cos(p.angle) * 16, p.y + (bob || 0) + idle + Math.sin(p.angle) * 16);
+  /* held in the hand at a per-weapon offset in the facing direction, rotating to the cursor */
+  const holdOff = { pistols: 14, rail: 20, daggers: 12, disc: 16, orbs: 16 }[cls.weapon] || 16;
+  ctx.translate(p.x + Math.cos(p.angle) * holdOff, p.y + (bob || 0) + idle + Math.sin(p.angle) * holdOff);
   ctx.rotate(p.angle);
   if (Math.cos(p.angle) < 0) ctx.scale(1, -1);
 
-  /* the gauntlet stays on the player's hand, 16px behind the weapon origin */
+  /* the gauntlet stays on the player's hand, just behind the weapon origin */
   ctx.fillStyle = F('#3a2c1a');
-  roundRect(ctx, -19.5, -3.2, 8.4, 6.4, 3);
+  roundRect(ctx, -(holdOff + 4), -3.2, 8.4, 6.4, 3);
   ctx.fill();
   ctx.fillStyle = F('#8a6a42');
-  roundRect(ctx, -20.1, -2.6, 4.6, 5.2, 2);
+  roundRect(ctx, -(holdOff + 4.6), -2.6, 4.6, 5.2, 2);
   ctx.fill();
 
   const muzzleAge = t - (p.muzzleAt === undefined ? -9 : p.muzzleAt);
@@ -15528,105 +15546,104 @@ function drawRaelWeapon(p, bob, flash) {
     const pistolCount = 1 + (firstUpgradeOwned() ? 1 : 0);
     for (let i = 0; i < pistolCount; i++) {
       ctx.save();
-      if (i > 0) { ctx.translate(-2, 7.5); ctx.rotate(0.14); }   /* off-hand pistol held lower */
+      if (i > 0) { ctx.translate(-1.5, 5.2); ctx.rotate(0.12); }   /* off-hand pistol held lower */
       drawFlintlockPistol(F, i === 0 ? hot : 0);
       ctx.restore();
     }
   } else if (cls.weapon === 'rail') {
-    /* long musket: 70px dark barrel, 15px-wide curving wood stock, brass bead */
+    /* long musket: 34px dark barrel 3px wide, 12px curving wood stock, brass bead */
     const hot = clamp(1 - muzzleAge / 0.12, 0, 1);
     ctx.fillStyle = F('#4a2f1d');
     ctx.beginPath();
-    ctx.moveTo(-22, 3.5);
-    ctx.quadraticCurveTo(-18, -6, -8, -5.5);
-    ctx.lineTo(10, -4);
-    ctx.lineTo(10, 4);
-    ctx.lineTo(-8, 4.5);
-    ctx.quadraticCurveTo(-19, 5.5, -22, 3.5);
+    ctx.moveTo(-8, 2.6);
+    ctx.quadraticCurveTo(-5.5, -4.6, 2, -4);
+    ctx.lineTo(6, -3);
+    ctx.lineTo(6, 3);
+    ctx.lineTo(2, 3.4);
+    ctx.quadraticCurveTo(-6, 4.4, -8, 2.6);
     ctx.closePath();
     ctx.fill();
     ctx.strokeStyle = 'rgba(122,84,52,0.75)';
-    ctx.lineWidth = 0.8;
-    ctx.beginPath(); ctx.moveTo(-19, -1.5); ctx.quadraticCurveTo(-10, 0, 6, -1); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-19, 1.8); ctx.quadraticCurveTo(-9, 2.8, 7, 1.8); ctx.stroke();
-    /* barrel: 70px long, 4px wide, dark steel */
-    const steel = ctx.createLinearGradient(0, -2, 0, 2);
+    ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.moveTo(-6, -1.4); ctx.quadraticCurveTo(-1, 0, 4, -1); ctx.stroke();
+    /* barrel: 34px long, 3px wide, dark steel */
+    const steel = ctx.createLinearGradient(0, -1.5, 0, 1.5);
     steel.addColorStop(0, F('#6b7480'));
     steel.addColorStop(0.5, F('#333a44'));
     steel.addColorStop(1, F('#14181e'));
     ctx.fillStyle = steel;
-    roundRect(ctx, 8, -2, 70, 4, 1.6);
+    roundRect(ctx, 4, -1.5, 34, 3, 1.2);
     ctx.fill();
     /* brass bands */
     ctx.fillStyle = F('#b08d2e');
-    ctx.fillRect(22, -2.4, 2.6, 4.8);
-    ctx.fillRect(40, -2.4, 2.6, 4.8);
-    ctx.fillRect(58, -2.4, 2.6, 4.8);
-    /* brass sight bead: tiny 3px circle at the barrel tip */
+    ctx.fillRect(12, -1.8, 1.8, 3.6);
+    ctx.fillRect(22, -1.8, 1.8, 3.6);
+    ctx.fillRect(31, -1.8, 1.8, 3.6);
+    /* brass sight bead: tiny circle at the barrel tip */
     ctx.fillStyle = F('#e3b341');
-    ctx.beginPath(); ctx.arc(78, -3.2, 1.5, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(38.6, -2.4, 1.1, 0, TAU); ctx.fill();
     /* muzzle */
     ctx.fillStyle = F('#0c0e12');
-    roundRect(ctx, 76.6, -2.4, 2.6, 4.8, 1);
+    roundRect(ctx, 37.2, -1.8, 2, 3.6, 0.8);
     ctx.fill();
     /* lock + trigger */
     ctx.fillStyle = F('#3a4048');
-    roundRect(ctx, 12, -7.5, 8, 5.5, 1);
+    roundRect(ctx, 8, -5, 5.5, 3.6, 0.8);
     ctx.fill();
     ctx.strokeStyle = F('#8b95a3');
-    ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.moveTo(16, -7.2); ctx.quadraticCurveTo(19.5, -10.5, 22, -8); ctx.stroke();
-    ctx.beginPath(); ctx.arc(17, 2.4, 2, 0.1 * Math.PI, 1.1 * Math.PI); ctx.stroke();
+    ctx.lineWidth = 0.9;
+    ctx.beginPath(); ctx.moveTo(10.5, -4.8); ctx.quadraticCurveTo(12.6, -7, 14.4, -5.4); ctx.stroke();
+    ctx.beginPath(); ctx.arc(10.5, 1.8, 1.4, 0.1 * Math.PI, 1.1 * Math.PI); ctx.stroke();
     if (hot > 0) {
       ctx.save();
       ctx.globalAlpha = Math.min(1, hot * 8);
       ctx.shadowColor = '#fde68a';
-      ctx.shadowBlur = 18;
+      ctx.shadowBlur = 12;
       ctx.fillStyle = '#fffbeb';
-      ctx.beginPath(); ctx.arc(80, 0, 3 + 5 * hot, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(39.5, 0, 2.2 + 3.4 * hot, 0, TAU); ctx.fill();
       ctx.restore();
     }
   } else if (cls.weapon === 'daggers') {
     drawHeldDagger(F);
   } else if (cls.weapon === 'disc') {
-    /* launcher cradle + the 18px energy disc */
+    /* launcher cradle + the 12px-radius energy disc */
     ctx.fillStyle = F('#1f2c3a');
-    roundRect(ctx, -6, -3.6, 12, 7.2, 2.4);
+    roundRect(ctx, -5, -3, 10, 6, 2);
     ctx.fill();
-    drawEnergyDisc(16, 0, 18, t * 7);
+    drawEnergyDisc(6, 0, 12, t * 7);
   } else {
-    /* chrono staff: twisted dark-brown shaft 6x50, golden ring + amber crystal top */
-    const lift = Math.sin(t * 2.2) * 2.5;      /* the staff bobs slowly */
+    /* chrono staff: 24px twisted shaft 4px wide, 8px-radius orb on top, gentle bob */
+    const lift = Math.sin(t * 2.2) * 1.8;      /* the staff floats with a gentle bob */
     ctx.translate(0, lift);
-    const shaft = ctx.createLinearGradient(0, -3, 0, 3);
+    const shaft = ctx.createLinearGradient(0, -2, 0, 2);
     shaft.addColorStop(0, F('#6b4a2a'));
     shaft.addColorStop(0.5, F('#4a3018'));
     shaft.addColorStop(1, F('#2c1c0c'));
     ctx.fillStyle = shaft;
-    roundRect(ctx, -10, -3, 50, 6, 3);
+    roundRect(ctx, -8, -2, 24, 4, 2);
     ctx.fill();
     /* twist wraps along the shaft */
     ctx.strokeStyle = 'rgba(20,12,4,0.85)';
-    ctx.lineWidth = 1.2;
-    for (let i = 0; i < 8; i++) {
-      const x = -9 + i * 6;
-      ctx.beginPath(); ctx.moveTo(x, -3); ctx.lineTo(x + 3.4, 3); ctx.stroke();
+    ctx.lineWidth = 0.9;
+    for (let i = 0; i < 6; i++) {
+      const x = -7 + i * 4;
+      ctx.beginPath(); ctx.moveTo(x, -2); ctx.lineTo(x + 2.2, 2); ctx.stroke();
     }
-    /* ornate top: 12px golden ring with a pulsing amber crystal inside */
-    const ox = 44, oy = 0;
-    const pulse = 1 + 0.14 * Math.sin(t * 4);
+    /* ornate top: golden ring with an 8px-radius pulsing amber orb inside */
+    const ox = 18, oy = 0;
+    const pulse = 1 + 0.12 * Math.sin(t * 4);
     ctx.save();
     ctx.strokeStyle = F('#d4a017');
-    ctx.lineWidth = 2.6;
+    ctx.lineWidth = 1.8;
     ctx.shadowColor = '#f5c842';
-    ctx.shadowBlur = 14;
-    ctx.beginPath(); ctx.arc(ox, oy, 12, 0, TAU); ctx.stroke();
-    const crys = ctx.createRadialGradient(ox - 1.5, oy - 1.5, 0.5, ox, oy, 7 * pulse);
+    ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(ox, oy, 8, 0, TAU); ctx.stroke();
+    const crys = ctx.createRadialGradient(ox - 1, oy - 1, 0.4, ox, oy, 5 * pulse);
     crys.addColorStop(0, 'rgba(255,246,220,1)');
     crys.addColorStop(0.5, F('#f5c842'));
     crys.addColorStop(1, 'rgba(212,160,23,0.85)');
     ctx.fillStyle = F(crys);
-    ctx.beginPath(); ctx.arc(ox, oy, 6.4 * pulse, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(ox, oy, 4.4 * pulse, 0, TAU); ctx.fill();
     ctx.restore();
   }
   ctx.restore();
@@ -19127,73 +19144,73 @@ function drawKnightSword(p, bob) {
     ang = lerp(p.swingFrom, p.swingTo, 1 - Math.pow(1 - k, 2.2));
   }
 
-  /* held at the player's right side, 16px out in the facing direction */
+  /* held at the player's right side, 18px out in the facing direction */
   const side = Math.cos(p.angle) >= 0 ? 1 : -1;
-  const hx = p.x + Math.cos(ang) * 16 + Math.cos(ang + Math.PI / 2) * side * 5;
-  const hy = p.y + (bob || 0) + Math.sin(ang) * 16 + Math.sin(ang + Math.PI / 2) * side * 5;
+  const hx = p.x + Math.cos(ang) * 18 + Math.cos(ang + Math.PI / 2) * side * 4;
+  const hy = p.y + (bob || 0) + Math.sin(ang) * 18 + Math.sin(ang + Math.PI / 2) * side * 4;
 
   ctx.save();
   ctx.translate(hx, hy);
   ctx.rotate(ang);
 
-  /* pommel: round iron disc at the end of the grip */
-  const pom = ctx.createRadialGradient(-24, -1, 0.5, -23, 0, 4.4);
+  /* pommel: 5px round iron disc at the end of the grip */
+  const pom = ctx.createRadialGradient(-10.5, -0.7, 0.4, -10, 0, 2.5);
   pom.addColorStop(0, '#5a616b');
   pom.addColorStop(0.6, '#33383f');
   pom.addColorStop(1, '#1b1e23');
   ctx.fillStyle = pom;
-  ctx.beginPath(); ctx.arc(-23, 0, 4.2, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(-10, 0, 2.5, 0, TAU); ctx.fill();
   ctx.strokeStyle = 'rgba(210,220,235,0.5)';
-  ctx.lineWidth = 0.8;
-  ctx.beginPath(); ctx.arc(-23, 0, 4.2, 0, TAU); ctx.stroke();
+  ctx.lineWidth = 0.6;
+  ctx.beginPath(); ctx.arc(-10, 0, 2.5, 0, TAU); ctx.stroke();
 
-  /* grip: 8px wide, 18px long, brown leather with diagonal wrap lines */
+  /* grip: 8px long, 4px wide, brown leather with diagonal wrap lines */
   ctx.fillStyle = '#5c3317';
-  roundRect(ctx, -20.5, -4, 18, 8, 2);
+  roundRect(ctx, -10, -2, 8, 4, 1.4);
   ctx.fill();
   ctx.strokeStyle = '#2a1808';
-  ctx.lineWidth = 1.2;
-  for (let i = 0; i < 5; i++) {
-    const x = -19.5 + i * 3.4;
-    ctx.beginPath(); ctx.moveTo(x, -4); ctx.lineTo(x + 2, 4); ctx.stroke();
+  ctx.lineWidth = 0.8;
+  for (let i = 0; i < 3; i++) {
+    const x = -9.2 + i * 2.6;
+    ctx.beginPath(); ctx.moveTo(x, -2); ctx.lineTo(x + 1.4, 2); ctx.stroke();
   }
   ctx.strokeStyle = 'rgba(214,164,102,0.5)';
-  ctx.lineWidth = 0.5;
-  for (let i = 0; i < 5; i++) {
-    const x = -18.5 + i * 3.4;
-    ctx.beginPath(); ctx.moveTo(x, -4); ctx.lineTo(x + 2, 4); ctx.stroke();
+  ctx.lineWidth = 0.4;
+  for (let i = 0; i < 3; i++) {
+    const x = -8.6 + i * 2.6;
+    ctx.beginPath(); ctx.moveTo(x, -2); ctx.lineTo(x + 1.4, 2); ctx.stroke();
   }
 
-  /* crossguard: 20px wide, 5px tall, dark iron horizontal bar with curved ends */
-  const iron = ctx.createLinearGradient(0, -10, 0, 10);
+  /* crossguard: 14px wide, 4px tall, dark iron horizontal bar with rounded ends */
+  const iron = ctx.createLinearGradient(0, -7, 0, 7);
   iron.addColorStop(0, '#4a505a');
   iron.addColorStop(0.5, '#2b3038');
   iron.addColorStop(1, '#191d23');
   ctx.fillStyle = iron;
-  roundRect(ctx, -2.5, -10, 5, 20, 2);
+  roundRect(ctx, -2, -7, 4, 14, 1.4);
   ctx.fill();
-  ctx.beginPath(); ctx.arc(0, -10, 2.6, 0, TAU); ctx.fill();
-  ctx.beginPath(); ctx.arc(0, 10, 2.6, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, -7, 1.8, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 7, 1.8, 0, TAU); ctx.fill();
   ctx.strokeStyle = 'rgba(190,200,215,0.35)';
-  ctx.lineWidth = 0.7;
-  roundRect(ctx, -2.5, -10, 5, 20, 2);
+  ctx.lineWidth = 0.5;
+  roundRect(ctx, -2, -7, 4, 14, 1.4);
   ctx.stroke();
 
-  /* blade: 60px long, 4px wide at the base tapering to 2px at the tip */
+  /* blade: 28px long, 3px wide at the base tapering to 1px at the tip */
   const bladePath = function () {
     ctx.beginPath();
-    ctx.moveTo(2.5, -2);
-    ctx.lineTo(58, -1);
-    ctx.lineTo(63.5, 0);
-    ctx.lineTo(58, 1);
-    ctx.lineTo(2.5, 2);
+    ctx.moveTo(0, -1.5);
+    ctx.lineTo(26, -0.5);
+    ctx.lineTo(28, 0);
+    ctx.lineTo(26, 0.5);
+    ctx.lineTo(0, 1.5);
     ctx.closePath();
   };
 
   if (def.glow) {
     ctx.save();
     ctx.shadowColor = def.glow;
-    ctx.shadowBlur = tier === 2 ? 22 : 15;
+    ctx.shadowBlur = tier === 2 ? 16 : 11;
     ctx.fillStyle = def.glow;
     ctx.globalAlpha = 0.55;
     bladePath();
@@ -19201,7 +19218,7 @@ function drawKnightSword(p, bob) {
     ctx.restore();
   }
 
-  const steel = ctx.createLinearGradient(0, -2, 0, 2);
+  const steel = ctx.createLinearGradient(0, -1.5, 0, 1.5);
   steel.addColorStop(0, '#8d9db2');
   steel.addColorStop(0.3, '#e6f0ff');
   steel.addColorStop(0.5, '#ffffff');
@@ -19213,17 +19230,17 @@ function drawKnightSword(p, bob) {
 
   /* center ridge: thin darker stripe down the middle */
   ctx.strokeStyle = 'rgba(58,70,88,0.6)';
-  ctx.lineWidth = 0.9;
-  ctx.beginPath(); ctx.moveTo(3.5, 0); ctx.lineTo(58, 0); ctx.stroke();
-  /* fuller: thin groove over 70% of the blade (60px * 0.7 = 42px from the guard) */
+  ctx.lineWidth = 0.6;
+  ctx.beginPath(); ctx.moveTo(1, 0); ctx.lineTo(26, 0); ctx.stroke();
+  /* fuller: thin groove over 70% of the 28px blade (~20px from the guard) */
   ctx.strokeStyle = 'rgba(40,50,66,0.55)';
-  ctx.lineWidth = 0.7;
-  ctx.beginPath(); ctx.moveTo(4, -1.1); ctx.lineTo(46, -0.7); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(4, 1.1); ctx.lineTo(46, 0.7); ctx.stroke();
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(1.4, -0.8); ctx.lineTo(20, -0.4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(1.4, 0.8); ctx.lineTo(20, 0.4); ctx.stroke();
   /* bright cutting edge */
   ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-  ctx.lineWidth = 0.8;
-  ctx.beginPath(); ctx.moveTo(3, -1.9); ctx.lineTo(58, -0.95); ctx.lineTo(63, 0); ctx.stroke();
+  ctx.lineWidth = 0.6;
+  ctx.beginPath(); ctx.moveTo(0.8, -1.4); ctx.lineTo(26, -0.45); ctx.lineTo(27.6, 0); ctx.stroke();
 
   if (def.glow) {
     ctx.save();
@@ -19234,10 +19251,10 @@ function drawKnightSword(p, bob) {
     ctx.fill();
     ctx.restore();
     ctx.strokeStyle = def.edge;
-    ctx.lineWidth = 1.4;
+    ctx.lineWidth = 1.1;
     ctx.shadowColor = def.glow;
-    ctx.shadowBlur = 12;
-    ctx.beginPath(); ctx.moveTo(4, -2); ctx.lineTo(58, -1); ctx.lineTo(63.5, 0); ctx.stroke();
+    ctx.shadowBlur = 9;
+    ctx.beginPath(); ctx.moveTo(1.4, -1.5); ctx.lineTo(26, -0.5); ctx.lineTo(28, 0); ctx.stroke();
     ctx.shadowBlur = 0;
   }
   ctx.restore();
@@ -20894,49 +20911,49 @@ function drawObstacles() {
 
 function drawAxe(p, ang, lift, side, spin) {
   ctx.save();
-  /* held 16px out in the facing direction */
-  ctx.translate(p.x + Math.cos(ang) * 16, p.y + lift + Math.sin(ang) * 16);
+  /* held 14px out in the facing direction */
+  ctx.translate(p.x + Math.cos(ang) * 14, p.y + lift + Math.sin(ang) * 14);
   ctx.rotate(ang + (spin || 0));
-  ctx.translate(0, side * 4);
-  /* handle: 6px wide, 22px long, dark brown */
-  const wood = ctx.createLinearGradient(0, -3, 0, 3);
+  ctx.translate(0, side * 3);
+  /* handle: 8px long, 4px wide, dark brown */
+  const wood = ctx.createLinearGradient(0, -2, 0, 2);
   wood.addColorStop(0, '#7a5732');
   wood.addColorStop(0.5, '#5b4028');
   wood.addColorStop(1, '#3a2814');
   ctx.fillStyle = wood;
-  roundRect(ctx, -12, -3, 22, 6, 2.6);
+  roundRect(ctx, -8, -2, 8, 4, 1.6);
   ctx.fill();
   /* leather wrap on the grip */
   ctx.strokeStyle = '#1f1208';
-  ctx.lineWidth = 1.1;
-  for (let i = 0; i < 4; i++) {
-    const x = -11 + i * 2.4;
-    ctx.beginPath(); ctx.moveTo(x, -3); ctx.lineTo(x + 1.6, 3); ctx.stroke();
+  ctx.lineWidth = 0.8;
+  for (let i = 0; i < 3; i++) {
+    const x = -7 + i * 2;
+    ctx.beginPath(); ctx.moveTo(x, -2); ctx.lineTo(x + 1.2, 2); ctx.stroke();
   }
-  /* crescent head: 20px wide, 16px tall, dark iron */
-  const head = ctx.createLinearGradient(0, -8, 0, 8);
+  /* crescent head: 14px wide, 12px tall, dark iron */
+  const head = ctx.createLinearGradient(0, -6, 0, 6);
   head.addColorStop(0, '#4a4a4a');
   head.addColorStop(0.5, '#2a2a2a');
   head.addColorStop(1, '#161616');
   ctx.fillStyle = head;
   ctx.beginPath();
-  ctx.moveTo(10, -8);
-  ctx.quadraticCurveTo(28, -9, 30, 0);
-  ctx.quadraticCurveTo(28, 9, 10, 8);
+  ctx.moveTo(0, -6);
+  ctx.quadraticCurveTo(11, -6.6, 14, 0);
+  ctx.quadraticCurveTo(11, 6.6, 0, 6);
   ctx.closePath();
   ctx.fill();
   /* sharp bright edge highlight on the blade curve */
   ctx.strokeStyle = '#e8edf5';
-  ctx.lineWidth = 1.8;
+  ctx.lineWidth = 1.3;
   ctx.beginPath();
-  ctx.moveTo(11, -7.6);
-  ctx.quadraticCurveTo(27.5, -8.4, 29.6, 0);
+  ctx.moveTo(0.8, -5.6);
+  ctx.quadraticCurveTo(10.6, -6, 13.4, 0);
   ctx.stroke();
   ctx.strokeStyle = 'rgba(232,237,245,0.75)';
-  ctx.lineWidth = 1.4;
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(11, 7.6);
-  ctx.quadraticCurveTo(27.5, 8.4, 29.6, 0);
+  ctx.moveTo(0.8, 5.6);
+  ctx.quadraticCurveTo(10.6, 6, 13.4, 0);
   ctx.stroke();
   ctx.restore();
 }
@@ -20972,7 +20989,7 @@ function drawShadowDagger(b) {
     ctx.rotate(spin);
     ctx.fillStyle = '#141821';
     ctx.beginPath();
-    ctx.moveTo(16, 0); ctx.lineTo(-10, -1.5); ctx.lineTo(-12, 0); ctx.lineTo(-10, 1.5);
+    ctx.moveTo(7, 0); ctx.lineTo(-4, -1); ctx.lineTo(-5.5, 0); ctx.lineTo(-4, 1);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -20980,36 +20997,35 @@ function drawShadowDagger(b) {
   ctx.save();
   ctx.translate(b.x, b.y);
   ctx.rotate(spin);
-  /* slim dark blade: 28px long, 3px wide */
-  const g = ctx.createLinearGradient(0, -1.5, 0, 1.5);
+  /* slim dark blade: 12px long, 2px wide */
+  const g = ctx.createLinearGradient(0, -1, 0, 1);
   g.addColorStop(0, '#4b5563');
   g.addColorStop(0.5, '#2b313c');
   g.addColorStop(1, '#171b22');
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(16, 0); ctx.lineTo(-10, -1.5); ctx.lineTo(-12, 0); ctx.lineTo(-10, 1.5);
+  ctx.moveTo(7, 0); ctx.lineTo(-4, -1); ctx.lineTo(-5.5, 0); ctx.lineTo(-4, 1);
   ctx.closePath();
   ctx.fill();
   /* center line */
   ctx.strokeStyle = 'rgba(230,235,245,0.5)';
-  ctx.lineWidth = 0.6;
-  ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-9, 0); ctx.stroke();
-  /* tiny crossguard: 10px wide, 3px tall */
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(-3.6, 0); ctx.stroke();
+  /* tiny crossguard: 6px wide, 2px tall */
   ctx.fillStyle = '#3f4753';
-  roundRect(ctx, -14, -5, 3, 10, 1);
+  roundRect(ctx, -7.5, -3, 2, 6, 0.8);
   ctx.fill();
-  /* wrapped handle: 5px wide, 12px long */
+  /* wrapped handle: 6px long, 3px wide */
   ctx.fillStyle = '#241631';
-  roundRect(ctx, -26, -2.5, 12, 5, 1.4);
+  roundRect(ctx, -13.5, -1.5, 6, 3, 1);
   ctx.fill();
   ctx.strokeStyle = 'rgba(150,140,170,0.7)';
-  ctx.lineWidth = 0.7;
-  for (let i = 0; i < 3; i++) {
-    ctx.beginPath(); ctx.moveTo(-25 + i * 3.4, -2.5); ctx.lineTo(-23.6 + i * 3.4, 2.5); ctx.stroke();
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < 2; i++) {
+    ctx.beginPath(); ctx.moveTo(-12.6 + i * 2.6, -1.5); ctx.lineTo(-11.6 + i * 2.6, 1.5); ctx.stroke();
   }
   ctx.restore();
 }
-
 
 function drawDiscs() {
   if (!game.discs || !game.discs.length) return;
@@ -21024,11 +21040,11 @@ function drawDiscs() {
       ctx.shadowColor = '#f5c842';
       ctx.shadowBlur = 8;
       ctx.beginPath();
-      ctx.arc(d.x - d.vx * 0.014 * gI, d.y - d.vy * 0.014 * gI, 18, 0, TAU);
+      ctx.arc(d.x - d.vx * 0.014 * gI, d.y - d.vy * 0.014 * gI, 12, 0, TAU);
       ctx.stroke();
       ctx.restore();
     }
-    drawEnergyDisc(d.x, d.y, 18, d.spin);
+    drawEnergyDisc(d.x, d.y, 12, d.spin);
   }
   ctx.shadowBlur = 0;
 }
