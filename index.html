@@ -1804,21 +1804,15 @@ html,body{ background:var(--bg); color:var(--text); }
   position:relative;
   background:linear-gradient(180deg, rgba(10,12,20,.96), rgba(4,5,10,.98));
   border:1px solid rgba(200,151,31,.28); border-radius:1px;
-  border-top:3px solid var(--cc, var(--gold));
+  border-top:3px solid #1a1a1a;   /* carved stone header band edge, no neon */
   padding:10px 12px; gap:4px;
 }
 /* glowing colored top border per class */
-#cardKnight{ --cc:#e53935; }        /* Knight      = red         */
-#cardGunslinger{ --cc:#fb923c; }    /* Gunslinger  = orange      */
-#cardSniper{ --cc:#1de9b6; }        /* Sniper      = teal        */
-#cardMage{ --cc:#a855f7; }          /* Mage        = purple      */
-#cardBerserker{ --cc:#991b1b; }     /* Berserker   = dark red    */
-#cardShadow{ --cc:#6d28d9; }        /* Assassin    = dark purple */
-#cardTech{ --cc:#22d3ee; }          /* Tech        = cyan        */
+/* neon class colors removed — every card wears the same carved stone header band */
 .class-card::before{
   content:''; position:absolute; top:-1px; left:-1px; right:-1px; height:3px;
-  background:var(--cc, var(--gold));
-  box-shadow:0 0 18px 2px var(--cc, var(--gold));
+  background:linear-gradient(180deg,#050505,#2e2e2e);
+  box-shadow:0 1px 3px rgba(0,0,0,.9);
   pointer-events:none;
 }
 .class-card:hover, .class-card:focus-visible, .class-card.sel{
@@ -1834,12 +1828,12 @@ html,body{ background:var(--bg); color:var(--text); }
   position:relative; flex:0 0 40%; width:100%; min-height:0;
   display:flex; align-items:center; justify-content:center;
 }
-.class-card .cicon::before{                       /* radial glow in the class color */
+.class-card .cicon::before{                       /* warm amber glow behind the emblem */
   content:''; position:absolute; inset:0;
-  background:radial-gradient(circle at 50% 50%, var(--cc, var(--gold)), transparent 62%);
-  opacity:.32; pointer-events:none;
+  background:radial-gradient(circle at 50% 50%, rgba(212,160,23,.55), transparent 62%);
+  opacity:.5; pointer-events:none;
 }
-.class-card .cicon svg{ position:relative; z-index:1; width:64px; height:64px; filter:drop-shadow(0 0 10px var(--cc, var(--gold))); }
+.class-card .cicon svg{ position:relative; z-index:1; width:64px; height:64px; color:#d4a017; filter:drop-shadow(0 0 10px rgba(212,160,23,.55)); }
 .class-card .cname{ color:var(--gold-bright); }
 .class-card .cstat{ color:var(--text-dim); font-size:8px; }
 /* thin segmented stat bars */
@@ -2220,13 +2214,13 @@ html,body{ background:var(--bg); color:var(--text); }
     repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, rgba(0,0,0,0) 1px 5px),
     linear-gradient(180deg, #2c1f0e 0%, #1a1208 100%);
   border:1px solid var(--border);
-  border-top:4px solid var(--cc, var(--gold));
+  border-top:4px solid #1a1a1a;   /* carved stone band, no neon */
   border-radius:2px;
 }
-.class-card::before{                   /* heraldic colored stripe */
+.class-card::before{                   /* carved stone edge */
   content:''; position:absolute; top:-1px; left:-1px; right:-1px; height:4px;
-  background:linear-gradient(90deg, var(--cc, var(--gold)) 0%, var(--cc, var(--gold)) 72%, rgba(0,0,0,.5) 100%);
-  box-shadow:0 0 16px 1px var(--cc, var(--gold));
+  background:linear-gradient(180deg,#050505,#2e2e2e);
+  box-shadow:0 1px 3px rgba(0,0,0,.9);
   pointer-events:none;
 }
 .class-card:hover, .class-card:focus-visible, .class-card.sel{
@@ -2260,6 +2254,78 @@ html,body{ background:var(--bg); color:var(--text); }
   74% { opacity:1; transform:scaleY(1) translateX(0); }
   100%{ opacity:0; transform:scaleY(.92) translateX(10px); }
 }
+<style id="orb-badge-style">
+  #abQ{ position:relative; }
+  .orb-badge{
+    position:absolute; top:-7px; right:-7px; z-index:3;
+    min-width:16px; height:16px; padding:0 3px; box-sizing:border-box;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-head); font-size:10px; font-weight:700;
+    color:#1a1208; background:radial-gradient(circle at 35% 30%, #ffe9a8, var(--gold-bright) 55%, var(--gold));
+    border:1px solid #8b6914; border-radius:50%;
+    box-shadow:0 0 10px rgba(245,200,66,.8), 0 2px 5px rgba(0,0,0,.6);
+    pointer-events:none;
+  }
+<style id="class-cards-medieval">
+  /* ---- class cards: aged wood grain + carved stone header band ---- */
+  .class-card{
+    background:repeating-linear-gradient(45deg, #1c1108 0 2px, #241608 2px 4px) !important;
+    border-top:3px solid #1a1a1a !important;
+  }
+  .class-card::before{
+    content:''; position:absolute; top:-1px; left:-1px; right:-1px; height:3px;
+    background:linear-gradient(180deg,#050505,#2e2e2e) !important;
+    box-shadow:0 1px 3px rgba(0,0,0,.9) !important;
+  }
+  .class-card .cname{
+    order:-1; align-self:stretch;
+    margin:-10px -12px 6px; padding:6px 8px 5px;
+    background:linear-gradient(180deg,#242424,#1a1a1a 55%,#131313);
+    border-bottom:1px solid #000;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08), inset 0 -6px 10px rgba(0,0,0,.55);
+    color:#d4a017 !important;
+    text-shadow:0 -1px 0 #000, 0 1px 0 rgba(245,200,66,.28);
+  }
+  .class-card .cicon::before{
+    background:radial-gradient(circle at 50% 50%, rgba(212,160,23,.5), transparent 62%) !important;
+    opacity:1;
+  }
+  .class-card .cicon svg{ color:#d4a017; filter:drop-shadow(0 0 10px rgba(212,160,23,.55)) !important; }
+  /* segmented runic stat ticks: 10 vertical lines, amber filled / dark brown empty */
+  .class-card .cbar{
+    display:flex; align-items:flex-end; gap:2px; height:10px; flex:1;
+    background:none !important; border:none !important; border-radius:0 !important; overflow:visible;
+  }
+  .class-card .cbar i{
+    display:block; width:3px; height:100%; flex:0 0 auto;
+    background:#3a2410; border-radius:0 !important; box-shadow:none !important;
+  }
+  .class-card .cbar i.on{ background:#d4a017; box-shadow:0 0 5px rgba(212,160,23,.65) !important; }
+  /* carved stone tablet level indicator */
+  .class-card .class-level-meta{
+    margin-top:8px; padding:5px 6px 6px; text-align:center;
+    background:linear-gradient(180deg,#242424,#1a1a1a 60%,#121212);
+    border:1px solid #000; border-radius:2px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07), inset 0 -5px 9px rgba(0,0,0,.6), 0 1px 3px rgba(0,0,0,.7);
+    color:#d4a017; font-family:var(--font-head); letter-spacing:1px;
+    text-shadow:0 -1px 0 #000;
+  }
+  .class-card .class-card-xp{ height:4px; margin-top:4px; background:#0d0a06; border:1px solid #000; border-radius:1px; overflow:hidden; }
+  .class-card .class-card-xp i{ background:linear-gradient(90deg,#8b6914,#d4a017 60%,#f5c842); box-shadow:0 0 6px rgba(212,160,23,.7); border-radius:0; }
+  /* locked cards keep stone/wood, no neon */
+  .class-card.locked{ border-color:rgba(92,51,23,.65) !important; border-top-color:#1a1a1a !important; }
+  .class-card.locked::before{ background:linear-gradient(180deg,#0a0a0a,#1f1f1f) !important; box-shadow:none !important; }
+  .class-card.locked .cname{ color:#8a6f3a !important; }
+  .class-card.locked .cicon{ filter:grayscale(.5) brightness(.62); opacity:.85; }
+  .class-card.locked:hover, .class-card.locked:focus-visible{ border-color:#5c3317 !important; box-shadow:0 0 22px rgba(212,160,23,.18), inset 0 0 24px rgba(0,0,0,.5); }
+  /* More Classes card = locked treasure chest on wood */
+  .class-card.shop-tile{
+    background:repeating-linear-gradient(45deg, #1c1108 0 2px, #241608 2px 4px) !important;
+    border:1px dashed #5c3317; justify-content:center; gap:10px;
+  }
+  .class-card.shop-tile .tileglyph{ font-size:0; line-height:0; color:#d4a017; opacity:.9; filter:drop-shadow(0 0 8px rgba(212,160,23,.4)); }
+  .class-card.shop-tile .tileglyph svg{ width:38px; height:38px; display:block; margin:0 auto; }
+  .class-card.shop-tile .cname{ font-size:12px; }
 </style>
 </head>
 <body>
@@ -2373,7 +2439,7 @@ html,body{ background:var(--bg); color:var(--text); }
       <button class="ab-btn" type="button" data-ability="q" aria-label="Class ability (Q)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 20 6v6c0 4.5-3.5 7.5-8 9-4.5-1.5-8-4.5-8-9V6z"/></svg>
         <span class="ab-sweep" aria-hidden="true"></span>
-      </button><span class="key">Q</span>
+      </button><span class="key">Q</span><span id="orbBadge" class="orb-badge" hidden>1</span>
     </div>
     <div class="ability locked" id="abE">
       <button class="ab-btn" type="button" data-ability="e" aria-label="Ability 2 (E)" disabled>
@@ -2514,9 +2580,9 @@ html,body{ background:var(--bg); color:var(--text); }
         <div class="cname">Vanguard Knight</div>
         <div class="cdesc">A long silver longsword carves a wide arc through everything in front of him.</div>
         <div class="cstats">
-          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i style="width:40%"></i></span></div>
-          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i style="width:92%"></i></span></div>
-          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i style="width:20%"></i></span></div>
+          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></div>
+          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
         </div>
         <div class="cq">Q · Shield Bash</div>
         <div class="cpassive">Passive · 7 health orbs</div>
@@ -2526,9 +2592,9 @@ html,body{ background:var(--bg); color:var(--text); }
         <div class="cname">Gunslinger</div>
         <div class="cdesc">Twin pistols pour out a storm of bolts that punch through the crowd.</div>
         <div class="cstats">
-          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i style="width:92%"></i></span></div>
-          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i style="width:52%"></i></span></div>
-          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i style="width:56%"></i></span></div>
+          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></div>
+          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></span></div>
+          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></span></div>
         </div>
         <div class="cq">Q · Bullet Storm</div>
         <div class="cpassive">Passive · bolts pierce 2 enemies</div>
@@ -2538,9 +2604,9 @@ html,body{ background:var(--bg); color:var(--text); }
         <div class="cname">Sniper</div>
         <div class="cdesc">One shot, one kill. A rail of light crosses the entire screen.</div>
         <div class="cstats">
-          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i style="width:38%"></i></span></div>
-          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i style="width:100%"></i></span></div>
-          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i style="width:100%"></i></span></div>
+          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
         </div>
         <div class="cq">Q · Railgun</div>
         <div class="cpassive">Passive · sees much further</div>
@@ -2550,9 +2616,9 @@ html,body{ background:var(--bg); color:var(--text); }
         <div class="cname">Chrono Mage</div>
         <div class="cdesc">Three slow orbs hunt their prey down on their own.</div>
         <div class="cstats">
-          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i style="width:56%"></i></span></div>
-          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i style="width:56%"></i></span></div>
-          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i style="width:88%"></i></span></div>
+          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></span></div>
+          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></span></div>
+          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></div>
         </div>
         <div class="cq">Q · Temporal Rift</div>
         <div class="cpassive">Passive · time powers recharge twice as fast</div>
@@ -2563,9 +2629,9 @@ html,body{ background:var(--bg); color:var(--text); }
         <div class="cname">Berserker</div>
         <div class="cdesc">No armour and only three orbs, but every blow lands three times as hard.</div>
         <div class="cstats">
-          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i style="width:100%"></i></span></div>
-          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i style="width:100%"></i></span></div>
-          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i style="width:20%"></i></span></div>
+          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
         </div>
         <div class="cq">Q · Rage</div>
         <div class="cpassive">Passive · 3 health orbs · one back every 5 kills</div>
@@ -2576,9 +2642,9 @@ html,body{ background:var(--bg); color:var(--text); }
         <div class="cname">Shadow Assassin</div>
         <div class="cdesc">Permanently cloaked past 120 px. Shadow daggers hit like a hammer.</div>
         <div class="cstats">
-          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i style="width:88%"></i></span></div>
-          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i style="width:96%"></i></span></div>
-          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i style="width:62%"></i></span></div>
+          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></div>
+          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></span></div>
         </div>
         <div class="cq">Q · Death Mark</div>
         <div class="cpassive">Passive · unseen past 120 px · kills reset the dash</div>
@@ -2589,15 +2655,15 @@ html,body{ background:var(--bg); color:var(--text); }
         <div class="cname">Tech Specialist</div>
         <div class="cdesc">A bouncing disc and two standing turrets that never stop firing.</div>
         <div class="cstats">
-          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i style="width:74%"></i></span></div>
-          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i style="width:62%"></i></span></div>
-          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i style="width:78%"></i></span></div>
+          <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></div>
+          <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></span></div>
+          <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></div>
         </div>
         <div class="cq">Q · System Overload</div>
         <div class="cpassive">Passive · right click plants a turret · kills shave 1s off cooldowns</div>
       </div>
       <div class="class-card shop-tile" id="cardShopTile" role="button" tabindex="0">
-        <div class="tileglyph">⇉</div>
+        <div class="tileglyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5C4 6.9 7.6 4.5 12 4.5s8 2.4 8 6v1.2H4z"/><path d="M4 11.7h16V19a1.4 1.4 0 0 1-1.4 1.4H5.4A1.4 1.4 0 0 1 4 19z"/><path d="M4 11.7h16"/><rect x="10" y="11.7" width="4" height="5.4" rx="1" fill="currentColor" stroke="none"/><path d="M12 13.6v1.8" stroke="#1c1108" stroke-width="1.2" stroke-linecap="round"/></svg></div>
         <div class="cname">More classes</div>
         <div class="cdesc">Spend gems in the Armory to unlock the rest of the roster.</div>
       </div>
@@ -3220,6 +3286,7 @@ const UI = {
   levelUpNumber: document.getElementById('levelUpNumber'),
   levelUpReward: document.getElementById('levelUpReward'),
   levelUpToasts: document.getElementById('levelUpToasts'),
+  orbBadge: document.getElementById('orbBadge'),
   skillTree: document.getElementById('skillTree'),
   skillTreeClass: document.getElementById('skillTreeClass'),
   skillTreePoints: document.getElementById('skillTreePoints'),
@@ -5795,7 +5862,7 @@ function qCdMax(c) {
    front of him. Forged upgrades widen and colour the blade.
    ------------------------------------------------------------------------- */
 const SWORD_RANGE = 96;                       /* reach of the steel, in world px */
-const SWORD_ARC = (Math.PI * 2) / 3;          /* 120 degrees per swing */
+const SWORD_ARC = (Math.PI * 5) / 12;         /* 75 degrees per swing at base — Cleave widens it to 160° */
 const SWORD_SWING_TIME = 0.2;                 /* how long the swoosh lives */
 const SWORD_COOLDOWN = 0.4;                   /* minimum gap between swings */
 
@@ -5835,103 +5902,83 @@ function syncClassHud() {
    The whole interface is HTML and CSS: nothing the player clicks or reads is
    ever drawn on a canvas, so no game frame can bleed through a screen.
    ========================================================================== */
+
 const CLASS_ICONS = {
-  knight:
+  knight:   /* shield with a crossed longsword */
     '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
-    '<defs><linearGradient id="ciKnightPlate" x1="0" y1="0" x2="0" y2="1">' +
-    '<stop offset="0" stop-color="#2c3f58"/><stop offset="1" stop-color="#0d1622"/></linearGradient></defs>' +
-    '<path d="M32 22h36v26c0 16-12 26-18 30-6-4-18-14-18-30z" fill="url(#ciKnightPlate)" ' +
-    'stroke="#ffd98a" stroke-width="3.2" stroke-linejoin="round"/>' +
-    '<path d="M50 24v50" stroke="#ffd98a" stroke-opacity=".5" stroke-width="2"/>' +
-    '<circle cx="50" cy="41" r="4.4" fill="#ffd98a"/><circle cx="50" cy="41" r="1.7" fill="#182436"/>' +
-    '<g transform="rotate(26 50 50)">' +
-    '<path d="M50 8l5.4 10v30H44.6V18z" fill="#eef4ff"/>' +
-    '<path d="M50 8l5.4 10v30H50z" fill="#b9c8da"/>' +
-    '<path d="M36 48h28l-3.4 7.6H39.4z" fill="#f0c46a"/>' +
-    '<rect x="46.4" y="55.6" width="7.2" height="16" rx="2" fill="#3a2414"/>' +
-    '<circle cx="50" cy="75" r="4.6" fill="#e0b455"/>' +
+    '<path d="M50 12l26 9v22c0 18-11 29-26 37-15-8-26-19-26-37V21z" fill="#241708" stroke="#d4a017" stroke-width="3.4" stroke-linejoin="round"/>' +
+    '<path d="M50 17v63" stroke="#d4a017" stroke-opacity=".4" stroke-width="2"/>' +
+    '<g transform="rotate(38 50 50)">' +
+    '<path d="M50 13l4.6 9v35H45.4V22z" fill="#d4a017"/>' +
+    '<path d="M37 50h26l-3.2 7.4H40.2z" fill="#8b6914"/>' +
+    '<rect x="46.6" y="57.4" width="6.8" height="15" rx="2" fill="#5c3317"/>' +
+    '<circle cx="50" cy="76.5" r="4.4" fill="#d4a017"/>' +
     '</g></svg>',
-  gunslinger:
+  gunslinger:   /* flintlock pistol */
     '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
-    '<g transform="rotate(-30 50 50)">' +
-    '<rect x="16" y="43" width="48" height="9" rx="2.4" fill="#dfe9f5"/>' +
-    '<rect x="16" y="41" width="30" height="3" fill="#a9bccd"/>' +
-    '<path d="M32 52h14l-3.4 17h-11z" fill="#8fa4b8"/>' +
-    '<path d="M45 52h6l-1.6 12h-3.4z" fill="#e0b455"/>' +
-    '<circle cx="68" cy="47.5" r="5" fill="#7dd3fc" opacity=".4"/>' +
-    '<circle cx="68" cy="47.5" r="2.2" fill="#7dd3fc"/>' +
+    '<g transform="rotate(-24 50 50)">' +
+    '<rect x="13" y="41" width="52" height="8.5" rx="2.6" fill="#d4a017"/>' +
+    '<rect x="61" y="43" width="8" height="4.5" rx="1.6" fill="#8b6914"/>' +
+    '<rect x="29" y="49.5" width="11" height="8" rx="1.6" fill="#8b6914"/>' +
+    '<path d="M32 49.5l4.5-6.5 3.4 2.2-3.4 5.3z" fill="#d4a017"/>' +
+    '<path d="M40 49.5c2.4 8.4-1.6 15-8.4 19.4l-6.4-4.2c5.4-4 7.6-9.4 6.8-15.2z" fill="#5c3317"/>' +
+    '<path d="M35.5 57.5c1.8 1.2 3.8 2 5.9 2.4" stroke="#d4a017" stroke-width="1.7" fill="none" stroke-linecap="round"/>' +
+    '</g></svg>',
+  sniper:   /* long musket */
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<g transform="rotate(-20 50 50)">' +
+    '<rect x="6" y="45" width="70" height="5.4" rx="2.4" fill="#d4a017"/>' +
+    '<circle cx="79" cy="47.6" r="2.6" fill="#f5c842"/>' +
+    '<path d="M6 45l16-4.6 4.4 10L10 55z" fill="#5c3317"/>' +
+    '<rect x="33" y="50.4" width="8" height="13" rx="2.4" fill="#5c3317"/>' +
+    '<path d="M37 50.4c0 4-2.6 6.4-6 7" stroke="#d4a017" stroke-width="1.8" fill="none" stroke-linecap="round"/>' +
+    '</g></svg>',
+  mage:   /* staff with an orb */
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<rect x="46.8" y="28" width="6.4" height="60" rx="3.2" fill="#5c3317"/>' +
+    '<path d="M46.8 38l6.4-4M46.8 50l6.4-4M46.8 62l6.4-4M46.8 74l6.4-4" stroke="#d4a017" stroke-width="1.7" stroke-linecap="round"/>' +
+    '<circle cx="50" cy="19" r="13" fill="#d4a017" fill-opacity=".22"/>' +
+    '<circle cx="50" cy="19" r="12" fill="none" stroke="#d4a017" stroke-width="2"/>' +
+    '<circle cx="50" cy="19" r="7.4" fill="#d4a017"/>' +
+    '<circle cx="47.6" cy="16.6" r="2.2" fill="#f5c842"/>' +
+    '</svg>',
+  berserker:   /* crossed hand axes */
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<g transform="rotate(36 50 50)">' +
+    '<rect x="46.4" y="30" width="7.2" height="54" rx="3.4" fill="#5c3317"/>' +
+    '<path d="M50 14c11 1 19 8 21 18-8-4-15-5-21-5z" fill="#d4a017"/>' +
+    '<path d="M50 14c11 1 19 8 21 18" fill="none" stroke="#f5c842" stroke-width="1.6"/>' +
     '</g>' +
-    '<g transform="rotate(30 50 50)">' +
-    '<rect x="16" y="48" width="48" height="9" rx="2.4" fill="#c9d6e4"/>' +
-    '<rect x="16" y="46" width="30" height="3" fill="#93a5bb"/>' +
-    '<path d="M32 57h14l-3.4 17h-11z" fill="#7d92a8"/>' +
-    '<path d="M45 57h6l-1.6 12h-3.4z" fill="#e0b455"/>' +
-    '<circle cx="68" cy="52.5" r="5" fill="#7dd3fc" opacity=".4"/>' +
-    '<circle cx="68" cy="52.5" r="2.2" fill="#7dd3fc"/>' +
-    '</g></svg>',
-  sniper:
-    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
-    '<g transform="rotate(-26 50 50)">' +
-    '<path d="M12 54l20-8 6 8-20 10z" fill="#9fb0c2"/>' +
-    '<rect x="26" y="45" width="52" height="8" rx="2" fill="#e6eef8"/>' +
-    '<rect x="62" y="47.4" width="22" height="3.2" rx="1.4" fill="#c9d6e4"/>' +
-    '<rect x="30" y="53" width="9" height="14" rx="2" fill="#8fa4b8"/>' +
-    '<rect x="26" y="35" width="24" height="7" rx="2" fill="#3c4d61"/>' +
-    '<circle cx="38" cy="38.5" r="5.4" fill="none" stroke="#ffd98a" stroke-width="2"/>' +
-    '<circle cx="38" cy="38.5" r="2" fill="#c7d2fe"/>' +
-    '<rect x="84" y="46" width="5" height="6" rx="1.4" fill="#ffd98a"/>' +
-    '<path d="M89 49h7" stroke="#c7d2fe" stroke-width="2" opacity=".55"/>' +
-    '</g></svg>',
-  mage:
-    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
-    '<defs><radialGradient id="ciMageGlow">' +
-    '<stop offset="0" stop-color="#f7f2ff"/><stop offset=".45" stop-color="#a78bfa"/>' +
-    '<stop offset="1" stop-color="#6d28d9" stop-opacity="0"/></radialGradient></defs>' +
-    '<circle cx="50" cy="50" r="30" fill="url(#ciMageGlow)"/>' +
-    '<circle cx="50" cy="50" r="13.4" fill="#f5f3ff"/>' +
-    '<circle cx="50" cy="50" r="9.6" fill="none" stroke="#8b5cf6" stroke-width="1.8"/>' +
-    '<path d="M50 50V41.4M50 50l6 4" stroke="#6d28d9" stroke-width="2.6" stroke-linecap="round"/>' +
-    '<circle cx="50" cy="50" r="27" fill="none" stroke="#ffd98a" stroke-width="2.2"/>' +
-    '<g fill="none" stroke="#ffd98a" stroke-width="2.2" stroke-linecap="round">' +
-    '<path d="M77 50a4 4 0 0 1 4 4"/><path d="M23 50a4 4 0 0 0-4 4"/>' +
-    '<path d="M50 77a4 4 0 0 1-4 4"/><path d="M50 23a4 4 0 0 1 4-4"/>' +
-    '</g></svg>',
-  berserker:
-    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
-    '<g transform="rotate(40 50 50)">' +
-    '<rect x="24" y="47" width="46" height="5" rx="2.4" fill="#6b4a2c"/>' +
-    '<path d="M64 29l18-7 7 21-16 6-9-9z" fill="#ffb27a" stroke="#ffe7b8" stroke-width="2" stroke-linejoin="round"/>' +
+    '<g transform="rotate(-36 50 50)">' +
+    '<rect x="46.4" y="30" width="7.2" height="54" rx="3.4" fill="#5c3317"/>' +
+    '<path d="M50 14c-11 1-19 8-21 18 8-4 15-5 21-5z" fill="#d4a017"/>' +
+    '<path d="M50 14c-11 1-19 8-21 18" fill="none" stroke="#f5c842" stroke-width="1.6"/>' +
     '</g>' +
-    '<g transform="rotate(-40 50 50)">' +
-    '<rect x="24" y="47" width="46" height="5" rx="2.4" fill="#6b4a2c"/>' +
-    '<path d="M64 29l18-7 7 21-16 6-9-9z" fill="#ff8a5c" stroke="#ffe7b8" stroke-width="2" stroke-linejoin="round"/>' +
+    '<circle cx="50" cy="52" r="5.2" fill="#d4a017"/>' +
+    '</svg>',
+  shadow:   /* hooded figure silhouette */
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<path d="M50 12c14 0 22 10 22 24v7c0 4-1.6 6.4-3.6 8.4C74 55.6 78 63.6 78 74H22c0-10.4 4-18.4 9.6-22.6-2-2-3.6-4.4-3.6-8.4v-7c0-14 8-24 22-24z" fill="#241708" stroke="#d4a017" stroke-width="3" stroke-linejoin="round"/>' +
+    '<path d="M50 22c8.4 0 13.6 6.2 13.6 14.4C63.6 46.6 57.4 53 50 53s-13.6-6.4-13.6-16.6C36.4 28.2 41.6 22 50 22z" fill="#0e0903"/>' +
+    '<ellipse cx="44.4" cy="37" rx="2.7" ry="1.9" fill="#d4a017"/>' +
+    '<ellipse cx="55.6" cy="37" rx="2.7" ry="1.9" fill="#d4a017"/>' +
+    '</svg>',
+  tech:   /* mechanical gear with a lightning bolt */
+    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<g fill="#d4a017">' +
+    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2"/>' +
+    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2" transform="rotate(45 50 50)"/>' +
+    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2" transform="rotate(90 50 50)"/>' +
+    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2" transform="rotate(135 50 50)"/>' +
+    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2" transform="rotate(180 50 50)"/>' +
+    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2" transform="rotate(225 50 50)"/>' +
+    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2" transform="rotate(270 50 50)"/>' +
+    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2" transform="rotate(315 50 50)"/>' +
     '</g>' +
-    '<circle cx="50" cy="52" r="5.4" fill="#ffd6a5"/>' +
-    '<circle cx="50" cy="52" r="2" fill="#7a3a1a"/></svg>',
-  shadow:
-    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
-    '<defs><radialGradient id="ciShadowGlow">' +
-    '<stop offset="0" stop-color="#a78bfa" stop-opacity=".5"/>' +
-    '<stop offset="1" stop-color="#4c1d95" stop-opacity="0"/></radialGradient></defs>' +
-    '<circle cx="50" cy="50" r="34" fill="url(#ciShadowGlow)"/>' +
-    '<g transform="rotate(28 50 50)"><path d="M50 12l4.4 16-3 6h-2.8l-3-6z" fill="#c4b5fd"/>' +
-    '<rect x="45.6" y="34" width="8.8" height="12" rx="2" fill="#1b1229"/></g>' +
-    '<g transform="rotate(-28 50 50)"><path d="M50 12l4.4 16-3 6h-2.8l-3-6z" fill="#a78bfa"/>' +
-    '<rect x="45.6" y="34" width="8.8" height="12" rx="2" fill="#1b1229"/></g>' +
-    '<path d="M50 34c13 4 19 16 16 30-6 8-26 8-32 0-3-14 3-26 16-30z" fill="#160f24" ' +
-    'stroke="#a78bfa" stroke-width="2" stroke-linejoin="round"/>' +
-    '<ellipse cx="44" cy="56" rx="3.4" ry="2.2" fill="#e9d5ff"/>' +
-    '<ellipse cx="56" cy="56" rx="3.4" ry="2.2" fill="#e9d5ff"/></svg>',
-  tech:
-    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
-    '<circle cx="50" cy="54" r="29" fill="none" stroke="#6ee7b7" stroke-opacity=".32" stroke-width="2"/>' +
-    '<g stroke="#33473f" stroke-width="5" stroke-linecap="round">' +
-    '<path d="M50 62l-15 13"/><path d="M50 62l15 13"/><path d="M50 62v18"/></g>' +
-    '<circle cx="50" cy="56" r="11" fill="#1f3b34" stroke="#6ee7b7" stroke-width="2.4"/>' +
-    '<rect x="47" y="27" width="6" height="23" rx="3" fill="#a7f3d0"/>' +
-    '<circle cx="50" cy="25" r="4.6" fill="#6ee7b7" fill-opacity=".9"/>' +
-    '<path d="M73 54a23 23 0 0 1-11 19" fill="none" stroke="#d1fae5" stroke-width="3" stroke-linecap="round"/>' +
-    '<path d="M27 54a23 23 0 0 0 11 19" fill="none" stroke="#d1fae5" stroke-width="3" stroke-linecap="round"/></svg>'
+    '<circle cx="50" cy="50" r="23" fill="#241708" stroke="#d4a017" stroke-width="3.4"/>' +
+    '<circle cx="50" cy="50" r="9.5" fill="#141414" stroke="#8b6914" stroke-width="2"/>' +
+    '<path d="M54.5 30l-13 21h8.4l-4.4 17 14.5-22h-9l3-16z" fill="#d4a017"/>' +
+    '</svg>'
 };
 
 /* the emblem markup for one class id */
@@ -6075,7 +6122,8 @@ function nearestTarget(x, y, maxRange) {
 function firePistols(charged) {
   const p = game.player;
   const attack = skillAttackMeta('pistol');
-  const spread = p.arc ? [-0.075, 0, 0.075] : [-0.014, 0.014];
+  const pistolCount = 1 + (firstUpgradeOwned() ? 1 : 0);   /* 1 pistol at base, the second comes with the first skill-tree upgrade */
+  const spread = pistolCount >= 2 ? (p.arc ? [-0.075, 0, 0.075] : [-0.014, 0.014]) : [0];
   for (let i = 0; i < spread.length; i++) {
     const a = p.angle + spread[i];
     p.shotCount = (p.shotCount | 0) + 1;
@@ -6143,7 +6191,8 @@ function fireSniper(charged) {
   const y1 = p.y + Math.sin(a) * (p.r + 16);
   const x2 = p.x + Math.cos(a) * range;
   const y2 = p.y + Math.sin(a) * range;
-  game.beams.push({ kind: 'sniper', x1, y1, x2, y2, life: 0, maxLife: 0.2, width: charged ? 11 : 7, colour: '#e0f2fe', core: '#ffffff' });
+  /* the beam is drawn crossing the full screen, even though the damage scan stops at range */
+  game.beams.push({ kind: 'sniper', x1, y1, x2: p.x + Math.cos(a) * 5200, y2: p.y + Math.sin(a) * 5200, life: 0, maxLife: 0.2, width: charged ? 11 : 7, colour: '#fde68a', core: '#ffffff' });
   const pad = charged ? 16 : 11;
   let landX = p.x + Math.cos(a) * 700, landY = p.y + Math.sin(a) * 700, landed = false;
   let oneShot = !!meta.oneShot;
@@ -6183,7 +6232,7 @@ function fireSniper(charged) {
 function fireMageOrbs(charged) {
   const p = game.player;
   const attack = skillAttackMeta('orb');
-  const n = (p.arc ? 4 : 3) + (p.mageOrbs | 0) + (currentSkill('orb_mastery') ? 1 : 0);
+  const n = mageOrbCount();   /* base 1 orb; +1 Orb Mastery; +1 Singularity */
   for (let i = 0; i < n; i++) {
     const a = p.angle + (i - (n - 1) / 2) * 0.42;
     p.shotCount = (p.shotCount | 0) + 1;
@@ -6212,6 +6261,30 @@ function fireMageOrbs(charged) {
     rand(-30, 30), rand(-30, 30), 0.22, 6, '#c4b5fd', 2);
 }
 
+/* ---- progression principle: every class starts with the simplest version of
+   its weapon and only improves through skill-tree purchases. The first node a
+   player buys in a class's tree is that class's "first upgrade". ---- */
+function firstUpgradeOwned() {
+  const rec = getClassProgress(gameState.currentClass);
+  return !!(rec && rec.owned && rec.owned.length > 0);
+}
+/* chrono mage: 1 orb at base, +1 from Orb Mastery, +1 from Singularity */
+function mageOrbCount() {
+  return 1 + (currentSkill('orb_mastery') ? 1 : 0) + (currentSkill('singularity') ? 1 : 0);
+}
+/* small orb-count badge next to the mage's weapon slot */
+function syncOrbBadge() {
+  const el = UI.orbBadge;
+  if (!el) return;
+  if (getClass().weapon === 'orbs') {
+    el.hidden = false;
+    const n = String(mageOrbCount());
+    if (el.textContent !== n) el.textContent = n;
+  } else {
+    el.hidden = true;
+  }
+}
+
 function fireClassWeapon(dt) {
   const p = game.player;
   if (p.reloadT > 0) { p.reloadT = Math.max(0, p.reloadT - dt); return; }
@@ -6235,7 +6308,10 @@ function fireClassWeapon(dt) {
     else if (cls.weapon === 'daggers') fireDaggers(charged);
     else if (cls.weapon === 'disc') fireDisc(charged);
     else fireMageOrbs(charged);
-    p.fireTimer = (p.fireRate * (charged ? 0.5 : 1)) / (odm() * skillFireRateMult());
+    /* the sniper starts with a slow musket; the first skill-tree upgrade quickens it */
+    let rate = p.fireRate;
+    if (cls.weapon === 'rail' && !firstUpgradeOwned()) rate *= 1.75;
+    p.fireTimer = (rate * (charged ? 0.5 : 1)) / (odm() * skillFireRateMult());
   }
 }
 
@@ -13497,6 +13573,7 @@ function updateHud() {
   if (UI.scoreVal) UI.scoreVal.textContent = gs.score;
   syncAbilityHud();
   syncClassXpHud();
+  syncOrbBadge();
   const p = game.player;
   if (!p) return;
   hudSet(UI.gemVal, String(game.gems));
@@ -15044,17 +15121,20 @@ function block(x, y, w, h, r, fill) {
    electric blue light on the floor. Every class shares this body; only the
    weapon on top changes. */
 const RAEL = {
-  helmet: '#2b3443',
-  helmetLit: '#3d4a5c',
-  helmetDark: '#151b24',
-  navy: '#16233c',
-  navyLit: '#233651',
-  navyDark: '#0b1220',
-  silver: '#b8c4d4',
-  silverDark: '#75849a',
-  leg: '#111a26',
-  boot: '#1c2734'
+  helmet: '#2a2a2a',        /* dark iron */
+  helmetLit: '#4a4a4a',     /* plate highlight */
+  helmetDark: '#151515',
+  navy: '#2a2a2a',          /* barrel chest: dark charcoal grey */
+  navyLit: '#4a4a4a',
+  navyDark: '#1a1a1a',
+  silver: '#3a3a3a',        /* dark iron pauldrons / sleeves */
+  silverDark: '#222222',
+  leg: '#242424',
+  boot: '#1c1c1c',
+  leather: '#5c3317',       /* medieval patch leather */
+  amber: '#d4a017'
 };
+
 
 function drawRaelBody(p, bob, flash, mirror) {
   const t = game.time;
@@ -15070,85 +15150,138 @@ function drawRaelBody(p, bob, flash, mirror) {
   const step = stepping ? Math.sin(p.walk * 1.75) : 0;
   const liftL = step * 1.7;
   const liftR = -step * 1.7;
-  /* idle: a gentle 2px rise and fall on a 1.2s cycle */
-  const idle = stepping ? 0 : Math.sin(t * (TAU / 1.2)) * 1;
+  /* walk animation: a slight left-right tilt on each step */
+  const tilt = stepping ? Math.sin(p.walk * 1.75) * 0.055 : 0;
   const sway = stepping ? Math.cos(p.walk * 0.875) * 0.5 : 0;
 
   ctx.save();
-  ctx.translate(p.x + sway, p.y + (bob || 0) + idle);
+  ctx.translate(p.x + sway, p.y + (bob || 0));
+  ctx.rotate(tilt);
   /* mirror about the body itself, so the turn squash stays centred on him */
   ctx.scale(mirror === undefined ? 1 : mirror, 1);
   if (skinA < 1) ctx.globalAlpha = skinA;
 
-  /* ---- boot glow pooling on the floor ---- */
+  /* ---- amber glow pooling on the floor under the boots ---- */
   for (let i = 0; i < 2; i++) {
     const bx = i === 0 ? -5.4 : 5.4;
     const lift = i === 0 ? liftL : liftR;
-    const glow = ctx.createRadialGradient(bx, 19 + lift * 0.4, 1, bx, 19 + lift * 0.4, 14);
-    glow.addColorStop(0, 'rgba(' + g.rgb + ',' + (0.30 + 0.10 * Math.sin(t * 2.4 + i)).toFixed(3) + ')');
+    const glow = ctx.createRadialGradient(bx, 23.4 + lift * 0.4, 1, bx, 23.4 + lift * 0.4, 13);
+    glow.addColorStop(0, 'rgba(' + g.rgb + ',' + (0.34 + 0.10 * Math.sin(t * 2.4 + i)).toFixed(3) + ')');
     glow.addColorStop(1, 'rgba(' + g.rgb + ',0)');
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.ellipse(bx, 19 + lift * 0.4, 14, 5, 0, 0, TAU);
+    ctx.ellipse(bx, 23.4 + lift * 0.4, 13, 4.6, 0, 0, TAU);
     ctx.fill();
   }
 
-  /* ---- legs: two short dark rectangles with a gap ---- */
-  block(-8.4, 4 + liftL * 0.4, 7, 12, 2.2, F(P.leg));
-  block(1.4, 4 + liftR * 0.4, 7, 12, 2.2, F(P.leg));
+  /* ---- legs: armored greaves, slightly wider at the knee ---- */
+  block(-8.6, 7 + liftL * 0.4, 7.2, 9.5, 2.2, F(P.leg));
+  block(1.4, 7 + liftR * 0.4, 7.2, 9.5, 2.2, F(P.leg));
+  block(-9.4, 12.5 + liftL * 0.4, 8.8, 5.6, 2.4, F(P.leg));   /* knee plate bulges wider */
+  block(0.6, 12.5 + liftR * 0.4, 8.8, 5.6, 2.4, F(P.leg));
+  ctx.strokeStyle = 'rgba(74,74,74,0.8)';
+  ctx.lineWidth = 0.8;
+  roundRect(ctx, -9.4, 12.5 + liftL * 0.4, 8.8, 5.6, 2.4); ctx.stroke();
+  roundRect(ctx, 0.6, 12.5 + liftR * 0.4, 8.8, 5.6, 2.4); ctx.stroke();
 
-  /* ---- boots, wider than the legs ---- */
+  /* ---- boots: flat dark iron with a small amber glow along the sole ---- */
   for (let i = 0; i < 2; i++) {
     const lift = i === 0 ? liftL : liftR;
-    const bx = i === 0 ? -10.2 : 0.6;
-    block(bx, 13.4 + lift, 9.6, 8.6, 2.8, F(P.boot));
-    /* the electric strip along the sole */
+    const bx = i === 0 ? -10.6 : 0.8;
+    block(bx, 17.6 + lift, 9.8, 6, 2.2, F(P.boot));
     ctx.fillStyle = F(g.glow);
     ctx.globalAlpha = flash ? 0.5 : 0.9;
-    roundRect(ctx, bx + 1.5, 19.4 + lift, 6.6, 1.6, 0.8);
+    roundRect(ctx, bx + 1.4, 22.2 + lift, 7, 1.5, 0.7);
     ctx.fill();
     ctx.globalAlpha = 1;
   }
 
-  /* ---- torso: wide barrel chest in dark navy ---- */
-  const chest = ctx.createLinearGradient(0, -8, 0, 7);
+  /* ---- arms: armored dark-grey sleeves ---- */
+  block(-17.2, -9, 4.6, 13.5, 2, F(P.silverDark));
+  block(12.6, -9, 4.6, 13.5, 2, F(P.silverDark));
+  ctx.strokeStyle = 'rgba(74,74,74,0.7)';
+  ctx.lineWidth = 0.8;
+  roundRect(ctx, -17.2, -9, 4.6, 13.5, 2); ctx.stroke();
+  roundRect(ctx, 12.6, -9, 4.6, 13.5, 2); ctx.stroke();
+
+  /* ---- torso: wide barrel chest in dark charcoal grey ---- */
+  const chest = ctx.createLinearGradient(0, -11, 0, 7);
   chest.addColorStop(0, F(P.navyLit));
   chest.addColorStop(0.55, F(P.navy));
   chest.addColorStop(1, F(P.navyDark));
   ctx.fillStyle = F(chest);
-  roundRect(ctx, -13, -8, 26, 15, 4.5);
+  roundRect(ctx, -13.5, -11, 27, 18, 5);
   ctx.fill();
-  /* a dark seam under the chest so the belt reads */
-  ctx.fillStyle = 'rgba(4,8,14,0.6)';
-  roundRect(ctx, -12.4, 4.4, 24.8, 3.4, 1.6);
+  /* dented plate texture: 3 horizontal dent lines hammered across the chest */
+  ctx.strokeStyle = 'rgba(8,8,8,0.65)';
+  ctx.lineWidth = 1.1;
+  for (let i = 0; i < 3; i++) {
+    const y0 = -7.5 + i * 4.6;
+    ctx.beginPath();
+    ctx.moveTo(-11.5, y0);
+    ctx.lineTo(-5, y0 + 1.1);
+    ctx.lineTo(2, y0 - 0.8);
+    ctx.lineTo(11.5, y0 + 0.9);
+    ctx.stroke();
+  }
+  /* plate highlight along the top edge */
+  ctx.strokeStyle = 'rgba(130,130,130,0.5)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-11, -10); ctx.quadraticCurveTo(0, -12, 11, -10); ctx.stroke();
+  /* leather belt: the medieval patch over the futuristic plate */
+  ctx.fillStyle = F(P.leather);
+  roundRect(ctx, -12.6, 4.8, 25.2, 3.4, 1.6);
   ctx.fill();
+  ctx.strokeStyle = 'rgba(20,10,4,0.7)';
+  ctx.lineWidth = 0.8;
+  roundRect(ctx, -12.6, 4.8, 25.2, 3.4, 1.6);
+  ctx.stroke();
 
-  /* ---- silver shoulder pads, protruding on each side ---- */
+  /* ---- shoulder pauldrons: chunky dark-iron rectangles with an amber glow edge ---- */
   for (let i = 0; i < 2; i++) {
     const side = i === 0 ? -1 : 1;
-    const px = side > 0 ? 10.6 : -18.6;
-    block(px, -7.4, 8, 8.2, 2.2, F(P.silver));
+    const px = side > 0 ? 11 : -19.4;
+    const pg = ctx.createLinearGradient(0, -12, 0, -3);
+    pg.addColorStop(0, F(P.helmetLit));
+    pg.addColorStop(1, F(P.helmet));
+    ctx.fillStyle = pg;
+    roundRect(ctx, px, -12, 8.4, 9, 2.4);
+    ctx.fill();
     ctx.strokeStyle = F(P.silverDark);
     ctx.lineWidth = 1;
-    roundRect(ctx, px + 0.5, -6.9, 7, 7.2, 2);
+    roundRect(ctx, px + 0.5, -11.5, 7.4, 8, 2);
     ctx.stroke();
-    /* a navy seam along the inner edge marks the pad as a separate plate */
-    ctx.fillStyle = 'rgba(10,18,30,0.55)';
-    ctx.fillRect(side > 0 ? px : px + 6.7, -6.9, 1.3, 7.2);
+    /* slight amber glow along the outer edge */
+    ctx.save();
+    ctx.shadowColor = g.glow;
+    ctx.shadowBlur = 6;
+    ctx.strokeStyle = 'rgba(' + g.rgb + ',0.75)';
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(side > 0 ? px + 8.2 : px + 0.2, -11.4);
+    ctx.lineTo(side > 0 ? px + 8.2 : px + 0.2, -3.8);
+    ctx.stroke();
+    ctx.restore();
   }
 
-  /* ---- glowing blue chest panel ---- */
+  /* ---- glowing amber core crystal in the centre of the chest ---- */
   const pulse = 0.7 + 0.3 * Math.sin(t * 3.4);
   ctx.save();
   ctx.shadowColor = g.glow;
-  ctx.shadowBlur = 9 * pulse;
-  ctx.fillStyle = F(g.glow);
-  roundRect(ctx, -5.6, -5, 11.2, 6.6, 1.8);
-  ctx.fill();
+  ctx.shadowBlur = 12 * pulse;
+  const core = ctx.createRadialGradient(-1, -3.5, 0.5, 0, -2.5, 5.5);
+  core.addColorStop(0, 'rgba(255,244,214,0.98)');
+  core.addColorStop(0.45, F(g.glow));
+  core.addColorStop(1, 'rgba(120,84,10,0.9)');
+  ctx.fillStyle = F(core);
+  ctx.beginPath(); ctx.arc(0, -2.5, 4.6, 0, TAU); ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.fillStyle = 'rgba(232,253,255,' + (0.45 + 0.4 * pulse).toFixed(2) + ')';
-  roundRect(ctx, -3.8, -3.8, 7.6, 2.4, 1);
-  ctx.fill();
+  /* crystal facets */
+  ctx.strokeStyle = 'rgba(255,240,190,0.85)';
+  ctx.lineWidth = 0.9;
+  ctx.beginPath();
+  ctx.moveTo(0, -6.9); ctx.lineTo(3.2, -2.5); ctx.lineTo(0, 1.9); ctx.lineTo(-3.2, -2.5);
+  ctx.closePath(); ctx.stroke();
   ctx.restore();
 
   /* Void Walker: purple energy cracks running through the black plate */
@@ -15159,7 +15292,7 @@ function drawRaelBody(p, bob, flash, mirror) {
     ctx.shadowBlur = 8;
     ctx.lineWidth = 1.1;
     for (let i = 0; i < 3; i++) {
-      const y0 = -6 + i * 4.4;
+      const y0 = -8 + i * 4.4;
       ctx.beginPath();
       ctx.moveTo(-10 + i * 2, y0);
       ctx.lineTo(-3 + i * 1.5, y0 + 2.2);
@@ -15170,42 +15303,51 @@ function drawRaelBody(p, bob, flash, mirror) {
     ctx.restore();
   }
 
-  /* ---- head: large rounded helmet ---- */
-  ctx.fillStyle = F(P.helmet);
-  roundRect(ctx, -9, -22, 18, 14.5, 5.5);
+  /* ---- head: rounded dark iron helmet, face fully hidden behind the visor ---- */
+  const helm = ctx.createLinearGradient(0, -27, 0, -12);
+  helm.addColorStop(0, F(P.helmetLit));
+  helm.addColorStop(0.6, F(P.helmet));
+  helm.addColorStop(1, F(P.helmetDark));
+  ctx.fillStyle = F(helm);
+  roundRect(ctx, -10, -27, 20, 15, 6.5);
   ctx.fill();
-  /* lit crown + dark jaw give the helmet its roundness */
-  ctx.fillStyle = F(P.helmetLit);
-  roundRect(ctx, -7.4, -21, 14.8, 5, 2.6);
-  ctx.fill();
-  ctx.fillStyle = F(P.helmetDark);
-  roundRect(ctx, -7.6, -11.2, 15.2, 3.2, 1.5);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(9,14,22,0.9)';
+  ctx.strokeStyle = 'rgba(8,8,8,0.9)';
   ctx.lineWidth = 1.2;
-  roundRect(ctx, -9, -22, 18, 14.5, 5.5);
+  roundRect(ctx, -10, -27, 20, 15, 6.5);
   ctx.stroke();
+  /* rivets along the brow */
+  ctx.fillStyle = F(P.silverDark);
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath(); ctx.arc(-6 + i * 4, -25.4, 0.8, 0, TAU); ctx.fill();
+  }
 
-  /* ---- visor: bright cyan band across the middle of the head ---- */
+  /* ---- two small dark-metal horns on top ---- */
+  ctx.fillStyle = F(P.helmetDark);
+  ctx.strokeStyle = 'rgba(74,74,74,0.8)';
+  ctx.lineWidth = 0.8;
+  for (let i = 0; i < 2; i++) {
+    const side = i === 0 ? -1 : 1;
+    ctx.beginPath();
+    ctx.moveTo(side * 5.2, -26.6);
+    ctx.quadraticCurveTo(side * 9.2, -31.8, side * 7, -34.6);
+    ctx.quadraticCurveTo(side * 6, -31, side * 3.4, -27.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  /* ---- narrow glowing amber visor slit ---- */
   ctx.save();
   ctx.shadowColor = g.visor;
   ctx.shadowBlur = 12;
   ctx.fillStyle = F(g.visor);
-  roundRect(ctx, -7, -17.6, 14, 5, 2.3);
+  roundRect(ctx, -7.4, -21.6, 14.8, 3, 1.5);
   ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.fillStyle = 'rgba(240,255,255,0.7)';
-  roundRect(ctx, -5.8, -16.7, 5.6, 1.6, 0.8);
+  ctx.fillStyle = 'rgba(255,246,220,0.85)';
+  roundRect(ctx, -6, -21, 6, 1.2, 0.6);
   ctx.fill();
   ctx.restore();
-
-  /* ---- antenna on the top right ---- */
-  ctx.fillStyle = F(P.silverDark);
-  ctx.fillRect(6.2, -28, 1.7, 6.4);
-  ctx.fillStyle = F(g.visor);
-  ctx.beginPath();
-  ctx.arc(7.05, -28.6, 2, 0, TAU);
-  ctx.fill();
 
   ctx.restore();
 }
@@ -15215,61 +15357,58 @@ function drawRaelBody(p, bob, flash, mirror) {
    points at the cursor no matter which way the body is facing. */
 
 /* ---- art helper: one 17th-century flintlock pistol, barrel along +x ---- */
+
+/* ---- art helper: one proper flintlock pistol, barrel along +x ---- */
 function drawFlintlockPistol(F, muzzleHot) {
-  /* barrel: long octagonal dark-steel tube */
-  const steel = ctx.createLinearGradient(0, -2.6, 0, 2.6);
+  /* grip: curved dark wood, ~12px wide, 18px long, with grain lines */
+  ctx.fillStyle = F('#4a2f1d');
+  ctx.beginPath();
+  ctx.moveTo(9, -2.5);
+  ctx.quadraticCurveTo(7, 8, 2, 15.5);
+  ctx.quadraticCurveTo(0, 17.8, -2, 15);
+  ctx.quadraticCurveTo(3, 7, 5, -2.5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(122,84,52,0.85)';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(7.2, 1); ctx.quadraticCurveTo(5.2, 7.5, 3, 13.6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(5.6, 0); ctx.quadraticCurveTo(4, 6, 2.2, 11.6); ctx.stroke();
+  /* barrel: octagonal dark steel, 40px long, 5px wide */
+  const steel = ctx.createLinearGradient(0, -2.5, 0, 2.5);
   steel.addColorStop(0, F('#5b6470'));
-  steel.addColorStop(0.45, F('#2e343d'));
-  steel.addColorStop(1, F('#171b21'));
+  steel.addColorStop(0.5, F('#2e343d'));
+  steel.addColorStop(1, F('#14181d'));
   ctx.fillStyle = steel;
-  roundRect(ctx, 6, -2.6, 24, 5.2, 1.6);
+  roundRect(ctx, 8, -2.5, 40, 5, 1.8);
   ctx.fill();
   /* octagon facet lines */
   ctx.strokeStyle = 'rgba(200,212,226,0.35)';
   ctx.lineWidth = 0.7;
-  ctx.beginPath(); ctx.moveTo(7, -1.1); ctx.lineTo(29, -1.1); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(7, 1.1); ctx.lineTo(29, 1.1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(9, -1); ctx.lineTo(47, -1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(9, 1); ctx.lineTo(47, 1); ctx.stroke();
   /* muzzle ring */
   ctx.fillStyle = F('#0d1013');
-  roundRect(ctx, 28.6, -3, 2.4, 6, 1);
+  roundRect(ctx, 46.6, -2.9, 2.6, 5.8, 1);
   ctx.fill();
-  /* lock: small rectangular box on the side of the barrel */
+  /* lock: 8x6 dark grey box on the side + tiny hammer */
   ctx.fillStyle = F('#3a4048');
-  roundRect(ctx, 9, -5.4, 7.5, 4.4, 1);
+  roundRect(ctx, 14, -8, 8, 6, 1);
   ctx.fill();
   ctx.strokeStyle = 'rgba(190,200,214,0.4)';
   ctx.lineWidth = 0.6;
-  ctx.strokeRect(9.4, -5, 6.7, 3.6);
-  /* hammer (cock) at the back of the lock */
+  ctx.strokeRect(14.4, -7.6, 7.2, 5.2);
   ctx.fillStyle = F('#565f6b');
   ctx.beginPath();
-  ctx.moveTo(9.6, -5.2);
-  ctx.quadraticCurveTo(7.6, -8.8, 5.4, -7.8);
-  ctx.quadraticCurveTo(7.2, -6.4, 8.4, -4.6);
+  ctx.moveTo(14.6, -7.8);
+  ctx.quadraticCurveTo(12.6, -11.6, 10.2, -10.4);
+  ctx.quadraticCurveTo(11.8, -8.8, 13.2, -6.8);
   ctx.closePath();
   ctx.fill();
-  /* frizzen */
-  ctx.strokeStyle = F('#7c8794');
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(15.4, -5.2); ctx.lineTo(17.8, -6.8); ctx.stroke();
-  /* trigger: small curved loop below the lock */
+  /* trigger loop below the lock */
   ctx.strokeStyle = F('#8b95a3');
   ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.arc(12.6, 1.4, 1.9, 0.15 * Math.PI, 1.15 * Math.PI); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(12.6, -1); ctx.lineTo(12.6, 1.4); ctx.stroke();
-  /* curved dark-wood grip with grain lines */
-  ctx.fillStyle = F('#4a2f1d');
-  ctx.beginPath();
-  ctx.moveTo(6.4, -1.4);
-  ctx.quadraticCurveTo(5.2, 5.4, 1.2, 8.6);
-  ctx.quadraticCurveTo(-0.6, 9.8, -1.4, 8.2);
-  ctx.quadraticCurveTo(1.6, 4.6, 3.4, -1.4);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(122,84,52,0.8)';
-  ctx.lineWidth = 0.7;
-  ctx.beginPath(); ctx.moveTo(5.2, 1.4); ctx.quadraticCurveTo(3.4, 4.6, 1.8, 7.4); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(3.9, 0.4); ctx.quadraticCurveTo(2.6, 3.4, 1.2, 6.2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(18.5, 3.6, 2.2, 0.15 * Math.PI, 1.15 * Math.PI); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(18.5, -1.6); ctx.lineTo(18.5, 3.6); ctx.stroke();
   /* muzzle flash: small orange burst while the shot is hot */
   if (muzzleHot > 0) {
     ctx.save();
@@ -15280,90 +15419,78 @@ function drawFlintlockPistol(F, muzzleHot) {
     ctx.beginPath();
     for (let i = 0; i < 6; i++) {
       const a = i / 6 * TAU + 0.4;
-      const r1 = 2 + 5.5 * muzzleHot;
-      ctx.moveTo(30.8, 0);
-      ctx.lineTo(30.8 + Math.cos(a) * r1, Math.sin(a) * r1);
-      ctx.lineTo(30.8 + Math.cos(a + 0.5) * r1 * 0.45, Math.sin(a + 0.5) * r1 * 0.45);
+      const r1 = 2 + 6 * muzzleHot;
+      ctx.moveTo(49.5, 0);
+      ctx.lineTo(49.5 + Math.cos(a) * r1, Math.sin(a) * r1);
+      ctx.lineTo(49.5 + Math.cos(a + 0.5) * r1 * 0.45, Math.sin(a + 0.5) * r1 * 0.45);
     }
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = '#fff7ed';
-    ctx.beginPath(); ctx.arc(30.8, 0, 1.8 + 2.4 * muzzleHot, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(49.5, 0, 1.8 + 2.6 * muzzleHot, 0, TAU); ctx.fill();
     ctx.restore();
   }
 }
 
-/* ---- art helper: a slim balanced throwing dagger, point along +x ---- */
+/* ---- art helper: a slim balanced dagger held in hand, point along +x ---- */
 function drawHeldDagger(F) {
-  /* wrapped handle */
+  /* wrapped handle: 5px wide, 12px long */
   ctx.fillStyle = F('#241631');
-  roundRect(ctx, -9, -2.2, 8, 4.4, 1.6);
+  roundRect(ctx, -12, -2.5, 12, 5, 1.6);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(167,139,250,0.6)';
+  ctx.strokeStyle = 'rgba(150,140,170,0.7)';
   ctx.lineWidth = 0.8;
   for (let i = 0; i < 3; i++) {
-    ctx.beginPath(); ctx.moveTo(-8 + i * 2.4, -2.2); ctx.lineTo(-6.6 + i * 2.4, 2.2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-11 + i * 3.2, -2.5); ctx.lineTo(-9.6 + i * 3.2, 2.5); ctx.stroke();
   }
-  /* small crossguard */
+  /* tiny crossguard: 10px wide, 3px tall */
   ctx.fillStyle = F('#3f4753');
-  roundRect(ctx, -1.6, -4, 2.2, 8, 1);
+  roundRect(ctx, -1, -5, 3, 10, 1);
   ctx.fill();
-  /* thin tapered blade */
-  const g = ctx.createLinearGradient(0, -1.8, 0, 1.8);
-  g.addColorStop(0, F('#e2e8f0'));
-  g.addColorStop(0.5, F('#94a3b8'));
-  g.addColorStop(1, F('#475569'));
+  /* slim dark blade: 3px wide, 28px long, tapered */
+  const g = ctx.createLinearGradient(0, -1.5, 0, 1.5);
+  g.addColorStop(0, F('#4b5563'));
+  g.addColorStop(0.5, F('#2b313c'));
+  g.addColorStop(1, F('#171b22'));
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(0.4, -1.6); ctx.lineTo(20, -0.5); ctx.lineTo(24, 0); ctx.lineTo(20, 0.5); ctx.lineTo(0.4, 1.6);
+  ctx.moveTo(2, -1.5); ctx.lineTo(28, -0.6); ctx.lineTo(31, 0); ctx.lineTo(28, 0.6); ctx.lineTo(2, 1.5);
   ctx.closePath();
   ctx.fill();
   /* center line */
-  ctx.strokeStyle = 'rgba(15,23,42,0.7)';
-  ctx.lineWidth = 0.7;
-  ctx.beginPath(); ctx.moveTo(1.5, 0); ctx.lineTo(21, 0); ctx.stroke();
+  ctx.strokeStyle = 'rgba(230,235,245,0.5)';
+  ctx.lineWidth = 0.6;
+  ctx.beginPath(); ctx.moveTo(3, 0); ctx.lineTo(28.5, 0); ctx.stroke();
 }
 
-/* ---- art helper: the tech energy disc — shield x saw blade ---- */
+/* ---- art helper: the tech energy disc — flat dark circle, amber ring, cross ---- */
 function drawEnergyDisc(cx, cy, r, spin) {
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(spin);
-  /* saw teeth around the rim */
-  ctx.fillStyle = '#1e3a5f';
-  ctx.beginPath();
-  const teeth = 10;
-  for (let i = 0; i < teeth; i++) {
-    const a0 = i / teeth * TAU, a1 = (i + 0.5) / teeth * TAU, a2 = (i + 1) / teeth * TAU;
-    ctx.lineTo(Math.cos(a0) * r, Math.sin(a0) * r);
-    ctx.lineTo(Math.cos(a1) * (r + 2.6), Math.sin(a1) * (r + 2.6));
-    ctx.lineTo(Math.cos(a2) * r, Math.sin(a2) * r);
-  }
-  ctx.closePath();
-  ctx.fill();
-  /* flat disc body */
-  const g = ctx.createRadialGradient(0, 0, 1, 0, 0, r);
-  g.addColorStop(0, '#0b1220');
-  g.addColorStop(0.7, '#12233a');
-  g.addColorStop(1, '#1e3a5f');
+  /* flat dark-grey disc */
+  const g = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.2, 0, 0, r);
+  g.addColorStop(0, '#4a4a4a');
+  g.addColorStop(0.7, '#2a2a2a');
+  g.addColorStop(1, '#1a1a1a');
   ctx.fillStyle = g;
   ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
-  /* glowing blue edge lines */
-  ctx.strokeStyle = '#38bdf8';
-  ctx.lineWidth = 1.8;
-  ctx.shadowColor = '#22d3ee';
-  ctx.shadowBlur = 12;
-  ctx.beginPath(); ctx.arc(0, 0, r - 0.6, 0, TAU); ctx.stroke();
-  ctx.strokeStyle = 'rgba(103,232,249,0.8)';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(0, 0, r * 0.55, 0, TAU); ctx.stroke();
-  /* central emitter core */
-  ctx.fillStyle = 'rgba(56,189,248,0.9)';
-  ctx.beginPath(); ctx.arc(0, 0, 3.6, 0, TAU); ctx.fill();
-  ctx.fillStyle = '#e0f2fe';
-  ctx.beginPath(); ctx.arc(0, 0, 2.2, 0, TAU); ctx.fill();
-  ctx.fillStyle = '#f0f9ff';
-  ctx.beginPath(); ctx.arc(0, 0, 1.2, 0, TAU); ctx.fill();
+  /* glowing amber ring edge */
+  ctx.strokeStyle = '#d4a017';
+  ctx.lineWidth = 2.4;
+  ctx.shadowColor = '#f5c842';
+  ctx.shadowBlur = 14;
+  ctx.beginPath(); ctx.arc(0, 0, r - 1, 0, TAU); ctx.stroke();
+  /* cross pattern inside */
+  ctx.strokeStyle = 'rgba(245,200,66,0.9)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.62, 0); ctx.lineTo(r * 0.62, 0);
+  ctx.moveTo(0, -r * 0.62); ctx.lineTo(0, r * 0.62);
+  ctx.stroke();
+  /* hub */
+  ctx.fillStyle = '#f5c842';
+  ctx.beginPath(); ctx.arc(0, 0, 2.4, 0, TAU); ctx.fill();
   ctx.restore();
 }
 
@@ -15376,157 +15503,131 @@ function drawRaelWeapon(p, bob, flash) {
   if (cls.weapon === 'axes') return;       /* the twin axes are drawn separately */
 
   const idle = p.moving ? 0 : Math.sin(t * (TAU / 1.2)) * 1;
-  const sx = Math.cos(p.angle) >= 0 ? 1 : -1;
   const skinA = (p.cosmeticAlpha || 1) * (skillCombat().partialInvisible ? 0.55 : 1) * (skillCombat().shadowMeld ? 0.35 : 1);
 
   ctx.save();
   if (skinA < 1) ctx.globalAlpha = skinA;
-  ctx.translate(p.x + sx * 3, p.y + (bob || 0) + idle - 3);
+  /* held in the hand: 16px out in the facing direction, rotating to the cursor */
+  ctx.translate(p.x + Math.cos(p.angle) * 16, p.y + (bob || 0) + idle + Math.sin(p.angle) * 16);
   ctx.rotate(p.angle);
   if (Math.cos(p.angle) < 0) ctx.scale(1, -1);
 
-  /* the gauntlet that visibly holds the weapon in the hand */
+  /* the gauntlet stays on the player's hand, 16px behind the weapon origin */
   ctx.fillStyle = F('#3a2c1a');
-  roundRect(ctx, -3, -3.2, 8.4, 6.4, 3);
+  roundRect(ctx, -19.5, -3.2, 8.4, 6.4, 3);
   ctx.fill();
   ctx.fillStyle = F('#8a6a42');
-  roundRect(ctx, -3.6, -2.6, 4.6, 5.2, 2);
+  roundRect(ctx, -20.1, -2.6, 4.6, 5.2, 2);
   ctx.fill();
 
   const muzzleAge = t - (p.muzzleAt === undefined ? -9 : p.muzzleAt);
 
   if (cls.weapon === 'pistols') {
-    /* dual flintlocks: both rotate with the arm to aim at the cursor */
+    /* one flintlock at base; the second pistol appears after the first skill-tree upgrade */
     const hot = clamp(1 - muzzleAge / 0.09, 0, 1);
-    for (let i = 0; i < 2; i++) {
+    const pistolCount = 1 + (firstUpgradeOwned() ? 1 : 0);
+    for (let i = 0; i < pistolCount; i++) {
       ctx.save();
-      ctx.translate(i === 0 ? 1.5 : -1.5, i === 0 ? -4.6 : 4.6);
-      ctx.rotate(i === 0 ? -0.05 : 0.14);     /* off-hand held slightly lower */
-      drawFlintlockPistol(F, hot);
+      if (i > 0) { ctx.translate(-2, 7.5); ctx.rotate(0.14); }   /* off-hand pistol held lower */
+      drawFlintlockPistol(F, i === 0 ? hot : 0);
       ctx.restore();
     }
   } else if (cls.weapon === 'rail') {
-    /* matchlock arquebus: barrel longer than the whole 44px body */
+    /* long musket: 70px dark barrel, 15px-wide curving wood stock, brass bead */
     const hot = clamp(1 - muzzleAge / 0.12, 0, 1);
-    /* stock: dark wood curving at the butt */
     ctx.fillStyle = F('#4a2f1d');
     ctx.beginPath();
-    ctx.moveTo(-16, 1.8);
-    ctx.quadraticCurveTo(-13, -3.4, -6, -3.2);
-    ctx.lineTo(8, -3.2);
-    ctx.lineTo(8, 3.2);
-    ctx.lineTo(-6, 3.2);
-    ctx.quadraticCurveTo(-14.5, 3.6, -16, 1.8);
+    ctx.moveTo(-22, 3.5);
+    ctx.quadraticCurveTo(-18, -6, -8, -5.5);
+    ctx.lineTo(10, -4);
+    ctx.lineTo(10, 4);
+    ctx.lineTo(-8, 4.5);
+    ctx.quadraticCurveTo(-19, 5.5, -22, 3.5);
     ctx.closePath();
     ctx.fill();
     ctx.strokeStyle = 'rgba(122,84,52,0.75)';
-    ctx.lineWidth = 0.7;
-    ctx.beginPath(); ctx.moveTo(-13, -1); ctx.quadraticCurveTo(-7, 0.4, 4, -0.6); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-13, 1.4); ctx.quadraticCurveTo(-6, 2.2, 5, 1.6); ctx.stroke();
-    /* very long dark-steel barrel */
-    const steel = ctx.createLinearGradient(0, -2.8, 0, 2.8);
+    ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(-19, -1.5); ctx.quadraticCurveTo(-10, 0, 6, -1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-19, 1.8); ctx.quadraticCurveTo(-9, 2.8, 7, 1.8); ctx.stroke();
+    /* barrel: 70px long, 4px wide, dark steel */
+    const steel = ctx.createLinearGradient(0, -2, 0, 2);
     steel.addColorStop(0, F('#6b7480'));
     steel.addColorStop(0.5, F('#333a44'));
     steel.addColorStop(1, F('#14181e'));
     ctx.fillStyle = steel;
-    roundRect(ctx, 4, -2.8, 62, 5.6, 2);
+    roundRect(ctx, 8, -2, 70, 4, 1.6);
     ctx.fill();
-    /* brass bands along the barrel */
+    /* brass bands */
     ctx.fillStyle = F('#b08d2e');
-    for (const bx of [16, 30, 44, 56]) ctx.fillRect(bx, -3, 2.6, 6);
+    ctx.fillRect(22, -2.4, 2.6, 4.8);
+    ctx.fillRect(40, -2.4, 2.6, 4.8);
+    ctx.fillRect(58, -2.4, 2.6, 4.8);
+    /* brass sight bead: tiny 3px circle at the barrel tip */
+    ctx.fillStyle = F('#e3b341');
+    ctx.beginPath(); ctx.arc(78, -3.2, 1.5, 0, TAU); ctx.fill();
     /* muzzle */
     ctx.fillStyle = F('#0c0e12');
-    roundRect(ctx, 64.6, -3.2, 2.6, 6.4, 1.2);
+    roundRect(ctx, 76.6, -2.4, 2.6, 4.8, 1);
     ctx.fill();
-    /* matchlock: plate + serpentine lever + trigger */
+    /* lock + trigger */
     ctx.fillStyle = F('#3a4048');
-    roundRect(ctx, 8, -6.2, 8, 5, 1);
+    roundRect(ctx, 12, -7.5, 8, 5.5, 1);
     ctx.fill();
     ctx.strokeStyle = F('#8b95a3');
-    ctx.lineWidth = 1.3;
-    ctx.beginPath(); ctx.moveTo(12, -6); ctx.quadraticCurveTo(15.5, -9.5, 18, -7); ctx.stroke();
-    ctx.beginPath(); ctx.arc(13, 1.4, 2, 0.1 * Math.PI, 1.1 * Math.PI); ctx.stroke();
-    ctx.fillStyle = F('#565f6b');
-    ctx.beginPath(); ctx.arc(9.5, -6.4, 1.5, 0, TAU); ctx.fill();
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(16, -7.2); ctx.quadraticCurveTo(19.5, -10.5, 22, -8); ctx.stroke();
+    ctx.beginPath(); ctx.arc(17, 2.4, 2, 0.1 * Math.PI, 1.1 * Math.PI); ctx.stroke();
     if (hot > 0) {
       ctx.save();
       ctx.globalAlpha = Math.min(1, hot * 8);
       ctx.shadowColor = '#fde68a';
       ctx.shadowBlur = 18;
       ctx.fillStyle = '#fffbeb';
-      ctx.beginPath(); ctx.arc(68, 0, 3 + 5 * hot, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(80, 0, 3 + 5 * hot, 0, TAU); ctx.fill();
       ctx.restore();
     }
   } else if (cls.weapon === 'daggers') {
-    ctx.translate(2, 2.2);
-    ctx.rotate(-0.12);
     drawHeldDagger(F);
   } else if (cls.weapon === 'disc') {
-    /* launcher cradle with a live energy disc spinning in it */
+    /* launcher cradle + the 18px energy disc */
     ctx.fillStyle = F('#1f2c3a');
-    roundRect(ctx, -1, -3.6, 11, 7.2, 2.4);
+    roundRect(ctx, -6, -3.6, 12, 7.2, 2.4);
     ctx.fill();
-    drawEnergyDisc(13, 0, 6.4, t * 7);
+    drawEnergyDisc(16, 0, 18, t * 7);
   } else {
-    /* chrono staff: tall twisted shaft that floats and bobs, clockface orb on top */
-    const lift = Math.sin(t * 2.2) * 2.6;
+    /* chrono staff: twisted dark-brown shaft 6x50, golden ring + amber crystal top */
+    const lift = Math.sin(t * 2.2) * 2.5;      /* the staff bobs slowly */
     ctx.translate(0, lift);
     const shaft = ctx.createLinearGradient(0, -3, 0, 3);
-    shaft.addColorStop(0, F('#5a4128'));
-    shaft.addColorStop(0.5, F('#3b2a1a'));
-    shaft.addColorStop(1, F('#241708'));
+    shaft.addColorStop(0, F('#6b4a2a'));
+    shaft.addColorStop(0.5, F('#4a3018'));
+    shaft.addColorStop(1, F('#2c1c0c'));
     ctx.fillStyle = shaft;
-    roundRect(ctx, -8, -2.6, 34, 5.2, 2.4);
+    roundRect(ctx, -10, -3, 50, 6, 3);
     ctx.fill();
-    /* the twist: diagonal wraps along the shaft */
-    ctx.strokeStyle = 'rgba(122,84,52,0.9)';
-    ctx.lineWidth = 1.1;
-    for (let i = 0; i < 7; i++) {
-      const x = -7 + i * 4.6;
-      ctx.beginPath(); ctx.moveTo(x, -2.6); ctx.lineTo(x + 2.6, 2.6); ctx.stroke();
-    }
-    /* ornate gold collar */
-    ctx.fillStyle = F('#b08d2e');
-    ctx.fillRect(24, -3.4, 2.4, 6.8);
-    /* the clockface orb */
-    const ox = 30, oy = 0;
-    const pulse = 1 + 0.12 * Math.sin(t * 4);
-    ctx.save();
-    ctx.strokeStyle = 'rgba(245,200,66,0.9)';
-    ctx.lineWidth = 2;
-    ctx.shadowColor = '#f5c842';
-    ctx.shadowBlur = 16;
-    ctx.beginPath(); ctx.arc(ox, oy, 10.5 * pulse, 0, TAU); ctx.stroke();   /* pulsing golden ring */
-    ctx.restore();
-    const face = ctx.createRadialGradient(ox - 2, oy - 2, 1, ox, oy, 9);
-    face.addColorStop(0, '#fff7db');
-    face.addColorStop(0.55, '#f5c842');
-    face.addColorStop(1, '#8a6410');
-    ctx.fillStyle = face;
-    ctx.beginPath(); ctx.arc(ox, oy, 8.6, 0, TAU); ctx.fill();
-    ctx.strokeStyle = '#6b4e0e';
+    /* twist wraps along the shaft */
+    ctx.strokeStyle = 'rgba(20,12,4,0.85)';
     ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.arc(ox, oy, 8.6, 0, TAU); ctx.stroke();
-    /* clock ticks */
-    ctx.strokeStyle = '#4a350a';
-    ctx.lineWidth = 0.9;
-    for (let i = 0; i < 12; i++) {
-      const a = i / 12 * TAU;
-      ctx.beginPath();
-      ctx.moveTo(ox + Math.cos(a) * 6.6, oy + Math.sin(a) * 6.6);
-      ctx.lineTo(ox + Math.cos(a) * 8.2, oy + Math.sin(a) * 8.2);
-      ctx.stroke();
+    for (let i = 0; i < 8; i++) {
+      const x = -9 + i * 6;
+      ctx.beginPath(); ctx.moveTo(x, -3); ctx.lineTo(x + 3.4, 3); ctx.stroke();
     }
-    /* hands sweep with the run clock */
-    const minA = t * 1.2, hrA = t * 0.1;
-    ctx.strokeStyle = '#2c1f08';
-    ctx.lineCap = 'round';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + Math.cos(minA - Math.PI / 2) * 6.2, oy + Math.sin(minA - Math.PI / 2) * 6.2); ctx.stroke();
-    ctx.lineWidth = 1.1;
-    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + Math.cos(hrA - Math.PI / 2) * 4, oy + Math.sin(hrA - Math.PI / 2) * 4); ctx.stroke();
-    ctx.fillStyle = '#2c1f08';
-    ctx.beginPath(); ctx.arc(ox, oy, 1.1, 0, TAU); ctx.fill();
+    /* ornate top: 12px golden ring with a pulsing amber crystal inside */
+    const ox = 44, oy = 0;
+    const pulse = 1 + 0.14 * Math.sin(t * 4);
+    ctx.save();
+    ctx.strokeStyle = F('#d4a017');
+    ctx.lineWidth = 2.6;
+    ctx.shadowColor = '#f5c842';
+    ctx.shadowBlur = 14;
+    ctx.beginPath(); ctx.arc(ox, oy, 12, 0, TAU); ctx.stroke();
+    const crys = ctx.createRadialGradient(ox - 1.5, oy - 1.5, 0.5, ox, oy, 7 * pulse);
+    crys.addColorStop(0, 'rgba(255,246,220,1)');
+    crys.addColorStop(0.5, F('#f5c842'));
+    crys.addColorStop(1, 'rgba(212,160,23,0.85)');
+    ctx.fillStyle = F(crys);
+    ctx.beginPath(); ctx.arc(ox, oy, 6.4 * pulse, 0, TAU); ctx.fill();
+    ctx.restore();
   }
   ctx.restore();
 }
@@ -18538,7 +18639,7 @@ function drawBoss() {
    thruster flames. The sprite mirrors to face the cursor, the weapon pivots on
    the shoulder so it always points at it, and a slow aura ring pulses underfoot.
    With one orb left every glow turns a flickering red. */
-const SOLDIER = { w: 40, h: 44, scale: 1, feet: 22 };
+const SOLDIER = { w: 40, h: 52, scale: 1, feet: 23 };   /* 40x52 time-traveller in patched armor */
 
 function hexTriplet(hex) {
   const h = String(hex).replace('#', '');
@@ -18603,11 +18704,13 @@ function soldierGlow(p) {
   return {
     low: low,
     flick: flick,
-    rgb: low ? '255,74,74' : '56,189,248',
-    glow: low ? '#ff4a4a' : '#38bdf8',
-    visor: low ? '#ff8080' : '#5ff0ff',
-    visorHot: low ? 'rgba(255,235,235,0.95)' : 'rgba(226,255,255,0.95)',
-    visorGlow: low ? 'rgba(255,60,60,0.95)' : 'rgba(34,211,238,0.95)'
+    rgb: low ? '255,74,74' : '212,160,23',
+    glow: low ? '#ff4a4a' : '#d4a017',
+    visor: low ? '#ff8080' : '#f5c842',
+    visorHot: low ? 'rgba(255,235,235,0.95)' : 'rgba(255,246,220,0.97)',
+    visorGlow: low ? 'rgba(255,60,60,0.95)' : 'rgba(245,200,66,0.95)',
+    trail: low ? '#ff4a4a' : '#d4a017',
+    wisp: low ? '#ff8080' : '#f5c842'
   };
 }
 
@@ -19012,78 +19115,78 @@ function drawCosmeticFlourish(p, g, bob, dir, layer) {
 
 /* the longsword itself: always in his hand, always pointed at the cursor */
 
+
 function drawKnightSword(p, bob) {
   const tier = swordTier();
   const def = SWORD_TIERS[tier];
 
-  /* mid-swing the blade rides the arc; the arm pivots with it */
+  /* at rest the sword points at the cursor; mid-swing it rides the arc */
   let ang = p.angle;
   if (p.swingT > 0) {
     const k = 1 - p.swingT / SWORD_SWING_TIME;
     ang = lerp(p.swingFrom, p.swingTo, 1 - Math.pow(1 - k, 2.2));
   }
 
-  /* the blade is held out on the leading hand, not across the chest */
+  /* held at the player's right side, 16px out in the facing direction */
   const side = Math.cos(p.angle) >= 0 ? 1 : -1;
-  const hx = p.x + Math.cos(ang) * 10 + Math.cos(ang + Math.PI / 2) * side * 6;
-  const hy = p.y + (bob || 0) + Math.sin(ang) * 10 + Math.sin(ang + Math.PI / 2) * side * 6 - 5;
+  const hx = p.x + Math.cos(ang) * 16 + Math.cos(ang + Math.PI / 2) * side * 5;
+  const hy = p.y + (bob || 0) + Math.sin(ang) * 16 + Math.sin(ang + Math.PI / 2) * side * 5;
 
   ctx.save();
   ctx.translate(hx, hy);
-  ctx.rotate(ang);                    /* the sword rotates to face the mouse cursor */
-  ctx.scale(0.85, 0.85);
+  ctx.rotate(ang);
 
-  /* --- pommel: round weighted disc --- */
-  const pom = ctx.createRadialGradient(-20.5, -1, 0.5, -19.5, 0, 3.6);
+  /* pommel: round iron disc at the end of the grip */
+  const pom = ctx.createRadialGradient(-24, -1, 0.5, -23, 0, 4.4);
   pom.addColorStop(0, '#5a616b');
   pom.addColorStop(0.6, '#33383f');
   pom.addColorStop(1, '#1b1e23');
   ctx.fillStyle = pom;
-  ctx.beginPath(); ctx.arc(-19.5, 0, 3.4, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(-23, 0, 4.2, 0, TAU); ctx.fill();
   ctx.strokeStyle = 'rgba(210,220,235,0.5)';
-  ctx.lineWidth = 0.7;
-  ctx.beginPath(); ctx.arc(-19.5, 0, 3.4, 0, TAU); ctx.stroke();
+  ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.arc(-23, 0, 4.2, 0, TAU); ctx.stroke();
 
-  /* --- grip: brown leather with alternating dark diagonal wraps --- */
-  ctx.fillStyle = '#5b3a1e';
-  roundRect(ctx, -17.6, -2.2, 12.4, 4.4, 1.8);
+  /* grip: 8px wide, 18px long, brown leather with diagonal wrap lines */
+  ctx.fillStyle = '#5c3317';
+  roundRect(ctx, -20.5, -4, 18, 8, 2);
   ctx.fill();
   ctx.strokeStyle = '#2a1808';
-  ctx.lineWidth = 1.15;
+  ctx.lineWidth = 1.2;
   for (let i = 0; i < 5; i++) {
-    const x = -16.6 + i * 2.5;
-    ctx.beginPath(); ctx.moveTo(x, -2.2); ctx.lineTo(x + 1.6, 2.2); ctx.stroke();
+    const x = -19.5 + i * 3.4;
+    ctx.beginPath(); ctx.moveTo(x, -4); ctx.lineTo(x + 2, 4); ctx.stroke();
   }
   ctx.strokeStyle = 'rgba(214,164,102,0.5)';
   ctx.lineWidth = 0.5;
   for (let i = 0; i < 5; i++) {
-    const x = -15.6 + i * 2.5;
-    ctx.beginPath(); ctx.moveTo(x, -2.2); ctx.lineTo(x + 1.6, 2.2); ctx.stroke();
+    const x = -18.5 + i * 3.4;
+    ctx.beginPath(); ctx.moveTo(x, -4); ctx.lineTo(x + 2, 4); ctx.stroke();
   }
 
-  /* --- crossguard: wide dark-iron bar with slightly curved ends --- */
-  const iron = ctx.createLinearGradient(0, -12, 0, 12);
+  /* crossguard: 20px wide, 5px tall, dark iron horizontal bar with curved ends */
+  const iron = ctx.createLinearGradient(0, -10, 0, 10);
   iron.addColorStop(0, '#4a505a');
   iron.addColorStop(0.5, '#2b3038');
   iron.addColorStop(1, '#191d23');
   ctx.fillStyle = iron;
-  roundRect(ctx, -7, -11.6, 4.6, 23.2, 2.2);
+  roundRect(ctx, -2.5, -10, 5, 20, 2);
   ctx.fill();
-  ctx.beginPath(); ctx.arc(-4.7, -11.8, 2.6, 0, TAU); ctx.fill();   /* curved tips */
-  ctx.beginPath(); ctx.arc(-4.7, 11.8, 2.6, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, -10, 2.6, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 10, 2.6, 0, TAU); ctx.fill();
   ctx.strokeStyle = 'rgba(190,200,215,0.35)';
   ctx.lineWidth = 0.7;
-  roundRect(ctx, -7, -11.6, 4.6, 23.2, 2.2);
+  roundRect(ctx, -2.5, -10, 5, 20, 2);
   ctx.stroke();
 
-  /* --- blade: long tapered silver rectangle --- */
+  /* blade: 60px long, 4px wide at the base tapering to 2px at the tip */
   const bladePath = function () {
     ctx.beginPath();
-    ctx.moveTo(-2.4, -3.5);
-    ctx.lineTo(50, -2.7);
-    ctx.lineTo(63, 0);
-    ctx.lineTo(50, 2.7);
-    ctx.lineTo(-2.4, 3.5);
+    ctx.moveTo(2.5, -2);
+    ctx.lineTo(58, -1);
+    ctx.lineTo(63.5, 0);
+    ctx.lineTo(58, 1);
+    ctx.lineTo(2.5, 2);
     ctx.closePath();
   };
 
@@ -19098,7 +19201,7 @@ function drawKnightSword(p, bob) {
     ctx.restore();
   }
 
-  const steel = ctx.createLinearGradient(0, -3.5, 0, 3.5);
+  const steel = ctx.createLinearGradient(0, -2, 0, 2);
   steel.addColorStop(0, '#8d9db2');
   steel.addColorStop(0.3, '#e6f0ff');
   steel.addColorStop(0.5, '#ffffff');
@@ -19108,19 +19211,19 @@ function drawKnightSword(p, bob) {
   bladePath();
   ctx.fill();
 
-  /* center ridge: a thin darker stripe down the middle of the blade */
+  /* center ridge: thin darker stripe down the middle */
   ctx.strokeStyle = 'rgba(58,70,88,0.6)';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(-1, 0); ctx.lineTo(52, 0); ctx.stroke();
-  /* fuller (blood groove): thin lines running 70% of the blade from the guard */
+  ctx.lineWidth = 0.9;
+  ctx.beginPath(); ctx.moveTo(3.5, 0); ctx.lineTo(58, 0); ctx.stroke();
+  /* fuller: thin groove over 70% of the blade (60px * 0.7 = 42px from the guard) */
   ctx.strokeStyle = 'rgba(40,50,66,0.55)';
-  ctx.lineWidth = 0.8;
-  ctx.beginPath(); ctx.moveTo(0, -1.5); ctx.lineTo(43.5, -1.15); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(0, 1.5); ctx.lineTo(43.5, 1.15); ctx.stroke();
+  ctx.lineWidth = 0.7;
+  ctx.beginPath(); ctx.moveTo(4, -1.1); ctx.lineTo(46, -0.7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(4, 1.1); ctx.lineTo(46, 0.7); ctx.stroke();
   /* bright cutting edge */
   ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-  ctx.lineWidth = 0.9;
-  ctx.beginPath(); ctx.moveTo(-1, -3.4); ctx.lineTo(50, -2.6); ctx.lineTo(62.4, 0); ctx.stroke();
+  ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(3, -1.9); ctx.lineTo(58, -0.95); ctx.lineTo(63, 0); ctx.stroke();
 
   if (def.glow) {
     ctx.save();
@@ -19134,12 +19237,11 @@ function drawKnightSword(p, bob) {
     ctx.lineWidth = 1.4;
     ctx.shadowColor = def.glow;
     ctx.shadowBlur = 12;
-    ctx.beginPath(); ctx.moveTo(0, -3.5); ctx.lineTo(50, -2.7); ctx.lineTo(63, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(4, -2); ctx.lineTo(58, -1); ctx.lineTo(63.5, 0); ctx.stroke();
     ctx.shadowBlur = 0;
   }
   ctx.restore();
 }
-
 
 function drawSwordSwoosh() {
   const R = SWORD_RANGE * 0.86;
@@ -19273,9 +19375,10 @@ function drawPlayer() {
 
   /* very subtle bob while walking (plus a breath when standing still) */
   const dashing = p.dashTimer > 0;
+  /* idle animation: a very subtle 2px bob on a 1.5s cycle */
   const bob = dashing ? 0
     : p.moving ? Math.sin(p.walk) * 1.15
-      : Math.sin(game.time * 2) * 0.35;
+      : Math.sin(game.time * (TAU / 1.5)) * 2;
 
   /* ground shadow + aura ring */
   ctx.save();
@@ -19286,16 +19389,16 @@ function drawPlayer() {
   ctx.restore();
   drawSoldierAura(p, g);
 
-  /* arena entry: a cyan ward that pulses while the 1.5s grace window runs */
+  /* arena entry: an amber ward that pulses while the 1.5s grace window runs */
   if (game.arenaGrace > 0) {
     const t = game.arenaGrace;
     const pulse = 0.55 + 0.45 * Math.sin(game.time * 18);
     const grow = clamp(1 - t / ARENA_GRACE, 0, 1);
     ctx.save();
     ctx.globalAlpha = 0.35 + 0.4 * pulse;
-    ctx.strokeStyle = '#a5f3fc';
+    ctx.strokeStyle = '#f5c842';
     ctx.lineWidth = 2.2;
-    ctx.shadowColor = '#22d3ee';
+    ctx.shadowColor = '#d4a017';
     ctx.shadowBlur = 16;
     ctx.setLineDash([12, 8]);
     ctx.lineDashOffset = -game.time * 60;
@@ -19304,7 +19407,7 @@ function drawPlayer() {
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.globalAlpha = 0.12 + 0.16 * pulse;
-    ctx.fillStyle = '#a5f3fc';
+    ctx.fillStyle = '#f5c842';
     ctx.beginPath();
     ctx.ellipse(p.x, p.y + 6, p.r + 20 + grow * 8, (p.r + 20 + grow * 8) * 0.62, 0, 0, TAU);
     ctx.fill();
@@ -19332,10 +19435,10 @@ function drawPlayer() {
     ctx.rotate(game.time * 1.7);
     const pulse = 0.45 + 0.3 * Math.sin(game.time * 15);
     ctx.globalAlpha = pulse;
-    ctx.strokeStyle = 'rgba(125,211,252,0.9)';
+    ctx.strokeStyle = 'rgba(245,200,66,0.9)';
     ctx.lineWidth = 2.4;
     ctx.lineCap = 'round';
-    ctx.shadowColor = '#7dd3fc';
+    ctx.shadowColor = '#d4a017';
     ctx.shadowBlur = 10;
     for (let i = 0; i < 8; i++) {
       const a = i / 8 * TAU;
@@ -19381,7 +19484,7 @@ function drawPlayer() {
     ctx.restore();
   }
 
-  /* ---- dash trail: blue afterimages of the trooper ---- */
+  /* ---- dash trail: amber afterimages of the trooper ---- */
   if (p.trail && p.trail.length) {
     for (let i = 0; i < p.trail.length; i++) {
       const t = p.trail[i];
@@ -19390,11 +19493,11 @@ function drawPlayer() {
       ctx.globalAlpha = a * 0.30;
       ctx.translate(t.x, t.y);
       ctx.scale(t.dir, 1);
-      ctx.fillStyle = g.trail || '#38bdf8';
+      ctx.fillStyle = g.trail || g.glow;
       roundRect(ctx, -10, -22, 20, 44, 8);
       ctx.fill();
       ctx.globalAlpha = a * 0.5;
-      ctx.fillStyle = g.wisp || '#a5f3fc';
+      ctx.fillStyle = g.wisp || '#f5c842';
       roundRect(ctx, -7, -17.6, 14, 5, 2.3);
       ctx.fill();
       ctx.restore();
@@ -19404,10 +19507,10 @@ function drawPlayer() {
   if (dashing) {
     ctx.save();
     ctx.globalAlpha = 0.28;
-    ctx.strokeStyle = '#7dd3fc';
+    ctx.strokeStyle = '#f5c842';
     ctx.lineWidth = 7;
     ctx.lineCap = 'round';
-    ctx.shadowColor = 'rgba(56,189,248,0.8)';
+    ctx.shadowColor = 'rgba(212,160,23,0.8)';
     ctx.shadowBlur = 10;
     ctx.beginPath();
     ctx.moveTo(p.x - p.dashDir.x * 46, p.y - p.dashDir.y * 46);
@@ -20788,54 +20891,55 @@ function drawObstacles() {
    shadow daggers, the bouncing disc, the death-mark ring and the rage aura.
    ------------------------------------------------------------------------- */
 
+
 function drawAxe(p, ang, lift, side, spin) {
   ctx.save();
-  ctx.translate(p.x, p.y + lift - 3);
+  /* held 16px out in the facing direction */
+  ctx.translate(p.x + Math.cos(ang) * 16, p.y + lift + Math.sin(ang) * 16);
   ctx.rotate(ang + (spin || 0));
-  ctx.translate(7, side * 4.5);
-  /* short thick wooden haft */
-  const wood = ctx.createLinearGradient(0, -2.4, 0, 2.4);
+  ctx.translate(0, side * 4);
+  /* handle: 6px wide, 22px long, dark brown */
+  const wood = ctx.createLinearGradient(0, -3, 0, 3);
   wood.addColorStop(0, '#7a5732');
   wood.addColorStop(0.5, '#5b4028');
   wood.addColorStop(1, '#3a2814');
   ctx.fillStyle = wood;
-  roundRect(ctx, -9, -2.4, 27, 4.8, 2.2);
+  roundRect(ctx, -12, -3, 22, 6, 2.6);
   ctx.fill();
   /* leather wrap on the grip */
   ctx.strokeStyle = '#1f1208';
   ctx.lineWidth = 1.1;
   for (let i = 0; i < 4; i++) {
-    const x = -8 + i * 2.2;
-    ctx.beginPath(); ctx.moveTo(x, -2.4); ctx.lineTo(x + 1.4, 2.4); ctx.stroke();
+    const x = -11 + i * 2.4;
+    ctx.beginPath(); ctx.moveTo(x, -3); ctx.lineTo(x + 1.6, 3); ctx.stroke();
   }
-  /* wide crescent axe head in dark iron */
-  ctx.fillStyle = '#2f3338';
+  /* crescent head: 20px wide, 16px tall, dark iron */
+  const head = ctx.createLinearGradient(0, -8, 0, 8);
+  head.addColorStop(0, '#4a4a4a');
+  head.addColorStop(0.5, '#2a2a2a');
+  head.addColorStop(1, '#161616');
+  ctx.fillStyle = head;
   ctx.beginPath();
-  ctx.moveTo(16, -2);
-  ctx.quadraticCurveTo(30, -14, 34, -2);
-  ctx.quadraticCurveTo(35, 0, 34, 2);
-  ctx.quadraticCurveTo(30, 14, 16, 2);
+  ctx.moveTo(10, -8);
+  ctx.quadraticCurveTo(28, -9, 30, 0);
+  ctx.quadraticCurveTo(28, 9, 10, 8);
   ctx.closePath();
   ctx.fill();
-  /* lighter edge highlight along the outer crescent */
-  ctx.strokeStyle = '#aab4c2';
-  ctx.lineWidth = 1.7;
+  /* sharp bright edge highlight on the blade curve */
+  ctx.strokeStyle = '#e8edf5';
+  ctx.lineWidth = 1.8;
   ctx.beginPath();
-  ctx.moveTo(16.6, -2.2);
-  ctx.quadraticCurveTo(30, -13.4, 33.6, -1.6);
+  ctx.moveTo(11, -7.6);
+  ctx.quadraticCurveTo(27.5, -8.4, 29.6, 0);
   ctx.stroke();
-  ctx.strokeStyle = 'rgba(170,180,194,0.8)';
+  ctx.strokeStyle = 'rgba(232,237,245,0.75)';
   ctx.lineWidth = 1.4;
   ctx.beginPath();
-  ctx.moveTo(16.6, 2.2);
-  ctx.quadraticCurveTo(30, 13.4, 33.6, 1.6);
+  ctx.moveTo(11, 7.6);
+  ctx.quadraticCurveTo(27.5, 8.4, 29.6, 0);
   ctx.stroke();
-  /* haft cap through the head */
-  ctx.fillStyle = '#241708';
-  ctx.beginPath(); ctx.arc(17, 0, 2, 0, TAU); ctx.fill();
   ctx.restore();
 }
-
 
 function drawBerserkerAxes(p, bob) {
   const t = game.time;
@@ -20856,18 +20960,19 @@ function drawBerserkerAxes(p, bob) {
 }
 
 
+
 function drawShadowDagger(b) {
   const a = Math.atan2(b.vy, b.vx);
   const spin = a + (b.spin || 0);            /* tumbling fast in flight */
-  /* motion-blur ghosts trailing behind */
+  /* dark motion-blur trail behind the spinning dagger */
   for (let gI = 1; gI <= 3; gI++) {
     ctx.save();
-    ctx.globalAlpha = 0.16 / gI;
+    ctx.globalAlpha = 0.18 / gI;
     ctx.translate(b.x - b.vx * 0.012 * gI, b.y - b.vy * 0.012 * gI);
     ctx.rotate(spin);
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = '#141821';
     ctx.beginPath();
-    ctx.moveTo(13, 0); ctx.lineTo(-1, -2.4); ctx.lineTo(-7, 0); ctx.lineTo(-1, 2.4);
+    ctx.moveTo(16, 0); ctx.lineTo(-10, -1.5); ctx.lineTo(-12, 0); ctx.lineTo(-10, 1.5);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -20875,36 +20980,33 @@ function drawShadowDagger(b) {
   ctx.save();
   ctx.translate(b.x, b.y);
   ctx.rotate(spin);
-  ctx.shadowColor = '#a78bfa';
-  ctx.shadowBlur = 12;
-  /* thin tapered blade */
-  const g = ctx.createLinearGradient(0, -2, 0, 2);
-  g.addColorStop(0, '#e2e8f0');
-  g.addColorStop(0.5, '#94a3b8');
-  g.addColorStop(1, '#475569');
+  /* slim dark blade: 28px long, 3px wide */
+  const g = ctx.createLinearGradient(0, -1.5, 0, 1.5);
+  g.addColorStop(0, '#4b5563');
+  g.addColorStop(0.5, '#2b313c');
+  g.addColorStop(1, '#171b22');
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(14, 0); ctx.lineTo(-1, -2.6); ctx.lineTo(-7, 0); ctx.lineTo(-1, 2.6);
+  ctx.moveTo(16, 0); ctx.lineTo(-10, -1.5); ctx.lineTo(-12, 0); ctx.lineTo(-10, 1.5);
   ctx.closePath();
   ctx.fill();
   /* center line */
-  ctx.strokeStyle = 'rgba(15,23,42,0.75)';
-  ctx.lineWidth = 0.8;
-  ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-4, 0); ctx.stroke();
-  /* small crossguard */
+  ctx.strokeStyle = 'rgba(230,235,245,0.5)';
+  ctx.lineWidth = 0.6;
+  ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-9, 0); ctx.stroke();
+  /* tiny crossguard: 10px wide, 3px tall */
   ctx.fillStyle = '#3f4753';
-  roundRect(ctx, -8.6, -3.4, 2, 6.8, 0.8);
+  roundRect(ctx, -14, -5, 3, 10, 1);
   ctx.fill();
-  /* wrapped handle */
+  /* wrapped handle: 5px wide, 12px long */
   ctx.fillStyle = '#241631';
-  roundRect(ctx, -14, -2, 5.6, 4, 1.4);
+  roundRect(ctx, -26, -2.5, 12, 5, 1.4);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(167,139,250,0.65)';
+  ctx.strokeStyle = 'rgba(150,140,170,0.7)';
   ctx.lineWidth = 0.7;
   for (let i = 0; i < 3; i++) {
-    ctx.beginPath(); ctx.moveTo(-13 + i * 1.7, -2); ctx.lineTo(-12 + i * 1.7, 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-25 + i * 3.4, -2.5); ctx.lineTo(-23.6 + i * 3.4, 2.5); ctx.stroke();
   }
-  ctx.shadowBlur = 0;
   ctx.restore();
 }
 
@@ -20913,20 +21015,20 @@ function drawDiscs() {
   if (!game.discs || !game.discs.length) return;
   for (let i = 0; i < game.discs.length; i++) {
     const d = game.discs[i];
-    /* cyan glow-trail ghosts behind the spinning disc */
+    /* amber glow-trail ghosts behind the spinning disc */
     for (let gI = 1; gI <= 3; gI++) {
       ctx.save();
       ctx.globalAlpha = 0.16 / gI;
-      ctx.strokeStyle = '#22d3ee';
+      ctx.strokeStyle = '#d4a017';
       ctx.lineWidth = 2.4;
-      ctx.shadowColor = '#22d3ee';
+      ctx.shadowColor = '#f5c842';
       ctx.shadowBlur = 8;
       ctx.beginPath();
-      ctx.arc(d.x - d.vx * 0.014 * gI, d.y - d.vy * 0.014 * gI, 10, 0, TAU);
+      ctx.arc(d.x - d.vx * 0.014 * gI, d.y - d.vy * 0.014 * gI, 18, 0, TAU);
       ctx.stroke();
       ctx.restore();
     }
-    drawEnergyDisc(d.x, d.y, 10, d.spin);
+    drawEnergyDisc(d.x, d.y, 18, d.spin);
   }
   ctx.shadowBlur = 0;
 }
@@ -20999,57 +21101,38 @@ function drawBullets() {
 /* a slow violet orb with a spinning halo — the chrono mage's homing shot */
 
 /* the chrono mage's homing shot: a small golden clockface circle */
+
+/* the chrono mage's homing shot: a small glowing 8px amber circle */
 function drawTimeOrb(b) {
-  const t = game.time;
-  const R = b.r * 1.9;
   ctx.save();
-  /* golden streak tail */
-  const tail = ctx.createLinearGradient(b.x - b.vx * 0.07, b.y - b.vy * 0.07, b.x, b.y);
-  tail.addColorStop(0, 'rgba(245,200,66,0)');
-  tail.addColorStop(1, 'rgba(245,200,66,0.55)');
+  /* short amber streak tail */
+  const tail = ctx.createLinearGradient(b.x - b.vx * 0.06, b.y - b.vy * 0.06, b.x, b.y);
+  tail.addColorStop(0, 'rgba(212,160,23,0)');
+  tail.addColorStop(1, 'rgba(212,160,23,0.55)');
   ctx.strokeStyle = tail;
-  ctx.lineWidth = b.r * 1.1;
+  ctx.lineWidth = 5;
   ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(b.x - b.vx * 0.07, b.y - b.vy * 0.07);
+  ctx.moveTo(b.x - b.vx * 0.06, b.y - b.vy * 0.06);
   ctx.lineTo(b.x, b.y);
   ctx.stroke();
-  /* soft golden glow body */
-  const g = ctx.createRadialGradient(b.x, b.y, 0.5, b.x, b.y, R);
-  g.addColorStop(0, 'rgba(255,247,219,0.98)');
-  g.addColorStop(0.45, 'rgba(245,200,66,0.95)');
-  g.addColorStop(0.8, 'rgba(212,160,23,0.55)');
-  g.addColorStop(1, 'rgba(138,100,16,0)');
+  /* soft amber glow */
+  const R = 13 + 1.5 * Math.sin(game.time * 9 + (b.spin || 0));
+  const g = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, R);
+  g.addColorStop(0, 'rgba(255,240,190,0.95)');
+  g.addColorStop(0.45, 'rgba(245,200,66,0.85)');
+  g.addColorStop(1, 'rgba(212,160,23,0)');
   ctx.fillStyle = g;
   ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, TAU); ctx.fill();
-  /* clockface */
+  /* the 8px amber circle itself */
   ctx.shadowColor = '#f5c842';
-  ctx.shadowBlur = 10;
-  ctx.fillStyle = '#fff3cf';
-  ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
-  ctx.strokeStyle = '#8a6410';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
-  /* ticks */
-  ctx.strokeStyle = '#6b4e0e';
-  ctx.lineWidth = 0.7;
-  for (let i = 0; i < 8; i++) {
-    const a = i / 8 * TAU + (b.spin || 0);
-    ctx.beginPath();
-    ctx.moveTo(b.x + Math.cos(a) * (b.r - 1.6), b.y + Math.sin(a) * (b.r - 1.6));
-    ctx.lineTo(b.x + Math.cos(a) * (b.r - 0.4), b.y + Math.sin(a) * (b.r - 0.4));
-    ctx.stroke();
-  }
-  /* spinning hands */
-  const ha = (b.spin || 0) * 2, ma = (b.spin || 0) * 5 + t;
-  ctx.strokeStyle = '#2c1f08';
-  ctx.lineCap = 'round';
-  ctx.lineWidth = 1.1;
-  ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x + Math.cos(ma - Math.PI / 2) * (b.r - 1.8), b.y + Math.sin(ma - Math.PI / 2) * (b.r - 1.8)); ctx.stroke();
-  ctx.lineWidth = 0.9;
-  ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x + Math.cos(ha - Math.PI / 2) * (b.r - 3), b.y + Math.sin(ha - Math.PI / 2) * (b.r - 3)); ctx.stroke();
-  ctx.fillStyle = '#2c1f08';
-  ctx.beginPath(); ctx.arc(b.x, b.y, 0.9, 0, TAU); ctx.fill();
+  ctx.shadowBlur = 12;
+  const c = ctx.createRadialGradient(b.x - 2, b.y - 2, 0.5, b.x, b.y, 8);
+  c.addColorStop(0, '#fff6d8');
+  c.addColorStop(0.6, '#f5c842');
+  c.addColorStop(1, '#d4a017');
+  ctx.fillStyle = c;
+  ctx.beginPath(); ctx.arc(b.x, b.y, 8, 0, TAU); ctx.fill();
   ctx.restore();
 }
 
