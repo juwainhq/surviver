@@ -368,7 +368,7 @@
   #dangerBorder.on{ opacity:1; animation:bossPulse 1.6s ease-in-out infinite; }
   #dangerBorder.flash{ animation:bossFlash .32s steps(1,end) 5; }
   @keyframes bossFlash{
-    0%,49%{ opacity:1; box-shadow:inset 0 0 0 14px rgba(255,26,26,.95), inset 0 0 120px rgba(255,20,20,.55); }
+    0%,49%{ opacity:1; box-shadow:inset 0 0 0 14px var(--boss-tint, rgba(255,26,26,.95)), inset 0 0 120px var(--boss-glow, rgba(255,20,20,.55)); }
     50%,100%{ opacity:.18; }
   }
   @keyframes bossPulse{
@@ -1493,7 +1493,7 @@
       <span class="au-key" id="auKey">SHIFT</span>
     </div>
     <div class="au-eyebrow">NEW ABILITY UNLOCKED</div>
-    <div class="au-name" id="auName">Dash</div>
+    <div class="au-name" id="auName">Ability</div>
     <div class="au-rule"></div>
     <div class="au-desc" id="auDesc">Blink a short distance, invincible.</div>
     <div class="au-hint" id="auHint">Press SHIFT to use it</div>
@@ -1514,35 +1514,29 @@
         <span class="ab-sweep" aria-hidden="true"></span>
       </button><span class="key">Q</span>
     </div>
-    <div class="ability locked" id="abNova">
-      <button class="ab-btn" type="button" data-ability="nova" aria-label="Nova Blast (E)" disabled>
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 1 2.1 6.1L19.8 4.2l-2.9 5.7L23 12l-6.1 2.1 2.9 5.7-5.7-2.9L12 23l-2.1-6.1-5.7 2.9 2.9-5.7L1 12l6.1-2.1-2.9-5.7 5.7 2.9z"/></svg>
+    <div class="ability locked" id="abE">
+      <button class="ab-btn" type="button" data-ability="e" aria-label="Ability 2 (E)" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg>
         <span class="ab-sweep" aria-hidden="true"></span>
       </button><span class="key">E</span>
     </div>
-    <div class="ability locked" id="abDash">
-      <button class="ab-btn" type="button" data-ability="dash" aria-label="Dash (SHIFT)" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 4 8 8-8 8"/></svg>
+    <div class="ability locked" id="abShift">
+      <button class="ab-btn" type="button" data-ability="shift" aria-label="Ability 3 (SHIFT)" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 4 8 8-8 8"/></svg>
         <span class="ab-sweep" aria-hidden="true"></span>
       </button><span class="key">SHIFT</span>
     </div>
-    <div class="ability locked" id="abTurret">
-      <button class="ab-btn" type="button" data-ability="turret" aria-label="Turret Drop (F)" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M12 5v15M8 20h8"/></svg>
+    <div class="ability locked" id="abF">
+      <button class="ab-btn" type="button" data-ability="f" aria-label="Ability 4 (F)" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 5h14M12 5v14M8 19h8"/></svg>
         <span class="ab-sweep" aria-hidden="true"></span>
       </button><span class="key">F</span>
     </div>
-    <div class="ability locked" id="abOvercharge">
-      <button class="ab-btn" type="button" data-ability="overcharge" aria-label="Overcharge (R)" disabled>
+    <div class="ability locked" id="abR">
+      <button class="ab-btn" type="button" data-ability="r" aria-label="Ability 5 (R)" disabled>
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 10-13h-7z"/></svg>
         <span class="ab-sweep" aria-hidden="true"></span>
       </button><span class="key">R</span>
-    </div>
-    <div class="ability locked" id="abBomb">
-      <button class="ab-btn" type="button" data-ability="bomb" aria-label="Time Bomb (X)" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
-        <span class="ab-sweep" aria-hidden="true"></span>
-      </button><span class="key">X</span>
     </div>
   </div>
 </div>
@@ -1587,7 +1581,7 @@
       <div class="sp-title">Settings</div>
       <div class="sp-row"><span>Best score</span><b id="spBest">0</b></div>
       <div class="sp-row"><span>Lifetime gems</span><b id="spGems">0</b></div>
-      <div class="sp-row"><span>Saved run</span><b id="spRun">None</b></div>
+      <div class="sp-row"><span>Saved run</span><b id="spRun">No saved run</b></div>
       <div class="sp-rule"></div>
       <button id="btnResetSave" type="button">Reset save</button>
       <div id="spNote">Clears the saved run, the best score, the gem bank and every shop purchase.</div>
@@ -1614,9 +1608,9 @@
       <div class="row"><b>WASD</b> move</div>
       <div class="row"><b>LEFT CLICK</b> use class weapon</div>
       <div class="row"><b>Q</b> class ability</div>
-      <div class="row"><b>E</b> Nova Blast · <b>SHIFT</b> Dash · <b>F</b> Turret Drop · <b>R</b> Overcharge · <b>X</b> Time Bomb</div>
+      <div class="row"><b>Q</b> Class ability · <b>E</b> Ability 2 · <b>SHIFT</b> Ability 3 · <b>F</b> Ability 4 · <b>R</b> Ability 5</div>
       <div class="row"><b>1 2 3</b> use a satchel supply</div>
-      <div class="row">Nova Blast, Dash, Turret Drop, Overcharge and Time Bomb are unlocked by defeating bosses — one per boss, in that order.</div>
+      <div class="row">Each class has four unique unlockable abilities. Boss 1 unlocks E, boss 2 unlocks SHIFT, boss 3 unlocks F, and boss 4 unlocks R.</div>
       <div class="row">Clear every arena, beat the champion, then walk into the portal it leaves behind. Six universes, five levels each.</div>
       <button class="btn" id="btnHowToBack" type="button">Back</button>
     </div>
@@ -2344,11 +2338,10 @@ const UI = {
   briefObjective: document.getElementById('briefObjective'),
   abilities: {
     q: document.getElementById('abQ'),
-    nova: document.getElementById('abNova'),
-    dash: document.getElementById('abDash'),
-    turret: document.getElementById('abTurret'),
-    overcharge: document.getElementById('abOvercharge'),
-    bomb: document.getElementById('abBomb')
+    e: document.getElementById('abE'),
+    shift: document.getElementById('abShift'),
+    f: document.getElementById('abF'),
+    r: document.getElementById('abR')
   },
   overchargeGlow: document.getElementById('overchargeGlow'),
   menu: document.getElementById('mainMenu'),
@@ -2535,13 +2528,13 @@ const MEDIEVAL_LEVELS = [
     waves: [{ count: 8, types: ['knight'] }, { count: 8, types: ['knight'] }],
     arenas: [[720, 760], [2320, 880], [1480, 2420]],
     bossPos: [1500, 400],
-    boss: { name: 'The Black Knight', hp: 50, r: 40, color: '#f97316', speed: 82 }
+    boss: { name: 'Sir Malvork the Gatekeeper', hp: 40, r: 40, color: '#dc2626', speed: 92, kit: 'gatekeeper' }
   },
   {
     id: 2,
     name: 'The Dark Forest',
     blurb: 'Black roots and green fog. Hooded archers watch from between the trunks.',
-    story: 'Past the village the road vanishes under black roots. Green fog crawls along the soil and hooded archers watch from between the trunks. The Forest Witch is close.',
+    story: 'Past the village the road vanishes under black roots. Green fog crawls along the soil and hooded archers watch from between the trunks. The Plague Witch is close.',
     tile: 'soil',
     ambient: 'fog',
     obstacle: 'forest',
@@ -2551,13 +2544,13 @@ const MEDIEVAL_LEVELS = [
     waves: [{ count: 10, types: ['archer'] }, { count: 10, types: ['archer'] }],
     arenas: [[640, 660], [2380, 760], [1450, 2400]],
     bossPos: [2360, 2360],
-    boss: { name: 'The Forest Witch', hp: 60, r: 36, color: '#22c55e', speed: 70 }
+    boss: { name: 'The Plague Witch', hp: 50, r: 36, color: '#22c55e', speed: 70, kit: 'plaguewitch' }
   },
   {
     id: 3,
     name: 'The Castle Gates',
     blurb: 'A ruined portcullis and a rain-soaked courtyard held by the garrison.',
-    story: 'Dreadkeep’s portcullis hangs in ruins. Rain hammers the courtyard while the garrison forms up behind shattered walls. The Siege Commander has already mounted.',
+    story: 'Dreadkeep’s portcullis hangs in ruins. Rain hammers the courtyard while the garrison forms up behind shattered walls. Baron Von Crest has already called his shield knights.',
     tile: 'stone',
     ambient: 'rain',
     obstacle: 'castle',
@@ -2567,13 +2560,13 @@ const MEDIEVAL_LEVELS = [
     waves: [{ count: 12, types: ['knight', 'archer'] }, { count: 12, types: ['knight', 'archer'] }],
     arenas: [[700, 900], [2300, 640], [1560, 2340]],
     bossPos: [1500, 380],
-    boss: { name: 'The Siege Commander', hp: 70, r: 42, color: '#cbd5e1', speed: 96 }
+    boss: { name: 'Baron Von Crest', hp: 60, r: 42, color: '#3b82f6', speed: 82, kit: 'baroncrest' }
   },
   {
     id: 4,
     name: 'The Sorcerer’s Tower',
     blurb: 'Cracked violet stone. Drifting orbs and robed figures whisper in the dark.',
-    story: 'The stairwell opens into a sanctum of cracked violet stone. Magic orbs drift upward from the floor and robed figures whisper in the dark. Archon is waiting at the summit.',
+    story: 'The stairwell opens into a sanctum of cracked violet stone. Magic orbs drift upward from the floor and robed figures whisper in the dark. The Siege Engine is waiting at the summit.',
     tile: 'crack',
     ambient: 'orbs',
     obstacle: 'tower',
@@ -2583,13 +2576,13 @@ const MEDIEVAL_LEVELS = [
     waves: [{ count: 10, types: ['wizard', 'ghost'] }, { count: 10, types: ['wizard', 'ghost'] }],
     arenas: [[760, 640], [2360, 980], [1480, 2380]],
     bossPos: [620, 2360],
-    boss: { name: 'Archon the Sorcerer', hp: 80, r: 38, color: '#a855f7', speed: 64 }
+    boss: { name: 'The Siege Engine', hp: 70, r: 46, color: '#f59e0b', speed: 58, kit: 'siegeengine' }
   },
   {
     id: 5,
     name: 'The Time Portal',
-    blurb: 'The summit is gone. Only the roaring rift home — and the Time Tyrant.',
-    story: 'The summit is gone. Only black stone, glowing energy fractures and the roaring rift home. Every dark legion Rael has fought stands between him and the portal — and their Time Tyrant.',
+    blurb: 'The summit is gone. Only the roaring rift home — and the Black Knight.',
+    story: 'The summit is gone. Only black stone, glowing energy fractures and the roaring rift home. Every dark legion Rael has fought stands between him and the portal — and the Black Knight.',
     tile: 'void',
     ambient: 'portal',
     obstacle: 'portal',
@@ -2602,7 +2595,7 @@ const MEDIEVAL_LEVELS = [
     ],
     arenas: [[700, 720], [2320, 720], [1500, 2360]],
     bossPos: [2270, 2300],
-    boss: { name: 'The Time Tyrant', hp: 120, r: 48, color: '#38bdf8', speed: 74 }
+    boss: { name: 'The Black Knight', hp: 100, r: 48, color: '#a855f7', speed: 86, kit: 'blackknight' }
   }
 ];
 
@@ -2640,7 +2633,7 @@ const UNIVERSE_BLUEPRINTS = [
     sky: { top: '#070c1e', bottom: '#16233f' },
     enemies: ['knight', 'archer', 'wizard', 'ghost'],
     power: 1,
-    boss: { name: 'The Time Tyrant', hp: 120, r: 48, color: '#38bdf8', speed: 74 },
+    boss: { name: 'The Black Knight', hp: 100, r: 48, color: '#a855f7', speed: 86, kit: 'blackknight' },
     levels: MEDIEVAL_LEVELS
   },
   {
@@ -2766,7 +2759,7 @@ const UNIVERSE_BLUEPRINTS = [
     sky: { top: '#05010c', bottom: '#1b0433' },
     enemies: ['shade', 'timewraith', 'titan'],
     power: 2.6,
-    boss: { name: 'The Architect of Oblivion', hp: 200, r: 56, color: '#a855f7', speed: 70, kit: 'architect' },
+    boss: { name: 'The Architect of Oblivion', hp: 200, r: 56, color: '#9333ea', speed: 70, kit: 'architect' },
     levelTitles: ['The Last Door', 'Fractured Yesterday', 'Where Time Died', 'The Hollow Throne', 'Oblivion'],
     levelBlurbs: [
       'Black floor, purple fractures, and a copy of Rael standing at the far end.',
@@ -2784,6 +2777,50 @@ const UNIVERSE_BLUEPRINTS = [
     ]
   }
 ];
+
+
+/* One boss per level. Index = universeIndex * 5 + zoneIndex. */
+const BOSS_ARRAY = [
+  /* Universe 1 · Medieval */
+  { name: 'Sir Malvork the Gatekeeper', hp: 40, r: 40, color: '#dc2626', speed: 92, kit: 'gatekeeper' },
+  { name: 'The Plague Witch', hp: 50, r: 36, color: '#22c55e', speed: 70, kit: 'plaguewitch' },
+  { name: 'Baron Von Crest', hp: 60, r: 42, color: '#3b82f6', speed: 82, kit: 'baroncrest' },
+  { name: 'The Siege Engine', hp: 70, r: 46, color: '#f59e0b', speed: 58, kit: 'siegeengine' },
+  { name: 'The Black Knight', hp: 100, r: 48, color: '#a855f7', speed: 86, kit: 'blackknight' },
+  /* Universe 2 · Ancient Egypt */
+  { name: 'Anubis Sentinel', hp: 40, r: 42, color: '#eab308', speed: 72, kit: 'pharaoh' },
+  { name: 'High Priest of Set', hp: 55, r: 40, color: '#b91c1c', speed: 68, kit: 'pharaoh' },
+  { name: 'The Scorpion King', hp: 70, r: 44, color: '#ea580c', speed: 78, kit: 'pharaoh' },
+  { name: 'Sphinx of the Nile', hp: 85, r: 46, color: '#0ea5e9', speed: 64, kit: 'pharaoh' },
+  { name: 'The Pharaoh', hp: 100, r: 46, color: '#f5b642', speed: 66, kit: 'pharaoh' },
+  /* Universe 3 · Feudal Japan */
+  { name: 'Ronin of the Gate', hp: 44, r: 40, color: '#ef4444', speed: 98, kit: 'shogun' },
+  { name: 'Bamboo Oni', hp: 60, r: 46, color: '#16a34a', speed: 84, kit: 'shogun' },
+  { name: 'Kitsune of Blades', hp: 77, r: 40, color: '#ec4899', speed: 104, kit: 'shogun' },
+  { name: 'Daimyo Ironclaw', hp: 94, r: 44, color: '#64748b', speed: 92, kit: 'shogun' },
+  { name: 'Shogun Kage', hp: 110, r: 44, color: '#f472b6', speed: 96, kit: 'shogun' },
+  /* Universe 4 · Post-Apocalypse */
+  { name: 'Rust Raider Captain', hp: 48, r: 44, color: '#92400e', speed: 88, kit: 'warlord' },
+  { name: 'Mutant Behemoth', hp: 66, r: 50, color: '#4d7c0f', speed: 72, kit: 'warlord' },
+  { name: 'Scrap Titan', hp: 84, r: 52, color: '#9ca3af', speed: 66, kit: 'warlord' },
+  { name: 'General Fallout', hp: 102, r: 48, color: '#d97706', speed: 84, kit: 'warlord' },
+  { name: 'Warlord Rex', hp: 120, r: 50, color: '#a3b42c', speed: 84, kit: 'warlord' },
+  /* Universe 5 · Deep Space */
+  { name: 'Alien Broodmother', hp: 52, r: 48, color: '#38bdf8', speed: 70, kit: 'hivequeen' },
+  { name: 'Void Stalker', hp: 72, r: 44, color: '#8b5cf6', speed: 86, kit: 'hivequeen' },
+  { name: 'Star Hive Guard', hp: 91, r: 50, color: '#e2e8f0', speed: 64, kit: 'hivequeen' },
+  { name: 'Nebula Warden', hp: 111, r: 50, color: '#6d28d9', speed: 68, kit: 'hivequeen' },
+  { name: 'The Hive Queen', hp: 130, r: 52, color: '#7c3aed', speed: 62, kit: 'hivequeen' },
+  /* Universe 6 · The Void */
+  { name: 'Shade of Regret', hp: 80, r: 48, color: '#c084fc', speed: 78, kit: 'architect' },
+  { name: 'Time Wraith Prime', hp: 110, r: 48, color: '#818cf8', speed: 82, kit: 'architect' },
+  { name: 'Chaos Herald', hp: 140, r: 52, color: '#f43f5e', speed: 76, kit: 'architect' },
+  { name: 'Entropy Sovereign', hp: 170, r: 54, color: '#581c87', speed: 72, kit: 'architect' },
+  { name: 'The Architect of Oblivion', hp: 200, r: 56, color: '#9333ea', speed: 70, kit: 'architect' }
+];
+function bossForLevel(universeIndex, zoneIndex) {
+  return BOSS_ARRAY[clamp(universeIndex | 0, 0, 5) * 5 + clamp(zoneIndex | 0, 0, 4)] || BOSS_ARRAY[0];
+}
 
 /* one level of a universe: the same shape as a medieval zone, themed and scaled */
 function makeUniverseLevel(uni, i) {
@@ -2808,14 +2845,7 @@ function makeUniverseLevel(uni, i) {
     ],
     arenas: ARENA_LAYOUTS[(i + uni.index * 2) % ARENA_LAYOUTS.length],
     bossPos: BOSS_SPOTS[(i + uni.index) % BOSS_SPOTS.length],
-    boss: {
-      name: uni.boss.name,
-      hp: Math.max(8, Math.round(uni.boss.hp * (0.4 + 0.15 * i))),
-      r: uni.boss.r,
-      color: uni.boss.color,
-      speed: uni.boss.speed,
-      kit: uni.boss.kit
-    }
+    boss: Object.assign({}, bossForLevel(uni.index, i))
   };
 }
 
@@ -2830,6 +2860,7 @@ const UNIVERSES = UNIVERSE_ORDER.map(function (id, index) {
   uni.nextUniverse = index + 1 < UNIVERSE_BLUEPRINTS.length ? index + 1 : null;
   uni.levels = blueprint.levels ? blueprint.levels.slice() : [0, 1, 2, 3, 4].map((k) => makeUniverseLevel(uni, k));
   uni.levels.forEach(function (z, k) {
+    z.boss = Object.assign({}, bossForLevel(index, k));
     z.universe = index;
     z.universeName = uni.name;
     z.level = k + 1;
@@ -3060,6 +3091,7 @@ const gameState = {
   bossZone: null,     /* { x, y, r } — the marked ring the player must walk into */
   bossFight: null,    /* { x, y, r, t, fade } — live during and just after the fight */
   bossIntroTimer: null,
+  bossHazards: [],
   portal: null,
   fog: null,
   cam: { x: 0, y: 0 },
@@ -3089,7 +3121,11 @@ const gameState = {
   lifetimeGems: 0,     /* every gem ever collected, across every run */
   maxZone: 0,          /* highest zone index ever reached: unlocks the zone select */
   uiUniverse: 0,       /* which universe the zone select is currently showing */
-  unlockedAbilities: { dash: false, nova: false, turret: false, overcharge: false, bomb: false },
+  unlockedAbilities: { overdrive: false },
+  classBuffs: {},
+  classFx: [],
+  playerMines: [],
+  timeLoopHistory: [],
   bossesDefeated: [false, false, false, false, false],
   qCd: 0,              /* the class ability's own cooldown */
   novaCd: 0,
@@ -3114,7 +3150,16 @@ const gameState = {
   flashColor: '#ffffff'
 };
 const game = gameState;
+const gs = gameState;
+/* Scoring uses gs.mult; keep it tied to the existing gem multiplier. */
+Object.defineProperty(gs, 'mult', {
+  get() { return this.multiplier; },
+  set(value) { this.multiplier = value; },
+  enumerable: true,
+  configurable: true
+});
 window.gameState = gameState;
+window.gs = gameState;
 window.__game = gameState;
 /* =============================================================================
    PLAYER, WORLD LOADING, CAMERA, INPUT
@@ -3184,7 +3229,9 @@ function makePlayer() {
     /* --- universe statuses --------------------------------------------------*/
     slowT: 0,           /* sand mummy wraps: movement drags while this runs */
     poisonT: 0,         /* scorpion venom: 1 damage spread over three seconds */
-    poisonAcc: 0
+    poisonAcc: 0,
+    ghillieT: 0, ghillieShot: false, vanishT: 0, vanishKillReset: false,
+    frenzyT: 0, jetBoostT: 0, overloadPierceT: 0
   };
 }
 
@@ -3231,6 +3278,11 @@ function resetRun() {
   game.bombs.length = 0;
   game.sandPillars.length = 0;
   game.mines.length = 0;
+  game.bossHazards.length = 0;
+  game.classBuffs = {};
+  game.classFx.length = 0;
+  game.playerMines.length = 0;
+  game.timeLoopHistory.length = 0;
   /* abilities are a permanent reward: a new run never clears them */
   syncAbilityHud();
 }
@@ -3294,6 +3346,11 @@ function loadZone(zoneIndex, opts) {
   game.bombs.length = 0;
   game.sandPillars.length = 0;
   game.mines.length = 0;
+  game.bossHazards.length = 0;
+  game.classBuffs = {};
+  game.classFx.length = 0;
+  game.playerMines.length = 0;
+  game.timeLoopHistory.length = 0;
   game.timeScale = 1;
   game.slowmo = 0;
   game.killsThisZone = 0;
@@ -3667,15 +3724,14 @@ window.addEventListener('keydown', (e) => {
   if (game.screen !== 'playing') return;
   if (k === ' ') { e.preventDefault(); }
   if (k === 'q') castClassAbility();                       /* class ability: always on */
-  if (k === 'e' && hasAbility('nova')) novaBlast();
-  if (k === 'f' && hasAbility('turret')) dropTurret();
-  if (k === 'r' && hasAbility('overcharge')) startOvercharge();
-  if (k === 'x' && hasAbility('bomb')) throwBomb();
+  if (k === 'e') castAbilitySlot('e');
+  if (k === 'f') castAbilitySlot('f');
+  if (k === 'r') castAbilitySlot('r');
   if (k === 'z' && hasAbility('overdrive')) startOverdrive();
   if (k === '1') useConsumableSlot(0);
   if (k === '2') useConsumableSlot(1);
   if (k === '3') useConsumableSlot(2);
-  if (k === 'Shift' && hasAbility('dash')) dash();
+  if (k === 'Shift') castAbilitySlot('shift');
 });
 window.addEventListener('keyup', (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
@@ -3909,7 +3965,7 @@ function updatePlayer(dt) {
 
 /* ------------------------------ classes -------------------------------------
    One class per run, picked on the class screen. A class owns its main weapon
-   and its Q ability; E / Shift / F / R / X stay identical for everyone.
+   and its Q ability; E / Shift / F / R are unique to that class.
    ------------------------------------------------------------------------- */
 const CLASSES = [
   {
@@ -4354,7 +4410,7 @@ function firePistols(charged) {
       life: 0.72,
       dmg: buffedDamage(p.damage),
       knock: 4,
-      pierce: p.pierce || 0,
+      pierce: (p.pierce || 0) + (p.overloadPierceT > 0 ? 99 : 0),
       explosive: boom,
       hits: null
     });
@@ -4729,7 +4785,7 @@ function updateBeams(dt) {
 }
 
 /* =============================================================================
-   ABILITIES — Q is the class ability, E / SHIFT / F / R / X are shared
+   ABILITIES — Q is the class ability, E / SHIFT / F / R are class-specific
    Q class · E nova · SHIFT dash · F turret · R overcharge · X time bomb
    ============================================================================= */
 const ABILITIES = [
@@ -5395,6 +5451,7 @@ function hurtPlayer(amount, raw) {
   if (!raw) {
     /* Berserker Rage: nothing reaches him while the red is up */
     if (p.rageT > 0) return;
+    if (classBuff('juggernaut') > 0 || p.ghillieT > 0 || p.vanishT > 0) return;
     /* Phase Cloak: out of phase, nothing can find him to hit him */
     if (p.phaseTimer > 0) return;
     if (p.invuln > 0 || p.dashTimer > 0) return;
@@ -5528,6 +5585,7 @@ function spawnEnemy(type, x, y, arenaIndex) {
     throttle: 0,                    /* eased 0..1 of its top speed */
     errTimer: 0,
     contactCd: 0,
+    freeze: 0, disabledT: 0, slowT: 0, poisonT: 0, poisonAcc: 0, poisonDmg: 1,
     orbit: Math.random() < 0.5 ? 1 : -1
   };
   game.enemies.push(e);
@@ -5826,7 +5884,7 @@ function updateEnemies(dt) {
   const p = game.player;
   /* Phase Cloak: an out-of-phase Rael is not a target. The horde keeps sweeping
      along its last heading instead of turning to follow him, and nobody shoots. */
-  const phaseSee = !(p.phaseTimer > 0);
+  const phaseSee = !(p.phaseTimer > 0 || p.ghillieT > 0 || p.vanishT > 0);
   const cloakRange = p.cloakRange || 0;
 
   for (let i = game.enemies.length - 1; i >= 0; i--) {
@@ -5843,6 +5901,17 @@ function updateEnemies(dt) {
           rand(-20, 20), rand(-40, -10), 0.4, 4, '#bae6fd', 2);
       }
       continue;
+    }
+    if (e.disabledT > 0) {
+      e.disabledT = Math.max(0, e.disabledT - dt);
+      e.throttle = approach(e.throttle, 0, dt * 6);
+      continue;
+    }
+    if (e.slowT > 0) e.slowT = Math.max(0, e.slowT - dt);
+    if (e.poisonT > 0) {
+      e.poisonT = Math.max(0, e.poisonT - dt);
+      e.poisonAcc = (e.poisonAcc || 0) + dt;
+      if (e.poisonAcc >= 1) { e.poisonAcc -= 1; damageEnemy(e, e.poisonDmg || 1, true, true); }
     }
 
     const d = dist(e.x, e.y, p.x, p.y);
@@ -5925,7 +5994,7 @@ function updateEnemies(dt) {
     }
     /* and ease into (or out of) its stride so nothing lurches */
     e.throttle = approach(e.throttle, clamp(wantLen, 0, 1), dt * 5.5);
-    const stride = e.speed * e.throttle;
+    const stride = e.speed * e.throttle * (e.slowT > 0 ? 0.45 : 1);
     e.x += Math.cos(e.heading) * stride * dt;
     e.y += Math.sin(e.heading) * stride * dt;
 
@@ -6169,6 +6238,13 @@ function nearestEnemyTo(x, y, range, skip) {
    never runs away across the whole arena in one frame. */
 function damageEnemy(e, dmg, silent, noChain) {
   if (!e || e.dead) return;
+  if (e.shield > 0) {
+    const absorbed = Math.min(e.shield, dmg);
+    e.shield -= absorbed;
+    dmg -= absorbed;
+    e.hitFlash = 0.12;
+    if (dmg <= 0) return;
+  }
   /* Death Mark: everything lands three times harder on the marked body */
   const marker = game.player;
   if (marker && marker.markT > 0 && marker.markTarget === e) dmg *= 3;
@@ -6283,7 +6359,8 @@ function spawnBoss(opts) {
     charging: 0,
     chargeDir: { x: 1, y: 0 },
     spiral: 0,
-    entering: o.entrance ? {
+    contactCd: 0,
+    entering: o.entrance? {
       t: 0, dur: 1.7,
       fromX: o.fromX, fromY: o.fromY,
       toX: o.toX !== undefined ? o.toX : z.bossPos[0],
@@ -6293,11 +6370,13 @@ function spawnBoss(opts) {
   game.bossUnlocked = true;
   UI.bossName.textContent = def.name;
   UI.bossFill.style.width = '100%';
+  UI.bossFill.style.background = 'linear-gradient(180deg, ' + hexToRgba(def.color, 0.95) + ' 0%, ' + def.color + ' 45%, ' + hexToRgba(def.color, 0.55) + ' 100%)';
+  UI.bossFill.style.boxShadow = '0 0 20px ' + hexToRgba(def.color, 0.7);
   UI.bossPhase.textContent = 'PHASE 1';
   UI.bossPhase.className = 'p1';
   UI.bossBar.classList.add('show');
-  UI.dangerBorder.style.setProperty('--boss-tint', 'rgba(255,42,42,0.75)');
-  UI.dangerBorder.style.setProperty('--boss-glow', 'rgba(255,30,30,0.35)');
+  UI.dangerBorder.style.setProperty('--boss-tint', hexToRgba(def.color, 0.75));
+  UI.dangerBorder.style.setProperty('--boss-glow', hexToRgba(def.color, 0.35));
   UI.dangerBorder.classList.add('on');
   Sound.bossAppear();
   updateObjective();
@@ -6374,6 +6453,8 @@ function startBossFight() {
 
   /* dramatic name card for exactly 2 seconds */
   UI.bossIntroName.textContent = z.boss.name;
+  UI.bossIntroName.style.color = z.boss.color;
+  UI.bossIntroName.style.textShadow = '0 0 34px ' + hexToRgba(z.boss.color, 0.85) + ', 0 4px 20px rgba(0,0,0,.95)';
   UI.bossIntro.classList.remove('show');
   void UI.bossIntro.offsetWidth;
   UI.bossIntro.classList.add('show');
@@ -6428,6 +6509,8 @@ function hexToRgba(hex, a) {
 function updateBoss(dt) {
   const b = game.boss;
   if (!b) return;
+  if (b.freeze > 0) { b.freeze = Math.max(0, b.freeze - dt); return; }
+  if (b.disabledT > 0) { b.disabledT = Math.max(0, b.disabledT - dt); return; }
   const p = game.player;
   b.t += dt;
   if (b.hitFlash > 0) b.hitFlash = Math.max(0, b.hitFlash - dt);
@@ -6929,32 +7012,89 @@ function updateParticles(dt) {
 /* Q belongs to the class and is always ready. The rest are handed out one per
    zone boss, in this order: zone 1 -> dash, 2 -> nova, 3 -> turret,
    4 -> overcharge, 5 -> time bomb. */
-const ABILITY_UNLOCKS = [
-  { id: 'dash',       key: 'Shift', name: 'Dash',               desc: 'Blink a short distance through anything, briefly invincible.',
-    hint: 'Press SHIFT to use it' },
-  { id: 'nova',       key: 'E',     name: 'Nova Blast',         desc: 'Sixteen energy bolts erupt in every direction around you.',
-    hint: 'Press E to use it' },
-  { id: 'turret',     key: 'F',     name: 'Turret Drop',        desc: 'Set down a sentry gun that fires on its own for 12 seconds.',
-    hint: 'Press F to use it' },
-  { id: 'overcharge', key: 'R',     name: 'Overcharge',         desc: 'Route the reactor through your weapon: double fire rate for 8 seconds.',
-    hint: 'Press R to use it' },
-  { id: 'bomb',       key: 'X',     name: 'Time Bomb',          desc: 'Hurl a timed charge that sticks, then detonates in a wide blast.',
-    hint: 'Press X to use it' }
-];
-const ABILITY_IDS = ['dash', 'nova', 'turret', 'overcharge', 'bomb'];
+const ABILITY_SLOTS = ['e', 'shift', 'f', 'r'];
+const CLASS_ABILITIES = {
+  knight: [
+    { id: 'knight_whirlwind', slot: 'e', key: 'E', name: 'Whirlwind', cd: 10, art: 'nova', desc: 'Spin your sword in a full 360-degree arc, damaging every nearby enemy.', icon: '<path d="M12 3a9 9 0 1 1-6.4 2.6"/><path d="M12 7v5l3 3"/>' },
+    { id: 'knight_charge', slot: 'shift', key: 'SHIFT', name: 'Shield Charge', cd: 12, art: 'dash', desc: 'Charge forward behind your shield, knocking back every enemy in your path.', icon: '<path d="M4 12h13"/><path d="m12 5 7 7-7 7"/>' },
+    { id: 'knight_warcry', slot: 'f', key: 'F', name: 'War Cry', cd: 24, art: 'overcharge', desc: 'Stun all enemies on screen and deal 50% more damage for 5 seconds.', icon: '<path d="M12 3v18"/><path d="M7 8c-2 2-2 6 0 8M17 8c2 2 2 6 0 8"/>' },
+    { id: 'knight_bladestorm', slot: 'r', key: 'R', name: 'Blade Storm', cd: 18, art: 'storm', desc: 'Throw eight swords outward in every direction.', icon: '<path d="M12 2v20M2 12h20M5 5l14 14M19 5 5 19"/>' }
+  ],
+  gunslinger: [
+    { id: 'gunslinger_ricochet', slot: 'e', key: 'E', name: 'Ricochet Shot', cd: 8, art: 'rail', desc: 'Fire a bullet that bounces between up to six enemies.', icon: '<path d="M3 12h6l3-6 3 12 3-6h3"/>' },
+    { id: 'gunslinger_smoke', slot: 'shift', key: 'SHIFT', name: 'Smoke Roll', cd: 10, art: 'dash', desc: 'Roll in your dash direction and leave a smoke cloud that slows enemies.', icon: '<path d="m5 12 5-5 5 5 5-5"/><circle cx="7" cy="18" r="2"/><circle cx="13" cy="18" r="2"/><circle cx="19" cy="18" r="2"/>' },
+    { id: 'gunslinger_turret', slot: 'f', key: 'F', name: 'Deploy Turret', cd: 25, art: 'turret', desc: 'Place an auto-firing turret that lasts for 12 seconds.', icon: '<path d="M5 19h14M8 19v-6h8v6M12 13V6M9 6h6"/>' },
+    { id: 'gunslinger_overload', slot: 'r', key: 'R', name: 'Overload', cd: 30, art: 'overcharge', desc: 'Double your fire rate and make every shot pierce for 8 seconds.', icon: '<path d="M13 2 4 14h7l-1 8 10-13h-7z"/>' }
+  ],
+  sniper: [
+    { id: 'sniper_piercing', slot: 'e', key: 'E', name: 'Piercing Shot', cd: 10, art: 'rail', desc: 'Fire a single round that travels through every enemy on screen in a line.', icon: '<path d="M2 12h20M16 6l6 6-6 6"/>' },
+    { id: 'sniper_ghillie', slot: 'shift', key: 'SHIFT', name: 'Ghillie', cd: 18, art: 'dash', desc: 'Turn invisible for 4 seconds. Your next shot deals 5x damage.', icon: '<path d="M12 3c5 3 7 7 7 11a7 7 0 0 1-14 0c0-4 2-8 7-11z"/><path d="M12 8v8"/>' },
+    { id: 'sniper_mines', slot: 'f', key: 'F', name: 'Mine Field', cd: 20, art: 'turret', desc: 'Place three proximity mines that explode when enemies walk over them.', icon: '<circle cx="7" cy="14" r="3"/><circle cx="17" cy="14" r="3"/><circle cx="12" cy="7" r="3"/>' },
+    { id: 'sniper_eagle', slot: 'r', key: 'R', name: 'Eagle Eye', cd: 30, art: 'overcharge', desc: 'Slow time to 30% speed for 4 seconds while you move at full speed.', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>' }
+  ],
+  mage: [
+    { id: 'mage_burst', slot: 'e', key: 'E', name: 'Chrono Burst', cd: 16, art: 'nova', desc: 'Explode a ring of time energy that freezes all enemies for 3 seconds.', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/>' },
+    { id: 'mage_blink', slot: 'shift', key: 'SHIFT', name: 'Blink', cd: 6, art: 'dash', desc: 'Teleport to your cursor position instantly.', icon: '<path d="M4 12h10"/><path d="m10 6 6 6-6 6"/><circle cx="20" cy="12" r="2"/>' },
+    { id: 'mage_familiar', slot: 'f', key: 'F', name: 'Summon Familiar', cd: 25, art: 'turret', desc: 'Summon a smaller orb that orbits you and attacks for 15 seconds.', icon: '<circle cx="12" cy="12" r="4"/><ellipse cx="12" cy="12" rx="10" ry="5"/>' },
+    { id: 'mage_timeloop', slot: 'r', key: 'R', name: 'Time Loop', cd: 30, art: 'overcharge', desc: 'Rewind your position and health to where they were 5 seconds ago.', icon: '<path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v5h5"/>' }
+  ],
+  berserker: [
+    { id: 'berserker_slam', slot: 'e', key: 'E', name: 'Ground Slam', cd: 12, art: 'nova', desc: 'Smash the ground, dealing massive damage to all nearby enemies.', icon: '<path d="M12 3v10"/><path d="m8 9 4 4 4-4"/><path d="M4 19h16"/>' },
+    { id: 'berserker_frenzy', slot: 'shift', key: 'SHIFT', name: 'Frenzy Dash', cd: 8, art: 'dash', desc: 'Dash forward, damaging everything in your path.', icon: '<path d="M3 12h14"/><path d="m12 5 7 7-7 7"/><path d="M5 6l4 6-4 6"/>' },
+    { id: 'berserker_blood', slot: 'f', key: 'F', name: 'Blood Rage', cd: 24, art: 'overcharge', desc: 'Lose one health orb but gain 5x damage for 6 seconds.', icon: '<path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"/>' },
+    { id: 'berserker_juggernaut', slot: 'r', key: 'R', name: 'Juggernaut', cd: 30, art: 'bash', desc: 'Become invincible and knock back all enemies for 4 seconds.', icon: '<path d="M12 3 20 6v6c0 4.5-3.5 7.5-8 9-4.5-1.5-8-4.5-8-9V6z"/>' }
+  ],
+  shadow: [
+    { id: 'shadow_clone', slot: 'e', key: 'E', name: 'Shadow Clone', cd: 16, art: 'mark', desc: 'Create a decoy clone that distracts enemies for 8 seconds.', icon: '<circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M4 20c0-4 2-6 5-6s5 2 5 6M14 20c0-3 1-5 3-5s3 2 3 5"/>' },
+    { id: 'shadow_vanish', slot: 'shift', key: 'SHIFT', name: 'Vanish', cd: 18, art: 'dash', desc: 'Turn completely invisible. Your next kill resets all cooldowns.', icon: '<path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z"/><path d="M4 4l16 16"/>' },
+    { id: 'shadow_poison', slot: 'f', key: 'F', name: 'Poison Cloud', cd: 14, art: 'turret', desc: 'Throw a vial that poisons all enemies in the area for 6 seconds.', icon: '<path d="M10 3h4v5l4 8a4 4 0 0 1-4 5h-4a4 4 0 0 1-4-5l4-8z"/><path d="M9 14h6"/>' },
+    { id: 'shadow_execute', slot: 'r', key: 'R', name: 'Execute', cd: 12, art: 'overcharge', desc: 'Instantly kill any enemy below 25% health within range.', icon: '<path d="M5 5l14 14M19 5 5 19"/><circle cx="12" cy="12" r="9"/>' }
+  ],
+  tech: [
+    { id: 'tech_emp', slot: 'e', key: 'E', name: 'EMP Blast', cd: 18, art: 'nova', desc: 'Disable all enemies for 3 seconds. They are frozen but can still be damaged.', icon: '<circle cx="12" cy="12" r="9"/><path d="M13 6l-4 7h5l-3 5"/>' },
+    { id: 'tech_jet', slot: 'shift', key: 'SHIFT', name: 'Jet Boost', cd: 12, art: 'dash', desc: 'Gain a massive speed boost for 4 seconds, leaving a fire trail.', icon: '<path d="M5 12h10"/><path d="m12 5 7 7-7 7"/><path d="M5 8v8"/>' },
+    { id: 'tech_drones', slot: 'f', key: 'F', name: 'Drone Swarm', cd: 25, art: 'turret', desc: 'Release five mini drones that chase and attack enemies for 10 seconds.', icon: '<circle cx="6" cy="8" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="12" cy="16" r="2"/><path d="M6 10v3M18 10v3M12 14v-3"/>' },
+    { id: 'tech_overload', slot: 'r', key: 'R', name: 'System Overload', cd: 18, art: 'overcharge', desc: 'Detonate all turrets for massive damage and instantly respawn them.', icon: '<path d="M12 3v6M12 15v6M3 12h6M15 12h6"/><circle cx="12" cy="12" r="3"/>' }
+  ]
+};
+const ALL_CLASS_ABILITY_IDS = Object.keys(CLASS_ABILITIES).reduce((out, id) => out.concat(CLASS_ABILITIES[id].map(a => a.id)), []);
+const ABILITY_IDS = ALL_CLASS_ABILITY_IDS;
 
-function abilityBySlot(zoneIndex) {
-  return ABILITY_UNLOCKS[clamp(zoneIndex | 0, 0, ABILITY_UNLOCKS.length - 1)];
+function classAbilityDef(slot, classId) {
+  const kit = CLASS_ABILITIES[classId || getClass().id] || [];
+  for (let i = 0; i < kit.length; i++) if (kit[i].slot === slot) return kit[i];
+  return null;
 }
-
 function hasAbility(id) {
-  if (id === 'q') return true;                       /* the class ability is free */
-  return !!(gameState.unlockedAbilities && gameState.unlockedAbilities[id]);
+  if (id === 'q') return true;
+  if (id === 'overdrive') return !!(gameState.unlockedAbilities && gameState.unlockedAbilities.overdrive);
+  const def = classAbilityDef(id);
+  return !!(def && gameState.unlockedAbilities && gameState.unlockedAbilities[def.id]);
 }
-
 function abilityUnlockedCount() {
   let n = 0;
-  for (let i = 0; i < ABILITY_IDS.length; i++) if (hasAbility(ABILITY_IDS[i])) n++;
+  for (let i = 0; i < ABILITY_SLOTS.length; i++) if (hasAbility(ABILITY_SLOTS[i])) n++;
+  return n;
+}
+function abilityCooldown(slot) {
+  const p = game.player;
+  if (slot === 'e') return game.novaCd || 0;
+  if (slot === 'shift') return p ? (p.dashCd || 0) : 0;
+  if (slot === 'f') return game.turretCd || 0;
+  if (slot === 'r') return game.overchargeCd || 0;
+  return 0;
+}
+function setAbilityCooldown(slot, seconds) {
+  const p = game.player;
+  if (slot === 'e') game.novaCd = seconds;
+  else if (slot === 'shift' && p) p.dashCd = seconds;
+  else if (slot === 'f') game.turretCd = seconds;
+  else if (slot === 'r') game.overchargeCd = seconds;
+}
+function bossesDefeatedCount() {
+  let n = 0;
+  const list = game.bossesDefeated || [];
+  for (let i = 0; i < list.length; i++) if (list[i]) n++;
   return n;
 }
 
@@ -6969,14 +7109,14 @@ function hideAbilityUnlock() {
 function playUnlockCard(def) {
   if (!UI.abilityUnlock || !def) return;
   UI.abilityUnlock.classList.remove('show');
-  if (UI.auGlyph) drawAbilityIcon(UI.auGlyph, def.id, 112);   /* drawn, not typed */
+  if (UI.auGlyph) drawAbilityIcon(UI.auGlyph, def.art || 'bash', 112);
   if (UI.auKey) UI.auKey.textContent = def.key;
   if (UI.auName) UI.auName.textContent = def.name;
   if (UI.auDesc) UI.auDesc.textContent = def.desc;
-  if (UI.auHint) UI.auHint.textContent = def.hint;
-  void UI.abilityUnlock.offsetWidth;                 /* restart the entry animation */
+  if (UI.auHint) UI.auHint.textContent = 'Press ' + def.key + ' to use it';
+  void UI.abilityUnlock.offsetWidth;
   UI.abilityUnlock.classList.add('show');
-  unlockClock = 2.0;                                 /* exactly two seconds */
+  unlockClock = 2.0;
   Sound.abilityUnlock();
 }
 
@@ -6986,7 +7126,6 @@ function showAbilityUnlock(def) {
   playUnlockCard(def);
 }
 
-/* the ceremony runs on its own clock so it never stalls behind the game loop */
 function tickAbilityUnlock(dt) {
   if (unlockClock <= 0) return;
   unlockClock = Math.max(0, unlockClock - dt);
@@ -6996,32 +7135,30 @@ function tickAbilityUnlock(dt) {
   }
 }
 
-/* hand out everything the frontier already implies (used on boot / restore).
-   It never writes: at boot the game is still on the menu, and a save there
-   would stamp the empty run over the slot the player is about to continue. */
 function syncAbilityUnlocks(silent) {
+  const kit = CLASS_ABILITIES[getClass().id] || [];
+  const earned = Math.max(bossesDefeatedCount(), Math.min(game.maxZone | 0, ABILITY_SLOTS.length));
   let changed = false;
-  for (let i = 0; i < ABILITY_UNLOCKS.length; i++) {
-    /* beating the boss of zone i (0-based) earns slot i */
-    if ((game.maxZone | 0) > i || (game.bossesDefeated && game.bossesDefeated[i])) {
-      const id = ABILITY_UNLOCKS[i].id;
-      if (!gameState.unlockedAbilities[id]) {
-        gameState.unlockedAbilities[id] = true;
-        changed = true;
-        if (!silent) showAbilityUnlock(ABILITY_UNLOCKS[i]);
-      }
+  if (!gameState.unlockedAbilities) gameState.unlockedAbilities = {};
+  for (let i = 0; i < kit.length && i < earned; i++) {
+    const def = kit[i];
+    if (!gameState.unlockedAbilities[def.id]) {
+      gameState.unlockedAbilities[def.id] = true;
+      changed = true;
+      if (!silent) showAbilityUnlock(def);
     }
   }
   if (changed) syncAbilityHud();
   return changed;
 }
 
-/* unlock the ability tied to the zone whose boss just died */
 function grantBossAbility(zoneIndex) {
-  const def = abilityBySlot(zoneIndex);
+  game.bossesDefeated = game.bossesDefeated || new Array(ZONES.length).fill(false);
+  game.bossesDefeated[clamp(zoneIndex | 0, 0, ZONES.length - 1)] = true;
+  const kit = CLASS_ABILITIES[getClass().id] || [];
+  const slotIndex = clamp(bossesDefeatedCount() - 1, 0, kit.length - 1);
+  const def = kit[slotIndex];
   if (!def) return null;
-  game.bossesDefeated = game.bossesDefeated || [false, false, false, false, false];
-  game.bossesDefeated[clamp(zoneIndex, 0, 4)] = true;
   if (gameState.unlockedAbilities[def.id]) { syncAbilityHud(); return null; }
   gameState.unlockedAbilities[def.id] = true;
   syncAbilityHud();
@@ -7147,42 +7284,490 @@ function drawAbilityIcon(canvas, kind, fixedPx) {
 
 /* Update the six SVG buttons from the actual ability timers. Dash belongs to
    the player, and every maximum uses the same modifiers as its cast function. */
+function abilityIconSVG(def) {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (def.icon || '<circle cx="12" cy="12" r="8"/>') + '</svg>';
+}
+
 function syncAbilityHud() {
-  const p = game.player;
-  const timers = {
-    q: [game.qCd, qCdMax()],
-    nova: [game.novaCd, 20 * cdScale()],
-    dash: [p ? p.dashCd : 0, dashCooldown()],
-    turret: [game.turretCd, 25 * cdScale()],
-    overcharge: [game.overchargeCd, 30 * cdScale()],
-    bomb: [game.bombCd, 18 * cdScale()]
-  };
-  for (const [id, el] of Object.entries(UI.abilities)) {
+  const cls = getClass();
+  const qEl = UI.abilities.q;
+  if (qEl) {
+    const qBtn = qEl.querySelector('.ab-btn');
+    const qCooling = game.qCd > 0;
+    qEl.classList.toggle('cooling', qCooling);
+    qBtn.disabled = false;
+    qBtn.setAttribute('aria-disabled', String(qCooling));
+    qBtn.setAttribute('aria-label', cls.q.name + ' (Q)');
+    qBtn.title = cls.q.name;
+    qBtn.style.setProperty('--cooldown-angle', (clamp(game.qCd / Math.max(0.001, qCdMax()), 0, 1) * 360) + 'deg');
+  }
+  for (let i = 0; i < ABILITY_SLOTS.length; i++) {
+    const slot = ABILITY_SLOTS[i];
+    const el = UI.abilities[slot];
     if (!el) continue;
-    const unlocked = id === 'q' || hasAbility(id);
-    const [cd, maxCd] = timers[id];
+    const def = classAbilityDef(slot, cls.id);
+    const button = el.querySelector('.ab-btn');
+    const unlocked = hasAbility(slot);
+    const cd = abilityCooldown(slot);
+    const maxCd = def ? def.cd * cdScale() : 1;
     const cooling = unlocked && cd > 0;
     el.classList.toggle('locked', !unlocked);
     el.classList.toggle('unlocked', unlocked);
     el.classList.toggle('cooling', cooling);
-    const button = el.querySelector('.ab-btn');
     button.disabled = !unlocked;
     button.setAttribute('aria-disabled', String(!unlocked || cooling));
     button.style.setProperty('--cooldown-angle', (clamp(cd / Math.max(0.001, maxCd), 0, 1) * 360) + 'deg');
-    if (id === 'q') button.setAttribute('aria-label', getClass().q.name + ' (Q)');
+    if (def) {
+      button.setAttribute('aria-label', def.name + ' (' + def.key + ')');
+      button.title = def.name + ' — ' + def.desc;
+      if (button.getAttribute('data-icon') !== def.id) {
+        const old = button.querySelector('svg');
+        if (old) old.outerHTML = abilityIconSVG(def);
+        button.setAttribute('data-icon', def.id);
+      }
+    }
   }
 }
 
-function useAbilityButton(id) {
-  if (game.screen !== 'playing' || isPaused || !hasAbility(id)) return;
+function castAbilitySlot(slot) {
+  if (game.screen !== 'playing' || isPaused || abilitiesLocked()) return;
+  if (!hasAbility(slot)) return;
+  if (abilityCooldown(slot) > 0) return;
+  const def = classAbilityDef(slot);
+  if (!def) return;
+  const cast = CLASS_ABILITY_CASTS[def.id];
+  if (!cast) return;
   Sound.ensure();
-  if (id === 'q') castClassAbility();
-  else if (id === 'nova') novaBlast();
-  else if (id === 'dash') dash();
-  else if (id === 'turret') dropTurret();
-  else if (id === 'overcharge') startOvercharge();
-  else if (id === 'bomb') throwBomb();
+  const result = cast();
+  if (result === false) return;
+  setAbilityCooldown(slot, def.cd * cdScale());
   syncAbilityHud();
+}
+
+function useAbilityButton(id) {
+  if (id === 'q') { castClassAbility(); syncAbilityHud(); return; }
+  castAbilitySlot(id);
+}
+
+/* =============================================================================
+   CLASS-SPECIFIC ABILITY CASTS
+   ========================================================================== */
+function setClassBuff(name, seconds) { game.classBuffs[name] = seconds; }
+function classBuff(name) { return (game.classBuffs && game.classBuffs[name]) || 0; }
+function classDamageMult() {
+  let m = 1;
+  if (classBuff('warCry') > 0) m *= 1.5;
+  if (classBuff('bloodRage') > 0) m *= 5;
+  return m;
+}
+function resetAllAbilityCooldowns() {
+  game.qCd = 0; game.novaCd = 0; game.turretCd = 0; game.overchargeCd = 0;
+  game.bombCd = 0; game.overdriveCd = 0;
+  if (game.player) game.player.dashCd = 0;
+}
+function eachEnemy(fn) {
+  for (let i = game.enemies.length - 1; i >= 0; i--) fn(game.enemies[i], false);
+  if (game.boss && !game.boss.entering) fn(game.boss, true);
+}
+function damageEnemiesNear(x, y, radius, dmg, knock) {
+  for (let i = game.enemies.length - 1; i >= 0; i--) {
+    const e = game.enemies[i];
+    if (dist(x, y, e.x, e.y) > radius + e.r) continue;
+    damageEnemy(e, dmg, true);
+    if (knock && game.enemies.indexOf(e) >= 0) knockEnemy(e, x, y, knock);
+  }
+  if (game.boss && !game.boss.entering && dist(x, y, game.boss.x, game.boss.y) <= radius + game.boss.r) {
+    damageBoss(dmg * 0.7);
+  }
+}
+function nearestEnemyForAbility(x, y, range, skip) {
+  let best = null, bestD = range;
+  for (let i = 0; i < game.enemies.length; i++) {
+    const e = game.enemies[i];
+    if (skip && skip.indexOf(e) >= 0) continue;
+    const d = dist(x, y, e.x, e.y);
+    if (d < bestD) { bestD = d; best = e; }
+  }
+  if (!best && game.boss && !game.boss.entering && (!skip || skip.indexOf(game.boss) < 0)) {
+    const d = dist(x, y, game.boss.x, game.boss.y);
+    if (d < bestD) best = game.boss;
+  }
+  return best;
+}
+function mouseWorldPos() {
+  return {
+    x: clamp(game.cam.x + game.mouse.x / viewZoom(), 60, WORLD - 60),
+    y: clamp(game.cam.y + (game.mouse.y - SKY_H) / viewZoom(), 60, WORLD - 60)
+  };
+}
+function addClassFx(fx) { game.classFx.push(fx); return fx; }
+
+const CLASS_ABILITY_CASTS = {
+  /* ---- Vanguard Knight ---- */
+  knight_whirlwind() {
+    const p = game.player;
+    damageEnemiesNear(p.x, p.y, 150, buffedDamage(swordDamage() * 1.4), 40);
+    game.swings.push({ x: p.x, y: p.y, a0: p.angle - Math.PI, a1: p.angle + Math.PI, life: 0, maxLife: 0.35, tier: swordTier() });
+    game.particles.push({ ring: true, x: p.x, y: p.y, r: 10, maxR: 160, life: 0, maxLife: 0.35, color: '#fcd34d' });
+    Sound.swordSwing(swordTier());
+    addText(p.x, p.y - 44, 'WHIRLWIND', '#fcd34d');
+  },
+  knight_charge() {
+    const p = game.player;
+    const mv = moveVector();
+    const dir = (mv.x || mv.y) ? mv : { x: Math.cos(p.angle), y: Math.sin(p.angle) };
+    p.bashDir = dir; p.bashTimer = 0.42; p.vx = 0; p.vy = 0;
+    p.invuln = Math.max(p.invuln, 0.5);
+    Sound.bash();
+    addText(p.x, p.y - 40, 'SHIELD CHARGE', '#fcd34d');
+  },
+  knight_warcry() {
+    const p = game.player;
+    eachEnemy(e => { e.disabledT = Math.max(e.disabledT || 0, 2); });
+    setClassBuff('warCry', 5);
+    game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 320, life: 0, maxLife: 0.5, color: '#fbbf24' });
+    Sound.overcharge();
+    addText(p.x, p.y - 46, 'WAR CRY', '#fbbf24');
+  },
+  knight_bladestorm() {
+    const p = game.player;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TAU;
+      game.bullets.push({ kind: 'sword', x: p.x + Math.cos(a) * 20, y: p.y + Math.sin(a) * 20,
+        vx: Math.cos(a) * 720, vy: Math.sin(a) * 720, r: 10, life: 0.85,
+        dmg: buffedDamage(p.damage * 1.6), knock: 10, pierce: 99, hits: [] });
+    }
+    Sound.swordSwing(2);
+    addText(p.x, p.y - 44, 'BLADE STORM', '#fde68a');
+  },
+
+  /* ---- Gunslinger ---- */
+  gunslinger_ricochet() {
+    const p = game.player;
+    let from = { x: p.x, y: p.y };
+    const hit = [];
+    let target = nearestEnemyForAbility(from.x, from.y, 760, hit);
+    if (!target) { addText(p.x, p.y - 40, 'NO TARGET', '#a5f3fc'); return false; }
+    for (let i = 0; i < 6 && target; i++) {
+      game.beams.push({ kind: 'chain', x1: from.x, y1: from.y, x2: target.x, y2: target.y, life: 0, maxLife: 0.2, width: 3, colour: '#a5f3fc', core: '#ffffff' });
+      if (target === game.boss) damageBoss(buffedDamage(p.damage * 2));
+      else damageEnemy(target, buffedDamage(p.damage * 2), true);
+      hit.push(target);
+      from = { x: target.x, y: target.y };
+      target = nearestEnemyForAbility(from.x, from.y, 420, hit);
+    }
+    Sound.pistol();
+    addText(p.x, p.y - 40, 'RICOCHET SHOT', '#a5f3fc');
+  },
+  gunslinger_smoke() {
+    const p = game.player;
+    const mv = moveVector();
+    const dir = (mv.x || mv.y) ? mv : { x: Math.cos(p.angle), y: Math.sin(p.angle) };
+    p.dashDir = dir; p.dashTimer = 0.24; p.vx = 0; p.vy = 0;
+    p.invuln = Math.max(p.invuln, 0.3);
+    addClassFx({ type: 'smoke', x: p.x, y: p.y, r: 130, t: 4, maxT: 4 });
+    Sound.dash();
+    addText(p.x, p.y - 40, 'SMOKE ROLL', '#cbd5e1');
+  },
+  gunslinger_turret() {
+    const p = game.player;
+    game.turrets.push({ x: p.x, y: p.y, life: 12, maxLife: 12, angle: p.angle, spin: 0, fireTimer: 0.25, range: 380 });
+    Sound.turretDrop();
+    addText(p.x, p.y - 40, 'TURRET ONLINE', '#fbbf24');
+  },
+  gunslinger_overload() {
+    const p = game.player;
+    game.overchargeTimer = 8;
+    p.overloadPierceT = 8;
+    Sound.overcharge();
+    addText(p.x, p.y - 44, 'OVERLOAD', '#fca5a5');
+  },
+
+  /* ---- Sniper ---- */
+  sniper_piercing() {
+    const p = game.player;
+    const a = p.angle;
+    const x1 = p.x + Math.cos(a) * (p.r + 14), y1 = p.y + Math.sin(a) * (p.r + 14);
+    const x2 = p.x + Math.cos(a) * 2600, y2 = p.y + Math.sin(a) * 2600;
+    game.beams.push({ kind: 'railgun', x1, y1, x2, y2, life: 0, maxLife: 0.4, width: 22, colour: '#e2e8f0', core: '#ffffff' });
+    for (let i = game.enemies.length - 1; i >= 0; i--) {
+      const e = game.enemies[i];
+      if (segHitsCircle(x1, y1, x2, y2, e.x, e.y, e.r + 16)) damageEnemy(e, buffedDamage(p.damage * 2.5), false);
+    }
+    if (game.boss && !game.boss.entering && segHitsCircle(x1, y1, x2, y2, game.boss.x, game.boss.y, game.boss.r + 16)) damageBoss(buffedDamage(p.damage * 2));
+    Sound.sniperShot();
+    addText(p.x, p.y - 44, 'PIERCING SHOT', '#e2e8f0');
+  },
+  sniper_ghillie() {
+    const p = game.player;
+    p.ghillieT = 4; p.ghillieShot = true;
+    p.phaseTimer = Math.max(p.phaseTimer, 4);
+    Sound.dash();
+    addText(p.x, p.y - 40, 'GHILLIE', '#bbf7d0');
+  },
+  sniper_mines() {
+    const p = game.player;
+    for (let i = 0; i < 3; i++) {
+      const a = p.angle + (i - 1) * 0.7;
+      game.playerMines.push({ x: clamp(p.x + Math.cos(a) * 70, 60, WORLD - 60), y: clamp(p.y + Math.sin(a) * 70, 60, WORLD - 60), arm: 0, t: 20 });
+    }
+    Sound.turretDrop();
+    addText(p.x, p.y - 40, 'MINE FIELD', '#fbbf24');
+  },
+  sniper_eagle() {
+    setClassBuff('eagleEye', 4);
+    game.slowmo = Math.max(game.slowmo, 4);
+    game.timeScale = 0.3;
+    Sound.rift();
+    addText(game.player.x, game.player.y - 46, 'EAGLE EYE', '#c7d2fe');
+  },
+
+  /* ---- Chrono Mage ---- */
+  mage_burst() {
+    const p = game.player;
+    eachEnemy(e => { e.freeze = Math.max(e.freeze || 0, 3); });
+    game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 340, life: 0, maxLife: 0.55, color: '#a78bfa' });
+    Sound.nova();
+    addText(p.x, p.y - 44, 'CHRONO BURST', '#c4b5fd');
+  },
+  mage_blink() {
+    const p = game.player;
+    const to = mouseWorldPos();
+    for (let i = 0; i < 12; i++) spawnParticle(p.x, p.y, rand(-120, 120), rand(-120, 120), 0.3, 5, '#c4b5fd', 3);
+    p.x = to.x; p.y = to.y; p.vx = 0; p.vy = 0;
+    p.invuln = Math.max(p.invuln, 0.25);
+    for (let i = 0; i < 12; i++) spawnParticle(p.x, p.y, rand(-120, 120), rand(-120, 120), 0.3, 5, '#ede9fe', 3);
+    Sound.dash();
+    addText(p.x, p.y - 40, 'BLINK', '#c4b5fd');
+  },
+  mage_familiar() {
+    const p = game.player;
+    addClassFx({ type: 'familiar', t: 15, maxT: 15, angle: rand(0, TAU), fireTimer: 0.2, x: p.x, y: p.y });
+    Sound.ability();
+    addText(p.x, p.y - 40, 'FAMILIAR', '#c4b5fd');
+  },
+  mage_timeloop() {
+    const p = game.player;
+    const hist = game.timeLoopHistory;
+    if (!hist.length) return false;
+    const target = hist[0];
+    p.x = target.x; p.y = target.y;
+    p.hp = clamp(target.hp, 1, p.maxHp);
+    updateHealthOrbs();
+    p.invuln = Math.max(p.invuln, 0.5);
+    game.particles.push({ ring: true, x: p.x, y: p.y, r: 8, maxR: 120, life: 0, maxLife: 0.45, color: '#a78bfa' });
+    Sound.rewind();
+    addText(p.x, p.y - 44, 'TIME LOOP', '#c4b5fd');
+  },
+
+  /* ---- Berserker ---- */
+  berserker_slam() {
+    const p = game.player;
+    damageEnemiesNear(p.x, p.y, 190, buffedDamage(p.damage * 3), 90);
+    game.shake = Math.max(game.shake, 0.8);
+    game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 210, life: 0, maxLife: 0.45, color: '#ff7a45' });
+    Sound.bombBoom();
+    addText(p.x, p.y - 46, 'GROUND SLAM', '#ff9d5c');
+  },
+  berserker_frenzy() {
+    const p = game.player;
+    const mv = moveVector();
+    const dir = (mv.x || mv.y) ? mv : { x: Math.cos(p.angle), y: Math.sin(p.angle) };
+    p.dashDir = dir; p.dashTimer = 0.28; p.frenzyT = 0.28; p.vx = 0; p.vy = 0;
+    p.invuln = Math.max(p.invuln, 0.34);
+    Sound.dash();
+    addText(p.x, p.y - 40, 'FRENZY DASH', '#ffb27a');
+  },
+  berserker_blood() {
+    const p = game.player;
+    p.hp = Math.max(1, p.hp - 1);
+    updateHealthOrbs();
+    setClassBuff('bloodRage', 6);
+    game.flashTimer = 0.2; game.flashColor = '#ff5b5b';
+    Sound.overcharge();
+    addText(p.x, p.y - 46, 'BLOOD RAGE', '#f87171');
+  },
+  berserker_juggernaut() {
+    const p = game.player;
+    setClassBuff('juggernaut', 4);
+    p.invuln = Math.max(p.invuln, 4);
+    eachEnemy(e => { if (e !== game.boss) knockEnemy(e, p.x, p.y, 160); });
+    game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 240, life: 0, maxLife: 0.5, color: '#ff7a45' });
+    Sound.overcharge();
+    addText(p.x, p.y - 46, 'JUGGERNAUT', '#ffd6a5');
+  },
+
+  /* ---- Shadow Assassin ---- */
+  shadow_clone() {
+    const p = game.player;
+    game.decoy = { x: p.x, y: p.y, t: 8, spin: 0 };
+    Sound.ability();
+    addText(p.x, p.y - 40, 'SHADOW CLONE', '#c4b5fd');
+  },
+  shadow_vanish() {
+    const p = game.player;
+    p.vanishT = 5; p.vanishKillReset = true;
+    p.phaseTimer = Math.max(p.phaseTimer, 5);
+    Sound.dash();
+    addText(p.x, p.y - 40, 'VANISH', '#a78bfa');
+  },
+  shadow_poison() {
+    const p = game.player;
+    const to = mouseWorldPos();
+    addClassFx({ type: 'poison', x: to.x, y: to.y, r: 150, t: 6, maxT: 6 });
+    Sound.bombThrow();
+    addText(p.x, p.y - 40, 'POISON CLOUD', '#86efac');
+  },
+  shadow_execute() {
+    const p = game.player;
+    let killed = 0;
+    for (let i = game.enemies.length - 1; i >= 0; i--) {
+      const e = game.enemies[i];
+      if (dist(p.x, p.y, e.x, e.y) > 340 + e.r) continue;
+      if (e.hp / e.maxHp < 0.25) { damageEnemy(e, e.hp + 999, true); killed++; }
+    }
+    if (game.boss && !game.boss.entering && dist(p.x, p.y, game.boss.x, game.boss.y) <= 340 + game.boss.r && game.boss.hp / game.boss.maxHp < 0.25) {
+      damageBoss(game.boss.hp + 999); killed++;
+    }
+    if (!killed) { addText(p.x, p.y - 40, 'NO EXECUTION', '#c4b5fd'); return false; }
+    Sound.sniperShot();
+    addText(p.x, p.y - 44, 'EXECUTE', '#f87171');
+  },
+
+  /* ---- Tech Specialist ---- */
+  tech_emp() {
+    const p = game.player;
+    eachEnemy(e => { e.disabledT = Math.max(e.disabledT || 0, 3); });
+    game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 360, life: 0, maxLife: 0.5, color: '#6ee7b7' });
+    Sound.nova();
+    addText(p.x, p.y - 44, 'EMP BLAST', '#6ee7b7');
+  },
+  tech_jet() {
+    const p = game.player;
+    p.jetBoostT = 4;
+    Sound.dash();
+    addText(p.x, p.y - 40, 'JET BOOST', '#fbbf24');
+  },
+  tech_drones() {
+    const p = game.player;
+    for (let i = 0; i < 5; i++) {
+      addClassFx({ type: 'drone', t: 10, maxT: 10, angle: (i / 5) * TAU, fireTimer: 0.2 + i * 0.08, x: p.x, y: p.y });
+    }
+    Sound.turretDrop();
+    addText(p.x, p.y - 40, 'DRONE SWARM', '#6ee7b7');
+  },
+  tech_overload() {
+    systemOverload();
+  }
+};
+
+function updateClassAbilities(dt) {
+  const p = game.player;
+  if (!p) return;
+  for (const key of Object.keys(game.classBuffs)) {
+    if (game.classBuffs[key] > 0) game.classBuffs[key] = Math.max(0, game.classBuffs[key] - dt);
+  }
+  if (p.ghillieT > 0) p.ghillieT = Math.max(0, p.ghillieT - dt);
+  if (p.vanishT > 0) p.vanishT = Math.max(0, p.vanishT - dt);
+  if (p.frenzyT > 0) p.frenzyT = Math.max(0, p.frenzyT - dt);
+  if (p.jetBoostT > 0) p.jetBoostT = Math.max(0, p.jetBoostT - dt);
+  if (p.overloadPierceT > 0) p.overloadPierceT = Math.max(0, p.overloadPierceT - dt);
+
+  /* Time Loop keeps a rolling five-second snapshot of position and health. */
+  const hist = game.timeLoopHistory;
+  if (!hist.length || game.time - hist[hist.length - 1].t > 0.1) hist.push({ t: game.time, x: p.x, y: p.y, hp: p.hp });
+  while (hist.length && game.time - hist[0].t > 5.2) hist.shift();
+
+  /* Frenzy Dash damages bodies it passes through. */
+  if (p.frenzyT > 0) {
+    for (let i = game.enemies.length - 1; i >= 0; i--) {
+      const e = game.enemies[i];
+      if (dist(p.x, p.y, e.x, e.y) < 70 + e.r && e.contactCd <= 0) {
+        damageEnemy(e, buffedDamage(p.damage * 1.5), true);
+        e.contactCd = 0.3;
+      }
+    }
+  }
+  /* Juggernaut shoves everything away while it burns. */
+  if (classBuff('juggernaut') > 0) {
+    for (let i = game.enemies.length - 1; i >= 0; i--) {
+      const e = game.enemies[i];
+      if (dist(p.x, p.y, e.x, e.y) < 190 + e.r) knockEnemy(e, p.x, p.y, 140 * dt);
+    }
+  }
+  /* Jet Boost leaves a burning trail. */
+  if (p.jetBoostT > 0 && p.moving) {
+    spawnParticle(p.x - Math.cos(p.moveAng || p.angle) * 16, p.y - Math.sin(p.moveAng || p.angle) * 16,
+      rand(-30, 30), rand(-30, 30), 0.4, rand(4, 8), Math.random() < 0.5 ? '#f97316' : '#fbbf24', 2);
+    for (let i = game.enemies.length - 1; i >= 0; i--) {
+      const e = game.enemies[i];
+      if (dist(p.x, p.y, e.x, e.y) < 55 + e.r) damageEnemy(e, 3 * dt, true, true);
+    }
+  }
+
+  /* player-owned proximity mines */
+  for (let i = game.playerMines.length - 1; i >= 0; i--) {
+    const m = game.playerMines[i];
+    m.arm = Math.min(1, m.arm + dt * 2);
+    m.t -= dt;
+    let boom = m.t <= 0;
+    if (!boom && m.arm >= 1) {
+      for (let j = 0; j < game.enemies.length; j++) {
+        if (dist(m.x, m.y, game.enemies[j].x, game.enemies[j].y) < 52) { boom = true; break; }
+      }
+      if (!boom && game.boss && dist(m.x, m.y, game.boss.x, game.boss.y) < 60) boom = true;
+    }
+    if (boom) { explodeAt(m.x, m.y, 10, '#e2e8f0'); game.playerMines.splice(i, 1); }
+  }
+
+  /* lingering class effects */
+  for (let i = game.classFx.length - 1; i >= 0; i--) {
+    const fx = game.classFx[i];
+    fx.t -= dt;
+    if (fx.t <= 0) { game.classFx.splice(i, 1); continue; }
+    if (fx.type === 'smoke') {
+      for (let j = 0; j < game.enemies.length; j++) {
+        const e = game.enemies[j];
+        if (dist(fx.x, fx.y, e.x, e.y) < fx.r + e.r) e.slowT = Math.max(e.slowT || 0, 0.6);
+      }
+      if (Math.random() < 0.4) spawnParticle(fx.x + rand(-fx.r, fx.r), fx.y + rand(-fx.r, fx.r), rand(-20, 20), rand(-30, -10), 0.6, rand(6, 12), 'rgba(203,213,225,0.5)', 1);
+    } else if (fx.type === 'poison') {
+      for (let j = 0; j < game.enemies.length; j++) {
+        const e = game.enemies[j];
+        if (dist(fx.x, fx.y, e.x, e.y) < fx.r + e.r) { e.poisonT = Math.max(e.poisonT || 0, 6); e.poisonDmg = 1; }
+      }
+      if (Math.random() < 0.5) spawnParticle(fx.x + rand(-fx.r, fx.r), fx.y + rand(-fx.r, fx.r), rand(-20, 20), rand(-40, -10), 0.6, rand(5, 10), '#86efac', 1);
+    } else if (fx.type === 'familiar') {
+      fx.angle += dt * 2.2;
+      fx.x = p.x + Math.cos(fx.angle) * 64;
+      fx.y = p.y + Math.sin(fx.angle) * 64;
+      fx.fireTimer -= dt;
+      const target = nearestEnemyForAbility(fx.x, fx.y, 520, null);
+      if (target && fx.fireTimer <= 0) {
+        fx.fireTimer = 0.5;
+        const a = Math.atan2(target.y - fx.y, target.x - fx.x);
+        game.bullets.push({ kind: 'orb', x: fx.x, y: fx.y, vx: Math.cos(a) * 320, vy: Math.sin(a) * 320, r: 6, life: 2, dmg: buffedDamage(p.damage * 0.6), knock: 2, homing: true, turn: 3, spin: 0 });
+      }
+      if (Math.random() < 0.3) spawnParticle(fx.x, fx.y, rand(-20, 20), rand(-20, 20), 0.3, 4, '#c4b5fd', 2);
+    } else if (fx.type === 'drone') {
+      fx.angle += dt * 1.6;
+      const target = nearestEnemyForAbility(fx.x, fx.y, 620, null);
+      if (target) {
+        const a = Math.atan2(target.y - fx.y, target.x - fx.x);
+        fx.x += Math.cos(a) * 180 * dt;
+        fx.y += Math.sin(a) * 180 * dt;
+        fx.fireTimer -= dt;
+        if (fx.fireTimer <= 0 && dist(fx.x, fx.y, target.x, target.y) < 360) {
+          fx.fireTimer = 0.45;
+          game.bullets.push({ kind: 'turret', x: fx.x, y: fx.y, vx: Math.cos(a) * 760, vy: Math.sin(a) * 760, r: 4, life: 0.7, dmg: buffedDamage(p.damage * 0.45), knock: 2 });
+        }
+      } else {
+        fx.x = p.x + Math.cos(fx.angle) * 80;
+        fx.y = p.y + Math.sin(fx.angle) * 80;
+      }
+      if (Math.random() < 0.2) spawnParticle(fx.x, fx.y, rand(-15, 15), rand(-15, 15), 0.25, 3, '#6ee7b7', 2);
+    }
+  }
 }
 
 /* entering an arena hands the player a short grace window: enemies are already
@@ -7561,7 +8146,8 @@ function chooseUpgrade(up) {
    wrapped: a blocked localStorage simply turns saving off instead of breaking
    the game. */
 
-const SAVE_KEY = 'surviveGameSave';
+const SAVE_KEY = 'surviveSave';
+const PREVIOUS_SAVE_KEY = 'surviveGameSave';
 const LEGACY_SAVE_KEY = 'survive_save_v1';
 const SAVE_BEST_KEY = 'survive_best_score';
 const SAVE_GEMS_KEY = 'survive_gems_total';
@@ -7638,6 +8224,9 @@ const SaveSystem = (function () {
     const score = Math.max(0, Math.floor(Number(game.score) || 0));
     return {
       v: SAVE_VERSION,
+      universe: Math.floor(zone / LEVELS_PER_UNIVERSE),
+      zone: zone,
+      className: gameState.currentClass,
       currentUniverse: Math.floor(zone / LEVELS_PER_UNIVERSE),
       currentZone: zone,
       currentClass: gameState.currentClass,
@@ -7686,24 +8275,29 @@ const SaveSystem = (function () {
   }
 
   /* Read the canonical slot, falling back to the old slot for migration. */
-  function load() {
-    let raw = readJSON(SAVE_KEY);
+  function load(rawOverride) {
+    let raw = rawOverride !== undefined ? rawOverride : readJSON(SAVE_KEY);
+    if (!raw || typeof raw !== 'object') raw = readJSON(PREVIOUS_SAVE_KEY);
     if (!raw || typeof raw !== 'object') raw = readJSON(LEGACY_SAVE_KEY);
     if (!raw || typeof raw !== 'object') return null;
-    const zoneValue = Number(raw.currentZone !== undefined ? raw.currentZone : raw.zone);
+    const zoneValue = Number(raw.zone !== undefined ? raw.zone : raw.currentZone);
     if (!isFinite(zoneValue) || zoneValue < 0 || zoneValue >= ZONES.length) return null;
     const zone = Math.floor(zoneValue);
     const number = (value, fallback) => {
       const n = Number(value);
       return isFinite(n) ? Math.max(0, Math.floor(n)) : (fallback || 0);
     };
-    const classId = raw.currentClass || raw.classId;
+    const classId = raw.className || raw.currentClass || raw.classId;
     const abilitySource = raw.unlockedAbilities || raw.abilities || {};
+    const className = CLASSES.some((c) => c.id === classId) ? classId : 'knight';
     const out = {
       v: SAVE_VERSION,
+      universe: Math.floor(zone / LEVELS_PER_UNIVERSE),
+      zone: zone,
+      className: className,
       currentUniverse: Math.floor(zone / LEVELS_PER_UNIVERSE),
       currentZone: zone,
-      currentClass: CLASSES.some((c) => c.id === classId) ? classId : 'knight',
+      currentClass: className,
       score: number(raw.score),
       bestScore: number(raw.bestScore !== undefined ? raw.bestScore : raw.best),
       gems: number(raw.gems),
@@ -7727,7 +8321,7 @@ const SaveSystem = (function () {
       const lvl = clamp(number(ups[up.id]), 0, up.max);
       if (lvl > 0) out.upgrades[up.id] = lvl;
     }
-    for (const id of ABILITY_IDS) out.unlockedAbilities[id] = !!abilitySource[id];
+    for (const id of ALL_CLASS_ABILITY_IDS) out.unlockedAbilities[id] = !!abilitySource[id];
     out.unlockedAbilities.overdrive = !!abilitySource.overdrive;
     for (let i = 0; i < ZONES.length; i++) out.bosses.push(!!(Array.isArray(raw.bosses) && raw.bosses[i]));
     for (let i = 0; i < out.maxZone; i++) out.bosses[i] = true;
@@ -7748,6 +8342,7 @@ const SaveSystem = (function () {
     if (s) {
       try {
         s.removeItem(SAVE_KEY);
+        s.removeItem(PREVIOUS_SAVE_KEY);
         s.removeItem(LEGACY_SAVE_KEY);
         s.removeItem(SAVE_BEST_KEY);
         s.removeItem(SAVE_GEMS_KEY);
@@ -7860,7 +8455,9 @@ const SaveSystem = (function () {
       const left = have - cost;
       game.lifetimeGems = left;
       writeCount(SAVE_GEMS_KEY, left);
-      const raw = readJSON(SAVE_KEY);
+      let raw = readJSON(SAVE_KEY);
+      if (!raw || typeof raw !== 'object') raw = readJSON(PREVIOUS_SAVE_KEY);
+      if (!raw || typeof raw !== 'object') raw = readJSON(LEGACY_SAVE_KEY);
       if (raw && typeof raw === 'object') { raw.lifetimeGems = left; writeJSON(SAVE_KEY, raw); }
       if (typeof refreshSaveUi === 'function') refreshSaveUi();
       return left;
@@ -7913,10 +8510,16 @@ function addScore(points) {
    above the corpse and fades over 0.8 seconds, and the save that keeps it. */
 function awardKill(e) {
   syncGemMultHud();
-  gameState.score += 10 * gameState.multiplier;
+  if (game.player && game.player.vanishKillReset) {
+    game.player.vanishKillReset = false;
+    resetAllAbilityCooldowns();
+    addText(game.player.x, game.player.y - 48, 'COOLDOWNS RESET', '#c4b5fd');
+  }
+  gs.score += 10 * gs.mult;
+  updateHUD();
   if (e) addText(e.x, e.y - (e.r || 14) - 8, '+10', '#ffe9a8', 17, 40, 0.8);
   saveGame('kill');
-  return 10 * gameState.multiplier;
+  return 10 * gs.mult;
 }
 
 function syncGemMultHud() {
@@ -7956,9 +8559,9 @@ function flushSaveGame() { return false; }
    upgrades to a fresh player and rebuilds the saved zone. */
 function restoreSavedState(slot) {
   if (!slot) return false;
-  gameState.currentZone = slot.currentZone;
-  gameState.currentUniverse = slot.currentUniverse;
-  gameState.currentClass = slot.currentClass;
+  gameState.currentZone = slot.zone !== undefined ? slot.zone : slot.currentZone;
+  gameState.currentUniverse = slot.universe !== undefined ? slot.universe : slot.currentUniverse;
+  gameState.currentClass = slot.className || slot.currentClass;
   gameState.score = slot.score;
   gameState.bestScore = Math.max(slot.bestScore, slot.score);
   gameState.gems = slot.gems;
@@ -7977,7 +8580,12 @@ function restoreSavedState(slot) {
 }
 
 function loadGame() {
-  const slot = SaveSystem.load();
+  let slot = null;
+  try {
+    const raw = window.localStorage.getItem('surviveSave');
+    if (raw) slot = SaveSystem.load(JSON.parse(raw));
+  } catch (e) { slot = null; }
+  if (!slot) slot = SaveSystem.load();
   if (slot) restoreSavedState(slot);
   refreshSaveUi();
   syncAbilityHud();
@@ -7990,7 +8598,7 @@ function refreshSaveUi() {
   const best = Math.max(gameState.bestScore | 0, slot ? slot.bestScore | 0 : 0);
   const gems = Math.max(0, game.lifetimeGems | 0);
   gameState.bestScore = best;
-  const zone = slot ? slot.currentZone : gameState.currentZone;
+  const zone = slot ? (slot.zone !== undefined ? slot.zone : slot.currentZone) : gameState.currentZone;
   const uni = universeOf(zone);
   const location = uni.name + ' · ' + ZONES[zone].name;
   if (UI.menuBest) UI.menuBest.textContent = 'BEST SCORE ' + best;
@@ -7999,7 +8607,11 @@ function refreshSaveUi() {
   if (UI.continueMeta) UI.continueMeta.textContent = slot ? SaveSystem.summary(slot) : location;
   if (UI.spBest) UI.spBest.textContent = String(best);
   if (UI.spGems) UI.spGems.textContent = String(gems);
-  if (UI.spRun) UI.spRun.textContent = 'Universe ' + uni.number + ' · Level ' + levelInUniverse(zone) + ' — ' + location;
+  if (UI.spRun) {
+    UI.spRun.textContent = slot
+      ? 'Universe ' + uni.number + ' · Level ' + levelInUniverse(zone) + ' — ' + location
+      : 'No saved run';
+  }
 }
 
 /* the "Progress Saved" line only appears when the write really landed */
@@ -8532,12 +9144,18 @@ function shopFireBoost() { return (1 + 0.15 * shopLevel('magazine')) * odm(); }
 function buffedDamage(v) {
   const p = game.player;
   const rage = p && p.rageT > 0 ? 3 : 1;
-  return v * ((game.damageBuffT || 0) > 0 ? 2 : 1) * rage;
+  let classMult = classDamageMult();
+  if (p && p.ghillieShot) { classMult *= 5; p.ghillieShot = false; }
+  return v * ((game.damageBuffT || 0) > 0 ? 2 : 1) * rage * classMult;
 }
 /* Berserker Rage: three times the stride while it burns */
 function rageSpeedMult() { const p = game.player; return p && p.rageT > 0 ? 3 : 1; }
 /* Speed Serum: half again as fast on foot while it lasts */
-function speedBuffMult() { return (game.speedBuffT || 0) > 0 ? 1.5 : 1; }
+function speedBuffMult() {
+  const p = game.player;
+  if (p && p.jetBoostT > 0) return 2.5;
+  return (game.speedBuffT || 0) > 0 ? 1.5 : 1;
+}
 function shopMagazineMult() { return 1 + 0.15 * shopLevel('magazine'); }
 
 /* The gold flash a critical hit leaves behind */
@@ -9882,7 +10500,7 @@ function onResetSaveClick() {
     game.score = 0;
     game.gems = 0;
     game.maxZone = 0;
-    gameState.unlockedAbilities = { dash: false, nova: false, turret: false, overcharge: false, bomb: false, overdrive: false };
+    gameState.unlockedAbilities = { overdrive: false };
     game.bossesDefeated = new Array(ZONES.length).fill(false);
     /* the shop is progress too: a full reset hands back an empty depot */
     try { window.localStorage.removeItem(SHOP_KEY); } catch (err) { /* ignore */ }
@@ -10264,6 +10882,7 @@ function startRun(classId, zoneIndex, opts) {
 
   gameState.currentClass = classId;
   resetRun();
+  syncAbilityUnlocks(true);
   if (kept) {
     game.score = kept.score;
     game.gems = kept.gems;
@@ -10381,7 +11000,7 @@ function hudSet(el, value) {
 
 
 function updateHud() {
-  hudSet(UI.scoreVal, String(Math.floor(game.score)));
+  if (UI.scoreVal) UI.scoreVal.textContent = gs.score;
   syncAbilityHud();
   const p = game.player;
   if (!p) return;
@@ -10396,6 +11015,9 @@ function updateHud() {
     UI.overchargeGlow.classList.toggle('on', game.overchargeTimer > 0);
   }
 }
+
+/* Public HUD refresh used by the scoring path. */
+function updateHUD() { return updateHud(); }
 
 /* ------------------------------ buttons ------------------------------------ */
 document.getElementById('btnBegin').addEventListener('click', beginMission);
@@ -14662,12 +15284,167 @@ const BOSS_KITS = {
   }
 };
 
+
+function spawnPoisonPool(x, y, r, t) {
+  game.bossHazards.push({ type: 'poison', x: clamp(x, 60, WORLD - 60), y: clamp(y, 60, WORLD - 60), r: r || 90, t: t || 5, maxT: t || 5 });
+}
+function updateBossHazards(dt) {
+  const p = game.player;
+  for (let i = game.bossHazards.length - 1; i >= 0; i--) {
+    const h = game.bossHazards[i];
+    h.t -= dt;
+    if (h.t <= 0) { game.bossHazards.splice(i, 1); continue; }
+    if (h.type === 'poison' && p && dist(h.x, h.y, p.x, p.y) < h.r + p.r) {
+      applyPoison(2);
+    }
+    if (Math.random() < 0.25) {
+      spawnParticle(h.x + rand(-h.r, h.r), h.y + rand(-h.r, h.r), rand(-15, 15), rand(-35, -10), 0.5, rand(4, 8), '#86efac', 1);
+    }
+  }
+}
+function drawBossHazards() {
+  for (let i = 0; i < game.bossHazards.length; i++) {
+    const h = game.bossHazards[i];
+    const alpha = Math.min(1, h.t / Math.max(0.001, h.maxT) * 2);
+    ctx.save();
+    ctx.globalAlpha = 0.22 * alpha;
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 0.5 * alpha;
+    ctx.strokeStyle = '#86efac'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, TAU); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+
+/* ---- Universe 1 bespoke boss kits -------------------------------------- */
+const MEDIEVAL_BOSS_PAL = {
+  gatekeeper: { plate: '#3f1d1d', plateDark: '#1a0c0c', plateLit: '#6b2b2b', trim: '#dc2626', rune: '#f87171', glow: '#ef4444', cape: '#241010', eye: '#fca5a5', steel: '#e2e8f0' },
+  baron: { plate: '#1e3a5f', plateDark: '#0d1b2e', plateLit: '#345a8a', trim: '#3b82f6', rune: '#93c5fd', glow: '#60a5fa', cape: '#101a2b', eye: '#bfdbfe', steel: '#dbeafe' },
+  siege: { plate: '#4a3517', plateDark: '#241a0b', plateLit: '#7a5a2b', trim: '#f59e0b', rune: '#fbbf24', glow: '#f97316', cape: '#2b1d0b', eye: '#fde68a', steel: '#e2e8f0' },
+  black: { plate: '#1a1026', plateDark: '#0c0714', plateLit: '#32204a', trim: '#a855f7', rune: '#c084fc', glow: '#9333ea', cape: '#120a1c', eye: '#e9d5ff', steel: '#cbd5e1' }
+};
+function bossChargeStep(b, dt, mult) {
+  b.charging -= dt;
+  b.x = clamp(b.x + b.chargeDir.x * b.speed * mult * dt, 90, WORLD - 90);
+  b.y = clamp(b.y + b.chargeDir.y * b.speed * mult * dt, 90, WORLD - 90);
+  b.angle = Math.atan2(b.chargeDir.y, b.chargeDir.x);
+  if (Math.random() < 0.7) spawnParticle(b.x, b.y, rand(-40, 40), rand(-40, 40), 0.3, 8, b.color, 3);
+}
+function startBossCharge(b, dur) {
+  const a = bossAim(b);
+  b.chargeDir = { x: Math.cos(a), y: Math.sin(a) };
+  b.charging = dur;
+  Sound.bossCast();
+}
+function summonShieldKnights(b, n) {
+  const before = game.enemies.length;
+  bossSummon(b, 'knight', n);
+  for (let i = before; i < game.enemies.length; i++) {
+    const e = game.enemies[i];
+    e.shield = 3;
+    e.hp += 2; e.maxHp += 2;
+  }
+}
+function fireCannonSpread(b, count, speed) {
+  const a = bossAim(b);
+  const half = (count - 1) / 2;
+  for (let i = 0; i < count; i++) {
+    fireEnemyBullet(b.x, b.y, a + (i - half) * 0.2, speed, 'cannon', 12, 2);
+  }
+  Sound.bossCast();
+}
+
+Object.assign(BOSS_KITS, {
+  gatekeeper: {
+    init(b) { b.k = { charge: 2.0 }; },
+    update(b, dt) {
+      const k = b.k;
+      const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
+      if (b.charging > 0) { bossChargeStep(b, dt, 5.2); return; }
+      bossStride(b, dt, b.speed * (phase >= 2 ? 1.25 : 1), 190);
+      k.charge -= dt;
+      if (k.charge <= 0) { k.charge = phase >= 2 ? 2.2 : 3.0; startBossCharge(b, 0.55); }
+    },
+    draw(b, flash) { drawArmouredGiant(b, MEDIEVAL_BOSS_PAL.gatekeeper, flash ? '#ffffff' : null); }
+  },
+  plaguewitch: {
+    init(b) { b.k = { pool: 2.2, bolt: 3.5 }; },
+    update(b, dt) {
+      const k = b.k, p = game.player;
+      const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
+      bossStride(b, dt, b.speed * (phase >= 2 ? 1.2 : 1), 260);
+      k.pool -= dt;
+      if (k.pool <= 0) {
+        k.pool = phase >= 2 ? 2.4 : 3.4;
+        spawnPoisonPool(p.x + rand(-50, 50), p.y + rand(-50, 50), 95, 6);
+        Sound.bossCast();
+      }
+      k.bolt -= dt;
+      if (k.bolt <= 0) {
+        k.bolt = phase >= 2 ? 2.2 : 3.5;
+        fireEnemyBullet(b.x, b.y, bossAim(b), 240, 'poison', 9, 1);
+      }
+    },
+    draw(b, flash) { drawRobedGiant(b, ROBE_PAL.witch, flash ? '#ffffff' : null); }
+  },
+  baroncrest: {
+    init(b) { b.k = { summon: 3.5 }; },
+    update(b, dt) {
+      const k = b.k;
+      const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
+      bossStride(b, dt, b.speed * (phase >= 2 ? 1.2 : 1), 220);
+      k.summon -= dt;
+      if (k.summon <= 0) { k.summon = phase >= 2 ? 5.0 : 7.0; summonShieldKnights(b, phase >= 2 ? 3 : 2); }
+    },
+    draw(b, flash) { drawArmouredGiant(b, MEDIEVAL_BOSS_PAL.baron, flash ? '#ffffff' : null); }
+  },
+  siegeengine: {
+    init(b) { b.k = { cannon: 1.8 }; },
+    update(b, dt) {
+      const k = b.k;
+      const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
+      bossStride(b, dt, b.speed, 300);
+      k.cannon -= dt;
+      if (k.cannon <= 0) { k.cannon = phase >= 2 ? 1.6 : 2.3; fireCannonSpread(b, phase >= 2 ? 7 : 5, 300); }
+    },
+    draw(b, flash) { drawArmouredGiant(b, MEDIEVAL_BOSS_PAL.siege, flash ? '#ffffff' : null); }
+  },
+  blackknight: {
+    init(b) { b.k = { charge: 2.6, pool: 3.6, summon: 6.0, cannon: 2.2 }; },
+    update(b, dt) {
+      const k = b.k, p = game.player;
+      const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
+      if (b.charging > 0) { bossChargeStep(b, dt, 5.4); }
+      else {
+        bossStride(b, dt, b.speed * (phase >= 2 ? 1.25 : 1), 210);
+        k.charge -= dt;
+        if (k.charge <= 0) { k.charge = phase >= 2 ? 2.6 : 3.6; startBossCharge(b, 0.55); }
+      }
+      k.pool -= dt;
+      if (k.pool <= 0) { k.pool = phase >= 2 ? 3.0 : 4.2; spawnPoisonPool(p.x + rand(-60, 60), p.y + rand(-60, 60), 100, 6); }
+      k.summon -= dt;
+      if (k.summon <= 0) { k.summon = phase >= 2 ? 5.5 : 7.5; summonShieldKnights(b, 2); }
+      k.cannon -= dt;
+      if (k.cannon <= 0) { k.cannon = phase >= 2 ? 1.8 : 2.6; fireCannonSpread(b, phase >= 2 ? 7 : 5, 310); }
+    },
+    draw(b, flash) { drawArmouredGiant(b, MEDIEVAL_BOSS_PAL.black, flash ? '#ffffff' : null); }
+  }
+});
+
 function updateBossKit(b, dt) {
   const kit = BOSS_KITS[b.kit];
   if (!kit) return;
   if (!b.k) kit.init(b);
   kit.update(b, dt);
   collideObstacles(b);
+  const p = game.player;
+  if (b.contactCd > 0) b.contactCd = Math.max(0, b.contactCd - dt);
+  if (p && b.contactCd <= 0 && dist(b.x, b.y, p.x, p.y) < b.r + p.r + 2) {
+    b.contactCd = 0.9;
+    hurtPlayer(1);
+  }
 }
 
 function drawBoss() {
@@ -17427,6 +18204,44 @@ function drawRift() {
   ctx.restore();
 }
 
+
+function drawClassAbilities() {
+  for (let i = 0; i < game.playerMines.length; i++) {
+    const m = game.playerMines[i];
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.fillStyle = '#3f3f46';
+    ctx.beginPath(); ctx.arc(0, 0, 10 * m.arm, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, 10 * m.arm, 0, TAU); ctx.stroke();
+    ctx.fillStyle = Math.sin(game.time * 12) > 0 ? '#f87171' : '#7f1d1d';
+    ctx.beginPath(); ctx.arc(0, 0, 3, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+  for (let i = 0; i < game.classFx.length; i++) {
+    const fx = game.classFx[i];
+    const alpha = Math.min(1, fx.t / Math.max(0.001, fx.maxT) * 2);
+    if (fx.type === 'smoke' || fx.type === 'poison') {
+      ctx.save();
+      ctx.globalAlpha = 0.18 * alpha;
+      ctx.fillStyle = fx.type === 'smoke' ? '#cbd5e1' : '#86efac';
+      ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r, 0, TAU); ctx.fill();
+      ctx.restore();
+    } else if (fx.type === 'familiar') {
+      ctx.save();
+      ctx.fillStyle = '#c4b5fd'; ctx.shadowColor = '#a78bfa'; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.arc(fx.x, fx.y, 8, 0, TAU); ctx.fill();
+      ctx.restore();
+    } else if (fx.type === 'drone') {
+      ctx.save();
+      ctx.translate(fx.x, fx.y);
+      ctx.fillStyle = '#6ee7b7'; ctx.shadowColor = '#34d399'; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(6, 5); ctx.lineTo(-6, 5); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
 /* ------------------------------ turrets ------------------------------------ */
 function drawTurrets() {
   for (let i = 0; i < game.turrets.length; i++) {
@@ -17570,6 +18385,17 @@ function drawEnemyBullets() {
       ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2.4, 0, TAU); ctx.fill();
       ctx.fillStyle = '#f5e8ff';
       ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.5, 0, TAU); ctx.fill();
+    } else if (b.kind === 'cannon') {
+      const g = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, b.r * 2);
+      g.addColorStop(0, 'rgba(253,230,138,0.9)');
+      g.addColorStop(0.5, 'rgba(245,158,11,0.55)');
+      g.addColorStop(1, 'rgba(245,158,11,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#1f2937';
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
     } else if (b.kind === 'poison') {
       const g = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, b.r * 2.2);
       g.addColorStop(0, 'rgba(220,252,231,0.9)');
@@ -19013,6 +19839,8 @@ function render() {
   drawObstacles();
   drawSandPillars();
   drawMines();
+  drawBossHazards();
+  drawClassAbilities();
   drawHiddenSpots();
   drawFootsteps();
   drawGems();
@@ -19107,7 +19935,8 @@ function update(dt) {
   }
 
   updateHud();
-  updatePlayer(sdt);
+  updatePlayer(classBuff('eagleEye') > 0 ? dt : sdt);
+  updateClassAbilities(dt);
   updatePet(sdt);
   updateClassKit(sdt);
   updateCamera(sdt);
@@ -19125,6 +19954,7 @@ function update(dt) {
   updateArenas(sdt);
   updateBossFight(sdt);
   updateBoss(sdt);
+  updateBossHazards(sdt);
   updatePortal(sdt);
   updateFootsteps(sdt);
   updateParticles(sdt);
@@ -19416,11 +20246,18 @@ function initPauseSystem() {
   });
   document.getElementById('btnConfirmLeave').addEventListener('click', () => {
     if (currentScreen !== 'pauseMenu') return;
-    RunClock.stop();
-    saveGame('pause-leave');
-    resetGameLoop();
+    document.getElementById('pauseConfirm').hidden = true;
+    document.getElementById('pauseMenu').classList.remove('show');
+    saveGame();
+    stopLoop();
+    stopCosPreview();
+    stopPetCards();
+    BossMusic.stop();
     showScreen('mainMenu');
-    refreshSaveUi();
+    isPaused = false;
+    gameState.paused = false;
+    gameState.bossActive = false;
+    gameState.arenaActive = false;
   });
 }
 initPauseSystem();
@@ -19439,9 +20276,9 @@ window.addEventListener('load', resize);
   game.lifetimeGems = SaveSystem.lifetimeGems();
   game.maxZone = SaveSystem.maxZone();
   loadGame();                    /* slot + abilities + bosses + the menu line */
+  Shop.load();                   /* the depot reads its levels and satchel first */
   syncAbilityUnlocks(true);      /* silent: replay anything the frontier implies */
   syncAbilityHud();
-  Shop.load();                   /* the depot reads its levels and satchel first */
   syncConsumableHud();
   for (let i = 0; i < UI.classIcons.length; i++) {
     paintClassIcon(UI.classIcons[i], CLASSES[i].id);   /* markup, painted once */
