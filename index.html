@@ -1455,6 +1455,26 @@
   #btnLevelUpTree:hover,#btnLevelUpTree:focus-visible{ background:rgba(232,200,116,.25); box-shadow:0 0 16px rgba(232,200,116,.3); }
   @keyframes levelUpArrive{ from{ opacity:0; transform:translate(-50%,-45%) scale(.92); } to{ opacity:1; transform:translate(-50%,-50%) scale(1); } }
   @keyframes levelGoldFlash{ 0%{ opacity:.95; transform:scale(.94); } 35%{ opacity:.45; } 100%{ opacity:0; transform:scale(1.2); } }
+  /* ---------------- level-up toast ----------------
+     A level-up during live combat never raises the centre card. It only pings
+     this small non-blocking notice in the top-left corner, below the health
+     orbs: a brief gold flash, "LV UP -> N" in small Cinzel type, sliding in and
+     fading out over 2 seconds. pointer-events stay off, so it can never
+     intercept a click or cover the fight. */
+  #levelUpToasts{ display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
+  .level-up-toast{
+    font-family:var(--font-head); font-size:13px; font-weight:700; letter-spacing:2.5px;
+    color:#ffe4a1; white-space:nowrap; pointer-events:none;
+    text-shadow:0 0 14px rgba(255,204,77,.85), 0 2px 6px rgba(0,0,0,.9);
+    animation:levelUpToast 2s ease-out forwards;
+  }
+  @keyframes levelUpToast{
+    0%{ opacity:0; transform:translateX(-18px) scale(.9); color:#fff8e0;
+        text-shadow:0 0 28px rgba(255,224,130,1), 0 0 9px #fff, 0 2px 6px #000; }
+    12%{ opacity:1; transform:translateX(0) scale(1); }
+    70%{ opacity:1; transform:translateX(0); }
+    100%{ opacity:0; transform:translateX(8px); }
+  }
   /* The skill tree is a full-viewport overlay. These !important rules beat the
      generic .screen defaults so the tree always sits above the game canvas and
      every skill-tree control stays inside this single overlay element. */
@@ -1516,8 +1536,730 @@
   #skillTooltipState{ display:block; margin-top:8px; color:#bfa774; font-size:11px; }
   @media(max-width:760px){ .skill-panel{ padding:16px; } #skillTreeTitle{ font-size:24px; } .skill-header{ gap:10px; } .skill-points-box{ min-width:95px; padding:8px; } .skill-footer{ align-items:flex-start; } .skill-legend{ gap:12px; } }
   @media(max-height:660px){ .skill-panel{ padding-top:14px; } .skill-row{ min-height:122px; } .skill-xp-summary{ margin:10px 0 6px; } }
-  @media(prefers-reduced-motion:reduce){ .skill-node.available .skill-disc{ animation:none; } #classLevelUp.show,#classLevelUp.show::before{ animation:none; } #classXpFill{ transition:none; } }
+  @media(prefers-reduced-motion:reduce){ .skill-node.available .skill-disc{ animation:none; } #classLevelUp.show,#classLevelUp.show::before{ animation:none; } #classXpFill{ transition:none; } .level-up-toast{ animation:none; opacity:1; } }
 
+</style>
+<style id="arcane-theme">
+/* ============================================================================
+   DARK ARCANE SCI-FI THEME — "ancient symbols meet futuristic technology"
+   Override layer: loaded after the base sheet, so every rule here wins the
+   cascade at equal specificity. All DOM ids/classes and JS hooks unchanged.
+   ============================================================================ */
+:root{
+  --bg:#04050a;
+  --surface:#0a0c14;
+  --border:#2a1f0e;
+  --gold:#c8971f;
+  --gold-bright:#f0c040;
+  --teal:#1de9b6;
+  --red:#e53935;
+  --text:#d4c5a9;
+  --text-dim:rgba(212,197,169,.5);
+  --gold-dim:rgba(200,151,31,.45);
+  --ink:#04050a;
+  --hex:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+html,body{ background:var(--bg); color:var(--text); }
+
+/* ---------------- every screen gets the dark arcane backdrop -------------- */
+#overlays .screen, #pauseMenu{
+  background:
+    radial-gradient(ellipse 80% 55% at 50% -5%, rgba(200,151,31,.07), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 50% 105%, rgba(29,233,182,.05), transparent 60%),
+    var(--bg) !important;
+  color:var(--text);
+}
+/* a thin amber frame around every menu screen */
+#overlays .screen.show::after, #pauseMenu.show::after{
+  content:''; position:absolute; inset:12px; z-index:-1;
+  border:1px solid rgba(200,151,31,.16); pointer-events:none;
+}
+.screen h1{ color:var(--gold-bright); text-shadow:0 0 30px rgba(240,192,64,.4), 0 4px 18px #000; }
+.eyebrow{ color:var(--gold); }
+.body-text, .statline, #howToPlay .row, .uni-story, #levelTransition .story,
+.zone-card .zdesc, .class-card .cdesc, .class-card .cpassive, .card .desc, .sc-desc{ color:var(--text); }
+#howToPlay b{ color:var(--gold-bright); }
+
+/* ---------------- ALL BUTTONS: sharp corners, amber bottom accent --------- */
+.btn, .pause-btn, .shop-tab, .sc-buy, #btnZoneBack, #btnClassSkip, #btnLevelUpTree, #btnResetSave{
+  border-radius:1px !important;
+  border:1px solid transparent !important;
+  border-bottom:2px solid var(--gold) !important;
+  background:rgba(10,12,20,.55) !important;
+  color:var(--text) !important;
+  box-shadow:none !important;
+  --pl:30px;
+  padding-left:var(--pl) !important;
+  transition:color .18s ease, border-color .18s ease, background .18s ease,
+             box-shadow .18s ease, padding-left .18s ease, transform .1s ease !important;
+}
+.pause-btn{ --pl:18px; }
+.shop-tab{ --pl:16px; }
+.sc-buy{ --pl:15px; }
+#btnZoneBack, #btnClassSkip, #btnLevelUpTree{ --pl:18px; }
+#btnResetSave{ --pl:10px; }
+.btn:hover, .btn:focus-visible,
+.pause-btn:hover:not(:disabled), .pause-btn:focus-visible:not(:disabled),
+.shop-tab:hover, .shop-tab:focus-visible,
+.sc-buy:hover:not(:disabled), .sc-buy:focus-visible:not(:disabled),
+#btnZoneBack:hover, #btnZoneBack:focus-visible,
+#btnClassSkip:hover, #btnClassSkip:focus-visible,
+#btnLevelUpTree:hover, #btnLevelUpTree:focus-visible,
+#btnResetSave:hover, #btnResetSave:focus-visible{
+  border-left-color:rgba(240,192,64,.65) !important;
+  color:var(--gold-bright) !important;
+  background:rgba(200,151,31,.10) !important;
+  box-shadow:0 0 22px rgba(200,151,31,.22) !important;
+  padding-left:calc(var(--pl) + 4px) !important;   /* text shifts right 4px */
+  transform:none !important;
+}
+.btn:active, .pause-btn:active:not(:disabled), .shop-tab:active, .sc-buy:active:not(:disabled),
+#btnZoneBack:active, #btnClassSkip:active, #btnLevelUpTree:active, #btnResetSave:active{
+  transform:scale(.98) !important;                  /* active scales down 2% */
+}
+
+/* ---------------- MAIN MENU: drifting amber/teal particle field ----------- */
+#mainMenu{
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 28%, rgba(200,151,31,.09), transparent 62%),
+    radial-gradient(ellipse 60% 45% at 50% 95%, rgba(29,233,182,.07), transparent 60%),
+    var(--bg) !important;
+  overflow:hidden;
+}
+#mainMenu::before, #mainMenu::after{
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none; background-repeat:repeat;
+}
+#mainMenu::before{                                   /* amber dust, slow */
+  background-image:
+    radial-gradient(1.6px 1.6px at 18% 22%, rgba(240,192,64,.95), transparent 60%),
+    radial-gradient(1.2px 1.2px at 64% 12%, rgba(240,192,64,.7), transparent 60%),
+    radial-gradient(1.4px 1.4px at 82% 48%, rgba(200,151,31,.85), transparent 60%),
+    radial-gradient(1.1px 1.1px at 38% 66%, rgba(240,192,64,.6), transparent 60%),
+    radial-gradient(1.5px 1.5px at 8% 82%, rgba(200,151,31,.8), transparent 60%),
+    radial-gradient(1.2px 1.2px at 52% 90%, rgba(240,192,64,.65), transparent 60%),
+    radial-gradient(1.3px 1.3px at 90% 78%, rgba(240,192,64,.75), transparent 60%),
+    radial-gradient(1.1px 1.1px at 30% 40%, rgba(200,151,31,.6), transparent 60%);
+  background-size:560px 560px;
+  animation:driftAmber 46s linear infinite;
+  opacity:.8;
+}
+#mainMenu::after{                                    /* teal motes, slower */
+  background-image:
+    radial-gradient(1.3px 1.3px at 25% 15%, rgba(29,233,182,.85), transparent 60%),
+    radial-gradient(1.1px 1.1px at 70% 35%, rgba(29,233,182,.6), transparent 60%),
+    radial-gradient(1.5px 1.5px at 45% 55%, rgba(29,233,182,.7), transparent 60%),
+    radial-gradient(1.2px 1.2px at 85% 70%, rgba(29,233,182,.55), transparent 60%),
+    radial-gradient(1.4px 1.4px at 12% 60%, rgba(29,233,182,.65), transparent 60%),
+    radial-gradient(1.1px 1.1px at 58% 85%, rgba(29,233,182,.6), transparent 60%);
+  background-size:720px 720px;
+  animation:driftTeal 72s linear infinite;
+  opacity:.55;
+}
+@keyframes driftAmber{ from{ background-position:0 0; } to{ background-position:0 -560px; } }
+@keyframes driftTeal{ from{ background-position:0 0; } to{ background-position:0 -720px; } }
+#mainMenu > *{ z-index:2; }
+#settingsBtn, #settingsPanel{ z-index:6; }
+
+#menuTitle{
+  color:var(--gold-bright);
+  font-size:clamp(54px,9vw,112px);
+  letter-spacing:.16em;
+  animation:titleGlow 5s ease-in-out infinite;
+}
+@keyframes titleGlow{                               /* slow outer glow pulse */
+  0%,100%{ text-shadow:0 0 26px rgba(200,151,31,.55), 0 0 100px rgba(200,151,31,.30), 0 6px 26px rgba(0,0,0,.9); }
+  50%    { text-shadow:0 0 42px rgba(240,192,64,.9), 0 0 150px rgba(200,151,31,.5), 0 6px 26px rgba(0,0,0,.9); }
+}
+#menuSub{ color:var(--text-dim); letter-spacing:6px; }
+#menuBest{ color:var(--gold); letter-spacing:3px; }
+#continueMeta{ color:var(--text-dim); }
+#continueMeta b{ color:var(--gold-bright); }
+
+/* stacked left-aligned menu buttons + diamond rule above them */
+#mainMenu .btn-row{
+  position:relative; flex-direction:column; align-items:stretch;
+  width:min(360px,82vw); gap:12px; margin-top:30px !important;
+}
+#mainMenu .btn{ width:100%; justify-content:flex-start; text-align:left; }
+#mainMenu .btn::before{ content:'▸'; margin-right:12px; color:var(--gold); font-size:12px; }
+#mainMenu .btn-row::before{                         /* thin decorative rule */
+  content:''; position:absolute; top:-18px; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, transparent, rgba(200,151,31,.85), transparent);
+}
+#mainMenu .btn-row::after{                          /* diamond centerpiece */
+  content:''; position:absolute; top:-18px; left:50%; width:8px; height:8px;
+  transform:translate(-50%,-50%) rotate(45deg);
+  background:var(--gold-bright); box-shadow:0 0 14px var(--gold-bright);
+}
+#settingsBtn{ border-radius:1px !important; border:1px solid rgba(200,151,31,.4) !important; color:var(--gold) !important; background:rgba(10,12,20,.6) !important; }
+#settingsBtn:hover{ color:var(--gold-bright) !important; box-shadow:0 0 20px rgba(200,151,31,.35) !important; }
+#settingsPanel{ border:1px solid rgba(200,151,31,.45) !important; border-radius:1px !important; background:linear-gradient(180deg,#0a0c14f8,#04050afc) !important; }
+#settingsPanel .sp-title{ color:var(--gold); }
+#settingsPanel .sp-row{ color:var(--text-dim); }
+#settingsPanel .sp-row b{ color:var(--gold-bright); }
+#settingsPanel .sp-rule{ background:linear-gradient(90deg, rgba(200,151,31,.5), transparent); }
+#spNote{ color:var(--text-dim); }
+
+/* ---------------- HUD ------------------------------------------------------ */
+#orbs{ gap:8px; padding-bottom:8px; border-bottom:1px solid rgba(200,151,31,.45); }  /* separator under orbs */
+.orb{
+  width:16px; height:16px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #e6fff6, var(--teal) 55%, #0a6b52);
+  box-shadow:0 0 12px rgba(29,233,182,.9), 0 0 3px rgba(29,233,182,.9);
+}
+.orb.off{ background:rgba(29,233,182,.08); box-shadow:none; }
+#zoneBadge{
+  font-family:var(--font-stat); font-weight:700; font-size:11px; letter-spacing:3px;
+  color:var(--gold); text-transform:uppercase;
+  padding-bottom:3px; border-bottom:1px solid rgba(200,151,31,.55);  /* subtle amber underline */
+}
+#zoneName{ color:var(--text); text-shadow:0 2px 10px #000; }
+#objective{ color:var(--text); font-style:italic; text-shadow:0 2px 12px #000; }
+#objective.zone-fade{ animation:objectiveIn 1.6s ease-out both; }
+@keyframes objectiveIn{
+  from{ opacity:0; transform:translateX(-50%) translateY(-8px); }
+  to{ opacity:1; transform:translateX(-50%) translateY(0); }
+}
+#topRight .stat{ color:var(--text); font-variant-numeric:tabular-nums; }
+#topRight .stat svg{ fill:var(--gold-bright); }
+#topRight .stat:nth-child(2) svg{ fill:var(--teal); }
+#topRight .stat.time{ color:var(--text); }
+#topRight .stat.time svg{ fill:none; stroke:var(--text-dim); }
+#topRight .stat .mult{ color:var(--teal); text-shadow:0 0 14px rgba(29,233,182,.75); }
+#topRight .stat .lbl{ color:var(--text-dim); }
+
+/* ability bar: completely dark pill, hexagonal amber-framed icons */
+#abilities{
+  background:rgba(4,5,10,.94);
+  border:1px solid rgba(200,151,31,.55);
+  border-radius:40px;
+  box-shadow:0 0 30px rgba(0,0,0,.8), inset 0 0 24px rgba(200,151,31,.05);
+}
+.ability .ab-btn{
+  border:0 !important; border-radius:0 !important;
+  background:var(--gold) !important;                 /* the hexagonal amber frame */
+  clip-path:var(--hex);
+}
+.ability .ab-btn::before{                           /* dark hex interior */
+  content:''; position:absolute; inset:2px; z-index:-1;
+  background:var(--surface); clip-path:var(--hex);
+}
+.ability.locked .ab-btn{ background:#3a3325 !important; cursor:default; }
+.ability.locked .ab-btn svg{ color:#6b6658; }
+.ability.unlocked .ab-btn{ border-color:transparent !important; }
+.ability .ab-btn svg{ position:relative; z-index:1; }
+.ability .ab-sweep{ border-radius:0; z-index:1; }
+.ability .key{ color:var(--gold); }
+/* icon color matches ability type */
+#abQ .ab-btn{ color:var(--gold-bright); }            /* class  = gold   */
+#abE .ab-btn{ color:#f5f5f4; }                       /* nova   = white  */
+#abShift .ab-btn{ color:#22d3ee; }                   /* dash   = cyan   */
+#abF .ab-btn{ color:#34d399; }                       /* turret = green  */
+#abR .ab-btn{ color:#fb923c; }                       /* overcharge = orange */
+#abOverdrive .ab-btn{ color:var(--red); }            /* bomb   = red    */
+
+/* class badge bottom-left: small amber text + tiny class icon */
+#classBadge .badge-icon{ filter:drop-shadow(0 0 8px rgba(200,151,31,.65)); }
+#className{ color:var(--gold); font-size:12px; text-shadow:0 0 14px rgba(200,151,31,.55), 0 2px 8px #000; }
+#hudClassLevel{ color:var(--gold-bright); }
+#classXpTrack{ border-color:rgba(200,151,31,.4); background:rgba(4,5,10,.75); border-radius:1px; }
+#classXpFill{ background:linear-gradient(90deg,#6e5212,var(--gold-bright)); box-shadow:0 0 9px rgba(240,192,64,.8); }
+#classXpCaption{ color:var(--text-dim); }
+#hudSkillPoints{ color:var(--gold-bright); }
+#minimap{ border:1px solid rgba(200,151,31,.35); background:rgba(4,5,10,.78); }
+#banner{ color:var(--gold-bright); text-shadow:0 0 30px rgba(240,192,64,.8), 0 4px 18px #000; }
+
+/* in-play cards (briefing / level-up) */
+#briefing{ border:1px solid rgba(200,151,31,.55); border-radius:1px; background:linear-gradient(180deg, rgba(10,12,20,.95), rgba(4,5,10,.98)); }
+#briefing .b-eyebrow{ color:var(--gold); }
+#briefing .b-title{ color:var(--gold-bright); text-shadow:0 0 26px rgba(240,192,64,.5); }
+#briefing .b-rule{ background:linear-gradient(90deg, transparent, rgba(200,151,31,.9), transparent); }
+#briefing .b-objective{ color:var(--text); }
+#briefing .b-objective b{ color:var(--gold-bright); }
+#classLevelUp{
+  border:1px solid var(--gold); border-radius:1px;
+  background:linear-gradient(145deg, rgba(10,12,20,.98), rgba(4,5,10,.99));
+  box-shadow:0 0 50px rgba(200,151,31,.28), 0 18px 65px #000;
+}
+.level-up-eyebrow{ color:var(--gold-bright); }
+.level-up-number{ color:var(--gold-bright); text-shadow:0 0 24px rgba(240,192,64,.8); }
+#levelUpReward{ color:var(--text); }
+.level-up-toast{ color:var(--gold-bright); text-shadow:0 0 14px rgba(240,192,64,.9), 0 2px 6px rgba(0,0,0,.9); }
+@keyframes levelUpToast{
+  0%{ opacity:0; transform:translateX(-18px) scale(.9); color:#fff8e0;
+      text-shadow:0 0 28px rgba(240,192,64,1), 0 0 9px #fff, 0 2px 6px #000; }
+  12%{ opacity:1; transform:translateX(0) scale(1); }
+  70%{ opacity:1; transform:translateX(0); }
+  100%{ opacity:0; transform:translateX(8px); }
+}
+
+/* ---------------- CLASS SELECT: themed cards in a 2x4 grid ---------------- */
+@media (min-width:940px){
+  #classGrid{ grid-template-columns:repeat(4, minmax(0,1fr)); grid-auto-rows:332px; max-width:944px; }
+}
+@media (max-width:939px){
+  #classGrid{ grid-template-columns:repeat(2, minmax(0,1fr)); grid-auto-rows:320px; }
+}
+.class-card{
+  position:relative;
+  background:linear-gradient(180deg, rgba(10,12,20,.96), rgba(4,5,10,.98));
+  border:1px solid rgba(200,151,31,.28); border-radius:1px;
+  border-top:3px solid var(--cc, var(--gold));
+  padding:10px 12px; gap:4px;
+}
+/* glowing colored top border per class */
+#cardKnight{ --cc:#e53935; }        /* Knight      = red         */
+#cardGunslinger{ --cc:#fb923c; }    /* Gunslinger  = orange      */
+#cardSniper{ --cc:#1de9b6; }        /* Sniper      = teal        */
+#cardMage{ --cc:#a855f7; }          /* Mage        = purple      */
+#cardBerserker{ --cc:#991b1b; }     /* Berserker   = dark red    */
+#cardShadow{ --cc:#6d28d9; }        /* Assassin    = dark purple */
+#cardTech{ --cc:#22d3ee; }          /* Tech        = cyan        */
+.class-card::before{
+  content:''; position:absolute; top:-1px; left:-1px; right:-1px; height:3px;
+  background:var(--cc, var(--gold));
+  box-shadow:0 0 18px 2px var(--cc, var(--gold));
+  pointer-events:none;
+}
+.class-card:hover, .class-card:focus-visible, .class-card.sel{
+  border-color:var(--gold-bright);
+  box-shadow:0 0 34px rgba(240,192,64,.35), inset 0 0 30px rgba(240,192,64,.08);
+  transform:translateY(-4px);
+}
+.class-card:hover::after, .class-card:focus-visible::after, .class-card.sel::after{   /* inner shine */
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(115deg, rgba(255,255,255,.08), transparent 42%);
+}
+.class-card .cicon{
+  position:relative; flex:0 0 40%; width:100%; min-height:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.class-card .cicon::before{                       /* radial glow in the class color */
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(circle at 50% 50%, var(--cc, var(--gold)), transparent 62%);
+  opacity:.32; pointer-events:none;
+}
+.class-card .cicon svg{ position:relative; z-index:1; width:64px; height:64px; filter:drop-shadow(0 0 10px var(--cc, var(--gold))); }
+.class-card .cname{ color:var(--gold-bright); }
+.class-card .cstat{ color:var(--text-dim); font-size:8px; }
+/* thin segmented stat bars */
+.class-card .cbar{ height:4px; border-radius:0; border:none; background:rgba(212,197,169,.09); }
+.class-card .cbar i{
+  border-radius:0; box-shadow:none;
+  background:repeating-linear-gradient(90deg, var(--gold-bright) 0 4px, transparent 4px 7px);
+}
+.class-card .cq{ color:var(--gold-bright); }
+.class-card .cpassive{ color:var(--text-dim); }
+.class-card .class-level-meta{ border-top-color:rgba(200,151,31,.25); color:var(--gold); }
+.class-card .class-card-xp{ background:rgba(200,151,31,.15); border-radius:0; }
+.class-card .class-card-xp i{ background:var(--gold-bright); }
+.class-card.locked{ border-top-color:#3a3325; }
+.class-card.locked::before{ background:#3a3325; box-shadow:none; }
+.class-card .cprice{ background:rgba(4,12,9,.9); border-color:rgba(29,233,182,.5); color:var(--teal); border-radius:1px; }
+
+/* ---------------- ZONE / UNIVERSE cards ----------------------------------- */
+.zone-card, .uni-card, .card, .shop-card{
+  background:linear-gradient(180deg, rgba(10,12,20,.96), rgba(4,5,10,.98));
+  border:1px solid rgba(200,151,31,.3); border-radius:1px;
+}
+.zone-card:hover, .zone-card:focus-visible, .uni-card:hover:not(.locked), .card:hover{
+  border-color:var(--gold-bright); box-shadow:0 0 30px rgba(240,192,64,.3);
+}
+.zone-card .znum, .uni-card .unum{ color:var(--gold); }
+.zone-card .zname, .uni-card .uname{ color:var(--gold-bright); }
+.zone-card.done{ border-color:rgba(240,192,64,.6); }
+.zone-card.open{ border-color:rgba(29,233,182,.5); }
+#zoneTitle, #classTitle{ color:var(--gold-bright); text-shadow:0 0 20px rgba(240,192,64,.5), 0 3px 12px #000; }
+#zoneSelect .zs-eyebrow, #classSelect .cs-eyebrow{ color:var(--gold); }
+#zoneHint, #universeCaption{ color:var(--text-dim); }
+
+/* ---------------- UPGRADE CARDS: hexagonal glyph -------------------------- */
+.card .glyph{
+  border:0; border-radius:0; background:var(--gold);
+  clip-path:var(--hex); isolation:isolate; color:var(--gold-bright);
+}
+.card .glyph::before{
+  content:''; position:absolute; inset:2px; z-index:-1;
+  background:var(--surface); clip-path:var(--hex);
+}
+.card .name{ color:var(--gold-bright); }
+.card .rank{ color:var(--gold); }
+#upgradeCard h1{ color:var(--gold-bright); }
+
+/* ---------------- SHOP: left sidebar, 3-col grid, hex icons, check badge -- */
+.shop-wrap{
+  display:grid !important;
+  grid-template-columns:208px 1fr;
+  grid-template-rows:auto 1fr auto;
+  grid-template-areas:"head head" "tabs body" "foot foot";
+  background:linear-gradient(180deg, rgba(10,12,20,.99), rgba(4,5,10,.995));
+  border:1px solid rgba(200,151,31,.45); border-radius:1px;
+}
+.shop-head{ grid-area:head; border-bottom:1px solid rgba(200,151,31,.28); }
+.shop-head h2{ color:var(--gold-bright); text-shadow:0 0 30px rgba(240,192,64,.4); }
+.shop-sub{ color:var(--gold); }
+.shop-bank{ color:var(--teal); }
+.shop-bank svg{ fill:var(--teal); filter:drop-shadow(0 0 8px rgba(29,233,182,.6)); }
+.shop-tabs{
+  grid-area:tabs; flex-direction:column; align-items:stretch; gap:2px;
+  padding:16px 0 16px 16px; border-right:1px solid rgba(200,151,31,.25);
+}
+.shop-tab{
+  text-align:left; border:none !important; border-left:2px solid transparent !important;
+  border-bottom:none !important; border-radius:0 !important; background:none !important;
+  color:var(--text-dim); padding:12px 16px;
+}
+.shop-tab:hover{ color:var(--gold-bright); border-left-color:rgba(240,192,64,.4) !important; background:rgba(200,151,31,.06) !important; padding-left:20px !important; }
+.shop-tab.active{
+  color:var(--gold-bright); border-left-color:var(--gold) !important;
+  background:rgba(200,151,31,.1) !important; box-shadow:none !important;
+}
+.shop-body{ grid-area:body; }
+.shop-foot{ grid-area:foot; border-top:1px solid rgba(200,151,31,.28); }
+.shop-note{ color:var(--text-dim); }
+.shop-flash{ color:var(--teal); }
+.shop-flash.bad{ color:#fca5a5; }
+#shopGrid{ grid-template-columns:repeat(3, minmax(0,1fr)); }
+.sc-icon{
+  border:0 !important; border-radius:0 !important; background:var(--gold) !important;
+  clip-path:var(--hex); isolation:isolate; color:var(--gold-bright);
+}
+.sc-icon::before{
+  content:''; position:absolute; inset:2px; z-index:-1;
+  background:var(--surface); clip-path:var(--hex);
+}
+.sc-name{ color:var(--gold-bright); }
+.shop-card{ position:relative; }
+.shop-card:hover{ border-color:rgba(240,192,64,.65); box-shadow:0 0 26px rgba(240,192,64,.18); }
+.shop-card.owned{ border-color:rgba(200,151,31,.5); }
+.shop-card.maxed{ border-color:rgba(29,233,182,.55); }
+/* purchased items: green checkmark badge */
+.shop-card.owned::after, .shop-card.maxed::after{
+  content:'✓'; position:absolute; top:8px; right:10px; width:18px; height:18px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:50%; background:rgba(29,233,182,.14); border:1px solid var(--teal);
+  color:var(--teal); font-size:11px; font-weight:700; box-shadow:0 0 12px rgba(29,233,182,.45);
+}
+.sc-cost{ color:var(--teal); }
+.sc-buy{ background:rgba(200,151,31,.12) !important; color:var(--gold-bright) !important; }
+.sc-buy.maxed:disabled{ color:var(--teal); border-color:rgba(29,233,182,.45); background:rgba(29,233,182,.08); }
+.cp-stage{ border:1px solid rgba(200,151,31,.35); border-radius:1px; background:radial-gradient(ellipse at 50% 58%, rgba(10,12,20,.9), rgba(4,5,10,.98) 74%); }
+.cp-name{ color:var(--gold-bright); }
+.cp-kicker{ color:var(--gold); }
+.cp-cost{ color:var(--teal); }
+.cp-state{ color:var(--text-dim); }
+.cp-state.worn, .cp-state.owned{ color:var(--teal); }
+@media (max-width:860px){
+  .shop-wrap{
+    grid-template-columns:1fr;
+    grid-template-rows:auto auto 1fr auto;
+    grid-template-areas:"head" "tabs" "body" "foot";
+  }
+  .shop-tabs{ flex-direction:row; flex-wrap:wrap; border-right:none; border-bottom:1px solid rgba(200,151,31,.25); padding:10px 14px; }
+  .shop-tab{ border-left:none !important; border-bottom:2px solid transparent !important; }
+  .shop-tab.active{ border-bottom-color:var(--gold) !important; border-left:none !important; }
+  #shopGrid{ grid-template-columns:1fr; }          /* 1 column on mobile */
+}
+
+/* ---------------- PAUSE / SKILL TREE -------------------------------------- */
+#pauseMenu{ background:radial-gradient(ellipse at 50% 40%, rgba(200,151,31,.08), transparent 60%), var(--bg) !important; }
+#pauseTitle{ color:var(--gold-bright); letter-spacing:10px; text-shadow:0 0 26px rgba(240,192,64,.65); }
+.pause-confirm-card{ background:var(--surface); border:1px solid var(--gold); border-radius:1px; }
+.pause-confirm-card h2{ color:var(--gold-bright); }
+.pause-confirm-card p{ color:var(--text); }
+#skillTree{ background:radial-gradient(ellipse at 50% 30%, rgba(200,151,31,.07), transparent 60%), var(--bg) !important; }
+.skill-panel{
+  background:linear-gradient(180deg, rgba(10,12,20,.97), rgba(4,5,10,.99));
+  border:1px solid rgba(200,151,31,.45); border-radius:1px;
+}
+#skillTreeTitle{ color:var(--gold-bright); }
+.skill-eyebrow{ color:var(--gold); }
+#skillTreeClass, .skill-xp-summary{ color:var(--text); }
+#skillTreeLevel{ color:var(--gold-bright); }
+.skill-points-box{ border:1px solid rgba(200,151,31,.55); background:rgba(200,151,31,.07); border-radius:1px; }
+.skill-points-box span{ color:var(--text-dim); }
+#skillTreePoints{ color:var(--gold-bright); }
+.skill-tree-xp-track{ background:rgba(212,197,169,.1); border-radius:1px; }
+#skillTreeXpFill{ background:linear-gradient(90deg,#6e5212,var(--gold-bright)); }
+.skill-row{ border-top-color:rgba(200,151,31,.18); }
+.skill-row-heading span{ color:var(--text-dim); }
+.skill-row-heading h2{ color:var(--gold); }
+.skill-node{ color:var(--text-dim); }
+.skill-node.available{ color:var(--text); }
+.skill-node.available .skill-disc{ border-color:#d8c9a3; color:var(--gold-bright); animation:none; box-shadow:0 0 14px rgba(240,192,64,.25); }
+.skill-node.owned{ color:var(--gold-bright); }
+.skill-node.owned .skill-disc{
+  border-color:var(--gold-bright); color:var(--gold-bright);
+  background:radial-gradient(circle at 35% 25%, #2a2008, #120d04);
+  box-shadow:0 0 18px rgba(240,192,64,.45), inset 0 0 12px rgba(240,192,64,.15);
+}
+.skill-node+.skill-node::before{ background:#241f14; }
+.skill-node.owned+.skill-node::before{ background:linear-gradient(90deg,#6e5212,var(--gold)); box-shadow:0 0 6px rgba(240,192,64,.4); }
+.skill-disc{ border-color:#3a3325; background:radial-gradient(circle at 35% 25%, #141824, #070910); }
+.skill-node:hover .skill-disc, .skill-node:focus-visible .skill-disc{ border-color:var(--gold-bright); }
+.skill-legend{ border-top-color:rgba(200,151,31,.18); color:var(--text-dim); }
+.skill-footer p{ color:var(--text-dim); }
+#skillTreeStatus{ color:var(--gold); }
+#skillTooltip{ background:var(--surface); border:1px solid var(--gold); border-radius:1px; color:var(--text); }
+#skillTooltipName{ color:var(--gold-bright); }
+#skillTooltipState{ color:var(--gold); }
+.legend-dot{ border-color:#4a4030; background:#0a0c14; }
+.legend-dot.available{ border-color:#d8c9a3; background:#8a7a4a; }
+.legend-dot.owned{ border-color:var(--gold-bright); background:var(--gold); box-shadow:0 0 7px rgba(240,192,64,.5); }
+
+/* ---------------- GAME OVER / VICTORY ------------------------------------- */
+#gameOver{
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 35%, rgba(229,57,53,.18), transparent 62%),
+    radial-gradient(ellipse 70% 45% at 50% 115%, rgba(229,57,53,.12), transparent 58%),
+    var(--bg) !important;
+}
+#gameOver h1{
+  font-size:clamp(52px, 9vw, 112px) !important;
+  letter-spacing:10px; color:#ff7b72;
+  text-shadow:0 0 34px rgba(229,57,53,.75), 0 0 110px rgba(229,57,53,.4), 0 6px 24px #000;
+}
+#victoryScreen{
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 35%, rgba(29,233,182,.14), transparent 62%),
+    radial-gradient(ellipse 70% 45% at 50% 115%, rgba(200,151,31,.14), transparent 58%),
+    var(--bg) !important;
+}
+#victoryScreen h1{
+  font-size:clamp(40px, 7vw, 88px) !important;
+  letter-spacing:8px; color:var(--gold-bright);
+  text-shadow:0 0 36px rgba(240,192,64,.8), 0 0 120px rgba(200,151,31,.45), 0 6px 24px #000;
+}
+.statline{ color:var(--text); }
+.statline b{ color:var(--gold-bright); }
+#vicTime{ color:var(--gold); }
+#vicTime b{ color:var(--gold-bright); }
+#vicRecord{ background:linear-gradient(180deg,#f0c040,#c8971f); color:#140d02; box-shadow:0 0 26px rgba(240,192,64,.6); }
+#vicEnding{ color:var(--gold-bright); text-shadow:0 0 26px rgba(240,192,64,.4); }
+.save-line{ color:var(--teal); text-shadow:0 0 16px rgba(29,233,182,.45), 0 2px 8px #000; }
+.save-line i{ border-color:rgba(29,233,182,.6); color:#bff5e4; }
+
+/* ---------------- transitions / how-to ------------------------------------ */
+#levelTransition h1{ color:var(--gold-bright); text-shadow:0 0 30px rgba(240,192,64,.5); }
+.uni-inner{
+  background:radial-gradient(ellipse at 50% -10%, rgba(200,151,31,.13), rgba(4,5,10,.98) 62%);
+  border:1px solid rgba(200,151,31,.45); border-radius:1px;
+}
+.uni-kicker{ color:var(--gold); }
+.uni-title{ color:var(--gold-bright); text-shadow:0 0 42px rgba(240,192,64,.5), 0 2px 18px #000; }
+.uni-era, .uni-stats{ color:var(--text-dim); }
+.uni-stats b{ color:var(--gold-bright); }
+.uni-rule{ background:linear-gradient(90deg, transparent, rgba(200,151,31,.8), transparent); }
+.uni-time{ color:var(--gold); }
+.uni-time b{ color:var(--gold-bright); }
+.uni-chip{ border-color:rgba(200,151,31,.4); color:var(--gold-bright); border-radius:1px; }
+#howToPlay h1{ color:var(--gold-bright); text-shadow:0 0 30px rgba(240,192,64,.5); }
+#howToPlay .htp-eyebrow{ color:var(--gold); }
+</style>
+
+<style id="medieval-theme">
+/* =====================================================================
+   WARM MEDIEVAL THEME — parchment, candlelight, stone & wood
+   ===================================================================== */
+:root{
+  --bg:#1a1208;            /* dark warm brown */
+  --surface:#2c1f0e;       /* aged wood brown */
+  --border:#8b6914;        /* worn gold */
+  --gold:#d4a017;          /* candlelight gold */
+  --gold-bright:#f5c842;   /* bright flame gold */
+  --teal:#2ecc71;          /* forest green (health) */
+  --red:#c0392b;           /* blood red */
+  --text:#f0e6c8;          /* aged parchment */
+  --text-dim:rgba(240,230,200,0.55);
+  --accent:#8b4513;        /* saddle brown */
+  --gold-dim:rgba(212,160,23,.45);
+  --ink:#1a1208;
+  --hex:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  /* parchment grain: SVG turbulence noise at 3% opacity */
+  --noise:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.93 0 0 0 0 0.78 0 0 0 0 0.55 0 0 0 0.03 0'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
+}
+html,body{ background:var(--bg); color:var(--text); }
+
+/* ---- every screen: dark warm brown radial gradient + 3% grain overlay ---- */
+.screen, #overlays .screen, #pauseMenu{
+  background:
+    var(--noise),
+    radial-gradient(ellipse at 50% 42%, rgba(28,18,8,0.97) 0%, rgba(16,10,4,0.985) 55%, rgba(8,5,2,1) 100%),
+    var(--bg) !important;
+  color:var(--text);
+}
+.screen h1{ color:var(--gold-bright); text-shadow:0 0 26px rgba(245,200,66,.42), 0 4px 18px #000; }
+.eyebrow{ color:var(--gold); }
+
+/* ---- ALL BUTTONS: wood plaque, worn-gold border, diamond before label ---- */
+.btn, .pause-btn, .shop-tab, .sc-buy, #btnZoneBack, #btnClassSkip, #btnLevelUpTree, #btnResetSave{
+  border-radius:2px !important;
+  background:rgba(44,31,14,0.9) !important;
+  border:1px solid #8b6914 !important;
+  color:#f5c842 !important;
+  font-family:var(--font-head) !important;
+  box-shadow:inset 0 1px 0 rgba(245,200,66,.16), 0 3px 10px rgba(0,0,0,.45) !important;
+  padding-left:30px !important;
+  transition:background .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease !important;
+}
+.btn::before, .pause-btn::before, .shop-tab::before, .sc-buy::before,
+#btnZoneBack::before, #btnClassSkip::before, #btnLevelUpTree::before, #btnResetSave::before,
+#mainMenu .btn::before{
+  content:'◆'; font-size:9px; margin-right:9px; color:var(--gold); flex:0 0 auto;
+}
+.btn:hover, .btn:focus-visible, .pause-btn:hover, .pause-btn:focus-visible,
+.shop-tab:hover, .shop-tab:focus-visible, .sc-buy:hover, .sc-buy:focus-visible,
+#btnZoneBack:hover, #btnClassSkip:hover, #btnLevelUpTree:hover, #btnResetSave:hover{
+  background:rgba(139,105,20,0.3) !important;
+  border-color:#f5c842 !important;
+  color:#ffedb8 !important;
+  box-shadow:0 0 20px rgba(245,200,66,.45), inset 0 0 16px rgba(245,200,66,.14) !important;
+}
+.shop-tab.active{ background:rgba(139,105,20,.5) !important; border-color:#f5c842 !important; color:#ffedb8 !important; }
+
+/* ---- MAIN MENU: crest watermark, candlelit title, crossed-swords divider ---- */
+#mainMenu{
+  background:
+    var(--noise),
+    radial-gradient(ellipse at 50% 40%, rgba(28,18,8,0.97) 0%, rgba(8,5,2,1) 100%),
+    var(--bg) !important;
+}
+#mainMenu::before{                    /* large faint crest / shield, 4% opacity */
+  content:''; position:absolute; left:50%; top:50%;
+  width:min(520px,80vw); height:min(610px,90vh);
+  transform:translate(-50%,-53%);
+  background:var(--gold); opacity:.04;
+  clip-path:polygon(50% 0%, 100% 9%, 100% 52%, 50% 100%, 0% 52%, 0% 9%);
+  pointer-events:none; z-index:0; animation:none;
+}
+#mainMenu::after{ content:none; animation:none; }
+#mainMenu > *{ z-index:2; }
+#menuTitle{
+  color:#f5c842 !important;
+  animation:candleFlicker 2.9s steps(1,end) infinite !important;
+}
+@keyframes candleFlicker{
+  0%,100%{ text-shadow:0 0 20px rgba(245,200,66,.50), 0 0 64px rgba(212,160,23,.26), 0 6px 24px rgba(0,0,0,.9); }
+  8%     { text-shadow:0 0 27px rgba(245,200,66,.74), 0 0 92px rgba(212,160,23,.40), 0 6px 24px rgba(0,0,0,.9); }
+  21%    { text-shadow:0 0 20px rgba(245,200,66,.50), 0 0 64px rgba(212,160,23,.26), 0 6px 24px rgba(0,0,0,.9); }
+  33%    { text-shadow:0 0 24px rgba(245,200,66,.64), 0 0 80px rgba(212,160,23,.34), 0 6px 24px rgba(0,0,0,.9); }
+  47%    { text-shadow:0 0 20px rgba(245,200,66,.50), 0 0 64px rgba(212,160,23,.26), 0 6px 24px rgba(0,0,0,.9); }
+  59%    { text-shadow:0 0 28px rgba(245,200,66,.78), 0 0 96px rgba(212,160,23,.42), 0 6px 24px rgba(0,0,0,.9); }
+  72%    { text-shadow:0 0 20px rgba(245,200,66,.50), 0 0 64px rgba(212,160,23,.26), 0 6px 24px rgba(0,0,0,.9); }
+  86%    { text-shadow:0 0 25px rgba(245,200,66,.68), 0 0 84px rgba(212,160,23,.36), 0 6px 24px rgba(0,0,0,.9); }
+}
+#menuSub{ color:var(--text-dim); font-family:var(--font-head); letter-spacing:3px; }
+.menu-divider{ display:flex; align-items:center; gap:12px; position:relative; z-index:2; }
+.menu-divider .md-line{ width:130px; height:1px; background:linear-gradient(90deg, transparent, var(--border)); }
+.menu-divider .md-line:last-child{ background:linear-gradient(90deg, var(--border), transparent); }
+.menu-divider svg{ opacity:.95; filter:drop-shadow(0 0 6px rgba(212,160,23,.65)); }
+
+/* ---- HUD ---- */
+#orbs{ gap:8px; padding-bottom:8px; border-bottom:1px solid rgba(139,105,20,.55); }
+.orb{                                  /* small glowing green gem */
+  width:16px; height:16px; border-radius:0;
+  clip-path:polygon(50% 0%, 100% 38%, 50% 100%, 0% 38%);
+  background:linear-gradient(160deg, #c9f7d9 0%, var(--teal) 52%, #14663a 100%);
+  box-shadow:none;
+  filter:drop-shadow(0 0 6px rgba(46,204,113,.95)) drop-shadow(0 0 14px rgba(46,204,113,.4));
+}
+.orb.off{ background:rgba(240,230,200,.08); filter:none; opacity:.3; }
+#zoneBadge{                            /* worn stone tablet label */
+  font-family:var(--font-head); font-weight:700; font-size:11px; letter-spacing:3px;
+  color:var(--gold-bright); text-transform:uppercase;
+  background:linear-gradient(180deg, #4a4034 0%, #2b241c 100%);
+  border:1px solid var(--border); border-radius:2px; padding:3px 9px;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.65), inset 0 -1px 0 rgba(245,200,66,.14), 0 2px 6px rgba(0,0,0,.5);
+  text-shadow:0 1px 2px rgba(0,0,0,.85);
+}
+#zoneName{ color:var(--text); text-shadow:0 2px 10px #000; }
+#objective{ color:var(--text); font-style:italic; text-shadow:0 2px 12px #000; }   /* italic parchment */
+#topRight{                             /* wooden plaque, top-right */
+  background:linear-gradient(180deg, rgba(44,31,14,.93), rgba(26,18,8,.93));
+  border:1px solid var(--border); border-radius:2px; padding:7px 14px; gap:16px;
+  box-shadow:inset 0 1px 0 rgba(245,200,66,.15), inset 0 -2px 6px rgba(0,0,0,.5), 0 4px 14px rgba(0,0,0,.5);
+}
+#topRight .stat{ color:var(--text); font-variant-numeric:tabular-nums; }
+#topRight .stat svg{ fill:var(--gold-bright); }
+#topRight .stat:nth-child(2) svg{ fill:var(--teal); }
+#topRight .stat.time{ color:var(--gold-bright); }
+#topRight .stat.time svg{ fill:none; stroke:var(--gold); }
+
+/* ---- ability bar: stone tablet, carved stone circles, gold icons ---- */
+#abilities{
+  background:linear-gradient(180deg, #3d342a 0%, #2b2318 55%, #201910 100%);
+  border:1px solid var(--border); border-radius:6px;
+  padding:12px 22px 9px;
+  box-shadow:
+    inset 0 2px 2px rgba(245,225,180,.18),
+    inset 0 -4px 9px rgba(0,0,0,.62),
+    inset 3px 0 7px rgba(0,0,0,.35),
+    inset -3px 0 7px rgba(0,0,0,.35),
+    0 8px 24px rgba(0,0,0,.65);
+}
+.ability .ab-btn{
+  border-radius:50% !important;
+  clip-path:none !important;
+  border:2px solid #6e6353 !important;
+  background:radial-gradient(circle at 50% 40%, #14100b 0%, #251d12 62%, #171208 100%) !important;
+  color:#f5c842 !important;
+  box-shadow:inset 0 3px 9px rgba(0,0,0,.85), inset 0 -1px 2px rgba(245,225,180,.16), 0 1px 0 rgba(245,225,180,.08) !important;
+}
+.ability .ab-btn::before{ content:none !important; }
+.ability.unlocked .ab-btn{ border-color:#8a7a5f !important; }
+.ability.locked .ab-btn{ border-color:#3a332a !important; color:#6b6353 !important; background:radial-gradient(circle at 50% 40%, #0d0b08 0%, #171310 70%) !important; }
+.ability.locked .ab-btn svg{ color:#6b6353; }
+.ability .ab-sweep{ border-radius:50%; }
+.ability .key{ color:var(--gold); }
+#abQ .ab-btn, #abE .ab-btn, #abShift .ab-btn, #abF .ab-btn, #abR .ab-btn, #abOverdrive .ab-btn{ color:#f5c842 !important; }
+
+/* ---- class select cards: wood grain + heraldic stripe + amber selection glow ---- */
+.class-card{
+  background:
+    repeating-linear-gradient(90deg, rgba(139,69,19,.13) 0 2px, rgba(0,0,0,0) 2px 9px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, rgba(0,0,0,0) 1px 5px),
+    linear-gradient(180deg, #2c1f0e 0%, #1a1208 100%);
+  border:1px solid var(--border);
+  border-top:4px solid var(--cc, var(--gold));
+  border-radius:2px;
+}
+.class-card::before{                   /* heraldic colored stripe */
+  content:''; position:absolute; top:-1px; left:-1px; right:-1px; height:4px;
+  background:linear-gradient(90deg, var(--cc, var(--gold)) 0%, var(--cc, var(--gold)) 72%, rgba(0,0,0,.5) 100%);
+  box-shadow:0 0 16px 1px var(--cc, var(--gold));
+  pointer-events:none;
+}
+.class-card:hover, .class-card:focus-visible, .class-card.sel{
+  border-color:var(--gold-bright);
+  transform:translateY(-4px);
+  box-shadow:0 0 26px rgba(245,200,66,.30), inset 0 0 36px rgba(245,200,66,.24);
+}
+.class-card .cname{ color:var(--gold-bright); font-family:var(--font-head); }
+.class-card .cdesc, .class-card .cpassive{ color:var(--text-dim); }
+.class-card .cstat{ color:var(--text-dim); }
+.class-card .cbar{ height:5px; border-radius:0; border:1px solid rgba(139,105,20,.5); background:rgba(0,0,0,.42); }
+.class-card .cbar i{ border-radius:0; box-shadow:none; background:repeating-linear-gradient(90deg, var(--gold-bright) 0 4px, transparent 4px 7px); }
+.class-card.locked::before{ background:#3a3325; box-shadow:none; }
+.class-card .cprice{ background:rgba(44,31,14,.92); border-color:var(--border); color:var(--teal); }
+
+/* ---- level-up ping: wooden scroll that unfurls, top-left ---- */
+#levelUpToasts .level-up-toast{
+  background:linear-gradient(180deg, #f0e6c8 0%, #e3d4ad 55%, #d2bd90 100%);
+  color:#8b6914;
+  border:1px solid #8b6914; border-left:4px solid #a8842a; border-radius:2px;
+  padding:4px 12px 4px 9px;
+  font-family:var(--font-head);
+  text-shadow:0 1px 0 rgba(255,255,255,.5);
+  box-shadow:0 3px 10px rgba(0,0,0,.6), inset 0 0 14px rgba(139,105,20,.22);
+  animation:levelUpToastScroll 2s ease-out forwards;
+}
+@keyframes levelUpToastScroll{
+  0%  { opacity:0; transform:scaleY(.06) translateX(-16px); transform-origin:top left; }
+  9%  { opacity:1; transform:scaleY(1.05) translateX(0); }
+  15% { transform:scaleY(1) translateX(0); }
+  74% { opacity:1; transform:scaleY(1) translateX(0); }
+  100%{ opacity:0; transform:scaleY(.92) translateX(10px); }
+}
 </style>
 </head>
 <body>
@@ -1556,6 +2298,8 @@
         <span id="zoneBadge">Zone 1</span>
         <span id="zoneName">The Village</span>
       </div>
+      <!-- level-up pings land here, in the top-left corner below the health orbs -->
+      <div id="levelUpToasts" aria-hidden="true"></div>
     </div>
 
     <div id="objective">Find and clear all 3 arenas</div>
@@ -1690,6 +2434,14 @@
   <!-- ==================== MAIN MENU ==================== -->
   <div id="mainMenu" class="screen">
     <h1 id="menuTitle">SURVIVE</h1>
+    <div class="menu-divider" aria-hidden="true">
+      <span class="md-line"></span>
+      <svg viewBox="0 0 48 26" width="46" height="25" fill="none" stroke="#d4a017" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M8 21 L36 5"/><path d="M9.5 20.6 L12.5 15.4"/><path d="M8 21 l-3 3"/>
+        <path d="M40 21 L12 5"/><path d="M38.5 20.6 L35.5 15.4"/><path d="M40 21 l3 3"/>
+      </svg>
+      <span class="md-line"></span>
+    </div>
     <div id="menuSub">1347 AD · Commander Rael</div>
 
     <button id="settingsBtn" type="button" aria-label="Settings" aria-expanded="false" title="Settings">
@@ -1847,7 +2599,7 @@
       <div class="class-card shop-tile" id="cardShopTile" role="button" tabindex="0">
         <div class="tileglyph">⇉</div>
         <div class="cname">More classes</div>
-        <div class="cdesc">Spend gems in the Supply Depot to unlock the rest of the roster.</div>
+        <div class="cdesc">Spend gems in the Armory to unlock the rest of the roster.</div>
       </div>
     </div>
     <button id="btnClassSkip" type="button">Skip · continue as <span id="skipClassName">Vanguard Knight</span></button>
@@ -1901,7 +2653,7 @@
   <!-- ==================== VICTORY ==================== -->
   <div class="overlay screen" id="victoryScreen">
     <div class="eyebrow">Year 3047 · Home</div>
-    <h1>Commander Rael has returned to the future.</h1>
+    <h1>Mission Complete</h1>
     <div class="statline">Final Score <b id="vicScore">0</b> · Gems <b id="vicGems">0</b></div>
     <div class="statline" id="vicBest">Best score 0</div>
     <div id="vicTime">Completion Time: <b id="vicTimeVal">00:00:00</b></div>
@@ -1953,17 +2705,17 @@
     <div class="shop-wrap">
       <div class="shop-head">
         <div>
-          <h2>Supply Depot</h2>
+          <h2>The Armory</h2>
           <div class="shop-sub">Permanent upgrades · purchased with gems</div>
         </div>
         <div class="shop-bank"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg><span id="shopGems">0</span></div>
       </div>
       <div class="shop-tabs" id="shopTabs">
-        <button class="shop-tab active" type="button" data-tab="upgrades">Upgrades</button>
-        <button class="shop-tab" type="button" data-tab="consumables">Consumables</button>
-        <button class="shop-tab" type="button" data-tab="cosmetics">Cosmetics</button>
-        <button class="shop-tab" type="button" data-tab="pets">Pets</button>
-        <button class="shop-tab" type="button" data-tab="classes">Classes</button>
+        <button class="shop-tab active" type="button" data-tab="upgrades">Enhancements</button>
+        <button class="shop-tab" type="button" data-tab="consumables">Provisions</button>
+        <button class="shop-tab" type="button" data-tab="cosmetics">Livery</button>
+        <button class="shop-tab" type="button" data-tab="pets">Companions</button>
+        <button class="shop-tab" type="button" data-tab="classes">Orders</button>
       </div>
       <div class="shop-body" id="shopBody">
         <div id="shopGrid"></div>
@@ -2002,7 +2754,7 @@ const W = 1280;              // logical render width
 const H = 720;               // logical render height
 const SKY_H = 120;           // fixed decorative sky band (screen space)
 const VIEW_H = H - SKY_H;    // playfield height
-const WORLD = 3000;          // every zone map is 3000 x 3000
+const WORLD = 6000;          // every zone map is 6000 x 6000; the player spawns at the centre (3000, 3000)
 /* THE BASE RESOLUTION. The canvas itself is as big as the browser window, but
    every coordinate in the game — world, camera, player, enemies, HUD — is
    written in this 1280x720 space and drawn through one scale factor, so the
@@ -2467,6 +3219,7 @@ const UI = {
   classLevelUp: document.getElementById('classLevelUp'),
   levelUpNumber: document.getElementById('levelUpNumber'),
   levelUpReward: document.getElementById('levelUpReward'),
+  levelUpToasts: document.getElementById('levelUpToasts'),
   skillTree: document.getElementById('skillTree'),
   skillTreeClass: document.getElementById('skillTreeClass'),
   skillTreePoints: document.getElementById('skillTreePoints'),
@@ -2641,6 +3394,14 @@ function showScreen(id) {
   isPaused = id === 'pauseMenu' || id === 'skillTree';
   if (id !== 'gameCanvas' && UI.classLevelUp) UI.classLevelUp.classList.remove('show');
   if (id !== 'skillTree' && UI.skillTooltip) UI.skillTooltip.hidden = true;
+  /* a cleared-arena level-up card that is still owed is dropped when the run
+     leaves the canvas for good (menu, results, transitions); pausing, the
+     skill tree and the shop keep it alive so the hand-off still happens */
+  if (classLevelUpHold && id !== 'gameCanvas' && id !== 'pauseMenu' && id !== 'skillTree' && id !== 'shopScreen' && id !== 'upgradeCard') {
+    classLevelUpHold = false;
+    if (classLevelUpHoldTimer) { clearTimeout(classLevelUpHoldTimer); classLevelUpHoldTimer = 0; }
+    hideClassLevelUp();
+  }
 
   requested.style.setProperty('display', def.display, 'important');
   requested.hidden = false;
@@ -2650,6 +3411,10 @@ function showScreen(id) {
   game.screen = id === 'universeTransition' && universePanel === 'intro'
     ? 'universeIntro' : def.state;
   setLoopPausedFor(id);
+  /* back on the canvas while a cleared-arena level-up card is still owed
+     (resumed from pause, or closed the skill tree opened from that card):
+     finish the hand-off — level-up card down, upgrade card up */
+  if (id === 'gameCanvas' && classLevelUpHold) endClassLevelUpHold();
   return requested;
 }
 
@@ -2681,9 +3446,13 @@ const MEDIEVAL_LEVELS = [
     accent: '#f97316',
     sky: { top: '#070c1e', bottom: '#16233f' },
     groundTint: null,
-    waves: [{ count: 8, types: ['knight'] }, { count: 8, types: ['knight'] }],
-    arenas: [[720, 760], [2320, 880], [1480, 2420]],
-    bossPos: [1500, 400],
+    waves: [
+      { count: 12, types: ['knight'] },
+      { count: 18, types: ['knight', 'archer'] },
+      { count: 25, types: ['knight', 'archer'], eliteMin: 2 }
+    ],
+    arenas: [[1440, 1520], [4640, 1760], [2960, 4840]],
+    bossPos: [3000, 800],
     boss: { name: 'Sir Malvork the Gatekeeper', hp: 40, r: 40, color: '#dc2626', speed: 92, kit: 'gatekeeper' }
   },
   {
@@ -2697,9 +3466,13 @@ const MEDIEVAL_LEVELS = [
     accent: '#22c55e',
     sky: { top: '#040b07', bottom: '#0d2118' },
     groundTint: null,
-    waves: [{ count: 10, types: ['archer'] }, { count: 10, types: ['archer'] }],
-    arenas: [[640, 660], [2380, 760], [1450, 2400]],
-    bossPos: [2360, 2360],
+    waves: [
+      { count: 12, types: ['archer'] },
+      { count: 18, types: ['archer', 'knight'] },
+      { count: 25, types: ['archer', 'knight', 'wizard'], eliteMin: 2 }
+    ],
+    arenas: [[1280, 1320], [4760, 1520], [2900, 4800]],
+    bossPos: [4720, 4720],
     boss: { name: 'The Plague Witch', hp: 50, r: 36, color: '#22c55e', speed: 70, kit: 'plaguewitch' }
   },
   {
@@ -2713,9 +3486,13 @@ const MEDIEVAL_LEVELS = [
     accent: '#94a3b8',
     sky: { top: '#06080e', bottom: '#1a2333' },
     groundTint: null,
-    waves: [{ count: 12, types: ['knight', 'archer'] }, { count: 12, types: ['knight', 'archer'] }],
-    arenas: [[700, 900], [2300, 640], [1560, 2340]],
-    bossPos: [1500, 380],
+    waves: [
+      { count: 12, types: ['knight'] },
+      { count: 18, types: ['knight', 'archer'] },
+      { count: 25, types: ['knight', 'archer', 'ghost'], eliteMin: 2 }
+    ],
+    arenas: [[1400, 1800], [4600, 1280], [3120, 4680]],
+    bossPos: [3000, 760],
     boss: { name: 'Baron Von Crest', hp: 60, r: 42, color: '#3b82f6', speed: 82, kit: 'baroncrest' }
   },
   {
@@ -2729,9 +3506,13 @@ const MEDIEVAL_LEVELS = [
     accent: '#a855f7',
     sky: { top: '#080414', bottom: '#1b1035' },
     groundTint: null,
-    waves: [{ count: 10, types: ['wizard', 'ghost'] }, { count: 10, types: ['wizard', 'ghost'] }],
-    arenas: [[760, 640], [2360, 980], [1480, 2380]],
-    bossPos: [620, 2360],
+    waves: [
+      { count: 12, types: ['wizard'] },
+      { count: 18, types: ['wizard', 'ghost'] },
+      { count: 25, types: ['wizard', 'ghost', 'archer'], eliteMin: 2 }
+    ],
+    arenas: [[1520, 1280], [4720, 1960], [2960, 4760]],
+    bossPos: [1240, 4720],
     boss: { name: 'The Siege Engine', hp: 70, r: 46, color: '#f59e0b', speed: 58, kit: 'siegeengine' }
   },
   {
@@ -2746,11 +3527,12 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#02040a', bottom: '#061426' },
     groundTint: null,
     waves: [
-      { count: 15, types: ['knight', 'archer', 'wizard', 'ghost'] },
-      { count: 15, types: ['knight', 'archer', 'wizard', 'ghost'] }
+      { count: 12, types: ['knight', 'archer', 'wizard', 'ghost'] },
+      { count: 18, types: ['knight', 'archer', 'wizard', 'ghost'] },
+      { count: 25, types: ['knight', 'archer', 'wizard', 'ghost'], eliteMin: 2 }
     ],
-    arenas: [[700, 720], [2320, 720], [1500, 2360]],
-    bossPos: [2270, 2300],
+    arenas: [[1400, 1440], [4640, 1440], [3000, 4720]],
+    bossPos: [4540, 4600],
     boss: { name: 'The Black Knight', hp: 100, r: 48, color: '#a855f7', speed: 86, kit: 'blackknight' }
   }
 ];
@@ -2768,14 +3550,17 @@ const MEDIEVAL_LEVELS = [
    universe, in order, so every existing system keeps working on an index.
    ============================================================================ */
 
+/* Arena markers in the 6000x6000 world: every pair of arenas is at least
+   1800px apart (they are ~3400-3800px apart), so walking between them takes
+   30-60 seconds from the centre spawn. */
 const ARENA_LAYOUTS = [
-  [[720, 760], [2320, 880], [1480, 2420]],
-  [[640, 660], [2380, 760], [1450, 2400]],
-  [[700, 900], [2300, 640], [1560, 2340]],
-  [[760, 640], [2360, 980], [1480, 2380]],
-  [[700, 720], [2320, 720], [1500, 2360]]
+  [[1440, 1520], [4640, 1760], [2960, 4840]],
+  [[1280, 1320], [4760, 1520], [2900, 4800]],
+  [[1400, 1800], [4600, 1280], [3120, 4680]],
+  [[1520, 1280], [4720, 1960], [2960, 4760]],
+  [[1400, 1440], [4640, 1440], [3000, 4720]]
 ];
-const BOSS_SPOTS = [[1500, 400], [2360, 2360], [1500, 380], [620, 2360], [2270, 2300]];
+const BOSS_SPOTS = [[3000, 800], [4720, 4720], [3000, 760], [1240, 4720], [4540, 4600]];
 
 /* ---------------------------------------------------------------------------
    UNIVERSE DIFFICULTY
@@ -3001,6 +3786,12 @@ const BOSS_ARRAY = [
 function bossForLevel(universeIndex, zoneIndex) {
   return BOSS_ARRAY[clamp(universeIndex | 0, 0, 5) * 5 + clamp(zoneIndex | 0, 0, 4)] || BOSS_ARRAY[0];
 }
+/* Boss HP by level within a universe: L1=80, L2=120, L3=160, L4=200, L5=280.
+   Set at spawn time so every champion fight lasts minutes, not seconds. */
+const BOSS_HP_BY_LEVEL = [80, 120, 160, 200, 280];
+function bossHpForCurrentZone() {
+  return BOSS_HP_BY_LEVEL[clamp(levelInUniverse(gameState.currentZone) - 1, 0, BOSS_HP_BY_LEVEL.length - 1)];
+}
 
 /* one level of a universe: the same shape as a medieval zone, themed and scaled */
 function makeUniverseLevel(uni, i) {
@@ -3020,8 +3811,9 @@ function makeUniverseLevel(uni, i) {
     skyArt: uni.skyArt,
     groundTint: null,
     waves: [
-      { count: count, types: types[3] ? [types[0], types[1], types[3]] : [types[0], types[1]] },
-      { count: count + 2, types: types[3] ? [types[1], types[2], types[0], types[3]] : [types[1], types[2], types[0]] }
+      { count: 12, types: [types[0]] },
+      { count: 18, types: types.length > 2 ? [types[0], types[1], types[2]] : types.slice() },
+      { count: 25, types: types.slice(), eliteMin: 2 }
     ],
     arenas: ARENA_LAYOUTS[(i + uni.index * 2) % ARENA_LAYOUTS.length],
     bossPos: BOSS_SPOTS[(i + uni.index) % BOSS_SPOTS.length],
@@ -3586,7 +4378,7 @@ function loadZone(zoneIndex, opts) {
   game.floorArt = buildFloorArt(gameState.currentZone);
   game.arenas = z.arenas.map((a) => ({
     x: a[0], y: a[1], r: ARENA_R,
-    cleared: false, active: false, wave: 0, remaining: 0, nextWaveTimer: 0
+    cleared: false, active: false, wave: 0, remaining: 0, nextWaveTimer: 0, spawnQueue: 0, spawnTimer: 0
   }));
   game.fog = new Uint8Array(FOG_COLS * FOG_COLS);
   revealFog();
@@ -3595,10 +4387,11 @@ function loadZone(zoneIndex, opts) {
 
   noteZoneReached(gameState.currentZone);
   const zUni = universeOf(gameState.currentZone);
-  UI.zoneBadge.textContent = 'Universe ' + zUni.number + ' · Level ' + z.level;
+  UI.zoneBadge.textContent = 'U' + zUni.number + ' · ZONE ' + z.level;
   UI.zoneName.textContent = z.name;
   document.documentElement.style.setProperty('--zone-accent', z.accent);
   updateObjective();
+  if (UI.objective) { UI.objective.classList.remove('zone-fade'); void UI.objective.offsetWidth; UI.objective.classList.add('zone-fade'); }
   updateHealthOrbs();
   hideBossBar();
   /* the zone callout is the animated briefing card, not the centre banner */
@@ -4473,6 +5266,12 @@ function skillIconSVG(icon) {
 }
 const classProgress = {};
 let classLevelUpClock = 0;
+/* A level-up earned during live combat is only pinged as a small toast and is
+   remembered here. The big centre card is raised later — once the current arena
+   is fully cleared and just before the upgrade card — never mid-fight. */
+let pendingClassLevelUp = null;    /* { level, gained, source, saved } */
+let classLevelUpHold = false;      /* the post-arena level-up card is up; the upgrade card waits behind it */
+let classLevelUpHoldTimer = 0;
 let skillTreeReturn = 'pauseMenu';
 let skillTreeClassId = 'knight';
 let skillTooltipButton = null;
@@ -4542,9 +5341,69 @@ function awardClassXP(amount, source) {
   if (record.level === CLASS_MAX_LEVEL) record.xp = 0;
   const saved = saveClassProgress(id);
   syncClassXpHud();
-  if (gained) showClassLevelUp(record, gained, source, saved);
+  if (gained) {
+    /* mid-fight the centre card must never appear: ping the toast and remember
+       the level-up so the card can be shown once the arena is cleared */
+    if (game.screen === 'playing') queueClassLevelUp(record, gained, source, saved);
+    else showClassLevelUp(record, gained, source, saved);
+  }
   if (currentScreen === 'skillTree') renderSkillTree();
   return xp;
+}
+
+/* Combat-time level-up: small non-blocking toast under the health orbs plus a
+   stored record of the level reached. No popup, no pause, nothing that can get
+   the player killed. */
+function queueClassLevelUp(record, gained, source, saved) {
+  pendingClassLevelUp = { level: record.level, gained: gained, source: source, saved: saved };
+  showLevelUpToast(record.level);
+  Sound.classLevelUp();
+  if (game.player) {
+    const p = game.player;
+    game.particles.push({ ring: true, x: p.x, y: p.y, r: 10, maxR: 150, life: 0, maxLife: 0.65, color: '#ffdf9b' });
+  }
+}
+
+/* "LV UP -> N" — gold flash, small Cinzel text, slides in and fades out over
+   2s in the top-left corner below the health orbs. */
+function showLevelUpToast(level) {
+  const host = UI.levelUpToasts;
+  if (!host) return;
+  const el = document.createElement('div');
+  el.className = 'level-up-toast';
+  el.textContent = 'LV UP \u2192 ' + level;
+  host.appendChild(el);
+  while (host.children.length > 3) host.removeChild(host.firstChild);
+  setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 2100);
+}
+
+/* The current arena is fully cleared (combat over): raise the real level-up
+   card now, freeze the world behind it exactly like any other overlay, and
+   hand over to the upgrade card when the level-up card is done. Returns true
+   when a level-up was pending and is being shown. */
+function flushPendingClassLevelUp() {
+  const p = pendingClassLevelUp;
+  if (!p) return false;
+  pendingClassLevelUp = null;
+  showClassLevelUp(getClassProgress(gameState.currentClass), p.gained, p.source, p.saved);
+  classLevelUpHold = true;
+  stopLoop();
+  if (classLevelUpHoldTimer) clearTimeout(classLevelUpHoldTimer);
+  classLevelUpHoldTimer = setTimeout(endClassLevelUpHold, 5600);
+  return true;
+}
+
+/* Level-up card finished (or the player came back to the canvas from pause /
+   the skill tree while it was owed): drop the card, then show the upgrade card. */
+function endClassLevelUpHold() {
+  if (!classLevelUpHold) return;
+  if (classLevelUpHoldTimer) { clearTimeout(classLevelUpHoldTimer); classLevelUpHoldTimer = 0; }
+  /* still paused / in the tree / in the shop: keep the hold owed — returning
+     to the canvas (see showScreen) finishes the hand-off then */
+  if (currentScreen !== 'gameCanvas') return;
+  classLevelUpHold = false;
+  hideClassLevelUp();
+  if (!showUpgrades() && currentScreen === 'gameCanvas') startLoop();   /* nothing left to offer: just resume */
 }
 function showClassLevelUp(record, gained, source, saved) {
   UI.levelUpNumber.textContent = String(record.level);
@@ -5247,10 +6106,11 @@ function firePistols(charged) {
     if (p.magShots >= cap) { p.magShots = 0; p.reloadT = Math.max(0.05, 0.35 - (currentSkill('speed_loader') ? 0.1 : 0)); }
   }
   Sound.pistol();
-  for (let i = 0; i < 2; i++) {
+  p.muzzleAt = game.time;          /* flintlock muzzle flashes orange at the barrel end */
+  for (let i = 0; i < 3; i++) {
     const a = p.angle + rand(-0.22, 0.22);
     spawnParticle(p.x + Math.cos(p.angle) * (p.r + 20), p.y + Math.sin(p.angle) * (p.r + 20),
-      Math.cos(a) * rand(60, 170), Math.sin(a) * rand(60, 170), 0.12, 4.4, '#bae6fd', 3);
+      Math.cos(a) * rand(60, 170), Math.sin(a) * rand(60, 170), 0.1, rand(3, 5), '#fb923c', 3);
   }
 }
 
@@ -5309,6 +6169,14 @@ function fireSniper(charged) {
     const aa = a + rand(-0.42, 0.42);
     spawnParticle(p.x + Math.cos(a) * (p.r + 22), p.y + Math.sin(a) * (p.r + 22),
       Math.cos(aa) * rand(120, 380), Math.sin(aa) * rand(120, 380), 0.24, rand(3, 6), '#e2e8f0', 3);
+  }
+  /* arquebus smoke: a large grey puff drifting off the muzzle (the beam itself is game.beams) */
+  p.muzzleAt = game.time;
+  for (let i = 0; i < 10; i++) {
+    const aa = a + rand(-0.6, 0.6);
+    const sp = rand(14, 70);
+    spawnParticle(p.x + Math.cos(a) * (p.r + 72), p.y + Math.sin(a) * (p.r + 72),
+      Math.cos(aa) * sp, Math.sin(aa) * sp - 12, rand(0.6, 1.2), rand(8, 15), '#a8a29e', 2);
   }
 }
 
@@ -5492,7 +6360,7 @@ function fireDaggers(charged) {
       pierce: 1,
       explosive: false,
       hits: null,
-      spins: 0,
+      spin: 0,
       skillMeta: Object.assign({}, attack, { oneShot: i === 0 && attack.oneShot })
     });
   }
@@ -5618,6 +6486,7 @@ function updateDiscs(dt) {
 }
 
 /* the orange ribbon a pair of axes leaves behind */
+
 function drawAxeSwoosh() {
   const R = AXE_RANGE * 0.84;
   for (let i = 0; i < game.swings.length; i++) {
@@ -5631,21 +6500,32 @@ function drawAxeSwoosh() {
     if (Math.abs(head - sw.a0) < 0.01) continue;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = fade * 0.85;
-    ctx.strokeStyle = '#ff9d5c';
-    ctx.lineWidth = 9;
+    /* dark red trail */
+    ctx.globalAlpha = fade * 0.5;
+    ctx.strokeStyle = '#7f1d1d';
+    ctx.lineWidth = 12;
     ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head), Math.max(sw.a0, head));
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,231,184,0.9)';
-    ctx.lineWidth = 3;
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head), Math.max(sw.a0, head)); ctx.stroke();
+    ctx.globalAlpha = fade * 0.65;
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head), Math.max(sw.a0, head)); ctx.stroke();
+    ctx.globalAlpha = fade * 0.85;
+    ctx.strokeStyle = '#f87171';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head), Math.max(sw.a0, head)); ctx.stroke();
+    /* motion-blur echoes behind the swing */
+    for (let e = 1; e <= 2; e++) {
+      const back = (head - sw.a0) * 0.18 * e;
+      ctx.globalAlpha = fade * (0.22 / e);
+      ctx.strokeStyle = '#b91c1c';
+      ctx.lineWidth = 8 - e * 2.4;
+      ctx.beginPath(); ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head - back), Math.max(sw.a0, head - back)); ctx.stroke();
+    }
     ctx.restore();
   }
 }
 
-/* ------------------------------ beams -------------------------------------- */
 function updateBeams(dt) {
   for (let i = game.beams.length - 1; i >= 0; i--) {
     const b = game.beams[i];
@@ -6470,15 +7350,19 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
      Regular enemies use the table verbatim; the old per-zone power curve is
      intentionally no longer stacked on top of it. */
   const diff = universeDifficulty(gameState.currentUniverse);
+  /* each level beyond level 1 of the same universe: +15% enemy speed, +20% enemy HP */
+  const lvl = levelInUniverse(gameState.currentZone);
+  const lvlSpeed = 1 + 0.15 * (lvl - 1);
+  const lvlHp = 1 + 0.20 * (lvl - 1);
   const eliteVariant = !!o.eliteVariant;
-  const hp = Math.round(def.hp * diff.hp * (eliteVariant ? 2.5 : 1) * 10) / 10;
+  const hp = Math.round(def.hp * diff.hp * lvlHp * (eliteVariant ? 2.5 : 1) * 10) / 10;
   const e = {
     type,
     x, y,
     r: def.r * (eliteVariant ? 1.3 : 1),
     hp,
     maxHp: hp,
-    speed: def.speed * diff.speed,
+    speed: def.speed * diff.speed * lvlSpeed,
     damageMult: diff.damage * (eliteVariant ? 1.5 : 1),
     elite: !!def.elite || eliteVariant,
     eliteVariant,
@@ -6529,35 +7413,63 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
   return e;
 }
 
+/* Wave spawning is a trickle, not a burst: one enemy every 0.6 seconds until
+   the wave count is reached, so the arena applies constant pressure. A wave
+   only counts as cleared once the queue is empty AND every spawned enemy is
+   dead. The final wave of every arena is guaranteed at least 2 elites, and
+   every level beyond level 1 of a universe adds +1 enemy per wave. */
+const WAVE_SPAWN_INTERVAL = 0.6;
 function spawnWave(arena, arenaIndex, waveIndex) {
   const z = ZONES[gameState.currentZone];
   const wave = z.waves[Math.min(waveIndex, z.waves.length - 1)];
-  const types = wave.types;
   const diff = universeDifficulty(gameState.currentUniverse);
-  const count = Math.max(1, Math.round(wave.count * diff.wave));
-  const elitesAllowed = gameState.currentUniverse >= 2;   /* U3 onward */
-  for (let i = 0; i < count; i++) {
-    const a = (i / count) * TAU + rand(-0.2, 0.2);
-    /* every enemy of a new wave arrives at least 300px from the player */
-    const spot = waveSpawnPoint(arena, a);
-    const x = spot.x;
-    const y = spot.y;
-    /* Every third enemy spawned in the wave gets a 25% elite roll. */
-    const eliteVariant = elitesAllowed && ((i + 1) % 3 === 0) && Math.random() < 0.25;
-    spawnEnemy(pick(types), x, y, arenaIndex, {
-      eliteVariant,
-      coordSide: i % 2 === 0 ? 1 : -1,
-      lineSlot: i
-    });
-    for (let k = 0; k < 6; k++) {
-      const pa = rand(0, TAU);
-      spawnParticle(x, y, Math.cos(pa) * rand(20, 90), Math.sin(pa) * rand(20, 90), 0.4, 7, '#f87171', 2);
-    }
-  }
+  const levelBonus = levelInUniverse(gameState.currentZone) - 1;   /* +1 per wave per level */
+  const count = Math.max(1, Math.round(wave.count * diff.wave) + levelBonus);
+  arena.spawnQueue = count;
+  arena.spawnTimer = 0;
+  arena.spawnTotal = count;
+  arena.spawnWaveIndex = waveIndex;
+  arena.spawnTypes = wave.types;
+  arena.spawnArenaIndex = arenaIndex;
+  arena.eliteMin = wave.eliteMin || 0;
+  arena.elitesSpawned = 0;
   arena.wave = waveIndex + 1;
   arena.remaining = count;
   Sound.arenaStart();
   addText(arena.x, arena.y - 120, 'WAVE ' + (waveIndex + 1), '#fca5a5');
+}
+function spawnWaveEnemy(arena) {
+  const i = arena.spawnTotal - arena.spawnQueue;      /* 0-based spawn index */
+  const count = arena.spawnTotal;
+  const types = arena.spawnTypes;
+  const waveIndex = arena.spawnWaveIndex;
+  /* elites unlock from universe 3 onward — and always on the final wave */
+  const elitesAllowed = gameState.currentUniverse >= 2 || waveIndex >= 2;
+  let eliteVariant = elitesAllowed && ((i + 1) % 3 === 0) && Math.random() < 0.25;
+  /* guarantee the final wave's elite quota by forcing the tail spawns */
+  if (arena.eliteMin > arena.elitesSpawned && arena.spawnQueue <= arena.eliteMin - arena.elitesSpawned) eliteVariant = true;
+  if (eliteVariant) arena.elitesSpawned++;
+  const a = (i / count) * TAU + rand(-0.2, 0.2);
+  /* every enemy of a new wave arrives at least 300px from the player */
+  const spot = waveSpawnPoint(arena, a);
+  spawnEnemy(pick(types), spot.x, spot.y, arena.spawnArenaIndex, {
+    eliteVariant,
+    coordSide: i % 2 === 0 ? 1 : -1,
+    lineSlot: i
+  });
+  for (let k = 0; k < 6; k++) {
+    const pa = rand(0, TAU);
+    spawnParticle(spot.x, spot.y, Math.cos(pa) * rand(20, 90), Math.sin(pa) * rand(20, 90), 0.4, 7, '#f87171', 2);
+  }
+}
+function tickArenaSpawns(a, dt) {
+  if (!a.spawnQueue || a.spawnQueue <= 0) return;
+  a.spawnTimer -= dt;
+  while (a.spawnQueue > 0 && a.spawnTimer < 0) {
+    a.spawnTimer += WAVE_SPAWN_INTERVAL;
+    a.spawnQueue--;
+    spawnWaveEnemy(a);
+  }
 }
 
 function countArenaEnemies(arenaIndex) {
@@ -7398,6 +8310,7 @@ function updateBullets(dt) {
       }
       b.spin = (b.spin || 0) + dt * 6;
     }
+    if (b.kind === 'dagger') b.spin = (b.spin || 0) + dt * 26;   /* thrown daggers spin rapidly */
 
     const px = b.x, py = b.y;
     b.x += b.vx * dt;
@@ -7767,8 +8680,8 @@ function spawnBoss(opts) {
     x: o.fromX !== undefined ? o.fromX : z.bossPos[0],
     y: o.fromY !== undefined ? o.fromY : z.bossPos[1],
     r: def.r,
-    hp: def.hp,
-    maxHp: def.hp,
+    hp: bossHpForCurrentZone(),
+    maxHp: bossHpForCurrentZone(),
     name: def.name,
     color: def.color,
     speed: def.speed * universeDifficulty(gameState.currentUniverse).speed,
@@ -7787,6 +8700,7 @@ function spawnBoss(opts) {
     chargeDir: { x: 1, y: 0 },
     spiral: 0,
     contactCd: 0,
+    phase3Timer: 4,
     entering: o.entrance? {
       t: 0, dur: 1.7,
       fromX: o.fromX, fromY: o.fromY,
@@ -7971,9 +8885,9 @@ function updateBoss(dt) {
   if (b.kit && BOSS_KITS[b.kit]) { updateBossKit(b, dt); return; }
 
   const ratio = clamp(b.hp / b.maxHp, 0, 1);
-  /* zones 1-4 fight in three phases (75% / 50%), the Time Tyrant in four */
-  const maxPhase = gameState.currentZone >= 4 ? 4 : 3;
-  const steps = [1, 0.75, 0.5, 0.25];
+  /* phases trigger at 66% and 33% HP */
+  const maxPhase = 3;
+  const steps = [1, 0.66, 0.33];
   let newPhase = 1;
   for (let i = 1; i < maxPhase; i++) {
     if (ratio <= steps[i]) newPhase = i + 1;
@@ -8000,8 +8914,8 @@ function updateBoss(dt) {
   /* boss body motion + contact damage */
   if (b.charging > 0) {
     b.charging -= dt;
-    b.x += b.chargeDir.x * b.speed * 5.2 * dt;
-    b.y += b.chargeDir.y * b.speed * 5.2 * dt;
+    b.x += b.chargeDir.x * b.speed * (b.phase >= 2 ? 1.25 : 1) * 5.2 * dt;
+    b.y += b.chargeDir.y * b.speed * (b.phase >= 2 ? 1.25 : 1) * 5.2 * dt;
     if (Math.random() < 0.8) {
       spawnParticle(b.x, b.y, rand(-40, 40), rand(-40, 40), 0.35, 10, b.color, 3);
     }
@@ -8010,8 +8924,8 @@ function updateBoss(dt) {
     if (d > 70) {
       if (b.heading === undefined) b.heading = ang;
       b.heading += clamp(angleDelta(b.heading, ang), -1.9 * dt, 1.9 * dt);
-      b.x += Math.cos(b.heading) * b.speed * dt;
-      b.y += Math.sin(b.heading) * b.speed * dt;
+      b.x += Math.cos(b.heading) * b.speed * (b.phase >= 2 ? 1.25 : 1) * dt;
+      b.y += Math.sin(b.heading) * b.speed * (b.phase >= 2 ? 1.25 : 1) * dt;
     }
   } else {
     /* witch / archon hover and drift */
@@ -8023,7 +8937,7 @@ function updateBoss(dt) {
   clampToBossArena(b);
   if (d < b.r + p.r + 4) hurtPlayer(enemyDamage(1));
 
-  const speedUp = 1 + (b.phase - 1) * 0.18;
+  const speedUp = b.phase >= 2 ? 1.25 : 1;   /* phase 2+: attacks 25% faster */
 
   /* ---- zone specific attacks ---- */
   if (zone === 0) {
@@ -8498,99 +9412,73 @@ const ABILITY_IDS = ALL_CLASS_ABILITY_IDS;
    glyph, no font.  Keyed by [className][slotKey]; updateAbilityIcons() swaps
    the SVG inside each .ab-btn whenever the class changes.
    --------------------------------------------------------------------------- */
-function abilityIconMarkup(body) {
-  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+/* ---------------------------------------------------------------------------
+   CLASS_ABILITY_ICONS — the single source of truth for ability icons.
+   Maps every [classId][slot] (q, e, shift, f, r) to a complete inline SVG
+   string: viewBox "0 0 26 26", stroke = currentColor, simple geometric
+   shapes only — no emoji, no text glyphs, no fonts. updateAbilityIcons()
+   reads this map and rewrites each .ab-btn's innerHTML (icon SVG plus the
+   cooldown sweep span) on every class change and every run start, so the
+   icons can never go stale or mismatch the ability.
+   --------------------------------------------------------------------------- */
+function classAbilityIcon(body) {
+  return '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
 }
-const ABILITY_ICONS = {
+const CLASS_ABILITY_ICONS = {
   knight: {
-    /* Shield Bash: forward-pointing shield + horizontal impact line */
-    q: abilityIconMarkup('<path d="M5 4h7l7 8-7 8H5z"/><path d="M3 12h13"/><path d="M16 9l3 3-3 3"/>'),
-    /* Whirlwind: clockwise circular arrow with blade tips at each end */
-    e: abilityIconMarkup('<path d="M12 5a7 7 0 1 1-7 7"/><path d="M12 2l3 3-3 3z" fill="currentColor" stroke="none"/><path d="M5 12l-3-3 3-3z" fill="currentColor" stroke="none"/>'),
-    /* Shield Charge: shield with a forward arrow piercing through it */
-    shift: abilityIconMarkup('<path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/><path d="M3 12h15"/><path d="M15 9l4 3-4 3"/>'),
-    /* War Cry: mouth / sound wave with radiating shout lines */
-    f: abilityIconMarkup('<path d="M4 10v4h3l5 4V6l-5 4z"/><path d="M15 9q3 3 0 6"/><path d="M18 6q5 6 0 12"/>'),
-    /* Blade Storm: 8 swords pointing outward like a compass rose */
-    r: abilityIconMarkup('<g><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g><g transform="rotate(45 12 12)"><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g><g transform="rotate(90 12 12)"><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g><g transform="rotate(135 12 12)"><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g><g transform="rotate(180 12 12)"><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g><g transform="rotate(225 12 12)"><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g><g transform="rotate(270 12 12)"><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g><g transform="rotate(315 12 12)"><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g>')
+    q:     classAbilityIcon('<path d="M13 3.5 21.6 9.8 18.3 20.5H7.7L4.4 9.8Z"/>'),
+    e:     classAbilityIcon('<path d="M20 13a7 7 0 1 1-2.05-4.95"/><path d="M20.6 3.4V8h-4.6"/><path d="M6 13a7 7 0 1 0 2.05 4.95"/><path d="M5.4 22.6V18h4.6"/>'),
+    shift: classAbilityIcon('<path d="M13 3l8 3v6c0 5-3.5 8.6-8 10.2C8.5 20.6 5 17 5 12V6z"/><path d="M7.5 13h8.5"/><path d="M13.5 9.5 17 13l-3.5 3.5"/>'),
+    f:     classAbilityIcon('<path d="M4 10v6h4l6 5V5l-6 5z"/><path d="M17.2 9.6q3 3.4 0 6.8"/><path d="M20.6 6.8q5 6.2 0 12.4"/>'),
+    r:     classAbilityIcon('<path d="M13 13V3.5M13 13v9.5M13 13H3.5M13 13h9.5M13 13l6.7-6.7M13 13l-6.7 6.7M13 13l6.7 6.7M13 13l-6.7-6.7"/><circle cx="13" cy="13" r="1.7"/>')
   },
   gunslinger: {
-    /* Bullet Storm: 8 dots radiating from a center point */
-    q: abilityIconMarkup('<circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="4" r="1.3" fill="currentColor" stroke="none"/><circle cx="17.7" cy="6.3" r="1.3" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="17.7" cy="17.7" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="20" r="1.3" fill="currentColor" stroke="none"/><circle cx="6.3" cy="17.7" r="1.3" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="6.3" cy="6.3" r="1.3" fill="currentColor" stroke="none"/>'),
-    /* Ricochet Shot: zigzag arrow bouncing between two vertical lines */
-    e: abilityIconMarkup('<path d="M4 5v14"/><path d="M20 5v14"/><path d="M5 16l5-4-5-4 10 8 4-4"/><path d="M17 12h3l-1 3"/>'),
-    /* Smoke Roll: rolling arrow with a cloud puff behind it */
-    shift: abilityIconMarkup('<path d="M17 12a5 5 0 1 1-5-5"/><path d="M12 4l3 3-3 3"/><path d="M4 16q-2-2 0-4 1-2 3-1 1-2 3-1"/>'),
-    /* Deploy Turret: T-shape with a small barrel on top */
-    f: abilityIconMarkup('<path d="M5 19h14"/><path d="M12 19v-8"/><path d="M8 11h8"/><path d="M12 11V5"/><path d="M10 5h4"/>'),
-    /* Overload: two overlapping lightning bolts */
-    r: abilityIconMarkup('<path d="M11 2L4 13h5l-1 9 8-12h-5z" fill="currentColor" stroke="none" opacity="0.55"/><path d="M15 3l-6 10h4l-1 8 7-11h-4z" fill="currentColor" stroke="none"/>')
+    q:     classAbilityIcon('<circle cx="9.5" cy="13" r="5.6"/><circle cx="16.5" cy="13" r="5.6"/>'),
+    e:     classAbilityIcon('<path d="M3 20 9 7l5 10 5-10 4 7"/>'),
+    shift: classAbilityIcon('<path d="M8 16.5a4 4 0 0 1 .6-7.96 5 5 0 0 1 9.8 1.46 3.7 3.7 0 0 1-.4 7.4z"/><path d="M6 22h11"/><path d="M14 19l3 3-3 3"/>'),
+    f:     classAbilityIcon('<path d="M4 21h18"/><path d="M13 21v-8"/><path d="M8 13h10"/><path d="M13 13V6"/><path d="M9.5 6h7"/>'),
+    r:     classAbilityIcon('<path d="M11 2 4.5 13.5h5.5L8 24l8.5-12h-5.5z" fill="currentColor" stroke="none" opacity=".5"/><path d="M17.5 2.5 11 14h4.5L14 23.5 21.5 11H17z" fill="currentColor" stroke="none"/>')
   },
   sniper: {
-    /* Railgun: long beam, triangle at the right end, speed lines behind */
-    q: abilityIconMarkup('<path d="M3 12h14"/><path d="M17 9l4 3-4 3z" fill="currentColor" stroke="none"/><path d="M2 8h5"/><path d="M1 16h6"/><path d="M4 12h2"/>'),
-    /* Piercing Shot: horizontal arrow through multiple circles, dotted trail */
-    e: abilityIconMarkup('<circle cx="6" cy="12" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="18" cy="12" r="2.4"/><path d="M2 12h18"/><path d="M18 9l4 3-4 3z" fill="currentColor" stroke="none"/><path d="M2 12h2" stroke-dasharray="1 2"/>'),
-    /* Ghillie: eye with a diagonal line through it */
-    shift: abilityIconMarkup('<path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.6"/><path d="M4 20L20 4"/>'),
-    /* Mine Field: three diamonds on a horizontal line */
-    f: abilityIconMarkup('<path d="M3 16h18"/><path d="M6 12l2 2-2 2-2-2z"/><path d="M12 12l2 2-2 2-2-2z"/><path d="M18 12l2 2-2 2-2-2z"/>'),
-    /* Eagle Eye: target reticle with a clock/timer overlay */
-    r: abilityIconMarkup('<circle cx="12" cy="12" r="8"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/><circle cx="12" cy="12" r="3.2"/><path d="M12 10.4V12l1.4 1"/>')
+    q:     classAbilityIcon('<path d="M2.5 13h20"/><path d="M17.5 8.5 23 13l-5.5 4.5"/>'),
+    e:     classAbilityIcon('<circle cx="5.5" cy="13" r="2.5"/><circle cx="13" cy="13" r="2.5"/><circle cx="20.5" cy="13" r="2.5"/><path d="M2 13h22"/><path d="M19.5 9.5 23 13l-3.5 3.5"/>'),
+    shift: classAbilityIcon('<path d="M2.5 13S7 6.5 13 6.5 23.5 13 23.5 13 19 19.5 13 19.5 2.5 13 2.5 13z"/><circle cx="13" cy="13" r="3"/><path d="M5 21 21 5"/>'),
+    f:     classAbilityIcon('<path d="M3 19.5h20"/><path d="M6.5 12.5 9 15l-2.5 2.5L4 15z"/><path d="M13 12.5 15.5 15 13 17.5 10.5 15z"/><path d="M19.5 12.5 22 15l-2.5 2.5L17 15z"/>'),
+    r:     classAbilityIcon('<circle cx="13" cy="13" r="8.5"/><path d="M13 2v4M13 20v4M2 13h4M20 13h4"/><circle cx="13" cy="13" r="3.4"/><path d="M13 10.8V13l2.2 1.5"/>')
   },
   mage: {
-    /* Temporal Rift: black circle with an inward spiral */
-    q: abilityIconMarkup('<circle cx="12" cy="12" r="8" fill="#050507"/><path d="M16.5 12a4.5 4.5 0 1 1-4.5-4.5 3 3 0 1 0 3 3 1.5 1.5 0 1 1-1.5-1.5"/>'),
-    /* Chrono Burst: clock face with rays bursting outward */
-    e: abilityIconMarkup('<circle cx="12" cy="12" r="5"/><path d="M12 9.5V12l1.8 1.2"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/><path d="M4.9 4.9l2.1 2.1"/><path d="M17 17l2.1 2.1"/><path d="M19.1 4.9L17 7"/><path d="M7 17l-2.1 2.1"/>'),
-    /* Blink: dotted figure left, solid figure right, lightning between */
-    shift: abilityIconMarkup('<g stroke-dasharray="1.5 2" opacity="0.7"><circle cx="5" cy="7" r="2"/><path d="M2.5 19c0-3 1.2-5 2.5-5s2.5 2 2.5 5"/></g><circle cx="19" cy="7" r="2"/><path d="M16.5 19c0-3 1.2-5 2.5-5s2.5 2 2.5 5"/><path d="M12 5l-2 6h3l-2 8 5-10h-3z" fill="currentColor" stroke="none"/>'),
-    /* Summon Familiar: small orbiting circle around a larger center circle */
-    f: abilityIconMarkup('<circle cx="12" cy="12" r="4"/><ellipse cx="12" cy="12" rx="9" ry="4.5"/><circle cx="21" cy="12" r="1.8" fill="currentColor" stroke="none"/>'),
-    /* Time Loop: circular rewind arrow with a clock hand inside */
-    r: abilityIconMarkup('<path d="M5 12a7 7 0 1 0 2-5"/><path d="M5 4v4h4"/><path d="M12 8.5V12l2.4 1.6"/>')
+    q:     classAbilityIcon('<path d="M13 13a1.3 1.3 0 0 1 1.3 1.3 2.7 2.7 0 0 1-2.7 2.7 4.6 4.6 0 0 1-4.6-4.6A6.9 6.9 0 0 1 13.3 5.4 9.3 9.3 0 0 1 22.6 14.7"/>'),
+    e:     classAbilityIcon('<circle cx="13" cy="13" r="6"/><path d="M13 10v3l2.4 1.7"/><path d="M13 2.5v2.5M13 21v2.5M2.5 13H5M21 13h2.5M5.2 5.2l1.8 1.8M19 19l1.8 1.8M20.8 5.2 19 7M7 19l-1.8 1.8"/>'),
+    shift: classAbilityIcon('<g stroke-dasharray="1.5 2" opacity=".7"><circle cx="6" cy="8" r="2.2"/><path d="M3 21c0-3.5 1.3-5.5 3-5.5s3 2 3 5.5"/></g><circle cx="20" cy="8" r="2.2"/><path d="M17 21c0-3.5 1.3-5.5 3-5.5s3 2 3 5.5"/><path d="M13 4l-2 6h3l-2 8 5-9h-3z" fill="currentColor" stroke="none"/>'),
+    f:     classAbilityIcon('<circle cx="13" cy="13" r="4"/><ellipse cx="13" cy="13" rx="10" ry="4.5"/><circle cx="23" cy="13" r="1.8" fill="currentColor" stroke="none"/>'),
+    r:     classAbilityIcon('<path d="M6.5 13a6.5 6.5 0 1 0 1.9-4.6"/><path d="M6.5 4v4.5H11"/><path d="M13 9.8V13l2.4 1.6"/>')
   },
   berserker: {
-    /* Rage: two jagged diagonal lines crossing like an explosion X */
-    q: abilityIconMarkup('<path d="M4 4l3 2-1 2 3 2-1 2 3 2 3 3"/><path d="M20 4l-3 2 1 2-3 2 1 2-3 2-3 3"/><path d="M12 3v2"/><path d="M12 19v2"/><path d="M3 12h2"/><path d="M19 12h2"/>'),
-    /* Ground Slam: downward fist with impact waves below */
-    e: abilityIconMarkup('<path d="M8 3h8v6l-2 2v3h-4v-3l-2-2z"/><path d="M9 6h6"/><path d="M5 18q7 3 14 0"/><path d="M7 21q5 2 10 0"/>'),
-    /* Frenzy Dash: jagged forward arrow with flame trails */
-    shift: abilityIconMarkup('<path d="M4 12l4-2-2-3 6 2-1-3 9 6-9 6 1-3-6 2 2-3z"/><path d="M2 8q3 1 2 4"/><path d="M2 16q3-1 4 2"/>'),
-    /* Blood Rage: heart with a lightning crack through it */
-    f: abilityIconMarkup('<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2 4 4 0 0 1 7 2c0 5.5-7 10-7 10z"/><path d="M12 6l-2 5h3l-2 5"/>'),
-    /* Juggernaut: large shield with a forward arrow through it */
-    r: abilityIconMarkup('<path d="M12 2l8 3v7c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V5z"/><path d="M2 12h17"/><path d="M16 8l5 4-5 4"/>')
+    q:     classAbilityIcon('<path d="M5.5 5.5l4 3-2 3 5 4.5-2 3 5.5 3.5"/><path d="M20.5 5.5l-4 3 2 3-5 4.5 2 3-5.5 3.5"/>'),
+    e:     classAbilityIcon('<path d="M8 3h10v6l-2 2v4h-6v-4l-2-2z"/><path d="M8 9h10"/><path d="M6 19q7 3.5 14 0"/>'),
+    shift: classAbilityIcon('<path d="M3 20l7-3.5-4-2.5 8-1-3-4 12 7.5-12 7 3-4-8 1z"/>'),
+    f:     classAbilityIcon('<path d="M13 21.5s-8-4.9-8-11.2a4.4 4.4 0 0 1 8-2.4 4.4 4.4 0 0 1 8 2.4c0 6.3-8 11.2-8 11.2z"/><path d="M13 6.5 10.5 11h4L12 16.5l3 4.5"/>'),
+    r:     classAbilityIcon('<path d="M13 2.5l8.5 3.2v6.3c0 5.4-3.7 9.2-8.5 11-4.8-1.8-8.5-5.6-8.5-11V5.7z"/><path d="M5.5 13H17"/><path d="M14.5 8.5 20 13l-5.5 4.5"/>')
   },
   shadow: {
-    /* Death Mark: crosshair circle with a small skull in the center */
-    q: abilityIconMarkup('<circle cx="12" cy="12" r="8"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0v2l-1 1v2h-3v-2l-1-1z"/><circle cx="10.8" cy="11" r="0.6" fill="currentColor" stroke="none"/><circle cx="13.2" cy="11" r="0.6" fill="currentColor" stroke="none"/>'),
-    /* Shadow Clone: two overlapping identical silhouettes slightly offset */
-    e: abilityIconMarkup('<g opacity="0.5"><circle cx="9" cy="8" r="3"/><path d="M4 20c0-4 2-6 5-6s5 2 5 6"/></g><circle cx="15" cy="8" r="3"/><path d="M10 20c0-4 2-6 5-6s5 2 5 6"/>'),
-    /* Vanish: fading figure from solid to dotted/transparent */
-    shift: abilityIconMarkup('<circle cx="6" cy="7" r="2.4"/><path d="M3 19c0-3.5 1.5-5.5 3-5.5s3 2 3 5.5"/><g opacity="0.5"><circle cx="12" cy="7" r="2.4"/><path d="M9 19c0-3.5 1.5-5.5 3-5.5s3 2 3 5.5"/></g><g opacity="0.25" stroke-dasharray="1.5 2"><circle cx="18" cy="7" r="2.4"/><path d="M15 19c0-3.5 1.5-5.5 3-5.5s3 2 3 5.5"/></g>'),
-    /* Poison Cloud: circular cloud with three dots inside */
-    f: abilityIconMarkup('<path d="M7 16a4 4 0 0 1 0-8 5 5 0 0 1 10 0 4 4 0 0 1 0 8z"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/>'),
-    /* Execute: downward dagger with a red droplet at the tip */
-    r: abilityIconMarkup('<path d="M12 3v12"/><path d="M8 7h8"/><path d="M10 3h4"/><path d="M12 15l-2-3h4z" fill="currentColor" stroke="none"/><path d="M12 17c1.2 1.6 1.2 2.6 0 3.4-1.2-.8-1.2-1.8 0-3.4z" fill="#ef4444" stroke="none"/>')
+    q:     classAbilityIcon('<circle cx="13" cy="13" r="7.5"/><path d="M13 2v5M13 19v5M2 13h5M19 13h5"/><circle cx="13" cy="13" r="1.3" fill="currentColor" stroke="none"/>'),
+    e:     classAbilityIcon('<g opacity=".55"><circle cx="9" cy="8" r="3"/><path d="M4 21c0-4 2.2-6 5-6s5 2 5 6"/></g><circle cx="17.5" cy="8" r="3"/><path d="M12.5 21c0-4 2.2-6 5-6s5 2 5 6"/>'),
+    shift: classAbilityIcon('<circle cx="5" cy="8" r="2.4"/><path d="M2 21c0-3.5 1.4-5.5 3-5.5s3 2 3 5.5"/><g opacity=".5"><circle cx="13" cy="8" r="2.4"/><path d="M10 21c0-3.5 1.4-5.5 3-5.5s3 2 3 5.5"/></g><g opacity=".22" stroke-dasharray="1.5 2"><circle cx="21" cy="8" r="2.4"/><path d="M18 21c0-3.5 1.4-5.5 3-5.5s3 2 3 5.5"/></g>'),
+    f:     classAbilityIcon('<path d="M8 18a4.5 4.5 0 0 1 .5-9 5.5 5.5 0 0 1 10.6 1.6A4 4 0 0 1 18.5 18z"/><circle cx="10" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="17" cy="14" r="1" fill="currentColor" stroke="none"/>'),
+    r:     classAbilityIcon('<path d="M13 2v13"/><path d="M8 6h10"/><path d="M10.5 2h5"/><path d="M13 15l-2.8-3.5h5.6z" fill="currentColor" stroke="none"/><path d="M13 18.5c1.4 1.8 1.4 3 0 4-1.4-1-1.4-2.2 0-4z" fill="currentColor" stroke="none"/>')
   },
   tech: {
-    /* System Overload: gear with a lightning bolt overlaid */
-    q: abilityIconMarkup('<path d="M12 3l1.1 2 2.3-.6.6 2.3 2 1.1-1.1 2 1.1 2-2 1.1-.6 2.3-2.3-.6-1.1 2-1.1-2-2.3 .6-.6-2.3-2-1.1 1.1-2-1.1-2 2-1.1 .6-2.3 2.3 .6z"/><path d="M13 7l-5 7h4l-1 5 5-7h-4z" fill="currentColor" stroke="none"/>'),
-    /* EMP Blast: concentric expanding rings with a lightning bolt center */
-    e: abilityIconMarkup('<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.5" opacity="0.7"/><circle cx="12" cy="12" r="9.5" opacity="0.4" stroke-dasharray="2 2"/><path d="M12.5 8l-3 5h3l-1 3 3-5h-3z" fill="currentColor" stroke="none"/>'),
-    /* Jet Boost: rocket pointing upward-right with flame trail */
-    shift: abilityIconMarkup('<path d="M14 4c3 1 5 3 6 6l-8 8-6-6z"/><circle cx="15" cy="9" r="1.6"/><path d="M9 15l-4 4"/><path d="M8 12l-3 1"/><path d="M12 16l-1 3"/>'),
-    /* Drone Swarm: five small triangles in a loose formation */
-    f: abilityIconMarkup('<path d="M12 4l2 3h-4z"/><path d="M5 9l2 3H3z"/><path d="M19 9l2 3h-4z"/><path d="M8 16l2 3H6z"/><path d="M16 16l2 3h-4z"/>'),
-    /* Overclock: fully charged battery with a plus symbol */
-    r: abilityIconMarkup('<rect x="3" y="8" width="16" height="8" rx="2"/><path d="M21 10v4"/><path d="M6 10v4"/><path d="M9 10v4"/><path d="M12 10v4"/><path d="M15 12h3"/><path d="M16.5 10.5v3"/>')
+    q:     classAbilityIcon('<circle cx="13" cy="13" r="4.5"/><path d="M13 3.5v4M13 18.5v4M3.5 13h4M18.5 13h4M6.2 6.2l2.8 2.8M17 17l2.8 2.8M19.8 6.2 17 9M9 17l-2.8 2.8"/>'),
+    e:     classAbilityIcon('<circle cx="13" cy="13" r="2.5"/><circle cx="13" cy="13" r="6" opacity=".7"/><circle cx="13" cy="13" r="9.5" opacity=".45" stroke-dasharray="2.5 2.5"/>'),
+    shift: classAbilityIcon('<path d="M15 3c4 1 6 3 7 7l-9 9-7-7z"/><circle cx="15.5" cy="10.5" r="1.8"/><path d="M9 17l-4.5 4.5"/><path d="M7 14l-3.5 1M12 19l-1 3.5"/>'),
+    f:     classAbilityIcon('<path d="M13 3.5 16 9h-6z"/><path d="M6 14.5 9 20H3z"/><path d="M20 14.5 23 20h-6z"/>'),
+    r:     classAbilityIcon('<rect x="3" y="9" width="17" height="9" rx="1.5"/><path d="M22.5 11.5v4"/><path d="M6.5 11.5v4M10 11.5v4M13.5 11.5v4M17 11.5v4"/>')
   }
 };
 
 function updateAbilityIcons(className) {
   const cls = CLASSES.find(c => c.id === className || c.name === className) || getClass();
-  const icons = ABILITY_ICONS[cls.id] || ABILITY_ICONS.knight;
+  const icons = CLASS_ABILITY_ICONS[cls.id] || CLASS_ABILITY_ICONS.knight;
   const slots = ['q'].concat(ABILITY_SLOTS);
   for (let i = 0; i < slots.length; i++) {
     const slot = slots[i];
@@ -8598,12 +9486,11 @@ function updateAbilityIcons(className) {
     if (!wrap) continue;
     const btn = wrap.querySelector('.ab-btn');
     if (!btn) continue;
-    const svg = icons[slot];
-    if (!svg) continue;
-    if (btn.getAttribute('data-icon-class') === cls.id && btn.getAttribute('data-icon-slot') === slot && btn.querySelector('svg')) continue;
-    const old = btn.querySelector('svg');
-    if (old) old.outerHTML = svg;
-    else btn.insertAdjacentHTML('afterbegin', svg);
+    const svg = icons[slot] || icons.q;
+    /* every slot is rewritten fresh from CLASS_ABILITY_ICONS on every call:
+       icon SVG + cooldown sweep span, so a stale or mismatched glyph can
+       never survive a class change or a run start */
+    btn.innerHTML = svg + '<span class="ab-sweep" aria-hidden="true"></span>';
     btn.setAttribute('data-icon-class', cls.id);
     btn.setAttribute('data-icon-slot', slot);
   }
@@ -8836,7 +9723,7 @@ function drawAbilityIcon(canvas, kind, fixedPx) {
 function abilityIconSVG(def) {
   if (def && def.slot) {
     const classId = String(def.id || '').split('_')[0];
-    const map = ABILITY_ICONS[classId];
+    const map = CLASS_ABILITY_ICONS[classId];
     if (map && map[def.slot]) return map[def.slot];
   }
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (def.icon || '<circle cx="12" cy="12" r="8"/>') + '</svg>';
@@ -9413,15 +10300,20 @@ function updateArenas(dt) {
       continue;
     }
 
+    tickArenaSpawns(a, dt);
+
     if (a.nextWaveTimer > 0) {
       a.nextWaveTimer -= dt;
       if (a.nextWaveTimer <= 0) spawnWave(a, i, a.wave);
       continue;
     }
 
-    if (countArenaEnemies(i) === 0) {
+    /* a wave is only done when the spawn queue is empty and nothing is alive */
+    if (a.spawnQueue <= 0 && countArenaEnemies(i) === 0) {
       if (a.wave < waveCount) {
-        a.nextWaveTimer = 1.1;
+        /* 4-second breather between waves, announced with a banner */
+        a.nextWaveTimer = 4;
+        showBanner('WAVE ' + (a.wave + 1) + ' INCOMING');
         addText(a.x, a.y - 110, 'WAVE CLEARED', '#fde68a');
       } else {
         clearArena(a, i);
@@ -9454,7 +10346,9 @@ function clearArena(arena, index) {
       if ((game.screen === 'playing' || game.screen === 'upgrade') && !game.bossUnlocked) armBossZone();
     }, 1400);
   }
-  showUpgrades();
+  /* the arena is fully cleared — combat is over — so this is the first safe
+     moment for the level-up card: show it now, and only then the upgrade card */
+  if (!flushPendingClassLevelUp()) showUpgrades();
 }
 
 function updatePortal(dt) {
@@ -9678,7 +10572,7 @@ function rollUpgrades(n) {
 
 function showUpgrades() {
   const choices = rollUpgrades(3);
-  if (!choices.length) return;
+  if (!choices.length) return false;
   UI.upgradeCards.innerHTML = choices.map((u) => {
     const lvl = (gameState.upgrades[u.id] || 0) + 1;
     return '<div class="card" data-up="' + u.id + '">' +
@@ -9697,6 +10591,7 @@ function showUpgrades() {
   });
   showScreen('upgradeCard');
   Sound.ability();
+  return true;
 }
 
 function chooseUpgrade(up) {
@@ -12115,7 +13010,14 @@ const RunClock = {
     const sec = Math.floor(total / 1000) % 60;
     const min = Math.floor(total / 60000);
     const two = (n) => (n < 10 ? '0' + n : String(n));
-    return two(min) + ':' + two(sec) + ':' + two(cs);
+    /* minutes in Roman numerals, seconds as normal numbers */
+    const roman = (n) => {
+      const T = [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+      let s = '';
+      for (const pair of T) while (n >= pair[0]) { s += pair[1]; n -= pair[0]; }
+      return s || '0';
+    };
+    return roman(min) + ':' + two(sec) + ':' + two(cs);
   },
 
   /* a brand new mission: back to zero */
@@ -12471,7 +13373,7 @@ function startRun(classId, zoneIndex, opts) {
   }
 
   gameState.currentClass = classId;
-  updateAbilityIcons(classId);
+  updateAbilityIcons(gameState.currentClass);
   resetRun();
   syncAbilityUnlocks(true);
   if (kept) {
@@ -14311,6 +15213,160 @@ function drawRaelBody(p, bob, flash, mirror) {
 /* ---- Commander Rael's weapons ----------------------------------------------
    Each weapon is drawn in world space, pivoting on the shoulder, so it always
    points at the cursor no matter which way the body is facing. */
+
+/* ---- art helper: one 17th-century flintlock pistol, barrel along +x ---- */
+function drawFlintlockPistol(F, muzzleHot) {
+  /* barrel: long octagonal dark-steel tube */
+  const steel = ctx.createLinearGradient(0, -2.6, 0, 2.6);
+  steel.addColorStop(0, F('#5b6470'));
+  steel.addColorStop(0.45, F('#2e343d'));
+  steel.addColorStop(1, F('#171b21'));
+  ctx.fillStyle = steel;
+  roundRect(ctx, 6, -2.6, 24, 5.2, 1.6);
+  ctx.fill();
+  /* octagon facet lines */
+  ctx.strokeStyle = 'rgba(200,212,226,0.35)';
+  ctx.lineWidth = 0.7;
+  ctx.beginPath(); ctx.moveTo(7, -1.1); ctx.lineTo(29, -1.1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(7, 1.1); ctx.lineTo(29, 1.1); ctx.stroke();
+  /* muzzle ring */
+  ctx.fillStyle = F('#0d1013');
+  roundRect(ctx, 28.6, -3, 2.4, 6, 1);
+  ctx.fill();
+  /* lock: small rectangular box on the side of the barrel */
+  ctx.fillStyle = F('#3a4048');
+  roundRect(ctx, 9, -5.4, 7.5, 4.4, 1);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(190,200,214,0.4)';
+  ctx.lineWidth = 0.6;
+  ctx.strokeRect(9.4, -5, 6.7, 3.6);
+  /* hammer (cock) at the back of the lock */
+  ctx.fillStyle = F('#565f6b');
+  ctx.beginPath();
+  ctx.moveTo(9.6, -5.2);
+  ctx.quadraticCurveTo(7.6, -8.8, 5.4, -7.8);
+  ctx.quadraticCurveTo(7.2, -6.4, 8.4, -4.6);
+  ctx.closePath();
+  ctx.fill();
+  /* frizzen */
+  ctx.strokeStyle = F('#7c8794');
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(15.4, -5.2); ctx.lineTo(17.8, -6.8); ctx.stroke();
+  /* trigger: small curved loop below the lock */
+  ctx.strokeStyle = F('#8b95a3');
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(12.6, 1.4, 1.9, 0.15 * Math.PI, 1.15 * Math.PI); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(12.6, -1); ctx.lineTo(12.6, 1.4); ctx.stroke();
+  /* curved dark-wood grip with grain lines */
+  ctx.fillStyle = F('#4a2f1d');
+  ctx.beginPath();
+  ctx.moveTo(6.4, -1.4);
+  ctx.quadraticCurveTo(5.2, 5.4, 1.2, 8.6);
+  ctx.quadraticCurveTo(-0.6, 9.8, -1.4, 8.2);
+  ctx.quadraticCurveTo(1.6, 4.6, 3.4, -1.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(122,84,52,0.8)';
+  ctx.lineWidth = 0.7;
+  ctx.beginPath(); ctx.moveTo(5.2, 1.4); ctx.quadraticCurveTo(3.4, 4.6, 1.8, 7.4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(3.9, 0.4); ctx.quadraticCurveTo(2.6, 3.4, 1.2, 6.2); ctx.stroke();
+  /* muzzle flash: small orange burst while the shot is hot */
+  if (muzzleHot > 0) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, muzzleHot * 11);
+    ctx.shadowColor = '#fb923c';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = '#ffd8a8';
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = i / 6 * TAU + 0.4;
+      const r1 = 2 + 5.5 * muzzleHot;
+      ctx.moveTo(30.8, 0);
+      ctx.lineTo(30.8 + Math.cos(a) * r1, Math.sin(a) * r1);
+      ctx.lineTo(30.8 + Math.cos(a + 0.5) * r1 * 0.45, Math.sin(a + 0.5) * r1 * 0.45);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#fff7ed';
+    ctx.beginPath(); ctx.arc(30.8, 0, 1.8 + 2.4 * muzzleHot, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* ---- art helper: a slim balanced throwing dagger, point along +x ---- */
+function drawHeldDagger(F) {
+  /* wrapped handle */
+  ctx.fillStyle = F('#241631');
+  roundRect(ctx, -9, -2.2, 8, 4.4, 1.6);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(167,139,250,0.6)';
+  ctx.lineWidth = 0.8;
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath(); ctx.moveTo(-8 + i * 2.4, -2.2); ctx.lineTo(-6.6 + i * 2.4, 2.2); ctx.stroke();
+  }
+  /* small crossguard */
+  ctx.fillStyle = F('#3f4753');
+  roundRect(ctx, -1.6, -4, 2.2, 8, 1);
+  ctx.fill();
+  /* thin tapered blade */
+  const g = ctx.createLinearGradient(0, -1.8, 0, 1.8);
+  g.addColorStop(0, F('#e2e8f0'));
+  g.addColorStop(0.5, F('#94a3b8'));
+  g.addColorStop(1, F('#475569'));
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(0.4, -1.6); ctx.lineTo(20, -0.5); ctx.lineTo(24, 0); ctx.lineTo(20, 0.5); ctx.lineTo(0.4, 1.6);
+  ctx.closePath();
+  ctx.fill();
+  /* center line */
+  ctx.strokeStyle = 'rgba(15,23,42,0.7)';
+  ctx.lineWidth = 0.7;
+  ctx.beginPath(); ctx.moveTo(1.5, 0); ctx.lineTo(21, 0); ctx.stroke();
+}
+
+/* ---- art helper: the tech energy disc — shield x saw blade ---- */
+function drawEnergyDisc(cx, cy, r, spin) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(spin);
+  /* saw teeth around the rim */
+  ctx.fillStyle = '#1e3a5f';
+  ctx.beginPath();
+  const teeth = 10;
+  for (let i = 0; i < teeth; i++) {
+    const a0 = i / teeth * TAU, a1 = (i + 0.5) / teeth * TAU, a2 = (i + 1) / teeth * TAU;
+    ctx.lineTo(Math.cos(a0) * r, Math.sin(a0) * r);
+    ctx.lineTo(Math.cos(a1) * (r + 2.6), Math.sin(a1) * (r + 2.6));
+    ctx.lineTo(Math.cos(a2) * r, Math.sin(a2) * r);
+  }
+  ctx.closePath();
+  ctx.fill();
+  /* flat disc body */
+  const g = ctx.createRadialGradient(0, 0, 1, 0, 0, r);
+  g.addColorStop(0, '#0b1220');
+  g.addColorStop(0.7, '#12233a');
+  g.addColorStop(1, '#1e3a5f');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
+  /* glowing blue edge lines */
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 1.8;
+  ctx.shadowColor = '#22d3ee';
+  ctx.shadowBlur = 12;
+  ctx.beginPath(); ctx.arc(0, 0, r - 0.6, 0, TAU); ctx.stroke();
+  ctx.strokeStyle = 'rgba(103,232,249,0.8)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(0, 0, r * 0.55, 0, TAU); ctx.stroke();
+  /* central emitter core */
+  ctx.fillStyle = 'rgba(56,189,248,0.9)';
+  ctx.beginPath(); ctx.arc(0, 0, 3.6, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#e0f2fe';
+  ctx.beginPath(); ctx.arc(0, 0, 2.2, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#f0f9ff';
+  ctx.beginPath(); ctx.arc(0, 0, 1.2, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
 function drawRaelWeapon(p, bob, flash) {
   const cls = getClass();
   const t = game.time;
@@ -14329,131 +15385,152 @@ function drawRaelWeapon(p, bob, flash) {
   ctx.rotate(p.angle);
   if (Math.cos(p.angle) < 0) ctx.scale(1, -1);
 
-  /* the gauntlet that holds the weapon */
-  ctx.fillStyle = F('#22304a');
+  /* the gauntlet that visibly holds the weapon in the hand */
+  ctx.fillStyle = F('#3a2c1a');
   roundRect(ctx, -3, -3.2, 8.4, 6.4, 3);
   ctx.fill();
-  ctx.fillStyle = F('#a9b7c6');
+  ctx.fillStyle = F('#8a6a42');
   roundRect(ctx, -3.6, -2.6, 4.6, 5.2, 2);
   ctx.fill();
 
+  const muzzleAge = t - (p.muzzleAt === undefined ? -9 : p.muzzleAt);
+
   if (cls.weapon === 'pistols') {
-    /* two small silver pistols: one aimed, the off-hand one held lower */
-    ctx.scale(1.12, 1.12);
+    /* dual flintlocks: both rotate with the arm to aim at the cursor */
+    const hot = clamp(1 - muzzleAge / 0.09, 0, 1);
     for (let i = 0; i < 2; i++) {
-      const dy = i === 0 ? -4.4 : 4.4;
-      const len = i === 0 ? 10 : 8;
       ctx.save();
-      ctx.translate(i === 0 ? 1.4 : -2, dy);
-      ctx.rotate(i === 0 ? 0 : 0.16);
-      ctx.fillStyle = F('#33475c');
-      roundRect(ctx, -1.8, -1.8, 5.2, 3.6, 1.4);
-      ctx.fill();
-      const steel = ctx.createLinearGradient(0, -2, 0, 2);
-      steel.addColorStop(0, F('#e8eef6'));
-      steel.addColorStop(1, F('#8fa2b8'));
-      ctx.fillStyle = F(steel);
-      roundRect(ctx, 2.4, -2, len, 4, 1.2);
-      ctx.fill();
-      ctx.fillStyle = F('#22d3ee');
-      ctx.fillRect(2.4, -1.7, len * 0.5, 0.9);
-      /* muzzle spark */
-      ctx.shadowColor = g.visor;
-      ctx.shadowBlur = 8;
-      ctx.fillStyle = F(g.visor);
-      ctx.beginPath();
-      ctx.arc(2.4 + len, 0, 1.3, 0, TAU);
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      ctx.translate(i === 0 ? 1.5 : -1.5, i === 0 ? -4.6 : 4.6);
+      ctx.rotate(i === 0 ? -0.05 : 0.14);     /* off-hand held slightly lower */
+      drawFlintlockPistol(F, hot);
       ctx.restore();
     }
   } else if (cls.weapon === 'rail') {
-    /* one long rifle barrel with a glowing rail and a bright muzzle */
-    ctx.scale(1.08, 1.08);
-    ctx.fillStyle = F('#26303d');
-    roundRect(ctx, 2, -3.4, 12, 6.4, 2);
-    ctx.fill();
-    const steel = ctx.createLinearGradient(0, -2.4, 0, 2.4);
-    steel.addColorStop(0, F('#c9d6e4'));
-    steel.addColorStop(1, F('#6f8296'));
-    ctx.fillStyle = F(steel);
-    roundRect(ctx, 12, -2.4, 21, 4.8, 1.6);
-    ctx.fill();
-    ctx.save();
-    ctx.shadowColor = g.visor;
-    ctx.shadowBlur = 10;
-    ctx.fillStyle = 'rgba(' + g.rgb + ',0.95)';
-    ctx.fillRect(14.5, -0.9, 16, 1.8);
-    ctx.fillStyle = F('#eafcff');
+    /* matchlock arquebus: barrel longer than the whole 44px body */
+    const hot = clamp(1 - muzzleAge / 0.12, 0, 1);
+    /* stock: dark wood curving at the butt */
+    ctx.fillStyle = F('#4a2f1d');
     ctx.beginPath();
-    ctx.arc(33, 0, 2.4, 0, TAU);
+    ctx.moveTo(-16, 1.8);
+    ctx.quadraticCurveTo(-13, -3.4, -6, -3.2);
+    ctx.lineTo(8, -3.2);
+    ctx.lineTo(8, 3.2);
+    ctx.lineTo(-6, 3.2);
+    ctx.quadraticCurveTo(-14.5, 3.6, -16, 1.8);
+    ctx.closePath();
     ctx.fill();
-    ctx.restore();
-    /* scope + magazine */
-    ctx.fillStyle = F('#111a24');
-    roundRect(ctx, 5.5, -6.4, 6.4, 2.2, 1);
+    ctx.strokeStyle = 'rgba(122,84,52,0.75)';
+    ctx.lineWidth = 0.7;
+    ctx.beginPath(); ctx.moveTo(-13, -1); ctx.quadraticCurveTo(-7, 0.4, 4, -0.6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-13, 1.4); ctx.quadraticCurveTo(-6, 2.2, 5, 1.6); ctx.stroke();
+    /* very long dark-steel barrel */
+    const steel = ctx.createLinearGradient(0, -2.8, 0, 2.8);
+    steel.addColorStop(0, F('#6b7480'));
+    steel.addColorStop(0.5, F('#333a44'));
+    steel.addColorStop(1, F('#14181e'));
+    ctx.fillStyle = steel;
+    roundRect(ctx, 4, -2.8, 62, 5.6, 2);
     ctx.fill();
-    roundRect(ctx, 5.5, 2.4, 3.4, 5, 1);
+    /* brass bands along the barrel */
+    ctx.fillStyle = F('#b08d2e');
+    for (const bx of [16, 30, 44, 56]) ctx.fillRect(bx, -3, 2.6, 6);
+    /* muzzle */
+    ctx.fillStyle = F('#0c0e12');
+    roundRect(ctx, 64.6, -3.2, 2.6, 6.4, 1.2);
     ctx.fill();
+    /* matchlock: plate + serpentine lever + trigger */
+    ctx.fillStyle = F('#3a4048');
+    roundRect(ctx, 8, -6.2, 8, 5, 1);
+    ctx.fill();
+    ctx.strokeStyle = F('#8b95a3');
+    ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(12, -6); ctx.quadraticCurveTo(15.5, -9.5, 18, -7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(13, 1.4, 2, 0.1 * Math.PI, 1.1 * Math.PI); ctx.stroke();
+    ctx.fillStyle = F('#565f6b');
+    ctx.beginPath(); ctx.arc(9.5, -6.4, 1.5, 0, TAU); ctx.fill();
+    if (hot > 0) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, hot * 8);
+      ctx.shadowColor = '#fde68a';
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = '#fffbeb';
+      ctx.beginPath(); ctx.arc(68, 0, 3 + 5 * hot, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
   } else if (cls.weapon === 'daggers') {
-    /* one short shadow blade held low, its edge catching the visor light */
-    ctx.translate(3, 1.4);
-    ctx.rotate(-0.18);
-    ctx.fillStyle = F('#2b1b45');
-    ctx.beginPath();
-    ctx.moveTo(16, 0); ctx.lineTo(3, -3.6); ctx.lineTo(-5, -2); ctx.lineTo(-5, 2); ctx.lineTo(3, 3.6);
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(196,181,253,0.95)';
-    ctx.lineWidth = 1.1;
-    ctx.beginPath();
-    ctx.moveTo(14, 0.2); ctx.lineTo(1, 0.2);
-    ctx.stroke();
-    ctx.fillStyle = F('#1b1229');
-    roundRect(ctx, -8, -2.6, 5, 5.2, 1.6);
-    ctx.fill();
+    ctx.translate(2, 2.2);
+    ctx.rotate(-0.12);
+    drawHeldDagger(F);
   } else if (cls.weapon === 'disc') {
-    /* the launcher cradle with a live energy disc spinning in it */
-    ctx.rotate(-0.2);
-    ctx.fillStyle = F('#1f3b34');
-    roundRect(ctx, -1, -3.4, 12, 6.8, 2.4);
+    /* launcher cradle with a live energy disc spinning in it */
+    ctx.fillStyle = F('#1f2c3a');
+    roundRect(ctx, -1, -3.6, 11, 7.2, 2.4);
     ctx.fill();
-    ctx.save();
-    ctx.translate(16, 0);
-    ctx.rotate(t * 9);
-    ctx.strokeStyle = F('#6ee7b7');
-    ctx.lineWidth = 2.4;
-    ctx.shadowColor = '#34d399';
-    ctx.shadowBlur = 10;
-    ctx.beginPath(); ctx.arc(0, 0, 5.4, 0, TAU); ctx.stroke();
-    ctx.fillStyle = F('#d1fae5');
-    ctx.beginPath(); ctx.arc(0, 0, 1.8, 0, TAU); ctx.fill();
-    ctx.restore();
-    ctx.shadowBlur = 0;
+    drawEnergyDisc(13, 0, 6.4, t * 7);
   } else {
-    /* the arcane focus: a purple orb riding above the gauntlet */
-    const lift = Math.sin(t * 2.2) * 2;
-    ctx.rotate(-0.3);
-    ctx.fillStyle = F('#3b2f56');
-    roundRect(ctx, 1, -1.8, 11, 3.6, 1.8);
+    /* chrono staff: tall twisted shaft that floats and bobs, clockface orb on top */
+    const lift = Math.sin(t * 2.2) * 2.6;
+    ctx.translate(0, lift);
+    const shaft = ctx.createLinearGradient(0, -3, 0, 3);
+    shaft.addColorStop(0, F('#5a4128'));
+    shaft.addColorStop(0.5, F('#3b2a1a'));
+    shaft.addColorStop(1, F('#241708'));
+    ctx.fillStyle = shaft;
+    roundRect(ctx, -8, -2.6, 34, 5.2, 2.4);
     ctx.fill();
-    const orb = ctx.createRadialGradient(14, lift - 5, 1, 14, lift - 5, 9);
-    orb.addColorStop(0, 'rgba(252,248,255,0.98)');
-    orb.addColorStop(0.4, 'rgba(196,150,255,0.9)');
-    orb.addColorStop(1, 'rgba(124,58,237,0)');
-    ctx.fillStyle = F(orb);
-    ctx.beginPath();
-    ctx.arc(14, lift - 5, 9, 0, TAU);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(233,213,255,0.85)';
+    /* the twist: diagonal wraps along the shaft */
+    ctx.strokeStyle = 'rgba(122,84,52,0.9)';
+    ctx.lineWidth = 1.1;
+    for (let i = 0; i < 7; i++) {
+      const x = -7 + i * 4.6;
+      ctx.beginPath(); ctx.moveTo(x, -2.6); ctx.lineTo(x + 2.6, 2.6); ctx.stroke();
+    }
+    /* ornate gold collar */
+    ctx.fillStyle = F('#b08d2e');
+    ctx.fillRect(24, -3.4, 2.4, 6.8);
+    /* the clockface orb */
+    const ox = 30, oy = 0;
+    const pulse = 1 + 0.12 * Math.sin(t * 4);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(245,200,66,0.9)';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = '#f5c842';
+    ctx.shadowBlur = 16;
+    ctx.beginPath(); ctx.arc(ox, oy, 10.5 * pulse, 0, TAU); ctx.stroke();   /* pulsing golden ring */
+    ctx.restore();
+    const face = ctx.createRadialGradient(ox - 2, oy - 2, 1, ox, oy, 9);
+    face.addColorStop(0, '#fff7db');
+    face.addColorStop(0.55, '#f5c842');
+    face.addColorStop(1, '#8a6410');
+    ctx.fillStyle = face;
+    ctx.beginPath(); ctx.arc(ox, oy, 8.6, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#6b4e0e';
     ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.arc(14, lift - 5, 5.2, t * 2.4, t * 2.4 + 2.2);
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(ox, oy, 8.6, 0, TAU); ctx.stroke();
+    /* clock ticks */
+    ctx.strokeStyle = '#4a350a';
+    ctx.lineWidth = 0.9;
+    for (let i = 0; i < 12; i++) {
+      const a = i / 12 * TAU;
+      ctx.beginPath();
+      ctx.moveTo(ox + Math.cos(a) * 6.6, oy + Math.sin(a) * 6.6);
+      ctx.lineTo(ox + Math.cos(a) * 8.2, oy + Math.sin(a) * 8.2);
+      ctx.stroke();
+    }
+    /* hands sweep with the run clock */
+    const minA = t * 1.2, hrA = t * 0.1;
+    ctx.strokeStyle = '#2c1f08';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + Math.cos(minA - Math.PI / 2) * 6.2, oy + Math.sin(minA - Math.PI / 2) * 6.2); ctx.stroke();
+    ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + Math.cos(hrA - Math.PI / 2) * 4, oy + Math.sin(hrA - Math.PI / 2) * 4); ctx.stroke();
+    ctx.fillStyle = '#2c1f08';
+    ctx.beginPath(); ctx.arc(ox, oy, 1.1, 0, TAU); ctx.fill();
   }
   ctx.restore();
 }
 
-/* ---- red damage flash: the same body, flat red ---------------------------- */
 function drawRaelFlash(p, bob, alpha, mirror) {
   ctx.save();
   ctx.globalAlpha = alpha;
@@ -16312,6 +17389,7 @@ function drawEnemy(e) {
 function bossAim(b) { return angleTo(b.x, b.y, game.player.x, game.player.y); }
 
 function bossStride(b, dt, speed, keepRange) {
+  speed *= (b.phase >= 2 ? 1.25 : 1);   /* phase 2 and 3: the boss moves 25% faster */
   const p = game.player;
   const d = dist(b.x, b.y, p.x, p.y);
   const a = angleTo(b.x, b.y, p.x, p.y);
@@ -16441,6 +17519,7 @@ function drawMines() {
 
 /* the phase banner, shared by every kit that has stages */
 function bossPhaseStep(b, steps) {
+  steps = [1, 0.66, 0.33];   /* phases trigger at 66% and 33% HP, for every champion */
   const ratio = clamp(b.hp / b.maxHp, 0, 1);
   let phase = 1;
   for (let i = 1; i < steps.length; i++) if (ratio <= steps[i]) phase = i + 1;
@@ -16469,7 +17548,7 @@ const BOSS_KITS = {
     update(b, dt) {
       const k = b.k, p = game.player;
       const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
-      bossStride(b, dt, b.speed * (phase >= 2 ? 1.3 : 1), 300);
+      bossStride(b, dt, b.speed, 300);
 
       k.pillar -= dt;
       if (k.pillar <= 0) {
@@ -17146,7 +18225,7 @@ Object.assign(BOSS_KITS, {
       const k = b.k;
       const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
       if (b.charging > 0) { bossChargeStep(b, dt, 5.2); return; }
-      bossStride(b, dt, b.speed * (phase >= 2 ? 1.25 : 1), 190);
+      bossStride(b, dt, b.speed, 190);
       k.charge -= dt;
       if (k.charge <= 0) { k.charge = phase >= 2 ? 2.2 : 3.0; startBossCharge(b, 0.55); }
     },
@@ -17157,7 +18236,7 @@ Object.assign(BOSS_KITS, {
     update(b, dt) {
       const k = b.k, p = game.player;
       const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
-      bossStride(b, dt, b.speed * (phase >= 2 ? 1.2 : 1), 260);
+      bossStride(b, dt, b.speed, 260);
       k.pool -= dt;
       if (k.pool <= 0) {
         k.pool = phase >= 2 ? 2.4 : 3.4;
@@ -17177,7 +18256,7 @@ Object.assign(BOSS_KITS, {
     update(b, dt) {
       const k = b.k;
       const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
-      bossStride(b, dt, b.speed * (phase >= 2 ? 1.2 : 1), 220);
+      bossStride(b, dt, b.speed, 220);
       k.summon -= dt;
       if (k.summon <= 0) { k.summon = phase >= 2 ? 5.0 : 7.0; summonShieldKnights(b, phase >= 2 ? 3 : 2); }
     },
@@ -17201,7 +18280,7 @@ Object.assign(BOSS_KITS, {
       const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
       if (b.charging > 0) { bossChargeStep(b, dt, 5.4); }
       else {
-        bossStride(b, dt, b.speed * (phase >= 2 ? 1.25 : 1), 210);
+        bossStride(b, dt, b.speed, 210);
         k.charge -= dt;
         if (k.charge <= 0) { k.charge = phase >= 2 ? 2.6 : 3.6; startBossCharge(b, 0.55); }
       }
@@ -17221,6 +18300,16 @@ function updateBossKit(b, dt) {
   if (!kit) return;
   if (!b.k) kit.init(b);
   kit.update(b, dt);
+  /* phase 3 adds a second attack pattern on top of the kit's own routine:
+     a radial bullet ring every 4 seconds */
+  if (b.phase >= 3) {
+    b.phase3Timer = (b.phase3Timer === undefined ? 4 : b.phase3Timer) - dt;
+    if (b.phase3Timer <= 0) {
+      b.phase3Timer = 4;
+      for (let i = 0; i < 14; i++) fireEnemyBullet(b.x, b.y, (i / 14) * TAU + b.t, 205, 'shock', 6, 1);
+      Sound.bossCast();
+    }
+  }
   collideObstacles(b);
   const p = game.player;
   if (b.contactCd > 0) b.contactCd = Math.max(0, b.contactCd - dt);
@@ -17922,6 +19011,7 @@ function drawCosmeticFlourish(p, g, bob, dir, layer) {
 }
 
 /* the longsword itself: always in his hand, always pointed at the cursor */
+
 function drawKnightSword(p, bob) {
   const tier = swordTier();
   const def = SWORD_TIERS[tier];
@@ -17940,48 +19030,60 @@ function drawKnightSword(p, bob) {
 
   ctx.save();
   ctx.translate(hx, hy);
-  ctx.rotate(ang);
-  /* the sword is scaled to the 40x44 body so it reads as a held blade */
+  ctx.rotate(ang);                    /* the sword rotates to face the mouse cursor */
   ctx.scale(0.85, 0.85);
 
-  /* --- pommel + grip --- */
-  ctx.fillStyle = '#c9a23c';
-  ctx.beginPath(); ctx.arc(-19.5, 0, 3, 0, TAU); ctx.fill();
-  ctx.fillStyle = '#3a2414';
-  roundRect(ctx, -17.5, -2.1, 12, 4.2, 1.8);
+  /* --- pommel: round weighted disc --- */
+  const pom = ctx.createRadialGradient(-20.5, -1, 0.5, -19.5, 0, 3.6);
+  pom.addColorStop(0, '#5a616b');
+  pom.addColorStop(0.6, '#33383f');
+  pom.addColorStop(1, '#1b1e23');
+  ctx.fillStyle = pom;
+  ctx.beginPath(); ctx.arc(-19.5, 0, 3.4, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(210,220,235,0.5)';
+  ctx.lineWidth = 0.7;
+  ctx.beginPath(); ctx.arc(-19.5, 0, 3.4, 0, TAU); ctx.stroke();
+
+  /* --- grip: brown leather with alternating dark diagonal wraps --- */
+  ctx.fillStyle = '#5b3a1e';
+  roundRect(ctx, -17.6, -2.2, 12.4, 4.4, 1.8);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255,214,150,0.35)';
-  ctx.lineWidth = 0.9;
-  for (let i = 0; i < 3; i++) {
-    ctx.beginPath();
-    ctx.moveTo(-16 + i * 3.4, -2);
-    ctx.lineTo(-14.4 + i * 3.4, 2);
-    ctx.stroke();
+  ctx.strokeStyle = '#2a1808';
+  ctx.lineWidth = 1.15;
+  for (let i = 0; i < 5; i++) {
+    const x = -16.6 + i * 2.5;
+    ctx.beginPath(); ctx.moveTo(x, -2.2); ctx.lineTo(x + 1.6, 2.2); ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(214,164,102,0.5)';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < 5; i++) {
+    const x = -15.6 + i * 2.5;
+    ctx.beginPath(); ctx.moveTo(x, -2.2); ctx.lineTo(x + 1.6, 2.2); ctx.stroke();
   }
 
-  /* --- gold crossguard --- */
-  const gold = ctx.createLinearGradient(0, -11, 0, 11);
-  gold.addColorStop(0, '#ffe9b0');
-  gold.addColorStop(0.45, '#d9a94b');
-  gold.addColorStop(1, '#8a6320');
-  ctx.fillStyle = gold;
-  roundRect(ctx, -7, -10.5, 4, 21, 2);
+  /* --- crossguard: wide dark-iron bar with slightly curved ends --- */
+  const iron = ctx.createLinearGradient(0, -12, 0, 12);
+  iron.addColorStop(0, '#4a505a');
+  iron.addColorStop(0.5, '#2b3038');
+  iron.addColorStop(1, '#191d23');
+  ctx.fillStyle = iron;
+  roundRect(ctx, -7, -11.6, 4.6, 23.2, 2.2);
   ctx.fill();
-  ctx.beginPath(); ctx.arc(-5, -10.5, 2.3, 0, TAU); ctx.fill();
-  ctx.beginPath(); ctx.arc(-5, 10.5, 2.3, 0, TAU); ctx.fill();
-  /* gold collar where the blade meets the guard */
-  ctx.fillStyle = '#f3d99a';
-  roundRect(ctx, -3.4, -4.2, 3.4, 8.4, 1.4);
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(-4.7, -11.8, 2.6, 0, TAU); ctx.fill();   /* curved tips */
+  ctx.beginPath(); ctx.arc(-4.7, 11.8, 2.6, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(190,200,215,0.35)';
+  ctx.lineWidth = 0.7;
+  roundRect(ctx, -7, -11.6, 4.6, 23.2, 2.2);
+  ctx.stroke();
 
-  /* --- the blade --- */
+  /* --- blade: long tapered silver rectangle --- */
   const bladePath = function () {
     ctx.beginPath();
-    ctx.moveTo(-2, -3.6);
-    ctx.lineTo(42, -2.8);
-    ctx.lineTo(57, 0);
-    ctx.lineTo(42, 2.8);
-    ctx.lineTo(-2, 3.6);
+    ctx.moveTo(-2.4, -3.5);
+    ctx.lineTo(50, -2.7);
+    ctx.lineTo(63, 0);
+    ctx.lineTo(50, 2.7);
+    ctx.lineTo(-2.4, 3.5);
     ctx.closePath();
   };
 
@@ -17996,17 +19098,30 @@ function drawKnightSword(p, bob) {
     ctx.restore();
   }
 
-  const steel = ctx.createLinearGradient(0, -3.4, 0, 3.4);
+  const steel = ctx.createLinearGradient(0, -3.5, 0, 3.5);
   steel.addColorStop(0, '#8d9db2');
-  steel.addColorStop(0.32, '#e6f0ff');
-  steel.addColorStop(0.52, '#ffffff');
-  steel.addColorStop(0.78, '#c3d2e6');
+  steel.addColorStop(0.3, '#e6f0ff');
+  steel.addColorStop(0.5, '#ffffff');
+  steel.addColorStop(0.75, '#c3d2e6');
   steel.addColorStop(1, '#7f8fa6');
   ctx.fillStyle = steel;
   bladePath();
   ctx.fill();
 
-  /* tier tint washing over the steel */
+  /* center ridge: a thin darker stripe down the middle of the blade */
+  ctx.strokeStyle = 'rgba(58,70,88,0.6)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-1, 0); ctx.lineTo(52, 0); ctx.stroke();
+  /* fuller (blood groove): thin lines running 70% of the blade from the guard */
+  ctx.strokeStyle = 'rgba(40,50,66,0.55)';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(0, -1.5); ctx.lineTo(43.5, -1.15); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 1.5); ctx.lineTo(43.5, 1.15); ctx.stroke();
+  /* bright cutting edge */
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+  ctx.lineWidth = 0.9;
+  ctx.beginPath(); ctx.moveTo(-1, -3.4); ctx.lineTo(50, -2.6); ctx.lineTo(62.4, 0); ctx.stroke();
+
   if (def.glow) {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
@@ -18015,34 +19130,17 @@ function drawKnightSword(p, bob) {
     bladePath();
     ctx.fill();
     ctx.restore();
-  }
-
-  /* fuller + cutting edge */
-  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(2, 0); ctx.lineTo(43, 0); ctx.stroke();
-  ctx.strokeStyle = 'rgba(72,88,110,0.65)';
-  ctx.lineWidth = 0.8;
-  ctx.beginPath(); ctx.moveTo(-1, -3.3); ctx.lineTo(42, -2.6); ctx.lineTo(56.4, 0); ctx.stroke();
-
-  /* a hint of magic along the edge at higher tiers */
-  if (def.glow) {
     ctx.strokeStyle = def.edge;
     ctx.lineWidth = 1.4;
     ctx.shadowColor = def.glow;
     ctx.shadowBlur = 12;
-    ctx.beginPath();
-    ctx.moveTo(0, -3.6);
-    ctx.lineTo(42, -2.8);
-    ctx.lineTo(57, 0);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -3.5); ctx.lineTo(50, -2.7); ctx.lineTo(63, 0); ctx.stroke();
     ctx.shadowBlur = 0;
   }
   ctx.restore();
 }
 
-/* the bright silver swoosh left behind by a swing: a tapered crescent that
-   sweeps with the blade and dissolves over 0.2 seconds */
+
 function drawSwordSwoosh() {
   const R = SWORD_RANGE * 0.86;
 
@@ -18050,27 +19148,23 @@ function drawSwordSwoosh() {
     const sw = game.swings[i];
     if (sw.kind === 'axe') continue;         /* the axes paint their own ribbon */
     const k = sw.life / sw.maxLife;
-    /* hold the blade white-hot, then let it go quickly at the end */
     const fade = Math.min(1, (1 - k) * 1.9);
     if (fade <= 0.01) continue;
 
-    /* the blade is at the head of the ribbon; it eases from the start of the
-       arc to the end across the full 0.2s of the swing instead of snapping */
     const reveal = easeOutQuad(k);
     const head = sw.a0 + (sw.a1 - sw.a0) * reveal;
     const span = head - sw.a0;
     if (Math.abs(span) < 0.01) continue;
 
     const def = SWORD_TIERS[sw.tier] || SWORD_TIERS[0];
-    const dir = span > 0 ? 1 : -1;
     const steps = 18;
-    const thickness = (t) => 2 + 27 * Math.pow(t, 1.4);    /* tail → head */
+    const thickness = (t) => 2 + 27 * Math.pow(t, 1.4);    /* tail -> head */
 
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = fade;
 
-    /* --- the crescent body --- */
+    /* --- the bright silver crescent body --- */
     ctx.beginPath();
     for (let j = 0; j <= steps; j++) {
       const t = j / steps;
@@ -18097,7 +19191,7 @@ function drawSwordSwoosh() {
     ctx.fillStyle = grad;
     ctx.fill();
 
-    /* bloom around the cut so it lights the floor instead of just tinting it */
+    /* bloom around the cut */
     ctx.save();
     ctx.globalAlpha = fade * 0.55;
     ctx.shadowColor = def.glow || '#dbe9ff';
@@ -18109,7 +19203,21 @@ function drawSwordSwoosh() {
     ctx.stroke();
     ctx.restore();
 
-    /* tier bloom: a soft coloured halo wrapped around the same sweep */
+    /* motion blur: silver echo arcs trailing behind the blade head */
+    for (let e = 1; e <= 3; e++) {
+      const back = span * 0.16 * e;
+      ctx.globalAlpha = fade * (0.20 / e);
+      ctx.strokeStyle = '#eaf3ff';
+      ctx.lineWidth = 7 - e * 1.6;
+      ctx.shadowColor = 'rgba(255,255,255,0.9)';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head - back), Math.max(sw.a0, head - back));
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+
+    /* tier bloom */
     if (def.glow) {
       ctx.globalAlpha = fade * 0.42;
       ctx.strokeStyle = def.glow;
@@ -18117,27 +19225,11 @@ function drawSwordSwoosh() {
       ctx.beginPath();
       ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head), Math.max(sw.a0, head));
       ctx.stroke();
-      ctx.globalAlpha = fade;
     }
-
-    /* hard white line along the cutting edge, plus the hot leading tip */
-    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.arc(sw.x, sw.y, R + 8, Math.min(sw.a0, head), Math.max(sw.a0, head));
-    ctx.stroke();
-
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(sw.x, sw.y, R, head - 0.22 * dir, head);
-    ctx.stroke();
-
     ctx.restore();
   }
 }
 
-/* Decoy Drone: a cyan hologram of Rael that every enemy would rather chase */
 function drawDecoy() {
   const d = game.decoy;
   if (!d) return;
@@ -19695,86 +20787,146 @@ function drawObstacles() {
    Everything the three shop classes add to the frame: the twin axes, the
    shadow daggers, the bouncing disc, the death-mark ring and the rage aura.
    ------------------------------------------------------------------------- */
-function drawAxe(p, ang, lift, side) {
+
+function drawAxe(p, ang, lift, side, spin) {
   ctx.save();
   ctx.translate(p.x, p.y + lift - 3);
-  ctx.rotate(ang);
+  ctx.rotate(ang + (spin || 0));
   ctx.translate(7, side * 4.5);
-  /* haft */
-  ctx.strokeStyle = '#5b4028';
-  ctx.lineWidth = 3;
-  ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(20, 0); ctx.stroke();
-  /* energy head */
-  ctx.shadowColor = '#ff8a4c';
-  ctx.shadowBlur = 12;
-  ctx.fillStyle = '#ffb27a';
+  /* short thick wooden haft */
+  const wood = ctx.createLinearGradient(0, -2.4, 0, 2.4);
+  wood.addColorStop(0, '#7a5732');
+  wood.addColorStop(0.5, '#5b4028');
+  wood.addColorStop(1, '#3a2814');
+  ctx.fillStyle = wood;
+  roundRect(ctx, -9, -2.4, 27, 4.8, 2.2);
+  ctx.fill();
+  /* leather wrap on the grip */
+  ctx.strokeStyle = '#1f1208';
+  ctx.lineWidth = 1.1;
+  for (let i = 0; i < 4; i++) {
+    const x = -8 + i * 2.2;
+    ctx.beginPath(); ctx.moveTo(x, -2.4); ctx.lineTo(x + 1.4, 2.4); ctx.stroke();
+  }
+  /* wide crescent axe head in dark iron */
+  ctx.fillStyle = '#2f3338';
   ctx.beginPath();
-  ctx.moveTo(17, -2.4);
-  ctx.lineTo(29, -13);
-  ctx.lineTo(33, -2);
-  ctx.lineTo(29, 12);
-  ctx.lineTo(17, 2.4);
+  ctx.moveTo(16, -2);
+  ctx.quadraticCurveTo(30, -14, 34, -2);
+  ctx.quadraticCurveTo(35, 0, 34, 2);
+  ctx.quadraticCurveTo(30, 14, 16, 2);
   ctx.closePath();
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255,231,184,0.95)';
-  ctx.lineWidth = 1.2;
+  /* lighter edge highlight along the outer crescent */
+  ctx.strokeStyle = '#aab4c2';
+  ctx.lineWidth = 1.7;
+  ctx.beginPath();
+  ctx.moveTo(16.6, -2.2);
+  ctx.quadraticCurveTo(30, -13.4, 33.6, -1.6);
   ctx.stroke();
-  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(170,180,194,0.8)';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(16.6, 2.2);
+  ctx.quadraticCurveTo(30, 13.4, 33.6, 1.6);
+  ctx.stroke();
+  /* haft cap through the head */
+  ctx.fillStyle = '#241708';
+  ctx.beginPath(); ctx.arc(17, 0, 2, 0, TAU); ctx.fill();
   ctx.restore();
 }
+
 
 function drawBerserkerAxes(p, bob) {
   const t = game.time;
   const idle = p.moving ? 0 : Math.sin(t * (TAU / 1.2)) * 1;
   let left = p.angle - 0.55;
   let right = p.angle + 0.55;
+  let spin = 0;
   if (p.swingT > 0) {
     const k = 1 - p.swingT / AXE_SWING_TIME;
     const a = lerp(p.swingFrom, p.swingTo, 1 - Math.pow(1 - k, 2.2));
     left = a;
     right = a;
+    /* both axes spin through the arc while swinging */
+    spin = k * 2.6 * (p.swingTo >= p.swingFrom ? 1 : -1);
   }
-  drawAxe(p, left, bob + idle, -1);
-  drawAxe(p, right, bob + idle, 1);
+  drawAxe(p, left, bob + idle, -1, spin);
+  drawAxe(p, right, bob + idle, 1, -spin * 0.8);
 }
+
 
 function drawShadowDagger(b) {
   const a = Math.atan2(b.vy, b.vx);
+  const spin = a + (b.spin || 0);            /* tumbling fast in flight */
+  /* motion-blur ghosts trailing behind */
+  for (let gI = 1; gI <= 3; gI++) {
+    ctx.save();
+    ctx.globalAlpha = 0.16 / gI;
+    ctx.translate(b.x - b.vx * 0.012 * gI, b.y - b.vy * 0.012 * gI);
+    ctx.rotate(spin);
+    ctx.fillStyle = '#94a3b8';
+    ctx.beginPath();
+    ctx.moveTo(13, 0); ctx.lineTo(-1, -2.4); ctx.lineTo(-7, 0); ctx.lineTo(-1, 2.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
   ctx.save();
   ctx.translate(b.x, b.y);
-  ctx.rotate(a);
+  ctx.rotate(spin);
   ctx.shadowColor = '#a78bfa';
   ctx.shadowBlur = 12;
-  ctx.fillStyle = '#2b1b45';
+  /* thin tapered blade */
+  const g = ctx.createLinearGradient(0, -2, 0, 2);
+  g.addColorStop(0, '#e2e8f0');
+  g.addColorStop(0.5, '#94a3b8');
+  g.addColorStop(1, '#475569');
+  ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(13, 0); ctx.lineTo(-1, -4.6); ctx.lineTo(-9, 0); ctx.lineTo(-1, 4.6);
+  ctx.moveTo(14, 0); ctx.lineTo(-1, -2.6); ctx.lineTo(-7, 0); ctx.lineTo(-1, 2.6);
   ctx.closePath();
   ctx.fill();
-  ctx.strokeStyle = 'rgba(196,181,253,0.95)';
-  ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.moveTo(11, 0); ctx.lineTo(-4, 0); ctx.stroke();
+  /* center line */
+  ctx.strokeStyle = 'rgba(15,23,42,0.75)';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-4, 0); ctx.stroke();
+  /* small crossguard */
+  ctx.fillStyle = '#3f4753';
+  roundRect(ctx, -8.6, -3.4, 2, 6.8, 0.8);
+  ctx.fill();
+  /* wrapped handle */
+  ctx.fillStyle = '#241631';
+  roundRect(ctx, -14, -2, 5.6, 4, 1.4);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(167,139,250,0.65)';
+  ctx.lineWidth = 0.7;
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath(); ctx.moveTo(-13 + i * 1.7, -2); ctx.lineTo(-12 + i * 1.7, 2); ctx.stroke();
+  }
   ctx.shadowBlur = 0;
   ctx.restore();
 }
+
 
 function drawDiscs() {
   if (!game.discs || !game.discs.length) return;
   for (let i = 0; i < game.discs.length; i++) {
     const d = game.discs[i];
-    ctx.save();
-    ctx.translate(d.x, d.y);
-    ctx.rotate(d.spin);
-    ctx.shadowColor = '#34d399';
-    ctx.shadowBlur = 16;
-    ctx.strokeStyle = '#6ee7b7';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(0, 0, 10, 0, TAU); ctx.stroke();
-    ctx.strokeStyle = 'rgba(209,250,229,0.95)';
-    ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.arc(0, 0, 5.4, 0.3, 2.6); ctx.stroke();
-    ctx.beginPath(); ctx.arc(0, 0, 5.4, 0.3 + Math.PI, 2.6 + Math.PI); ctx.stroke();
-    ctx.restore();
+    /* cyan glow-trail ghosts behind the spinning disc */
+    for (let gI = 1; gI <= 3; gI++) {
+      ctx.save();
+      ctx.globalAlpha = 0.16 / gI;
+      ctx.strokeStyle = '#22d3ee';
+      ctx.lineWidth = 2.4;
+      ctx.shadowColor = '#22d3ee';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(d.x - d.vx * 0.014 * gI, d.y - d.vy * 0.014 * gI, 10, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+    }
+    drawEnergyDisc(d.x, d.y, 10, d.spin);
   }
   ctx.shadowBlur = 0;
 }
@@ -19845,45 +20997,62 @@ function drawBullets() {
 }
 
 /* a slow violet orb with a spinning halo — the chrono mage's homing shot */
+
+/* the chrono mage's homing shot: a small golden clockface circle */
 function drawTimeOrb(b) {
   const t = game.time;
-  const pulse = 1 + 0.1 * Math.sin(t * 9 + (b.spin || 0));
-  const R = b.r * 2.1 * pulse;
+  const R = b.r * 1.9;
   ctx.save();
-  /* tail */
-  const tail = ctx.createLinearGradient(b.x - b.vx * 0.08, b.y - b.vy * 0.08, b.x, b.y);
-  tail.addColorStop(0, 'rgba(139,92,246,0)');
-  tail.addColorStop(1, 'rgba(196,181,253,0.5)');
+  /* golden streak tail */
+  const tail = ctx.createLinearGradient(b.x - b.vx * 0.07, b.y - b.vy * 0.07, b.x, b.y);
+  tail.addColorStop(0, 'rgba(245,200,66,0)');
+  tail.addColorStop(1, 'rgba(245,200,66,0.55)');
   ctx.strokeStyle = tail;
-  ctx.lineWidth = b.r * 1.3;
+  ctx.lineWidth = b.r * 1.1;
   ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(b.x - b.vx * 0.08, b.y - b.vy * 0.08);
+  ctx.moveTo(b.x - b.vx * 0.07, b.y - b.vy * 0.07);
   ctx.lineTo(b.x, b.y);
   ctx.stroke();
-
-  const g = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, R);
-  g.addColorStop(0, 'rgba(250,248,255,0.98)');
-  g.addColorStop(0.34, 'rgba(196,181,253,0.92)');
-  g.addColorStop(0.72, 'rgba(124,58,237,0.5)');
-  g.addColorStop(1, 'rgba(76,29,149,0)');
+  /* soft golden glow body */
+  const g = ctx.createRadialGradient(b.x, b.y, 0.5, b.x, b.y, R);
+  g.addColorStop(0, 'rgba(255,247,219,0.98)');
+  g.addColorStop(0.45, 'rgba(245,200,66,0.95)');
+  g.addColorStop(0.8, 'rgba(212,160,23,0.55)');
+  g.addColorStop(1, 'rgba(138,100,16,0)');
   ctx.fillStyle = g;
   ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, TAU); ctx.fill();
-
-  /* orbiting rune ring */
-  ctx.strokeStyle = 'rgba(233,213,255,0.85)';
-  ctx.lineWidth = 1.4;
-  ctx.beginPath();
-  ctx.arc(b.x, b.y, b.r * 1.5, (b.spin || 0), (b.spin || 0) + 2.1);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(b.x, b.y, b.r * 1.5, (b.spin || 0) + Math.PI, (b.spin || 0) + Math.PI + 1.3);
-  ctx.stroke();
+  /* clockface */
+  ctx.shadowColor = '#f5c842';
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = '#fff3cf';
+  ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
+  ctx.strokeStyle = '#8a6410';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
+  /* ticks */
+  ctx.strokeStyle = '#6b4e0e';
+  ctx.lineWidth = 0.7;
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * TAU + (b.spin || 0);
+    ctx.beginPath();
+    ctx.moveTo(b.x + Math.cos(a) * (b.r - 1.6), b.y + Math.sin(a) * (b.r - 1.6));
+    ctx.lineTo(b.x + Math.cos(a) * (b.r - 0.4), b.y + Math.sin(a) * (b.r - 0.4));
+    ctx.stroke();
+  }
+  /* spinning hands */
+  const ha = (b.spin || 0) * 2, ma = (b.spin || 0) * 5 + t;
+  ctx.strokeStyle = '#2c1f08';
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 1.1;
+  ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x + Math.cos(ma - Math.PI / 2) * (b.r - 1.8), b.y + Math.sin(ma - Math.PI / 2) * (b.r - 1.8)); ctx.stroke();
+  ctx.lineWidth = 0.9;
+  ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x + Math.cos(ha - Math.PI / 2) * (b.r - 3), b.y + Math.sin(ha - Math.PI / 2) * (b.r - 3)); ctx.stroke();
+  ctx.fillStyle = '#2c1f08';
+  ctx.beginPath(); ctx.arc(b.x, b.y, 0.9, 0, TAU); ctx.fill();
   ctx.restore();
 }
 
-/* ------------------------------ beams -------------------------------------- */
-/* instant shots: a white-hot core inside a coloured flare, fading fast */
 function drawBeams() {
   for (let i = 0; i < game.beams.length; i++) {
     const b = game.beams[i];
