@@ -209,24 +209,30 @@
   .stat svg{ width:16px; height:16px; }
   .stat .lbl{ font-size:11px; letter-spacing:2px; color:rgba(214,226,244,.6); font-weight:600; }
 
-  /* Six fixed-size SVG buttons. This bar is outside the scaled HUD layer. */
+  /* Fixed-size SVG buttons. This bar is outside the scaled HUD layer and is
+     always centered in the viewport. It is capped to the viewport width so a
+     six-slot layout can never be clipped off the left/right edge. */
   #abilities{
+    --ability-size:52px;
+    --ability-gap:8px;
     position:fixed; left:50%; bottom:max(16px, env(safe-area-inset-bottom));
     transform:translateX(-50%); z-index:100;
     display:flex; flex-direction:row; flex-wrap:nowrap;
-    align-items:flex-start; justify-content:center; gap:8px;
-    padding:10px 14px 8px; margin:0;
+    align-items:flex-start; justify-content:center; gap:var(--ability-gap);
+    width:max-content; max-width:calc(100vw - 16px);
+    padding:10px 14px 8px; margin:0; box-sizing:border-box;
     background:#0a0a18; border:1px solid #c9a84c; border-radius:40px;
     pointer-events:auto;
   }
   .ability{
     display:flex; flex-direction:column; align-items:center;
-    flex:0 0 52px; width:52px;
+    flex:0 0 var(--ability-size); width:var(--ability-size);
   }
   .ability .ab-btn{
     position:relative; isolation:isolate; overflow:hidden;
-    width:52px; height:52px; min-width:52px; min-height:52px !important;
-    flex:0 0 52px; padding:0; box-sizing:border-box;
+    width:var(--ability-size); height:var(--ability-size);
+    min-width:var(--ability-size); min-height:var(--ability-size) !important;
+    flex:0 0 var(--ability-size); padding:0; box-sizing:border-box;
     background:#0d0d1f; border:2px solid #2a2a2a; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
     color:#c9a84c; cursor:pointer; pointer-events:auto;
@@ -234,7 +240,7 @@
   .ability.unlocked .ab-btn{ border-color:#c9a84c; }
   .ability.locked .ab-btn{ border-color:#2a2a2a; cursor:default; }
   .ability.locked .ab-btn svg{ color:#6b6658; }
-  .ability .ab-btn svg{ width:26px; height:26px; display:block; pointer-events:none; }
+  .ability .ab-btn svg{ width:50%; height:50%; display:block; pointer-events:none; }
   .ability .key{
     margin-top:5px; font-family:'Cinzel', Georgia, serif;
     font-size:9px; line-height:12px; font-weight:600; color:#c9a84c;
@@ -247,6 +253,22 @@
     background:conic-gradient(rgba(201,168,76,.65) var(--cooldown-angle,0deg), transparent 0deg);
   }
   .ability.cooling .ab-sweep{ display:block; }
+  /* Mobile: six 42px slots + five 5px gaps fit inside a 320px viewport once
+     the bar padding/border are included. The viewport cap remains as a guard
+     for unusually narrow windows. */
+  @media (max-width: 599.98px){
+    #abilities{
+      --ability-size:42px;
+      --ability-gap:5px;
+      max-width:calc(100vw - 12px);
+      padding:8px 10px 6px;
+    }
+    .ability .key{ margin-top:4px; font-size:8px; line-height:10px; }
+  }
+  @media (max-width: 319.98px){
+    /* Last-resort guard: keep every slot reachable instead of clipping it. */
+    #abilities{ flex-wrap:wrap; row-gap:6px; justify-content:center; }
+  }
 
   /* class badge (bottom left) */
   #classBadge{
@@ -922,9 +944,10 @@
     100%{ transform:scale(1) rotate(0); opacity:1 }
   }
   #abilityUnlock .au-glyph{
-    width:56px; height:56px; display:block;
+    width:56px; height:56px; display:block; color:#ffd98a;
     filter:drop-shadow(0 0 24px rgba(255,206,120,.95)) drop-shadow(0 0 55px rgba(255,170,50,.5));
   }
+  #abilityUnlock .au-glyph svg{ width:100%; height:100%; display:block; }
   #abilityUnlock .au-key{
     position:absolute; bottom:-9px; left:50%; transform:translateX(-50%);
     font-family:var(--font-head); font-size:10px; letter-spacing:2.2px; font-weight:700;
@@ -1432,7 +1455,16 @@
   #btnLevelUpTree:hover,#btnLevelUpTree:focus-visible{ background:rgba(232,200,116,.25); box-shadow:0 0 16px rgba(232,200,116,.3); }
   @keyframes levelUpArrive{ from{ opacity:0; transform:translate(-50%,-45%) scale(.92); } to{ opacity:1; transform:translate(-50%,-50%) scale(1); } }
   @keyframes levelGoldFlash{ 0%{ opacity:.95; transform:scale(.94); } 35%{ opacity:.45; } 100%{ opacity:0; transform:scale(1.2); } }
-  #skillTree{ position:fixed; inset:0; z-index:1001; align-items:center; justify-content:center; padding:16px; background:radial-gradient(ellipse at 50% 0%,#202015 0%,#090d16 48%,#04060b 100%); color:#eaf0fa; }
+  /* The skill tree is a full-viewport overlay. These !important rules beat the
+     generic .screen defaults so the tree always sits above the game canvas and
+     every skill-tree control stays inside this single overlay element. */
+  #skillTree{
+    position:fixed !important; inset:0 !important; z-index:1001 !important;
+    width:100% !important; height:100% !important;
+    align-items:center; justify-content:center; padding:16px; box-sizing:border-box;
+    background:rgba(5,5,15,0.97) !important; color:#eaf0fa;
+    isolation:isolate;
+  }
   .skill-panel{ width:min(1040px,100%); max-height:calc(100dvh - 32px); overflow:auto; padding:22px 28px 18px; border:1px solid rgba(232,200,116,.4); border-radius:9px; background:rgba(6,9,15,.82); box-shadow:0 24px 100px #000; scrollbar-color:#8b7443 #0b101a; }
   .skill-header{ display:flex; justify-content:space-between; align-items:center; gap:20px; }
   .skill-eyebrow{ color:#bfa774; font-size:10px; font-weight:700; letter-spacing:3px; }
@@ -1574,7 +1606,7 @@
   <div id="abilityUnlock" aria-live="assertive">
     <div class="au-rays"></div>
     <div class="au-badge">
-      <canvas class="au-glyph" id="auGlyph" width="112" height="112" aria-hidden="true" focusable="false"></canvas>
+      <div class="au-glyph" id="auGlyph" aria-hidden="true"></div>
       <span class="au-key" id="auKey">SHIFT</span>
     </div>
     <div class="au-eyebrow">NEW ABILITY UNLOCKED</div>
@@ -4399,7 +4431,7 @@ const CLASS_SKILL_TREES = {
       skillNode('emp_mastery', 'EMP Mastery', 'EMP duration +2s.', 'power'),
       skillNode('nano_repair', 'Nano Repair', 'Turret explosions on Overload heal the player for 1 orb.', 'heart'),
       skillNode('drone_upgrade', 'Drone Upgrade', 'Drones deal 2x damage.', 'drone'),
-      skillNode('overclock_system', 'Overclock System', 'System Overload cooldown -15s; turrets respawn instantly.', 'reload')
+      skillNode('overclock_system', 'Overclock System', 'Overclock cooldown -15s; turrets respawn instantly.', 'reload')
     ] }
   ]
 };
@@ -4930,6 +4962,7 @@ function syncClassHud() {
   UI.className.textContent = c.name;
   paintClassIcon(UI.badgeIcon, c.id);
   syncClassXpHud();
+  updateAbilityIcons(c.id);
   syncAbilityHud();
   /* keep the class id on the HUD as a styling hook */
   const hud = document.getElementById('hud');
@@ -8453,11 +8486,128 @@ const CLASS_ABILITIES = {
     { id: 'tech_emp', slot: 'e', key: 'E', name: 'EMP Blast', cd: 18, art: 'nova', desc: 'Disable all enemies for 3 seconds. They are frozen but can still be damaged.', icon: '<circle cx="12" cy="12" r="9"/><path d="M13 6l-4 7h5l-3 5"/>' },
     { id: 'tech_jet', slot: 'shift', key: 'SHIFT', name: 'Jet Boost', cd: 12, art: 'dash', desc: 'Gain a massive speed boost for 4 seconds, leaving a fire trail.', icon: '<path d="M5 12h10"/><path d="m12 5 7 7-7 7"/><path d="M5 8v8"/>' },
     { id: 'tech_drones', slot: 'f', key: 'F', name: 'Drone Swarm', cd: 25, art: 'turret', desc: 'Release five mini drones that chase and attack enemies for 10 seconds.', icon: '<circle cx="6" cy="8" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="12" cy="16" r="2"/><path d="M6 10v3M18 10v3M12 14v-3"/>' },
-    { id: 'tech_overload', slot: 'r', key: 'R', name: 'System Overload', cd: 18, art: 'overcharge', desc: 'Detonate all turrets for massive damage and instantly respawn them.', icon: '<path d="M12 3v6M12 15v6M3 12h6M15 12h6"/><circle cx="12" cy="12" r="3"/>' }
+    { id: 'tech_overload', slot: 'r', key: 'R', name: 'Overclock', cd: 18, art: 'overcharge', desc: 'Overclock your turrets: detonate them for massive damage and instantly respawn them.', icon: '<rect x="3" y="8" width="16" height="8" rx="2"/><path d="M21 10v4"/><path d="M6 10v4M9 10v4M12 10v4"/><path d="M15 12h3M16.5 10.5v3"/>' }
   ]
 };
 const ALL_CLASS_ABILITY_IDS = Object.keys(CLASS_ABILITIES).reduce((out, id) => out.concat(CLASS_ABILITIES[id].map(a => a.id)), []);
 const ABILITY_IDS = ALL_CLASS_ABILITY_IDS;
+
+/* ---------------------------------------------------------------------------
+   ABILITY ICONS
+   One inline SVG per class per slot.  Drawn shapes only: no emoji, no Unicode
+   glyph, no font.  Keyed by [className][slotKey]; updateAbilityIcons() swaps
+   the SVG inside each .ab-btn whenever the class changes.
+   --------------------------------------------------------------------------- */
+function abilityIconMarkup(body) {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+}
+const ABILITY_ICONS = {
+  knight: {
+    /* Shield Bash: forward-pointing shield + horizontal impact line */
+    q: abilityIconMarkup('<path d="M5 4h7l7 8-7 8H5z"/><path d="M3 12h13"/><path d="M16 9l3 3-3 3"/>'),
+    /* Whirlwind: clockwise circular arrow with blade tips at each end */
+    e: abilityIconMarkup('<path d="M12 5a7 7 0 1 1-7 7"/><path d="M12 2l3 3-3 3z" fill="currentColor" stroke="none"/><path d="M5 12l-3-3 3-3z" fill="currentColor" stroke="none"/>'),
+    /* Shield Charge: shield with a forward arrow piercing through it */
+    shift: abilityIconMarkup('<path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/><path d="M3 12h15"/><path d="M15 9l4 3-4 3"/>'),
+    /* War Cry: mouth / sound wave with radiating shout lines */
+    f: abilityIconMarkup('<path d="M4 10v4h3l5 4V6l-5 4z"/><path d="M15 9q3 3 0 6"/><path d="M18 6q5 6 0 12"/>'),
+    /* Blade Storm: 8 swords pointing outward like a compass rose */
+    r: abilityIconMarkup('<g><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g><g transform="rotate(45 12 12)"><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g><g transform="rotate(90 12 12)"><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g><g transform="rotate(135 12 12)"><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g><g transform="rotate(180 12 12)"><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g><g transform="rotate(225 12 12)"><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g><g transform="rotate(270 12 12)"><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g><g transform="rotate(315 12 12)"><path d="M12 10V3"/><path d="M10.4 5.6h3.2"/><path d="M12 3l1.4 2.4h-2.8z" fill="currentColor" stroke="none"/></g>')
+  },
+  gunslinger: {
+    /* Bullet Storm: 8 dots radiating from a center point */
+    q: abilityIconMarkup('<circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="4" r="1.3" fill="currentColor" stroke="none"/><circle cx="17.7" cy="6.3" r="1.3" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="17.7" cy="17.7" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="20" r="1.3" fill="currentColor" stroke="none"/><circle cx="6.3" cy="17.7" r="1.3" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="6.3" cy="6.3" r="1.3" fill="currentColor" stroke="none"/>'),
+    /* Ricochet Shot: zigzag arrow bouncing between two vertical lines */
+    e: abilityIconMarkup('<path d="M4 5v14"/><path d="M20 5v14"/><path d="M5 16l5-4-5-4 10 8 4-4"/><path d="M17 12h3l-1 3"/>'),
+    /* Smoke Roll: rolling arrow with a cloud puff behind it */
+    shift: abilityIconMarkup('<path d="M17 12a5 5 0 1 1-5-5"/><path d="M12 4l3 3-3 3"/><path d="M4 16q-2-2 0-4 1-2 3-1 1-2 3-1"/>'),
+    /* Deploy Turret: T-shape with a small barrel on top */
+    f: abilityIconMarkup('<path d="M5 19h14"/><path d="M12 19v-8"/><path d="M8 11h8"/><path d="M12 11V5"/><path d="M10 5h4"/>'),
+    /* Overload: two overlapping lightning bolts */
+    r: abilityIconMarkup('<path d="M11 2L4 13h5l-1 9 8-12h-5z" fill="currentColor" stroke="none" opacity="0.55"/><path d="M15 3l-6 10h4l-1 8 7-11h-4z" fill="currentColor" stroke="none"/>')
+  },
+  sniper: {
+    /* Railgun: long beam, triangle at the right end, speed lines behind */
+    q: abilityIconMarkup('<path d="M3 12h14"/><path d="M17 9l4 3-4 3z" fill="currentColor" stroke="none"/><path d="M2 8h5"/><path d="M1 16h6"/><path d="M4 12h2"/>'),
+    /* Piercing Shot: horizontal arrow through multiple circles, dotted trail */
+    e: abilityIconMarkup('<circle cx="6" cy="12" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="18" cy="12" r="2.4"/><path d="M2 12h18"/><path d="M18 9l4 3-4 3z" fill="currentColor" stroke="none"/><path d="M2 12h2" stroke-dasharray="1 2"/>'),
+    /* Ghillie: eye with a diagonal line through it */
+    shift: abilityIconMarkup('<path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.6"/><path d="M4 20L20 4"/>'),
+    /* Mine Field: three diamonds on a horizontal line */
+    f: abilityIconMarkup('<path d="M3 16h18"/><path d="M6 12l2 2-2 2-2-2z"/><path d="M12 12l2 2-2 2-2-2z"/><path d="M18 12l2 2-2 2-2-2z"/>'),
+    /* Eagle Eye: target reticle with a clock/timer overlay */
+    r: abilityIconMarkup('<circle cx="12" cy="12" r="8"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/><circle cx="12" cy="12" r="3.2"/><path d="M12 10.4V12l1.4 1"/>')
+  },
+  mage: {
+    /* Temporal Rift: black circle with an inward spiral */
+    q: abilityIconMarkup('<circle cx="12" cy="12" r="8" fill="#050507"/><path d="M16.5 12a4.5 4.5 0 1 1-4.5-4.5 3 3 0 1 0 3 3 1.5 1.5 0 1 1-1.5-1.5"/>'),
+    /* Chrono Burst: clock face with rays bursting outward */
+    e: abilityIconMarkup('<circle cx="12" cy="12" r="5"/><path d="M12 9.5V12l1.8 1.2"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/><path d="M4.9 4.9l2.1 2.1"/><path d="M17 17l2.1 2.1"/><path d="M19.1 4.9L17 7"/><path d="M7 17l-2.1 2.1"/>'),
+    /* Blink: dotted figure left, solid figure right, lightning between */
+    shift: abilityIconMarkup('<g stroke-dasharray="1.5 2" opacity="0.7"><circle cx="5" cy="7" r="2"/><path d="M2.5 19c0-3 1.2-5 2.5-5s2.5 2 2.5 5"/></g><circle cx="19" cy="7" r="2"/><path d="M16.5 19c0-3 1.2-5 2.5-5s2.5 2 2.5 5"/><path d="M12 5l-2 6h3l-2 8 5-10h-3z" fill="currentColor" stroke="none"/>'),
+    /* Summon Familiar: small orbiting circle around a larger center circle */
+    f: abilityIconMarkup('<circle cx="12" cy="12" r="4"/><ellipse cx="12" cy="12" rx="9" ry="4.5"/><circle cx="21" cy="12" r="1.8" fill="currentColor" stroke="none"/>'),
+    /* Time Loop: circular rewind arrow with a clock hand inside */
+    r: abilityIconMarkup('<path d="M5 12a7 7 0 1 0 2-5"/><path d="M5 4v4h4"/><path d="M12 8.5V12l2.4 1.6"/>')
+  },
+  berserker: {
+    /* Rage: two jagged diagonal lines crossing like an explosion X */
+    q: abilityIconMarkup('<path d="M4 4l3 2-1 2 3 2-1 2 3 2 3 3"/><path d="M20 4l-3 2 1 2-3 2 1 2-3 2-3 3"/><path d="M12 3v2"/><path d="M12 19v2"/><path d="M3 12h2"/><path d="M19 12h2"/>'),
+    /* Ground Slam: downward fist with impact waves below */
+    e: abilityIconMarkup('<path d="M8 3h8v6l-2 2v3h-4v-3l-2-2z"/><path d="M9 6h6"/><path d="M5 18q7 3 14 0"/><path d="M7 21q5 2 10 0"/>'),
+    /* Frenzy Dash: jagged forward arrow with flame trails */
+    shift: abilityIconMarkup('<path d="M4 12l4-2-2-3 6 2-1-3 9 6-9 6 1-3-6 2 2-3z"/><path d="M2 8q3 1 2 4"/><path d="M2 16q3-1 4 2"/>'),
+    /* Blood Rage: heart with a lightning crack through it */
+    f: abilityIconMarkup('<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2 4 4 0 0 1 7 2c0 5.5-7 10-7 10z"/><path d="M12 6l-2 5h3l-2 5"/>'),
+    /* Juggernaut: large shield with a forward arrow through it */
+    r: abilityIconMarkup('<path d="M12 2l8 3v7c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V5z"/><path d="M2 12h17"/><path d="M16 8l5 4-5 4"/>')
+  },
+  shadow: {
+    /* Death Mark: crosshair circle with a small skull in the center */
+    q: abilityIconMarkup('<circle cx="12" cy="12" r="8"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0v2l-1 1v2h-3v-2l-1-1z"/><circle cx="10.8" cy="11" r="0.6" fill="currentColor" stroke="none"/><circle cx="13.2" cy="11" r="0.6" fill="currentColor" stroke="none"/>'),
+    /* Shadow Clone: two overlapping identical silhouettes slightly offset */
+    e: abilityIconMarkup('<g opacity="0.5"><circle cx="9" cy="8" r="3"/><path d="M4 20c0-4 2-6 5-6s5 2 5 6"/></g><circle cx="15" cy="8" r="3"/><path d="M10 20c0-4 2-6 5-6s5 2 5 6"/>'),
+    /* Vanish: fading figure from solid to dotted/transparent */
+    shift: abilityIconMarkup('<circle cx="6" cy="7" r="2.4"/><path d="M3 19c0-3.5 1.5-5.5 3-5.5s3 2 3 5.5"/><g opacity="0.5"><circle cx="12" cy="7" r="2.4"/><path d="M9 19c0-3.5 1.5-5.5 3-5.5s3 2 3 5.5"/></g><g opacity="0.25" stroke-dasharray="1.5 2"><circle cx="18" cy="7" r="2.4"/><path d="M15 19c0-3.5 1.5-5.5 3-5.5s3 2 3 5.5"/></g>'),
+    /* Poison Cloud: circular cloud with three dots inside */
+    f: abilityIconMarkup('<path d="M7 16a4 4 0 0 1 0-8 5 5 0 0 1 10 0 4 4 0 0 1 0 8z"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/>'),
+    /* Execute: downward dagger with a red droplet at the tip */
+    r: abilityIconMarkup('<path d="M12 3v12"/><path d="M8 7h8"/><path d="M10 3h4"/><path d="M12 15l-2-3h4z" fill="currentColor" stroke="none"/><path d="M12 17c1.2 1.6 1.2 2.6 0 3.4-1.2-.8-1.2-1.8 0-3.4z" fill="#ef4444" stroke="none"/>')
+  },
+  tech: {
+    /* System Overload: gear with a lightning bolt overlaid */
+    q: abilityIconMarkup('<path d="M12 3l1.1 2 2.3-.6.6 2.3 2 1.1-1.1 2 1.1 2-2 1.1-.6 2.3-2.3-.6-1.1 2-1.1-2-2.3 .6-.6-2.3-2-1.1 1.1-2-1.1-2 2-1.1 .6-2.3 2.3 .6z"/><path d="M13 7l-5 7h4l-1 5 5-7h-4z" fill="currentColor" stroke="none"/>'),
+    /* EMP Blast: concentric expanding rings with a lightning bolt center */
+    e: abilityIconMarkup('<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.5" opacity="0.7"/><circle cx="12" cy="12" r="9.5" opacity="0.4" stroke-dasharray="2 2"/><path d="M12.5 8l-3 5h3l-1 3 3-5h-3z" fill="currentColor" stroke="none"/>'),
+    /* Jet Boost: rocket pointing upward-right with flame trail */
+    shift: abilityIconMarkup('<path d="M14 4c3 1 5 3 6 6l-8 8-6-6z"/><circle cx="15" cy="9" r="1.6"/><path d="M9 15l-4 4"/><path d="M8 12l-3 1"/><path d="M12 16l-1 3"/>'),
+    /* Drone Swarm: five small triangles in a loose formation */
+    f: abilityIconMarkup('<path d="M12 4l2 3h-4z"/><path d="M5 9l2 3H3z"/><path d="M19 9l2 3h-4z"/><path d="M8 16l2 3H6z"/><path d="M16 16l2 3h-4z"/>'),
+    /* Overclock: fully charged battery with a plus symbol */
+    r: abilityIconMarkup('<rect x="3" y="8" width="16" height="8" rx="2"/><path d="M21 10v4"/><path d="M6 10v4"/><path d="M9 10v4"/><path d="M12 10v4"/><path d="M15 12h3"/><path d="M16.5 10.5v3"/>')
+  }
+};
+
+function updateAbilityIcons(className) {
+  const cls = CLASSES.find(c => c.id === className || c.name === className) || getClass();
+  const icons = ABILITY_ICONS[cls.id] || ABILITY_ICONS.knight;
+  const slots = ['q'].concat(ABILITY_SLOTS);
+  for (let i = 0; i < slots.length; i++) {
+    const slot = slots[i];
+    const wrap = UI.abilities && UI.abilities[slot];
+    if (!wrap) continue;
+    const btn = wrap.querySelector('.ab-btn');
+    if (!btn) continue;
+    const svg = icons[slot];
+    if (!svg) continue;
+    if (btn.getAttribute('data-icon-class') === cls.id && btn.getAttribute('data-icon-slot') === slot && btn.querySelector('svg')) continue;
+    const old = btn.querySelector('svg');
+    if (old) old.outerHTML = svg;
+    else btn.insertAdjacentHTML('afterbegin', svg);
+    btn.setAttribute('data-icon-class', cls.id);
+    btn.setAttribute('data-icon-slot', slot);
+  }
+}
 
 function classAbilityDef(slot, classId) {
   const kit = CLASS_ABILITIES[classId || getClass().id] || [];
@@ -8508,7 +8658,7 @@ function hideAbilityUnlock() {
 function playUnlockCard(def) {
   if (!UI.abilityUnlock || !def) return;
   UI.abilityUnlock.classList.remove('show');
-  if (UI.auGlyph) drawAbilityIcon(UI.auGlyph, def.art || 'bash', 112);
+  if (UI.auGlyph) UI.auGlyph.innerHTML = abilityIconSVG(def);
   if (UI.auKey) UI.auKey.textContent = def.key;
   if (UI.auName) UI.auName.textContent = def.name;
   if (UI.auDesc) UI.auDesc.textContent = def.desc;
@@ -8684,11 +8834,17 @@ function drawAbilityIcon(canvas, kind, fixedPx) {
 /* Update the six SVG buttons from the actual ability timers. Dash belongs to
    the player, and every maximum uses the same modifiers as its cast function. */
 function abilityIconSVG(def) {
+  if (def && def.slot) {
+    const classId = String(def.id || '').split('_')[0];
+    const map = ABILITY_ICONS[classId];
+    if (map && map[def.slot]) return map[def.slot];
+  }
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (def.icon || '<circle cx="12" cy="12" r="8"/>') + '</svg>';
 }
 
 function syncAbilityHud() {
   const cls = getClass();
+  updateAbilityIcons(cls.id);
   const qEl = UI.abilities.q;
   if (qEl) {
     const qBtn = qEl.querySelector('.ab-btn');
@@ -8719,11 +8875,6 @@ function syncAbilityHud() {
     if (def) {
       button.setAttribute('aria-label', def.name + ' (' + def.key + ')');
       button.title = def.name + ' — ' + def.desc;
-      if (button.getAttribute('data-icon') !== def.id) {
-        const old = button.querySelector('svg');
-        if (old) old.outerHTML = abilityIconSVG(def);
-        button.setAttribute('data-icon', def.id);
-      }
     }
   }
 }
@@ -10282,7 +10433,7 @@ const SHOP_CLASSES = [
   { id: 'shadow', name: 'Shadow Assassin', glyph: '◎', cost: 400,
     desc: 'Permanently cloaked beyond 120px. Shadow daggers hit hard, Death Mark triples damage on one target, and a kill resets your dash.' },
   { id: 'tech', name: 'Tech Specialist', glyph: '⌬', cost: 500,
-    desc: 'Two standing turrets on right click, a disc that ricochets through four enemies, System Overload, and a second off every cooldown per kill.' }
+    desc: 'Two standing turrets on right click, a disc that ricochets through four enemies, Overclock, and a second off every cooldown per kill.' }
 ];
 
 /* ---- pets: one companion at a time, each with its own passive -------------
@@ -12320,6 +12471,7 @@ function startRun(classId, zoneIndex, opts) {
   }
 
   gameState.currentClass = classId;
+  updateAbilityIcons(classId);
   resetRun();
   syncAbilityUnlocks(true);
   if (kept) {
