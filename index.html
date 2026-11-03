@@ -9451,7 +9451,7 @@ function bossRingCentre() {
 function armBossZone() {
   if (game.bossUnlocked || game.boss) return;
   const c = bossRingCentre();
-  game.bossZone = { x: c.x, y: c.y, r: BOSS_ARENA_R };
+  game.bossZone = { x: c.x, y: c.y, r: BOSS_ARENA_R, active: true };
   UI.banner.textContent = 'THE CHAMPION AWAITS';
   UI.banner.classList.remove('show');
   void UI.banner.offsetWidth;
@@ -11077,12 +11077,15 @@ function clearArena(arena, index) {
   updateObjective();
   saveGame('arena');
 
-  const allCleared = game.arenas.every((x) => x.cleared);
+  const allCleared = game.arenas.length === 3 && game.arenas.every((x) => x.cleared === true);
   if (allCleared && !game.bossUnlocked && !game.boss) {
     if (bossArmTimer) clearTimeout(bossArmTimer);
     bossArmTimer = setTimeout(() => {
       bossArmTimer = 0;
-      if ((game.screen === 'playing' || game.screen === 'upgrade') && !game.bossUnlocked) armBossZone();
+      /* re-check the actual arena state, but never let an intervening overlay
+         (pause, skill tree, shop, level-up) swallow the boss-zone reveal */
+      if (!game.bossUnlocked && !game.boss && game.arenas.length === 3 &&
+          game.arenas.every((x) => x.cleared === true)) armBossZone();
     }, 1400);
   }
   /* the arena is fully cleared — combat is over — so this is the first safe
@@ -20365,6 +20368,20 @@ function drawBossArena() {
     }
     ctx.restore();
 
+    /* central boss-zone beacon: a 60px pulsing red marker at the exact
+       world position (the render camera transform places it on screen) */
+    const beacon = ctx.createRadialGradient(bz.x, bz.y, 4, bz.x, bz.y, 60);
+    beacon.addColorStop(0, 'rgba(255,225,225,' + (0.55 + 0.25 * pulse).toFixed(3) + ')');
+    beacon.addColorStop(0.45, 'rgba(239,68,68,' + (0.34 + 0.2 * pulse).toFixed(3) + ')');
+    beacon.addColorStop(1, 'rgba(185,28,28,0)');
+    ctx.fillStyle = beacon;
+    ctx.shadowColor = 'rgba(255,40,40,0.95)';
+    ctx.shadowBlur = 26;
+    ctx.beginPath(); ctx.arc(bz.x, bz.y, 60, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,120,120,' + (0.65 + 0.3 * pulse).toFixed(3) + ')';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(bz.x, bz.y, 60, 0, TAU); ctx.stroke();
+
     ctx.fillStyle = 'rgba(255,190,190,' + (0.6 + 0.35 * pulse).toFixed(3) + ')';
     ctx.font = '700 15px Cinzel, serif';
     ctx.textAlign = 'center';
@@ -22333,6 +22350,26 @@ function drawMinimap() {
     mmCtx.beginPath(); mmCtx.arc(-3.4, -3, 2.6, 0, TAU); mmCtx.fill();
     mmCtx.beginPath(); mmCtx.arc(3.4, -3, 2.6, 0, TAU); mmCtx.fill();
     mmCtx.fillRect(-1.2, 3, 2.4, 5);
+    mmCtx.restore();
+  }
+
+  /* active boss zone: a plain pulsing red dot at the armed ring centre */
+  if (game.bossZone && game.bossZone.active) {
+    const bz = game.bossZone;
+    const pulse = 0.5 + 0.5 * Math.sin(game.time * 4.2);
+    mmCtx.save();
+    mmCtx.fillStyle = '#ef4444';
+    mmCtx.shadowColor = '#ef4444';
+    mmCtx.shadowBlur = 12;
+    mmCtx.beginPath();
+    mmCtx.arc(bz.x * k, bz.y * k, 5.5 + pulse * 1.6, 0, TAU);
+    mmCtx.fill();
+    mmCtx.shadowBlur = 0;
+    mmCtx.strokeStyle = 'rgba(255,220,220,0.95)';
+    mmCtx.lineWidth = 1.4;
+    mmCtx.beginPath();
+    mmCtx.arc(bz.x * k, bz.y * k, 9 + pulse * 2, 0, TAU);
+    mmCtx.stroke();
     mmCtx.restore();
   }
 
