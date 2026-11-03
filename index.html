@@ -14036,6 +14036,7 @@ function openClassScreen(zoneIndex) {
   showScreen('classSelect');
   game.menuTime = 0;
   drawClassCards();
+  bindClassCards();   /* re-assert live handlers on every open */
   /* arm the deploy bar with the remembered class (or the first doctrine) */
   const remember = (slot && slot.currentClass) || gameState.currentClass || 'knight';
   const pre = CLASSES.findIndex((c) => c.id === remember);
@@ -14362,31 +14363,52 @@ function launchGameWithClass(className) {
   const swap = pendingChangeClass;
   pendingChangeClass = false;
   /* the one true start path: builds the player and zone, flips the screen
-     manager to the canvas and (re)starts the requestAnimationFrame loop */
-  startRun(cls.id, pendingStartZone, swap ? { changeClass: true } : { carryUpgrades: true });
+     manager to the canvas and (re)starts the requestAnimationFrame loop.
+     Guarded end to end: a failure anywhere inside the run setup must never
+     swallow the click and strand the player on this screen — log it,
+     rebuild on the minimal path, and transition regardless. */
+  try {
+    startRun(cls.id, pendingStartZone, swap ? { changeClass: true } : { carryUpgrades: true });
+  } catch (err) {
+    console.error('[launch] startRun failed, recovering on the minimal path:', err);
+    try {
+      resetRun();
+      loadZone(pendingStartZone, { freshPlayer: false });
+    } catch (err2) {
+      console.error('[launch] minimal recovery also failed:', err2);
+    }
+  }
   if (game.screen !== 'playing') showScreen('gameCanvas');
 }
 function deploySelectedClass() {
   const cls = CLASSES[selectedClassIndex] || CLASSES[0];
   launchGameWithClass(cls ? cls.id : 'knight');
 }
-for (let i = 0; i < UI.classCards.length; i++) {
-  const card = UI.classCards[i];
-  if (!card) continue;
-  card.style.cursor = 'pointer';
-  card.style.pointerEvents = 'auto';
-  card.onclick = function (e) {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    launchGameWithClass(card.getAttribute('data-class') || (CLASSES[i] && CLASSES[i].id));
-  };
-  card.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
+/* Binding lives in a named function AND is re-asserted every time the
+   class screen opens (openClassScreen). onclick assignment is idempotent,
+   so even if some unrelated top-level statement ever failed before this
+   point in script evaluation, opening the screen restores live handlers —
+   this screen can never be stranded with dead cards. */
+function bindClassCards() {
+  for (let i = 0; i < UI.classCards.length; i++) {
+    const card = UI.classCards[i];
+    if (!card) continue;
+    card.style.cursor = 'pointer';
+    card.style.pointerEvents = 'auto';
+    card.onclick = function (e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
       launchGameWithClass(card.getAttribute('data-class') || (CLASSES[i] && CLASSES[i].id));
+    };
+    if (!card.dataset.keysBound) {
+      card.dataset.keysBound = '1';
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          launchGameWithClass(card.getAttribute('data-class') || (CLASSES[i] && CLASSES[i].id));
+        }
+      });
     }
-  });
-}
-{
+  }
   const deployBtn = document.getElementById('btnDeployDirect');
   if (deployBtn) {
     deployBtn.style.pointerEvents = 'auto';
@@ -14396,6 +14418,7 @@ for (let i = 0; i < UI.classCards.length; i++) {
     };
   }
 }
+bindClassCards();
 
 if (UI.cardShopTile) {
   const openTile = () => { if (game.screen === 'class') openShopForClass(); };
