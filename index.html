@@ -2395,6 +2395,29 @@ html,body{ background:var(--bg); color:var(--text); }
 }
 .ability.locked .ab-label{ opacity:.45; }
 </style>
+<style id="pause-center">
+/* ---- pause & dialog force-centering (wrapper owns the viewport) ---- */
+.pause-wrapper{
+  position:fixed; inset:0;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:12px;
+  background:rgba(10,7,3,0.92);
+  z-index:1000;
+  padding:24px 16px; box-sizing:border-box;
+  overflow-y:auto;
+}
+.pause-wrapper.hidden{ display:none !important; }
+#pauseTitle{ text-align:center; margin:0 0 10px; }
+#pauseMenu .pause-btn{
+  width:280px; max-width:100%; margin:0 auto;
+  display:flex; justify-content:center; align-items:center;
+  text-align:center;
+}
+#pauseConfirm{ display:flex; justify-content:center; width:100%; }
+#pauseConfirm[hidden]{ display:none !important; }
+.pause-confirm-actions{ display:flex; flex-direction:column; align-items:center; gap:10px; }
+</style>
 </head>
 <body>
 <div id="gameCanvas" class="screen game-screen">
@@ -2538,6 +2561,7 @@ html,body{ background:var(--bg); color:var(--text); }
 
   <!-- ==================== PAUSE MENU OVERLAY ==================== -->
   <div id="pauseMenu" class="screen">
+    <div class="pause-wrapper">
     <h1 id="pauseTitle">PAUSED</h1>
     <button class="pause-btn" id="btnResumePause">RESUME</button>
     <button class="pause-btn" id="btnVisitShopPause">VISIT SHOP</button>
@@ -2555,6 +2579,7 @@ html,body{ background:var(--bg); color:var(--text); }
           <button class="pause-btn" type="button" id="btnCancelLeave">CANCEL</button>
         </div>
       </div>
+    </div>
     </div>
   </div>
 
