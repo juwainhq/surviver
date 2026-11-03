@@ -2639,7 +2639,8 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
   width:auto !important; max-width:none !important;
   overflow:hidden; cursor:pointer;
 }
-.class-card > *{ pointer-events:none; }
+.class-card{ pointer-events:auto !important; cursor:pointer !important; }
+.class-card *{ pointer-events:none !important; }
 .class-card:hover{
   border-color:#f59e0b !important;
   transform:translateY(-2px) !important;
@@ -2650,17 +2651,9 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
   background:#181b26 !important;
 }
 /* ---- deploy action bar: fixed to the foot of the class screen ---- */
-#btnDeployClass{
-  position:absolute; left:50%; bottom:20px; transform:translateX(-50%);
-  z-index:30; cursor:pointer; pointer-events:auto;
-  font-family:var(--font-head); font-size:14px; font-weight:700; letter-spacing:2.4px;
-  color:#0b0d13; background:#f59e0b;
-  border:1px solid #fbbf24; border-radius:5px;
-  padding:14px 38px; white-space:nowrap;
-  box-shadow:0 10px 30px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.35);
-}
-#btnDeployClass:hover{ background:#fbbf24; }
-#btnDeployClass:active{ transform:translateX(-50%) translateY(1px); }
+/* click insurance: the class screen and its cards always take the click */
+#classSelect{ pointer-events:auto !important; z-index:9999; }
+#btnDeployDirect:hover{ background:#f43f5e !important; }
 #btnClassSkip{ bottom:76px; }
 
 /* ---- zone selector typography: nothing truncates, accent stays quiet ---- */
@@ -3032,7 +3025,9 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
         <div class="cdesc">Spend gems in the Armory to unlock the rest of the roster.</div>
       </div>
     </div>
-    <button id="btnDeployClass" type="button">CONFIRM &amp; DEPLOY \u25B6</button>
+    <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10000;">
+      <button id="btnDeployDirect" type="button" style="padding: 14px 40px; background: #e11d48; color: #fff; font-family: inherit; font-size: 14px; font-weight: 700; letter-spacing: 2px; border: 1px solid #f43f5e; border-radius: 4px; cursor: pointer; box-shadow: 0 4px 14px rgba(225,29,72,0.4);">DEPLOY MISSION ▶</button>
+    </div>
     <button id="btnClassSkip" type="button">Skip · continue as <span id="skipClassName">Vanguard Knight</span></button>
    </div>
  
@@ -14340,10 +14335,11 @@ document.getElementById('btnContinue').addEventListener('click', () => {
   showScreen('gameCanvas');
   saveGame('zone');
 });
-/* class selection is two explicit steps: a click MARKS the card (and arms
-   the DEPLOY bar), the deploy button — or a double-click — starts the run.
-   Direct listeners on every card; children never intercept (CSS pins
-   pointer-events:none on card children), so there are no dead clicks. */
+/* class selection: ONE click on a card launches the run. Handlers are
+   assigned as onclick properties with pointer-events forced on, and the
+   class is read from the card's data-class attribute — no delegation, no
+   child-element interception, no dead clicks. The fixed DEPLOY MISSION
+   button is the always-visible fallback for the highlighted class. */
 let selectedClassIndex = 0;
 function selectClassCard(i) {
   selectedClassIndex = clamp(i | 0, 0, CLASSES.length - 1);
@@ -14352,42 +14348,55 @@ function selectClassCard(i) {
     if (c && c.classList) c.classList.toggle('selected', k === selectedClassIndex);
   }
   const cls = CLASSES[selectedClassIndex];
-  const btn = document.getElementById('btnDeployClass');
-  if (btn && cls) btn.textContent = 'DEPLOY · ' + cls.name.toUpperCase() + ' \u25B6';
+  const btn = document.getElementById('btnDeployDirect');
+  if (btn && cls) btn.textContent = 'DEPLOY MISSION \u00B7 ' + cls.name.toUpperCase() + ' \u25B6';
 }
-function deploySelectedClass() {
-  if (game.screen !== 'class') return;
-  const cls = CLASSES[selectedClassIndex] || CLASSES[0];
+function launchGameWithClass(className) {
+  console.log('Launching game with class:', className);
+  const cls = CLASSES.find((c) => c.id === className) || CLASSES[0];
   if (!cls) return;
+  /* a locked doctrine can never start a run — the Armory is the way in */
   if (!classUnlocked(cls.id)) { openShopForClass(); return; }
+  selectClassCard(CLASSES.indexOf(cls));
+  gameState.currentClass = cls.id;
   const swap = pendingChangeClass;
   pendingChangeClass = false;
+  /* the one true start path: builds the player and zone, flips the screen
+     manager to the canvas and (re)starts the requestAnimationFrame loop */
   startRun(cls.id, pendingStartZone, swap ? { changeClass: true } : { carryUpgrades: true });
+  if (game.screen !== 'playing') showScreen('gameCanvas');
+}
+function deploySelectedClass() {
+  const cls = CLASSES[selectedClassIndex] || CLASSES[0];
+  launchGameWithClass(cls ? cls.id : 'knight');
 }
 for (let i = 0; i < UI.classCards.length; i++) {
   const card = UI.classCards[i];
-  if (!card || !card.addEventListener) continue;
-  const pick = () => {
-    if (game.screen !== 'class') return;
-    const cls = CLASSES[i];
-    if (!cls) return;
-    if (!classUnlocked(cls.id)) { openShopForClass(); return; }
-    selectClassCard(i);
+  if (!card) continue;
+  card.style.cursor = 'pointer';
+  card.style.pointerEvents = 'auto';
+  card.onclick = function (e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    launchGameWithClass(card.getAttribute('data-class') || (CLASSES[i] && CLASSES[i].id));
   };
-  card.addEventListener('click', pick);
-  card.addEventListener('dblclick', () => {
-    if (game.screen !== 'class') return;
-    pick();
-    deploySelectedClass();
-  });
   card.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      launchGameWithClass(card.getAttribute('data-class') || (CLASSES[i] && CLASSES[i].id));
+    }
   });
 }
 {
-  const deployBtn = document.getElementById('btnDeployClass');
-  if (deployBtn) deployBtn.addEventListener('click', deploySelectedClass);
+  const deployBtn = document.getElementById('btnDeployDirect');
+  if (deployBtn) {
+    deployBtn.style.pointerEvents = 'auto';
+    deployBtn.onclick = function (e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      deploySelectedClass();
+    };
+  }
 }
+
 if (UI.cardShopTile) {
   const openTile = () => { if (game.screen === 'class') openShopForClass(); };
   UI.cardShopTile.addEventListener('click', openTile);
