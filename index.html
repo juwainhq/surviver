@@ -2418,6 +2418,19 @@ html,body{ background:var(--bg); color:var(--text); }
 #pauseConfirm[hidden]{ display:none !important; }
 .pause-confirm-actions{ display:flex; flex-direction:column; align-items:center; gap:10px; }
 </style>
+<style id="smart-aim">
+/* ---- auto-aim toggle chip (bottom-right of the HUD) ---- */
+#aimChip{
+  position:absolute; right:14px; bottom:16px; z-index:40;
+  font-family:var(--font-head); font-size:9px; font-weight:700; letter-spacing:1.2px;
+  color:#f5c842; background:rgba(27,19,11,.88);
+  border:1px solid rgba(212,160,23,.55); border-radius:2px;
+  padding:6px 10px; cursor:pointer; pointer-events:auto;
+  box-shadow:0 4px 14px rgba(0,0,0,.45);
+}
+#aimChip:hover{ background:rgba(40,28,16,.95); }
+#aimChip.off{ color:rgba(240,230,200,.5); border-color:rgba(212,160,23,.25); }
+</style>
 </head>
 <body>
 <div id="gameCanvas" class="screen game-screen">
@@ -4050,6 +4063,7 @@ const ENEMY_DEFS = {
   archer: { hp: 1, speed: 60, r: 14, color: '#fb923c', score: 14, contact: 1, fire: 2.0, turn: 5.2 },
   wizard: { hp: 3, speed: 62, r: 17, color: '#a855f7', score: 20, contact: 1, fire: 3.0, turn: 3.2 },
   ghost:  { hp: 1, speed: 156, r: 13, color: '#e2e8f0', score: 10, contact: 1, turn: 8.0 },
+  stalker: { hp: 2, speed: 148, r: 13, color: '#c4b5fd', score: 16, contact: 1, turn: 7.0 },
 
   /* ---- Universe 2 · Ancient Egypt -------------------------------------- */
   /* `contact: 0` means the body deals no damage on touch; it hands out a
@@ -4215,6 +4229,11 @@ const gameState = {
   bullets: [],
   enemyBullets: [],
   gemsList: [],
+  shards: [],
+  autoAim: true,
+  autoFiring: false,
+  stalkerTimer: 5,
+  stalkerWarned: false,
   particles: [],
   footsteps: [],
   breakables: [],
@@ -4459,6 +4478,10 @@ function loadZone(zoneIndex, opts) {
   game.bullets.length = 0;
   game.enemyBullets.length = 0;
   game.gemsList.length = 0;
+  if (game.shards) game.shards.length = 0;
+  game.autoFiring = false;
+  game.stalkerTimer = 5;
+  game.stalkerWarned = false;
   game.particles.length = 0;
   game.footsteps.length = 0;
   game.texts.length = 0;
@@ -4906,6 +4929,193 @@ function moveVector() {
 }
 
 /* ------------------------------ player update ------------------------------ */
+/* ---------------- Survivor combat assists -------------------------------
+   Smart aim + auto-attack (the class weapon keeps its own cadence and
+   identity — it simply no longer needs the mouse held down), Time-Rift
+   stalkers roaming the quiet between arenas, and magnetic XP shards. */
+function nearestEnemyTo(x, y, maxDist) {
+  let best = null;
+  let bd = maxDist || 1e9;
+  for (let i = 0; i < game.enemies.length; i++) {
+    const e = game.enemies[i];
+    if (!e || e.hp <= 0 || e.underground) continue;
+    const d = Math.hypot(e.x - x, e.y - y);
+    if (d < bd) { bd = d; best = e; }
+  }
+  return best;
+}
+function attackHeld() { return !!(game.mouse.down || game.autoFiring); }
+function applySmartAim(p) {
+  game.autoFiring = false;
+  /* holding the mouse always wins: manual aim, manual trigger */
+  if (!game.autoAim || game.mouse.down) return;
+  const t = nearestEnemyTo(p.x, p.y, 560);
+  if (!t) return;
+  p.angle = Math.atan2(t.y - p.y, t.x - p.x);
+  game.autoFiring = true;
+}
+function syncAimChip() {
+  const chip = document.getElementById('aimChip');
+  if (!chip) return;
+  chip.textContent = game.autoAim ? '\u25CE AUTO-AIM ON' : '\u25CE AUTO-AIM OFF';
+  chip.classList.toggle('off', !game.autoAim);
+}
+function toggleAutoAim() {
+  game.autoAim = !game.autoAim;
+  if (!game.autoAim) game.autoFiring = false;
+  syncAimChip();
+  showBanner(game.autoAim ? 'AUTO-AIM ENGAGED' : 'AUTO-AIM OFF — AIM WITH CURSOR');
+}
+(function buildAimChip() {
+  try {
+    const hud = document.getElementById('hud');
+    if (!hud || document.getElementById('aimChip')) return;
+    const b = document.createElement('button');
+    b.id = 'aimChip';
+    b.type = 'button';
+    b.title = 'Toggle auto-aim (V)';
+    b.addEventListener('click', toggleAutoAim);
+    hud.appendChild(b);
+    syncAimChip();
+  } catch (_) { /* HUD chip is cosmetic; the V key always works */ }
+})();
+window.addEventListener('keydown', function (ev) {
+  if (!ev || ev.repeat) return;
+  const tag = ev.target && ev.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  if (ev.key === 'v' || ev.key === 'V') toggleAutoAim();
+});
+
+/* Time-Rift stalkers: violet hunters that slip through the rift while you
+   travel between arenas. They never join a wave (arena: null), so arena
+   clears are never held hostage by a roamer you left behind. */
+function tickRiftStalkers(dt) {
+  const p = game.player;
+  if (!p || p.hp <= 0) return;
+  for (let i = game.enemies.length - 1; i >= 0; i--) {
+    const e = game.enemies[i];
+    if (!e || e.type !== 'stalker') continue;
+    const d = Math.hypot(e.x - p.x, e.y - p.y);
+    e.staleT = d > 1500 ? (e.staleT || 0) + dt : 0;
+    if (e.staleT > 8) {
+      for (let k = 0; k < 8; k++) spawnParticle(e.x, e.y, rand(-60, 60), rand(-60, 60), 0.5, 4, '#c4b5fd', 2);
+      game.enemies.splice(i, 1);
+    }
+  }
+  let arenaBusy = false;
+  let stalkers = 0;
+  for (let i = 0; i < game.enemies.length; i++) {
+    const e = game.enemies[i];
+    if (!e) continue;
+    if (e.type === 'stalker') stalkers++;
+    else if (e.arena !== null && e.arena !== undefined) arenaBusy = true;
+  }
+  if (arenaBusy || stalkers >= 4) return;
+  game.stalkerTimer -= dt;
+  if (game.stalkerTimer > 0) return;
+  game.stalkerTimer = 6;
+  const n = Math.min(4 - stalkers, 1 + (Math.random() < 0.5 ? 1 : 0));
+  for (let k = 0; k < n; k++) {
+    const a = rand(0, Math.PI * 2);
+    const d = rand(620, 780);
+    const x = Math.max(60, Math.min(WORLD - 60, p.x + Math.cos(a) * d));
+    const y = Math.max(60, Math.min(WORLD - 60, p.y + Math.sin(a) * d));
+    spawnEnemy('stalker', x, y, null, {});
+    for (let j = 0; j < 10; j++) {
+      const pa = rand(0, Math.PI * 2);
+      spawnParticle(x, y, Math.cos(pa) * rand(20, 90), Math.sin(pa) * rand(20, 90), 0.5, 5, '#c4b5fd', 2);
+    }
+  }
+  if (!game.stalkerWarned) {
+    game.stalkerWarned = true;
+    showBanner('A TIME-RIFT STALKER HUNTS YOU');
+  }
+}
+
+/* XP shards: kills leave gold slivers of class XP on the field. Inside
+   magnet range they swoop to the player with smooth accelerating
+   physics; a boss's shards fly home from anywhere so the reward can
+   never be stranded behind a results screen. */
+function spawnXpShards(x, y, totalXp, kind) {
+  if (!game.shards) game.shards = [];
+  let parts = kind === 'boss' ? 5 : kind === 'elite' ? 3 : 1;
+  parts = Math.max(1, Math.min(parts, totalXp));
+  const base = Math.floor(totalXp / parts);
+  let rem = totalXp - base * parts;
+  for (let i = 0; i < parts; i++) {
+    const v = base + (rem-- > 0 ? 1 : 0);
+    if (v <= 0) continue;
+    const a = rand(0, Math.PI * 2);
+    const sp = rand(40, 130);
+    game.shards.push({
+      x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+      value: v, kind, t: rand(0, 6), life: 0, pulled: kind === 'boss'
+    });
+  }
+  while (game.shards.length > 140) {
+    const old = game.shards.shift();
+    const last = game.shards[game.shards.length - 1];
+    if (last && old) last.value += old.value;
+  }
+}
+function updateShards(dt) {
+  if (!game.shards || !game.shards.length) return;
+  const p = game.player;
+  if (!p) return;
+  const magnetR = (p.magnet || 110) + 60;
+  for (let i = game.shards.length - 1; i >= 0; i--) {
+    const s = game.shards[i];
+    s.t += dt;
+    s.life += dt;
+    const dx = p.x - s.x;
+    const dy = p.y - s.y;
+    const d = Math.hypot(dx, dy) || 1;
+    if (s.life > 0.25 && (d < magnetR || s.pulled)) {
+      s.pulled = true;
+      s.vx += (dx / d) * 2400 * dt;
+      s.vy += (dy / d) * 2400 * dt;
+      const sp = Math.hypot(s.vx, s.vy);
+      if (sp > 980) { s.vx = s.vx / sp * 980; s.vy = s.vy / sp * 980; }
+    } else {
+      s.vx *= Math.exp(-3 * dt);
+      s.vy *= Math.exp(-3 * dt);
+    }
+    s.x += s.vx * dt;
+    s.y += s.vy * dt;
+    const d2 = Math.hypot(p.x - s.x, p.y - s.y);
+    if (d2 < (p.r || 16) + 18) {
+      game.shards.splice(i, 1);
+      awardClassXP(s.value, s.kind);
+      if (s.value >= 5) addText(p.x, p.y - 42, '+' + s.value + ' XP', '#f5c842', 13, 34, 0.7);
+      for (let k = 0; k < 3; k++) spawnParticle(s.x, s.y, rand(-40, 40), rand(-60, -10), 0.35, 3, '#f5c842', 1.5);
+    }
+  }
+}
+function drawShards() {
+  if (!game.shards) return;
+  for (let i = 0; i < game.shards.length; i++) {
+    const s = game.shards[i];
+    const bob = Math.sin(s.t * 4) * 2.2;
+    const big = s.value >= 5;
+    const R = big ? 8 : 5.5;
+    ctx.save();
+    ctx.translate(s.x, s.y + bob);
+    ctx.rotate(Math.sin(s.t * 2.2) * 0.35);
+    ctx.fillStyle = '#f5c842';
+    ctx.shadowColor = '#d4a017';
+    ctx.shadowBlur = big ? 16 : 10;
+    ctx.beginPath();
+    ctx.moveTo(0, -R); ctx.lineTo(R * 0.62, 0); ctx.lineTo(0, R); ctx.lineTo(-R * 0.62, 0);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#fff3c4';
+    ctx.beginPath();
+    ctx.moveTo(0, -R * 0.55); ctx.lineTo(R * 0.34, 0); ctx.lineTo(0, R * 0.55); ctx.lineTo(-R * 0.34, 0);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  ctx.shadowBlur = 0;
+}
+
 function updatePlayer(dt) {
   const p = game.player;
 
@@ -4913,6 +5123,8 @@ function updatePlayer(dt) {
   const psx = toScreenX(p.x);
   const psy = toScreenY(p.y);
   p.angle = Math.atan2(game.mouse.y - psy, game.mouse.x - psx);
+  /* smart aim: hands off the mouse and the weapon tracks the nearest foe */
+  applySmartAim(p);
 
   /* chip timers */
   if (p.phaseTimer > 0) p.phaseTimer = Math.max(0, p.phaseTimer - dt);
@@ -6220,7 +6432,7 @@ function updateSword(dt) {
   }
 
   /* hold the button to keep swinging; the cooldown paces it */
-  if (game.mouse.down && p.swingCd <= 0 && p.swingT <= 0) swingSword();
+  if (attackHeld() && p.swingCd <= 0 && p.swingT <= 0) swingSword();
 }
 
 /* ------------------------------ class weapons ------------------------------
@@ -6425,7 +6637,7 @@ function fireClassWeapon(dt) {
     updateAxes(dt);
     return;
   }
-  if (game.mouse.down && p.fireTimer <= 0) {
+  if (attackHeld() && p.fireTimer <= 0) {
     if (cls.weapon === 'pistols') firePistols(charged);
     else if (cls.weapon === 'rail') fireSniper(charged);
     else if (cls.weapon === 'daggers') fireDaggers(charged);
@@ -6532,7 +6744,7 @@ function updateAxes(dt) {
       rand(-70, 70), rand(-70, 70), rand(0.14, 0.26), rand(2, 4.6), '#ffb27a', 4);
   }
 
-  if (game.mouse.down && p.swingCd <= 0) swingAxes();
+  if (attackHeld() && p.swingCd <= 0) swingAxes();
 }
 
 /* --------------------------- shadow assassin daggers ------------------------
@@ -7615,17 +7827,19 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
   return e;
 }
 
-/* Wave spawning releases in bursts: a group of 4-6 enemies lands every 2.5
+/* Wave spawning releases in bursts: a group of 4-6 enemies lands every 2
    seconds until the wave count is reached, and the first group spawns
    instantly the moment the arena activates (wave start), so combat opens hot
    instead of trickling in one enemy at a time. A wave only counts as cleared
    once the queue is empty AND every spawned enemy is dead. The final wave of
    every arena is guaranteed at least 2 elites, and every level beyond level 1
    of a universe adds +1 enemy per wave (difficulty scaling, Universe 2+). */
-const WAVE_GROUP_INTERVAL = 2.5;
+const WAVE_GROUP_INTERVAL = 2.0;
 const WAVE_GROUP_MIN = 4;
 const WAVE_GROUP_MAX = 6;
 function releaseSpawnGroup(arena) {
+  /* flanking: this burst strikes from two opposed edges of the arena */
+  arena.flankAngle = rand(0, Math.PI * 2);
   const size = WAVE_GROUP_MIN + Math.floor(Math.random() * (WAVE_GROUP_MAX - WAVE_GROUP_MIN + 1));
   const n = Math.min(arena.spawnQueue, size);
   for (let k = 0; k < n; k++) {
@@ -7642,7 +7856,7 @@ function spawnWave(arena, arenaIndex, waveIndex) {
   const levelBonus = gameState.currentUniverse >= 1 ? levelInUniverse(gameState.currentZone) - 1 : 0;
   const count = Math.max(1, Math.round(wave.count * diff.wave) + levelBonus);
   arena.spawnQueue = count;
-  arena.spawnTimer = WAVE_GROUP_INTERVAL;   /* next burst 2.5s after the instant first one */
+  arena.spawnTimer = WAVE_GROUP_INTERVAL;   /* next burst 2s after the instant first one */
   arena.spawnTotal = count;
   arena.spawnWaveIndex = waveIndex;
   arena.spawnTypes = wave.types;
@@ -7667,7 +7881,9 @@ function spawnWaveEnemy(arena) {
   /* guarantee the final wave's elite quota by forcing the tail spawns */
   if (arena.eliteMin > arena.elitesSpawned && arena.spawnQueue <= arena.eliteMin - arena.elitesSpawned) eliteVariant = true;
   if (eliteVariant) arena.elitesSpawned++;
-  const a = (i / count) * TAU + rand(-0.2, 0.2);
+  /* alternate between the two flank anchors so the burst closes from
+     both sides at once instead of dribbling in around the ring */
+  const a = (arena.flankAngle || 0) + (i % 2) * Math.PI + rand(-0.38, 0.38);
   /* every enemy of a new wave arrives at least 300px from the player */
   const spot = waveSpawnPoint(arena, a);
   spawnEnemy(pick(types), spot.x, spot.y, arena.spawnArenaIndex, {
@@ -11221,7 +11437,10 @@ function addScore(points) {
    above the corpse and fades over 0.8 seconds, and the save that keeps it. */
 function awardKill(e) {
   const xp = e && e.isBoss ? CLASS_XP_VALUES.boss : e && e.elite ? CLASS_XP_VALUES.elite : CLASS_XP_VALUES.regular;
-  awardClassXP(xp, e && e.isBoss ? 'boss' : e && e.elite ? 'elite' : 'regular');
+  const xpKind = e && e.isBoss ? 'boss' : e && e.elite ? 'elite' : 'regular';
+  /* class XP is earned by gathering the shard the kill leaves behind */
+  if (e && typeof e.x === 'number') spawnXpShards(e.x, e.y, xp, xpKind);
+  else awardClassXP(xp, xpKind);
   syncGemMultHud();
   if (game.player && game.player.vanishKillReset) {
     game.player.vanishKillReset = false;
@@ -23135,6 +23354,7 @@ function render() {
   drawHiddenSpots();
   drawFootsteps();
   drawGems();
+  drawShards();
   drawChests();
   drawPickups();
   drawBreakables();
@@ -23228,6 +23448,8 @@ function update(dt) {
 
   updateHud();
   updatePlayer(classBuff('eagleEye') > 0 ? dt : sdt);
+  updateShards(sdt);
+  tickRiftStalkers(sdt);
   updateSkillCombat(sdt);
   updateClassAbilities(dt);
   updatePet(sdt);
