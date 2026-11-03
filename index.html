@@ -2620,6 +2620,78 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
   backdrop-filter:blur(2px);
 }
 </style>
+<style id="class-deploy-fix">
+/* ---- class grid: balanced compact cards, one clean scroller ---- */
+#classGrid{
+  display:grid !important;
+  grid-template-columns:repeat(auto-fit, minmax(240px, 280px)) !important;
+  grid-auto-rows:auto !important;
+  gap:16px; justify-content:center; align-content:start;
+  max-width:1200px; margin:0 auto;
+  max-height:82vh; overflow-y:auto;
+  width:100%; box-sizing:border-box; padding:6px 4px 84px;
+}
+.class-card{
+  min-height:280px; max-height:340px; padding:16px;
+  background:#12141d !important;
+  border:1px solid #262a3b !important;
+  border-radius:6px !important;
+  width:auto !important; max-width:none !important;
+  overflow:hidden; cursor:pointer;
+}
+.class-card > *{ pointer-events:none; }
+.class-card:hover{
+  border-color:#f59e0b !important;
+  transform:translateY(-2px) !important;
+  background:#141724 !important;
+}
+.class-card.selected{
+  border:2px solid #f59e0b !important;
+  background:#181b26 !important;
+}
+/* ---- deploy action bar: fixed to the foot of the class screen ---- */
+#btnDeployClass{
+  position:absolute; left:50%; bottom:20px; transform:translateX(-50%);
+  z-index:30; cursor:pointer; pointer-events:auto;
+  font-family:var(--font-head); font-size:14px; font-weight:700; letter-spacing:2.4px;
+  color:#0b0d13; background:#f59e0b;
+  border:1px solid #fbbf24; border-radius:5px;
+  padding:14px 38px; white-space:nowrap;
+  box-shadow:0 10px 30px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.35);
+}
+#btnDeployClass:hover{ background:#fbbf24; }
+#btnDeployClass:active{ transform:translateX(-50%) translateY(1px); }
+#btnClassSkip{ bottom:76px; }
+
+/* ---- zone selector typography: nothing truncates, accent stays quiet ---- */
+.uni-card .uname{
+  font-size:11px !important; font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; white-space:nowrap;
+  overflow:hidden; text-overflow:clip;
+}
+.uni-card .uera{
+  font-size:10px !important; padding:2px 8px; border-radius:3px;
+  background:rgba(255,255,255,0.06) !important; color:#cbd5e1 !important;
+  border:1px solid rgba(255,255,255,0.1) !important;
+}
+.uni-card.sel .uera{
+  color:var(--era-accent) !important; border-color:var(--era-accent) !important;
+  background:rgba(255,255,255,0.06) !important;
+}
+.uni-card:not(.locked) .ustate{
+  background:rgba(255,255,255,0.05) !important; color:#94a3b8 !important;
+  border:1px solid #262a3b !important;
+}
+.uni-card:not(.locked) .ustate svg{ color:#94a3b8; }
+.uni-card.sel .ustate{
+  background:var(--era-accent) !important; color:#0b0d13 !important;
+  border-color:transparent !important;
+}
+.uni-card.sel .ustate svg{ color:#0b0d13; }
+.zone-card .zname{
+  padding:0 12px; text-align:center; box-sizing:border-box; width:100%;
+}
+</style>
 </head>
 <body>
 <div id="gameCanvas" class="screen game-screen">
@@ -2960,6 +3032,7 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
         <div class="cdesc">Spend gems in the Armory to unlock the rest of the roster.</div>
       </div>
     </div>
+    <button id="btnDeployClass" type="button">CONFIRM &amp; DEPLOY \u25B6</button>
     <button id="btnClassSkip" type="button">Skip · continue as <span id="skipClassName">Vanguard Knight</span></button>
    </div>
  
@@ -13757,11 +13830,11 @@ const PLAY_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
    (currentColor follows --era-accent on the card) */
 const ZONE_ART = [
   /* U1 Medieval: Ashen Hamlet, Blightwood, Portcullis, Belfry, Rift */
-  '<path d="M12 30 32 12l20 18"/><path d="M18 28v24h28V28"/><path d="M28 52V38h8v14"/><path d="M24 20c1-3 3-4 4-6" opacity=".6"/><g fill="currentColor" stroke="none"><circle cx="20" cy="46" r="1.6"/><circle cx="45" cy="42" r="1.4"/><circle cx="39" cy="17" r="1.3"/></g>',
-  '<path d="M32 54V30"/><path d="M32 38c-6-4-12-4-17-1M32 32c6-4 12-4 17-1M32 30c-1-8-4-13-9-17M32 30c2-8 6-12 11-15"/><path d="M22 54h20M26 54l3-4M38 54l-3-4"/><circle cx="48" cy="11" r="3.2"/>',
-  '<path d="M14 54V22l18-10 18 10v32"/><path d="M24 54V26M32 54V22M40 54V26"/><path d="M20 36h24"/><path d="M22 49l2 4 2-4M30 49l2 4 2-4M38 49l2 4 2-4" fill="currentColor" stroke="none" opacity=".85"/>',
-  '<path d="M24 54V24h16v30"/><path d="M20 24l12-10 12 10"/><path d="M27 38a5 5 0 0 1 10 0l1.6 4H25.4z"/><circle cx="32" cy="45" r="1.7" fill="currentColor" stroke="none"/><path d="M48 9l1.2 3.2L52.4 13.4l-3.2 1.2L48 17.8l-1.2-3.2-3.2-1.2 3.2-1.2z" fill="currentColor" stroke="none"/>',
-  '<circle cx="32" cy="32" r="19" stroke-dasharray="7 5"/><path d="M32 20l-4 9 7 3-6 10"/><circle cx="32" cy="32" r="3" fill="currentColor" stroke="none"/><path d="M13 14l4 4M51 14l-4 4M13 50l4-4M51 50l-4-4" opacity=".6"/>',
+  '<path d="M12 54V36l3-4 3 4v18M24 54V36l3-4 3 4v18M36 54V36l3-4 3 4v18M48 54V36l3-4 3 4v18"/><path d="M8 44h48"/><path d="M18 30 40 10M46 30 24 10" stroke-width="3.2"/><path d="M21.6 24.6l5.2 2.2M42.4 24.6l-5.2 2.2"/><path d="M18 30l-3 4.4M46 30l3 4.4"/><circle cx="32" cy="20.6" r="2" fill="currentColor" stroke="none"/><g fill="currentColor" stroke="none"><circle cx="15" cy="50" r="1.2"/><circle cx="51" cy="48" r="1.2"/></g>',
+  '<path d="M48 7a8.4 8.4 0 1 0 5.2 14.8A10 10 0 0 1 48 7z" fill="currentColor" stroke="none" opacity=".9"/><path d="M29 56c1.2-9 .4-15-1.8-22 2.8 1 4.8.8 6.6-.8-.8-2.8-2.6-5.2-5.2-7 3.4-.2 5-1.2 6.4-3.2-.6-3.6.2-6.8 2.2-10-3 .8-5 2.6-6.2 5.4-1.8-2.8-4.4-4.2-7.6-4.4 2 2 3 4.4 3 7.2-1.8 1.8-3.8 2.6-6.4 2.8 2 1.8 3.6 4 4.6 6.6-1.8 1.6-3.8 1.8-6.4 1 1.8 7.4 2 15.4.8 24.4z" fill="#12141d"/><path d="M17 56h26M22 56l3-3.4M38 56l-3-3.4"/><g fill="currentColor" stroke="none"><circle cx="17" cy="31" r="1.2"/><circle cx="41" cy="27" r="1.2"/><circle cx="24" cy="19" r="1.1"/><circle cx="13" cy="44" r="1.1"/></g>',
+  '<path d="M10 54V24h3v-4h4v4h3v30M54 54V24h-3v-4h-4v4h-3v30"/><path d="M20 30h24v5H20z"/><path d="M25 54V40a7 7 0 0 1 14 0v14"/><path d="M28 39v11M32 38v12M36 39v11"/><path d="M25 45h14"/><path d="M28 50l-1.4 3.4h2.8zM32 50l-1.4 3.4h2.8zM36 50l-1.4 3.4h2.8z" fill="currentColor" stroke="none"/><path d="M32 12v10"/><path d="M32 12.5 41 15.2 32 18.4z" fill="currentColor" stroke="none"/><rect x="13.4" y="32" width="3.4" height="5.6"/><rect x="47.2" y="32" width="3.4" height="5.6"/>',
+  '<path d="M25 54V26h14v28"/><path d="M21 26l11-11 11 11"/><path d="M32 15V9"/><circle cx="32" cy="7" r="1.8" fill="currentColor" stroke="none"/><path d="M27.5 39a4.5 4.5 0 0 1 9 0l1.5 3.6H26z"/><circle cx="32" cy="45.4" r="1.5" fill="currentColor" stroke="none"/><ellipse cx="32" cy="32" rx="22" ry="7.6" stroke-dasharray="3 4" opacity=".7"/><rect x="29.6" y="47" width="4.8" height="7"/><path d="M14 13l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1zM50 41l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" fill="currentColor" stroke="none"/>',
+  '<circle cx="32" cy="32" r="17" stroke-dasharray="10 5"/><circle cx="32" cy="32" r="10.5" stroke-dasharray="4 5" opacity=".7"/><path d="M32 22l-3.6 8 6.4 2.8L29 43"/><circle cx="32" cy="32" r="2.6" fill="currentColor" stroke="none"/><path d="M12 12l5 3M52 12l-5 3M12 52l5-3M52 52l-5-3"/><g fill="currentColor" stroke="none"><circle cx="14" cy="32" r="1.4"/><circle cx="50" cy="32" r="1.4"/><circle cx="32" cy="12" r="1.4"/></g>',
   /* U2 Egypt: Obelisk, Jackals, Catacombs, Temple of Anubis, Pyramid Core */
   '<path d="M27 54V18l5-8 5 8v36"/><path d="M20 54h24"/><path d="M27 26h10M27 34h10"/><g fill="currentColor" stroke="none"><circle cx="32" cy="42" r="1.6"/><circle cx="32" cy="48" r="1.6"/></g><path d="M8 54c6-3 12-3 18 0M38 54c6-3 12-3 18 0" opacity=".6"/>',
   '<path d="M24 10l2 14M40 10l-2 14"/><path d="M24 24c0 8 3 12 8 16 5-4 8-8 8-16l-8-5z"/><path d="M28 40l4 10 4-10"/><g fill="currentColor" stroke="none"><circle cx="27" cy="28" r="1.7"/><circle cx="37" cy="28" r="1.7"/></g>',
@@ -13795,7 +13868,12 @@ const ZONE_ART = [
 ];
 function zoneArt(i) {
   const idx = ((i | 0) % ZONE_ART.length + ZONE_ART.length) % ZONE_ART.length;
-  return '<svg class="zart" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ZONE_ART[idx] + '</svg>';
+  /* heraldic badge: riveted slate plaque, inner keyline, emblem inset */
+  return '<svg class="zart" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="4" y="4" width="56" height="56" rx="7" fill="#0d0f17" stroke-width="2"/>' +
+    '<rect x="8.5" y="8.5" width="47" height="47" rx="4.5" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>' +
+    '<g fill="currentColor" stroke="none"><circle cx="11" cy="11" r="1.3"/><circle cx="53" cy="11" r="1.3"/><circle cx="11" cy="53" r="1.3"/><circle cx="53" cy="53" r="1.3"/></g>' +
+    '<g transform="translate(9.6 9.6) scale(0.7)">' + ZONE_ART[idx] + '</g></svg>';
 }
 
 /* clean card titles: the era lives in its own badge, never inside the name */
@@ -13963,6 +14041,10 @@ function openClassScreen(zoneIndex) {
   showScreen('classSelect');
   game.menuTime = 0;
   drawClassCards();
+  /* arm the deploy bar with the remembered class (or the first doctrine) */
+  const remember = (slot && slot.currentClass) || gameState.currentClass || 'knight';
+  const pre = CLASSES.findIndex((c) => c.id === remember);
+  selectClassCard(pre >= 0 ? pre : 0);
 }
 
 function backToMenu() {
@@ -14258,21 +14340,53 @@ document.getElementById('btnContinue').addEventListener('click', () => {
   showScreen('gameCanvas');
   saveGame('zone');
 });
+/* class selection is two explicit steps: a click MARKS the card (and arms
+   the DEPLOY bar), the deploy button — or a double-click — starts the run.
+   Direct listeners on every card; children never intercept (CSS pins
+   pointer-events:none on card children), so there are no dead clicks. */
+let selectedClassIndex = 0;
+function selectClassCard(i) {
+  selectedClassIndex = clamp(i | 0, 0, CLASSES.length - 1);
+  for (let k = 0; k < UI.classCards.length; k++) {
+    const c = UI.classCards[k];
+    if (c && c.classList) c.classList.toggle('selected', k === selectedClassIndex);
+  }
+  const cls = CLASSES[selectedClassIndex];
+  const btn = document.getElementById('btnDeployClass');
+  if (btn && cls) btn.textContent = 'DEPLOY · ' + cls.name.toUpperCase() + ' \u25B6';
+}
+function deploySelectedClass() {
+  if (game.screen !== 'class') return;
+  const cls = CLASSES[selectedClassIndex] || CLASSES[0];
+  if (!cls) return;
+  if (!classUnlocked(cls.id)) { openShopForClass(); return; }
+  const swap = pendingChangeClass;
+  pendingChangeClass = false;
+  startRun(cls.id, pendingStartZone, swap ? { changeClass: true } : { carryUpgrades: true });
+}
 for (let i = 0; i < UI.classCards.length; i++) {
   const card = UI.classCards[i];
+  if (!card || !card.addEventListener) continue;
   const pick = () => {
     if (game.screen !== 'class') return;
     const cls = CLASSES[i];
     if (!cls) return;
     if (!classUnlocked(cls.id)) { openShopForClass(); return; }
-    const swap = pendingChangeClass;
-    pendingChangeClass = false;
-    startRun(cls.id, pendingStartZone, swap ? { changeClass: true } : { carryUpgrades: true });
+    selectClassCard(i);
   };
   card.addEventListener('click', pick);
+  card.addEventListener('dblclick', () => {
+    if (game.screen !== 'class') return;
+    pick();
+    deploySelectedClass();
+  });
   card.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); }
   });
+}
+{
+  const deployBtn = document.getElementById('btnDeployClass');
+  if (deployBtn) deployBtn.addEventListener('click', deploySelectedClass);
 }
 if (UI.cardShopTile) {
   const openTile = () => { if (game.screen === 'class') openShopForClass(); };
@@ -14580,6 +14694,14 @@ function groundTileFor(zoneIndex) {
   }
   return c;
 }
+
+/* ---------------------------------------------------------------------------
+   Zone floor art. Every map carries its own hand-authored scenery, scattered
+   deterministically in world space at load time so it is identical on every
+   visit and survives a reload. No images anywhere: gradients, paths and
+   ellipses on the canvas, culled to the camera so the frame cost stays flat.
+   --------------------------------------------------------------------------- */
+const FLOOR_ART_SEED = 7311;
 
 function buildFloorArt(zoneIndex) {
   const z = ZONES[zoneIndex];
