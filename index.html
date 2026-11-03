@@ -2567,6 +2567,59 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
 }
 #aimChip.off{ color:var(--text-dim); }
 </style>
+<style id="matte-layout">
+/* ---- Select Zone: never clipped, universes in one 6-column row ---- */
+#zoneSelect{
+  padding:32px 28px !important;
+  box-sizing:border-box;
+  overflow-y:auto !important;
+  overflow-x:hidden;
+}
+/* safe centering: overflow spills downward so the title can scroll into view */
+#zoneSelect > :first-child{ margin-top:auto; }
+#zoneSelect > :last-child{ margin-bottom:auto; }
+#universeRow{
+  display:grid !important;
+  grid-template-columns:repeat(6, minmax(0, 1fr));
+  gap:10px; width:100%; max-width:1320px;
+  margin:0 auto; flex-wrap:unset; box-sizing:border-box;
+}
+.uni-card{ min-width:0; }
+.uni-card .uname{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* ---- Class card header: title left, gem price right, never overlapping ---- */
+.class-card .chead{
+  display:flex; justify-content:space-between; align-items:center;
+  gap:8px; padding:10px 12px 2px;
+  width:100%; align-self:stretch; box-sizing:border-box;
+}
+.class-card .chead .cname{
+  font-size:11px; white-space:nowrap; letter-spacing:1.6px;
+  text-align:left; margin:0; padding:0; min-width:0;
+  overflow:hidden; text-overflow:ellipsis;
+}
+.class-card .cprice{
+  position:static !important; flex:0 0 auto; margin:0;
+}
+
+/* ---- Ability bar: lifted clear of the bottom edge, labels fully visible ---- */
+#abilities{
+  bottom:max(18px, env(safe-area-inset-bottom)) !important;
+  padding:12px 16px 12px !important;
+}
+.ability .key{ line-height:1.25; margin-top:3px; }
+.ability .ab-label{ margin-top:2px; line-height:1.25; }
+
+/* ---- Class / XP widget: clean slate pill over the ground ---- */
+#classBadge{
+  background:rgba(15,17,26,0.88);
+  border:1px solid #262a3b;
+  padding:8px 14px;
+  border-radius:6px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.06);
+  backdrop-filter:blur(2px);
+}
+</style>
 </head>
 <body>
 <div id="gameCanvas" class="screen game-screen">
@@ -2818,8 +2871,8 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
     <h1 id="classTitle">Choose Your Combat Style</h1>
     <div id="classGrid">
       <div class="class-card" id="cardKnight" data-class="knight" role="button" tabindex="0">
+        <div class="chead"><div class="cname">Vanguard Knight</div></div>
         <div class="cicon" id="iconKnight" aria-hidden="true"></div>
-        <div class="cname">Vanguard Knight</div>
         <div class="cdesc">A long silver longsword carves a wide arc through everything in front of him.</div>
         <div class="cstats">
           <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
@@ -2830,8 +2883,8 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
         <div class="cpassive">Passive · 7 health orbs</div>
       </div>
       <div class="class-card" id="cardGunslinger" data-class="gunslinger" role="button" tabindex="0">
+        <div class="chead"><div class="cname">Gunslinger</div></div>
         <div class="cicon" id="iconGunslinger" aria-hidden="true"></div>
-        <div class="cname">Gunslinger</div>
         <div class="cdesc">Twin pistols pour out a storm of bolts that punch through the crowd.</div>
         <div class="cstats">
           <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></div>
@@ -2842,8 +2895,8 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
         <div class="cpassive">Passive · bolts pierce 2 enemies</div>
       </div>
       <div class="class-card" id="cardSniper" data-class="sniper" role="button" tabindex="0">
+        <div class="chead"><div class="cname">Sniper</div></div>
         <div class="cicon" id="iconSniper" aria-hidden="true"></div>
-        <div class="cname">Sniper</div>
         <div class="cdesc">One shot, one kill. A rail of light crosses the entire screen.</div>
         <div class="cstats">
           <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
@@ -2854,8 +2907,8 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
         <div class="cpassive">Passive · sees much further</div>
       </div>
       <div class="class-card" id="cardMage" data-class="mage" role="button" tabindex="0">
+        <div class="chead"><div class="cname">Chrono Mage</div></div>
         <div class="cicon" id="iconMage" aria-hidden="true"></div>
-        <div class="cname">Chrono Mage</div>
         <div class="cdesc">Three slow orbs hunt their prey down on their own.</div>
         <div class="cstats">
           <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></span></div>
@@ -2866,9 +2919,8 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
         <div class="cpassive">Passive · time powers recharge twice as fast</div>
       </div>
       <div class="class-card locked" id="cardBerserker" data-class="berserker" role="button" tabindex="0">
-        <div class="cprice"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>300</div>
+        <div class="chead"><div class="cname">Berserker</div><div class="cprice"><svg viewBox="0 0 24 24" fill="#a855f7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>300</div></div>
         <div class="cicon" id="iconBerserker" aria-hidden="true"></div>
-        <div class="cname">Berserker</div>
         <div class="cdesc">No armour and only three orbs, but every blow lands three times as hard.</div>
         <div class="cstats">
           <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
@@ -2879,9 +2931,8 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
         <div class="cpassive">Passive · 3 health orbs · one back every 5 kills</div>
       </div>
       <div class="class-card locked" id="cardShadow" data-class="shadow" role="button" tabindex="0">
-        <div class="cprice"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>400</div>
+        <div class="chead"><div class="cname">Shadow Assassin</div><div class="cprice"><svg viewBox="0 0 24 24" fill="#a855f7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>400</div></div>
         <div class="cicon" id="iconShadow" aria-hidden="true"></div>
-        <div class="cname">Shadow Assassin</div>
         <div class="cdesc">Permanently cloaked past 120 px. Shadow daggers hit like a hammer.</div>
         <div class="cstats">
           <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></div>
@@ -2892,9 +2943,8 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
         <div class="cpassive">Passive · unseen past 120 px · kills reset the dash</div>
       </div>
       <div class="class-card locked" id="cardTech" data-class="tech" role="button" tabindex="0">
-        <div class="cprice"><svg viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>500</div>
+        <div class="chead"><div class="cname">Tech Specialist</div><div class="cprice"><svg viewBox="0 0 24 24" fill="#a855f7" aria-hidden="true"><path d="M12 2L4 9.4 12 22l8-12.6z"/></svg>500</div></div>
         <div class="cicon" id="iconTech" aria-hidden="true"></div>
-        <div class="cname">Tech Specialist</div>
         <div class="cdesc">A bouncing disc and two standing turrets that never stop firing.</div>
         <div class="cstats">
           <div class="cstat"><span class="lbl">Speed</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></div>
