@@ -91,15 +91,15 @@
   /* the stage IS the window: nothing anywhere is given a fixed pixel size */
   #gameCanvas{
     position:fixed; inset:0; width:100%; height:100%;
-    overflow:hidden; background:#04050a;
+    overflow:hidden; background:#0f0b07;
   }
   #gameCanvas.screen{
-    z-index:1 !important; background:#04050a !important;
+    z-index:1 !important; background:#0f0b07 !important;
     pointer-events:auto; animation:none !important;
   }
   #game{
     display:block; position:absolute; inset:0;
-    width:100%; height:100%; background:#04050a;
+    width:100%; height:100%; background:#0f0b07;
   }
   /* the HUD and every screen-space effect ride in one layer that is laid out
      in the 1280x720 base space and then scaled to the window, so the HUD sits
@@ -169,7 +169,7 @@
   .orb{
     width:13px; height:13px; border-radius:50%;
     background:radial-gradient(circle at 35% 30%, #f2fdff, #4cc9ff 55%, #1258a0);
-    box-shadow:0 0 11px rgba(56,189,248,.85);
+    box-shadow:0 0 11px rgba(212,160,23,.85);
     opacity:1; transform:scale(1);
     /* losing a heart shrinks and fades the orb over 0.3s instead of popping */
     transition:opacity .3s ease, background .3s ease, box-shadow .3s ease, transform .3s ease;
@@ -665,7 +665,7 @@
     display:flex; flex-direction:column; align-items:center; gap:7px;
     padding:13px 13px 12px; box-sizing:border-box; overflow:hidden;
     scroll-snap-align:center; text-align:center; cursor:pointer;
-    background:linear-gradient(180deg, rgba(13,16,24,.95), rgba(5,7,11,.98));
+    background:linear-gradient(180deg, rgba(27,19,11,.95), rgba(15,11,7,.98));
     border:1px solid rgba(232,200,116,.30); border-radius:3px;
     transition:transform .2s ease, box-shadow .25s ease, border-color .25s ease;
   }
@@ -702,15 +702,15 @@
   .zone-card.done .zstate svg{ color:#ffd98a; filter:drop-shadow(0 0 6px rgba(255,200,110,.7)); }
 
   /* reached but not finished: playable, blue-ish marker */
-  .zone-card.open{ border-color:rgba(143,232,255,.45); }
-  .zone-card.open .zstate{ color:#8fe8ff; text-shadow:0 0 12px rgba(56,189,248,.4); }
-  .zone-card.open .zstate svg{ color:#8fe8ff; }
+  .zone-card.open{ border-color:rgba(245,200,66,.45); }
+  .zone-card.open .zstate{ color:#f5c842; text-shadow:0 0 12px rgba(212,160,23,.4); }
+  .zone-card.open .zstate svg{ color:#f5c842; }
 
   /* not reached yet: locked and unclickable */
   .zone-card.locked{
     cursor:not-allowed; opacity:.55;
     border-color:rgba(120,140,170,.22);
-    background:linear-gradient(180deg, rgba(9,11,16,.95), rgba(4,5,9,.98));
+    background:linear-gradient(180deg, rgba(27,19,11,.95), rgba(15,11,7,.98));
   }
   .zone-card.locked:hover{ transform:none; border-color:rgba(120,140,170,.3); box-shadow:none; }
   .zone-card.locked .zname, .zone-card.locked .znum{ color:rgba(203,213,225,.55); }
@@ -827,7 +827,7 @@
     padding:12px; display:flex; flex-direction:column; align-items:center;
     gap:2px; text-align:center; cursor:pointer;
     box-sizing:border-box; overflow:hidden;
-    background:linear-gradient(180deg, rgba(13,16,24,.95), rgba(5,7,11,.98));
+    background:linear-gradient(180deg, rgba(27,19,11,.95), rgba(15,11,7,.98));
     border:1px solid rgba(232,200,116,.34); border-radius:3px;
     transition:transform .22s ease, box-shadow .25s ease, border-color .25s ease;
   }
@@ -897,7 +897,7 @@
   .class-card.shop-tile{
     justify-content:center; gap:10px; text-align:center;
     border-style:dashed; border-color:rgba(232,200,116,.3);
-    background:linear-gradient(180deg, rgba(10,12,18,.9), rgba(4,5,9,.96));
+    background:linear-gradient(180deg, rgba(10,12,18,.9), rgba(15,11,7,.96));
   }
   .class-card.shop-tile .cname{ font-size:12px; color:#ffd98a; }
   .class-card.shop-tile .cdesc{ -webkit-line-clamp:3; }
@@ -987,15 +987,15 @@
   /* one-click start for returning players: keeps the saved class and upgrades */
   #btnClassSkip{
     display:none; font-family:var(--font-head); font-size:10px; font-weight:700;
-    letter-spacing:2.2px; text-transform:uppercase; color:#bfe9ff;
-    background:rgba(8,18,28,.7); border:1px solid rgba(143,232,255,.35);
+    letter-spacing:2.2px; text-transform:uppercase; color:#ffe7b8;
+    background:rgba(27,19,11,.7); border:1px solid rgba(245,200,66,.35);
     border-radius:2px; padding:8px 16px; cursor:pointer; margin-top:-4px;
     -webkit-appearance:none; appearance:none; outline:none;
     transition:color .2s ease, border-color .2s ease, box-shadow .2s ease;
   }
   #btnClassSkip.show{ display:inline-block; }
   #btnClassSkip:hover, #btnClassSkip:focus-visible{
-    color:#fff; border-color:#8fe8ff; box-shadow:0 0 20px rgba(56,189,248,.3);
+    color:#fff; border-color:#f5c842; box-shadow:0 0 20px rgba(212,160,23,.3);
   }
 
   /* faint nudge, only rendered when the cards really do not fit */
@@ -1014,7 +1014,7 @@
     width:246px; min-height:296px; padding:22px 18px;
     display:flex; flex-direction:column; align-items:center; gap:12px;
     text-align:center; cursor:pointer;
-    background:linear-gradient(180deg, rgba(14,17,26,.97), rgba(5,7,11,.98));
+    background:linear-gradient(180deg, rgba(27,19,11,.97), rgba(15,11,7,.98));
     border:1px solid rgba(232,200,116,.5); border-radius:3px;
     transition:transform .22s ease, box-shadow .25s ease, border-color .25s ease;
   }
@@ -1140,7 +1140,7 @@
   #shopGrid::-webkit-scrollbar-thumb{ background:rgba(232,200,116,.35); border-radius:4px; }
   .shop-card{
     display:flex; flex-direction:column; gap:9px; padding:15px 15px 13px;
-    background:linear-gradient(180deg, rgba(16,19,28,.97), rgba(5,7,11,.98));
+    background:linear-gradient(180deg, rgba(16,19,28,.97), rgba(15,11,7,.98));
     border:1px solid rgba(232,200,116,.3); border-radius:3px;
     transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease;
   }
@@ -1278,7 +1278,7 @@
   }
   .uni-card{
     position:relative; flex:1 1 150px; max-width:190px; padding:11px 9px 10px;
-    background:linear-gradient(180deg, rgba(14,17,26,.96), rgba(5,7,11,.98));
+    background:linear-gradient(180deg, rgba(27,19,11,.96), rgba(15,11,7,.98));
     border:1px solid rgba(232,200,116,.26); border-radius:3px; cursor:pointer;
     text-align:center; transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease;
   }
@@ -1304,7 +1304,7 @@
   .uni-panel[hidden]{ display:none; }
   .uni-inner{
     width:min(880px,92vw); padding:42px 38px 34px; text-align:center;
-    background:radial-gradient(ellipse at 50% -10%, rgba(232,200,116,.13), rgba(4,5,9,.97) 62%);
+    background:radial-gradient(ellipse at 50% -10%, rgba(232,200,116,.13), rgba(15,11,7,.97) 62%);
     border:1px solid rgba(232,200,116,.42); border-radius:4px;
     box-shadow:0 0 100px rgba(0,0,0,.92), inset 0 0 70px rgba(232,200,116,.05);
     animation:uniRise .55s cubic-bezier(.2,.9,.3,1) both;
@@ -1411,7 +1411,7 @@
   }
   #pauseConfirm[hidden]{ display:none; }
   .pause-confirm-card{
-    background:#080b13; border:1px solid #e8c874; padding:24px;
+    background:#1b130b; border:1px solid #e8c874; padding:24px;
     border-radius:6px; text-align:center; width:min(360px,calc(100vw - 32px));
   }
   .pause-confirm-card h2{ font-family:var(--font-head); color:#e8c874; margin-top:0; }
@@ -1571,17 +1571,17 @@
    cascade at equal specificity. All DOM ids/classes and JS hooks unchanged.
    ============================================================================ */
 :root{
-  --bg:#04050a;
-  --surface:#0a0c14;
+  --bg:#0f0b07;
+  --surface:#1b130b;
   --border:#2a1f0e;
   --gold:#c8971f;
   --gold-bright:#f0c040;
-  --teal:#1de9b6;
+  --teal:#f5c842;
   --red:#e53935;
   --text:#d4c5a9;
   --text-dim:rgba(212,197,169,.5);
   --gold-dim:rgba(200,151,31,.45);
-  --ink:#04050a;
+  --ink:#0f0b07;
   --hex:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
 }
 html,body{ background:var(--bg); color:var(--text); }
@@ -1590,7 +1590,7 @@ html,body{ background:var(--bg); color:var(--text); }
 #overlays .screen, #pauseMenu{
   background:
     radial-gradient(ellipse 80% 55% at 50% -5%, rgba(200,151,31,.07), transparent 60%),
-    radial-gradient(ellipse 70% 50% at 50% 105%, rgba(29,233,182,.05), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 50% 105%, rgba(245,200,66,.05), transparent 60%),
     var(--bg) !important;
   color:var(--text);
 }
@@ -1610,7 +1610,7 @@ html,body{ background:var(--bg); color:var(--text); }
   border-radius:1px !important;
   border:1px solid transparent !important;
   border-bottom:2px solid var(--gold) !important;
-  background:rgba(10,12,20,.55) !important;
+  background:rgba(27,19,11,.55) !important;
   color:var(--text) !important;
   box-shadow:none !important;
   --pl:30px;
@@ -1647,7 +1647,7 @@ html,body{ background:var(--bg); color:var(--text); }
 #mainMenu{
   background:
     radial-gradient(ellipse 70% 50% at 50% 28%, rgba(200,151,31,.09), transparent 62%),
-    radial-gradient(ellipse 60% 45% at 50% 95%, rgba(29,233,182,.07), transparent 60%),
+    radial-gradient(ellipse 60% 45% at 50% 95%, rgba(245,200,66,.07), transparent 60%),
     var(--bg) !important;
   overflow:hidden;
 }
@@ -1670,12 +1670,12 @@ html,body{ background:var(--bg); color:var(--text); }
 }
 #mainMenu::after{                                    /* teal motes, slower */
   background-image:
-    radial-gradient(1.3px 1.3px at 25% 15%, rgba(29,233,182,.85), transparent 60%),
-    radial-gradient(1.1px 1.1px at 70% 35%, rgba(29,233,182,.6), transparent 60%),
-    radial-gradient(1.5px 1.5px at 45% 55%, rgba(29,233,182,.7), transparent 60%),
-    radial-gradient(1.2px 1.2px at 85% 70%, rgba(29,233,182,.55), transparent 60%),
-    radial-gradient(1.4px 1.4px at 12% 60%, rgba(29,233,182,.65), transparent 60%),
-    radial-gradient(1.1px 1.1px at 58% 85%, rgba(29,233,182,.6), transparent 60%);
+    radial-gradient(1.3px 1.3px at 25% 15%, rgba(245,200,66,.85), transparent 60%),
+    radial-gradient(1.1px 1.1px at 70% 35%, rgba(245,200,66,.6), transparent 60%),
+    radial-gradient(1.5px 1.5px at 45% 55%, rgba(245,200,66,.7), transparent 60%),
+    radial-gradient(1.2px 1.2px at 85% 70%, rgba(245,200,66,.55), transparent 60%),
+    radial-gradient(1.4px 1.4px at 12% 60%, rgba(245,200,66,.65), transparent 60%),
+    radial-gradient(1.1px 1.1px at 58% 85%, rgba(245,200,66,.6), transparent 60%);
   background-size:720px 720px;
   animation:driftTeal 72s linear infinite;
   opacity:.55;
@@ -1716,9 +1716,9 @@ html,body{ background:var(--bg); color:var(--text); }
   transform:translate(-50%,-50%) rotate(45deg);
   background:var(--gold-bright); box-shadow:0 0 14px var(--gold-bright);
 }
-#settingsBtn{ border-radius:1px !important; border:1px solid rgba(200,151,31,.4) !important; color:var(--gold) !important; background:rgba(10,12,20,.6) !important; }
+#settingsBtn{ border-radius:1px !important; border:1px solid rgba(200,151,31,.4) !important; color:var(--gold) !important; background:rgba(27,19,11,.6) !important; }
 #settingsBtn:hover{ color:var(--gold-bright) !important; box-shadow:0 0 20px rgba(200,151,31,.35) !important; }
-#settingsPanel{ border:1px solid rgba(200,151,31,.45) !important; border-radius:1px !important; background:linear-gradient(180deg,#0a0c14f8,#04050afc) !important; }
+#settingsPanel{ border:1px solid rgba(200,151,31,.45) !important; border-radius:1px !important; background:linear-gradient(180deg,#1b130bf8,#0f0b07fc) !important; }
 #settingsPanel .sp-title{ color:var(--gold); }
 #settingsPanel .sp-row{ color:var(--text-dim); }
 #settingsPanel .sp-row b{ color:var(--gold-bright); }
@@ -1730,9 +1730,9 @@ html,body{ background:var(--bg); color:var(--text); }
 .orb{
   width:16px; height:16px; border-radius:50%;
   background:radial-gradient(circle at 35% 30%, #e6fff6, var(--teal) 55%, #0a6b52);
-  box-shadow:0 0 12px rgba(29,233,182,.9), 0 0 3px rgba(29,233,182,.9);
+  box-shadow:0 0 12px rgba(245,200,66,.9), 0 0 3px rgba(245,200,66,.9);
 }
-.orb.off{ background:rgba(29,233,182,.08); box-shadow:none; }
+.orb.off{ background:rgba(245,200,66,.08); box-shadow:none; }
 #zoneBadge{
   font-family:var(--font-stat); font-weight:700; font-size:11px; letter-spacing:3px;
   color:var(--gold); text-transform:uppercase;
@@ -1750,12 +1750,12 @@ html,body{ background:var(--bg); color:var(--text); }
 #topRight .stat:nth-child(2) svg{ fill:var(--teal); }
 #topRight .stat.time{ color:var(--text); }
 #topRight .stat.time svg{ fill:none; stroke:var(--text-dim); }
-#topRight .stat .mult{ color:var(--teal); text-shadow:0 0 14px rgba(29,233,182,.75); }
+#topRight .stat .mult{ color:var(--teal); text-shadow:0 0 14px rgba(245,200,66,.75); }
 #topRight .stat .lbl{ color:var(--text-dim); }
 
 /* ability bar: completely dark pill, hexagonal amber-framed icons */
 #abilities{
-  background:rgba(4,5,10,.94);
+  background:rgba(15,11,7,.94);
   border:1px solid rgba(200,151,31,.55);
   border-radius:40px;
   box-shadow:0 0 30px rgba(0,0,0,.8), inset 0 0 24px rgba(200,151,31,.05);
@@ -1787,15 +1787,15 @@ html,body{ background:var(--bg); color:var(--text); }
 #classBadge .badge-icon{ filter:drop-shadow(0 0 8px rgba(200,151,31,.65)); }
 #className{ color:var(--gold); font-size:12px; text-shadow:0 0 14px rgba(200,151,31,.55), 0 2px 8px #000; }
 #hudClassLevel{ color:var(--gold-bright); }
-#classXpTrack{ border-color:rgba(200,151,31,.4); background:rgba(4,5,10,.75); border-radius:1px; }
+#classXpTrack{ border-color:rgba(200,151,31,.4); background:rgba(15,11,7,.75); border-radius:1px; }
 #classXpFill{ background:linear-gradient(90deg,#6e5212,var(--gold-bright)); box-shadow:0 0 9px rgba(240,192,64,.8); }
 #classXpCaption{ color:var(--text-dim); }
 #hudSkillPoints{ color:var(--gold-bright); }
-#minimap{ border:1px solid rgba(200,151,31,.35); background:rgba(4,5,10,.78); }
+#minimap{ border:1px solid rgba(200,151,31,.35); background:rgba(15,11,7,.78); }
 #banner{ color:var(--gold-bright); text-shadow:0 0 30px rgba(240,192,64,.8), 0 4px 18px #000; }
 
 /* in-play cards (briefing / level-up) */
-#briefing{ border:1px solid rgba(200,151,31,.55); border-radius:1px; background:linear-gradient(180deg, rgba(10,12,20,.95), rgba(4,5,10,.98)); }
+#briefing{ border:1px solid rgba(200,151,31,.55); border-radius:1px; background:linear-gradient(180deg, rgba(27,19,11,.95), rgba(15,11,7,.98)); }
 #briefing .b-eyebrow{ color:var(--gold); }
 #briefing .b-title{ color:var(--gold-bright); text-shadow:0 0 26px rgba(240,192,64,.5); }
 #briefing .b-rule{ background:linear-gradient(90deg, transparent, rgba(200,151,31,.9), transparent); }
@@ -1803,7 +1803,7 @@ html,body{ background:var(--bg); color:var(--text); }
 #briefing .b-objective b{ color:var(--gold-bright); }
 #classLevelUp{
   border:1px solid var(--gold); border-radius:1px;
-  background:linear-gradient(145deg, rgba(10,12,20,.98), rgba(4,5,10,.99));
+  background:linear-gradient(145deg, rgba(27,19,11,.98), rgba(15,11,7,.99));
   box-shadow:0 0 50px rgba(200,151,31,.28), 0 18px 65px #000;
 }
 .level-up-eyebrow{ color:var(--gold-bright); }
@@ -1827,7 +1827,7 @@ html,body{ background:var(--bg); color:var(--text); }
 }
 .class-card{
   position:relative;
-  background:linear-gradient(180deg, rgba(10,12,20,.96), rgba(4,5,10,.98));
+  background:linear-gradient(180deg, rgba(27,19,11,.96), rgba(15,11,7,.98));
   border:1px solid rgba(200,151,31,.28); border-radius:1px;
   border-top:3px solid #1a1a1a;   /* carved stone header band edge, no neon */
   padding:10px 12px; gap:4px;
@@ -1874,11 +1874,11 @@ html,body{ background:var(--bg); color:var(--text); }
 .class-card .class-card-xp i{ background:var(--gold-bright); }
 .class-card.locked{ border-top-color:#3a3325; }
 .class-card.locked::before{ background:#3a3325; box-shadow:none; }
-.class-card .cprice{ background:rgba(4,12,9,.9); border-color:rgba(29,233,182,.5); color:var(--teal); border-radius:1px; }
+.class-card .cprice{ background:rgba(4,12,9,.9); border-color:rgba(245,200,66,.5); color:var(--teal); border-radius:1px; }
 
 /* ---------------- ZONE / UNIVERSE cards ----------------------------------- */
 .zone-card, .uni-card, .card, .shop-card{
-  background:linear-gradient(180deg, rgba(10,12,20,.96), rgba(4,5,10,.98));
+  background:linear-gradient(180deg, rgba(27,19,11,.96), rgba(15,11,7,.98));
   border:1px solid rgba(200,151,31,.3); border-radius:1px;
 }
 .zone-card:hover, .zone-card:focus-visible, .uni-card:hover:not(.locked), .card:hover{
@@ -1887,7 +1887,7 @@ html,body{ background:var(--bg); color:var(--text); }
 .zone-card .znum, .uni-card .unum{ color:var(--gold); }
 .zone-card .zname, .uni-card .uname{ color:var(--gold-bright); }
 .zone-card.done{ border-color:rgba(240,192,64,.6); }
-.zone-card.open{ border-color:rgba(29,233,182,.5); }
+.zone-card.open{ border-color:rgba(245,200,66,.5); }
 #zoneTitle, #classTitle{ color:var(--gold-bright); text-shadow:0 0 20px rgba(240,192,64,.5), 0 3px 12px #000; }
 #zoneSelect .zs-eyebrow, #classSelect .cs-eyebrow{ color:var(--gold); }
 #zoneHint, #universeCaption{ color:var(--text-dim); }
@@ -1911,14 +1911,14 @@ html,body{ background:var(--bg); color:var(--text); }
   grid-template-columns:208px 1fr;
   grid-template-rows:auto 1fr auto;
   grid-template-areas:"head head" "tabs body" "foot foot";
-  background:linear-gradient(180deg, rgba(10,12,20,.99), rgba(4,5,10,.995));
+  background:linear-gradient(180deg, rgba(27,19,11,.99), rgba(15,11,7,.995));
   border:1px solid rgba(200,151,31,.45); border-radius:1px;
 }
 .shop-head{ grid-area:head; border-bottom:1px solid rgba(200,151,31,.28); }
 .shop-head h2{ color:var(--gold-bright); text-shadow:0 0 30px rgba(240,192,64,.4); }
 .shop-sub{ color:var(--gold); }
 .shop-bank{ color:var(--teal); }
-.shop-bank svg{ fill:var(--teal); filter:drop-shadow(0 0 8px rgba(29,233,182,.6)); }
+.shop-bank svg{ fill:var(--teal); filter:drop-shadow(0 0 8px rgba(245,200,66,.6)); }
 .shop-tabs{
   grid-area:tabs; flex-direction:column; align-items:stretch; gap:2px;
   padding:16px 0 16px 16px; border-right:1px solid rgba(200,151,31,.25);
@@ -1951,18 +1951,18 @@ html,body{ background:var(--bg); color:var(--text); }
 .shop-card{ position:relative; }
 .shop-card:hover{ border-color:rgba(240,192,64,.65); box-shadow:0 0 26px rgba(240,192,64,.18); }
 .shop-card.owned{ border-color:rgba(200,151,31,.5); }
-.shop-card.maxed{ border-color:rgba(29,233,182,.55); }
+.shop-card.maxed{ border-color:rgba(245,200,66,.55); }
 /* purchased items: green checkmark badge */
 .shop-card.owned::after, .shop-card.maxed::after{
   content:'✓'; position:absolute; top:8px; right:10px; width:18px; height:18px;
   display:flex; align-items:center; justify-content:center;
-  border-radius:50%; background:rgba(29,233,182,.14); border:1px solid var(--teal);
-  color:var(--teal); font-size:11px; font-weight:700; box-shadow:0 0 12px rgba(29,233,182,.45);
+  border-radius:50%; background:rgba(245,200,66,.14); border:1px solid var(--teal);
+  color:var(--teal); font-size:11px; font-weight:700; box-shadow:0 0 12px rgba(245,200,66,.45);
 }
 .sc-cost{ color:var(--teal); }
 .sc-buy{ background:rgba(200,151,31,.12) !important; color:var(--gold-bright) !important; }
-.sc-buy.maxed:disabled{ color:var(--teal); border-color:rgba(29,233,182,.45); background:rgba(29,233,182,.08); }
-.cp-stage{ border:1px solid rgba(200,151,31,.35); border-radius:1px; background:radial-gradient(ellipse at 50% 58%, rgba(10,12,20,.9), rgba(4,5,10,.98) 74%); }
+.sc-buy.maxed:disabled{ color:var(--teal); border-color:rgba(245,200,66,.45); background:rgba(245,200,66,.08); }
+.cp-stage{ border:1px solid rgba(200,151,31,.35); border-radius:1px; background:radial-gradient(ellipse at 50% 58%, rgba(27,19,11,.9), rgba(15,11,7,.98) 74%); }
 .cp-name{ color:var(--gold-bright); }
 .cp-kicker{ color:var(--gold); }
 .cp-cost{ color:var(--teal); }
@@ -1988,7 +1988,7 @@ html,body{ background:var(--bg); color:var(--text); }
 .pause-confirm-card p{ color:var(--text); }
 #skillTree{ background:radial-gradient(ellipse at 50% 30%, rgba(200,151,31,.07), transparent 60%), var(--bg) !important; }
 .skill-panel{
-  background:linear-gradient(180deg, rgba(10,12,20,.97), rgba(4,5,10,.99));
+  background:linear-gradient(180deg, rgba(27,19,11,.97), rgba(15,11,7,.99));
   border:1px solid rgba(200,151,31,.45); border-radius:1px;
 }
 #skillTreeTitle{ color:var(--gold-bright); }
@@ -2022,7 +2022,7 @@ html,body{ background:var(--bg); color:var(--text); }
 #skillTooltip{ background:var(--surface); border:1px solid var(--gold); border-radius:1px; color:var(--text); }
 #skillTooltipName{ color:var(--gold-bright); }
 #skillTooltipState{ color:var(--gold); }
-.legend-dot{ border-color:#4a4030; background:#0a0c14; }
+.legend-dot{ border-color:#4a4030; background:#1b130b; }
 .legend-dot.available{ border-color:#d8c9a3; background:#8a7a4a; }
 .legend-dot.owned{ border-color:var(--gold-bright); background:var(--gold); box-shadow:0 0 7px rgba(240,192,64,.5); }
 
@@ -2040,7 +2040,7 @@ html,body{ background:var(--bg); color:var(--text); }
 }
 #victoryScreen{
   background:
-    radial-gradient(ellipse 90% 60% at 50% 35%, rgba(29,233,182,.14), transparent 62%),
+    radial-gradient(ellipse 90% 60% at 50% 35%, rgba(245,200,66,.14), transparent 62%),
     radial-gradient(ellipse 70% 45% at 50% 115%, rgba(200,151,31,.14), transparent 58%),
     var(--bg) !important;
 }
@@ -2055,13 +2055,13 @@ html,body{ background:var(--bg); color:var(--text); }
 #vicTime b{ color:var(--gold-bright); }
 #vicRecord{ background:linear-gradient(180deg,#f0c040,#c8971f); color:#140d02; box-shadow:0 0 26px rgba(240,192,64,.6); }
 #vicEnding{ color:var(--gold-bright); text-shadow:0 0 26px rgba(240,192,64,.4); }
-.save-line{ color:var(--teal); text-shadow:0 0 16px rgba(29,233,182,.45), 0 2px 8px #000; }
-.save-line i{ border-color:rgba(29,233,182,.6); color:#bff5e4; }
+.save-line{ color:var(--teal); text-shadow:0 0 16px rgba(245,200,66,.45), 0 2px 8px #000; }
+.save-line i{ border-color:rgba(245,200,66,.6); color:#bff5e4; }
 
 /* ---------------- transitions / how-to ------------------------------------ */
 #levelTransition h1{ color:var(--gold-bright); text-shadow:0 0 30px rgba(240,192,64,.5); }
 .uni-inner{
-  background:radial-gradient(ellipse at 50% -10%, rgba(200,151,31,.13), rgba(4,5,10,.98) 62%);
+  background:radial-gradient(ellipse at 50% -10%, rgba(200,151,31,.13), rgba(15,11,7,.98) 62%);
   border:1px solid rgba(200,151,31,.45); border-radius:1px;
 }
 .uni-kicker{ color:var(--gold); }
@@ -2081,12 +2081,13 @@ html,body{ background:var(--bg); color:var(--text); }
    WARM MEDIEVAL THEME — parchment, candlelight, stone & wood
    ===================================================================== */
 :root{
-  --bg:#1a1208;            /* dark warm brown */
-  --surface:#2c1f0e;       /* aged wood brown */
-  --border:#8b6914;        /* worn gold */
+  --bg:#0f0b07;            /* Dark Medieval Chrono-Gold */
+  --surface:#1b130b;       /* obsidian brown surface */
+  --surface-hover:#281c10; /* lit wood hover */
+  --border:rgba(212,160,23,0.35); /* worn gold */
   --gold:#d4a017;          /* candlelight gold */
   --gold-bright:#f5c842;   /* bright flame gold */
-  --teal:#2ecc71;          /* forest green (health) */
+  --teal:#f5c842;          /* unified chrono-gold (legacy alias) */
   --red:#c0392b;           /* blood red */
   --text:#f0e6c8;          /* aged parchment */
   --text-dim:rgba(240,230,200,0.55);
@@ -2352,6 +2353,48 @@ html,body{ background:var(--bg); color:var(--text); }
   .class-card.shop-tile .tileglyph svg{ width:38px; height:38px; display:block; margin:0 auto; }
   .class-card.shop-tile .cname{ font-size:12px; }
 </style>
+<style id="chrono-gold-unify">
+/* ---- CHRONO-GOLD UNIFICATION: card states, era badge, level grid ---- */
+#zoneRow{
+  display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:14px;
+  width:100%; max-width:1240px; margin:0 auto; box-sizing:border-box;
+  overflow:visible; padding:6px 4px 14px;
+}
+.zone-card{ flex:none; width:auto; min-width:0; }
+.zone-card, .uni-card{ background:linear-gradient(180deg, #1b130b 0%, #0f0b07 100%); }
+.zone-card.open, .zone-card.done, .uni-card.sel{
+  background:linear-gradient(180deg, #24190d 0%, #140d06 100%);
+  border:1px solid #f5c842;
+  box-shadow:0 0 20px rgba(245, 200, 66, 0.18);
+}
+.zone-card.open .zstate, .zone-card.done .zstate,
+.uni-card:not(.locked) .ustate{ color:#f5c842; text-shadow:0 0 12px rgba(245,200,66,.35); }
+.zone-card.open .zstate svg, .zone-card.done .zstate svg,
+.uni-card:not(.locked) .ustate svg{ color:#f5c842; }
+.zone-card.locked, .uni-card.locked{ opacity:.55; }
+.zone-card.locked .zname, .zone-card.locked .znum{ color:rgba(240,230,200,.62); }
+.zone-card.locked .zdesc{ color:rgba(240,230,200,.48); }
+.zone-card.locked .zstate, .uni-card.locked .ustate{ color:rgba(240,230,200,.5); }
+.uni-card .uname{ text-transform:uppercase; }
+.uni-card .uera{
+  display:inline-block; margin-top:3px; padding:2px 9px;
+  border:1px solid rgba(212,160,23,.45); border-radius:20px;
+  background:rgba(212,160,23,.08); color:var(--gold);
+  font-size:9.5px; letter-spacing:1.8px; text-transform:uppercase;
+}
+</style>
+<style id="heraldic-icons">
+/* ---- heraldic emblems: readable size + one-word ability labels ---- */
+#abilities .ab-btn svg{ width:66%; height:66%; }
+.ability .ab-label{
+  font-family:var(--font-head); font-size:6.5px; font-weight:700;
+  letter-spacing:.6px; line-height:1.15; margin-top:1px;
+  color:rgba(240,230,200,.78); text-transform:uppercase;
+  white-space:nowrap; pointer-events:none;
+  text-shadow:0 1px 4px rgba(0,0,0,.8);
+}
+.ability.locked .ab-label{ opacity:.45; }
+</style>
 </head>
 <body>
 <div id="gameCanvas" class="screen game-screen">
@@ -2464,31 +2507,31 @@ html,body{ background:var(--bg); color:var(--text); }
       <button class="ab-btn" type="button" data-ability="q" aria-label="Class ability (Q)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 20 6v6c0 4.5-3.5 7.5-8 9-4.5-1.5-8-4.5-8-9V6z"/></svg>
         <span class="ab-sweep" aria-hidden="true"></span>
-      </button><span class="key">Q</span><span id="orbBadge" class="orb-badge" hidden>1</span>
+      </button><span class="key">Q</span><span class="ab-label" aria-hidden="true"></span><span id="orbBadge" class="orb-badge" hidden>1</span>
     </div>
     <div class="ability locked" id="abE">
       <button class="ab-btn" type="button" data-ability="e" aria-label="Ability 2 (E)" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg>
         <span class="ab-sweep" aria-hidden="true"></span>
-      </button><span class="key">E</span>
+      </button><span class="key">E</span><span class="ab-label" aria-hidden="true"></span>
     </div>
     <div class="ability locked" id="abShift">
       <button class="ab-btn" type="button" data-ability="shift" aria-label="Ability 3 (SHIFT)" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 4 8 8-8 8"/></svg>
         <span class="ab-sweep" aria-hidden="true"></span>
-      </button><span class="key">SHIFT</span>
+      </button><span class="key">SHIFT</span><span class="ab-label" aria-hidden="true"></span>
     </div>
     <div class="ability locked" id="abF">
       <button class="ab-btn" type="button" data-ability="f" aria-label="Ability 4 (F)" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 5h14M12 5v14M8 19h8"/></svg>
         <span class="ab-sweep" aria-hidden="true"></span>
-      </button><span class="key">F</span>
+      </button><span class="key">F</span><span class="ab-label" aria-hidden="true"></span>
     </div>
     <div class="ability locked" id="abR">
       <button class="ab-btn" type="button" data-ability="r" aria-label="Ability 5 (R)" disabled>
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 10-13h-7z"/></svg>
         <span class="ab-sweep" aria-hidden="true"></span>
-      </button><span class="key">R</span>
+      </button><span class="key">R</span><span class="ab-label" aria-hidden="true"></span>
     </div>
   </div>
 </div>
@@ -5929,80 +5972,110 @@ function syncClassHud() {
    ========================================================================== */
 
 const CLASS_ICONS = {
-  knight:   /* shield with a crossed longsword */
-    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
-    '<path d="M50 12l26 9v22c0 18-11 29-26 37-15-8-26-19-26-37V21z" fill="#241708" stroke="#d4a017" stroke-width="3.4" stroke-linejoin="round"/>' +
-    '<path d="M50 17v63" stroke="#d4a017" stroke-opacity=".4" stroke-width="2"/>' +
-    '<g transform="rotate(38 50 50)">' +
-    '<path d="M50 13l4.6 9v35H45.4V22z" fill="#d4a017"/>' +
-    '<path d="M37 50h26l-3.2 7.4H40.2z" fill="#8b6914"/>' +
-    '<rect x="46.6" y="57.4" width="6.8" height="15" rx="2" fill="#5c3317"/>' +
-    '<circle cx="50" cy="76.5" r="4.4" fill="#d4a017"/>' +
-    '</g></svg>',
-  gunslinger:   /* flintlock pistol */
-    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
-    '<g transform="rotate(-24 50 50)">' +
-    '<rect x="13" y="41" width="52" height="8.5" rx="2.6" fill="#d4a017"/>' +
-    '<rect x="61" y="43" width="8" height="4.5" rx="1.6" fill="#8b6914"/>' +
-    '<rect x="29" y="49.5" width="11" height="8" rx="1.6" fill="#8b6914"/>' +
-    '<path d="M32 49.5l4.5-6.5 3.4 2.2-3.4 5.3z" fill="#d4a017"/>' +
-    '<path d="M40 49.5c2.4 8.4-1.6 15-8.4 19.4l-6.4-4.2c5.4-4 7.6-9.4 6.8-15.2z" fill="#5c3317"/>' +
-    '<path d="M35.5 57.5c1.8 1.2 3.8 2 5.9 2.4" stroke="#d4a017" stroke-width="1.7" fill="none" stroke-linecap="round"/>' +
-    '</g></svg>',
-  sniper:   /* long musket */
-    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
-    '<g transform="rotate(-20 50 50)">' +
-    '<rect x="6" y="45" width="70" height="5.4" rx="2.4" fill="#d4a017"/>' +
-    '<circle cx="79" cy="47.6" r="2.6" fill="#f5c842"/>' +
-    '<path d="M6 45l16-4.6 4.4 10L10 55z" fill="#5c3317"/>' +
-    '<rect x="33" y="50.4" width="8" height="13" rx="2.4" fill="#5c3317"/>' +
-    '<path d="M37 50.4c0 4-2.6 6.4-6 7" stroke="#d4a017" stroke-width="1.8" fill="none" stroke-linecap="round"/>' +
-    '</g></svg>',
-  mage:   /* staff with an orb */
-    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
-    '<rect x="46.8" y="28" width="6.4" height="60" rx="3.2" fill="#5c3317"/>' +
-    '<path d="M46.8 38l6.4-4M46.8 50l6.4-4M46.8 62l6.4-4M46.8 74l6.4-4" stroke="#d4a017" stroke-width="1.7" stroke-linecap="round"/>' +
-    '<circle cx="50" cy="19" r="13" fill="#d4a017" fill-opacity=".22"/>' +
-    '<circle cx="50" cy="19" r="12" fill="none" stroke="#d4a017" stroke-width="2"/>' +
-    '<circle cx="50" cy="19" r="7.4" fill="#d4a017"/>' +
-    '<circle cx="47.6" cy="16.6" r="2.2" fill="#f5c842"/>' +
-    '</svg>',
-  berserker:   /* crossed hand axes */
-    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
-    '<g transform="rotate(36 50 50)">' +
-    '<rect x="46.4" y="30" width="7.2" height="54" rx="3.4" fill="#5c3317"/>' +
-    '<path d="M50 14c11 1 19 8 21 18-8-4-15-5-21-5z" fill="#d4a017"/>' +
-    '<path d="M50 14c11 1 19 8 21 18" fill="none" stroke="#f5c842" stroke-width="1.6"/>' +
+  knight:   /* heraldic shield, crossed longsword, riveted bevel */
+    '<svg class="cicon-art" viewBox="0 0 64 64" aria-hidden="true">' +
+    '<path d="M32 5l19 7v15c0 13-8 21.5-19 27C21 48.5 13 40 13 27V12z" fill="#241708" stroke="#d4a017" stroke-width="2.6" stroke-linejoin="round"/>' +
+    '<path d="M32 9.6l14.4 5.3V27c0 10.3-6.2 17.1-14.4 21.5C23.8 44.1 17.6 37.3 17.6 27V14.9z" fill="none" stroke="#8b6914" stroke-width="1.3"/>' +
+    '<g transform="rotate(36 32 32)">' +
+    '<path d="M32 9l3.4 6.6v21h-6.8v-21z" fill="#f5c842"/>' +
+    '<path d="M32 12.4v21" stroke="#8b6914" stroke-width="1"/>' +
+    '<path d="M23 32.5h18l-2.4 5H25.4z" fill="#d4a017"/>' +
+    '<rect x="29.8" y="37.5" width="4.4" height="10" rx="1.6" fill="#5c3317"/>' +
+    '<circle cx="32" cy="50.6" r="3" fill="#d4a017"/>' +
     '</g>' +
-    '<g transform="rotate(-36 50 50)">' +
-    '<rect x="46.4" y="30" width="7.2" height="54" rx="3.4" fill="#5c3317"/>' +
-    '<path d="M50 14c-11 1-19 8-21 18 8-4 15-5 21-5z" fill="#d4a017"/>' +
-    '<path d="M50 14c-11 1-19 8-21 18" fill="none" stroke="#f5c842" stroke-width="1.6"/>' +
+    '<g fill="#f5c842"><circle cx="32" cy="13.4" r="1.5"/><circle cx="19.4" cy="18.4" r="1.3"/><circle cx="44.6" cy="18.4" r="1.3"/></g>' +
+    '</svg>',
+  gunslinger:   /* flintlock derringer: lock, hammer, ramrod, muzzle spark */
+    '<svg class="cicon-art" viewBox="0 0 64 64" aria-hidden="true">' +
+    '<path fill="#f5c842" d="M53 9l1.7 4.8L59.5 15.5l-4.8 1.7L53 22l-1.7-4.8-4.8-1.7 4.8-1.7z"/>' +
+    '<g transform="rotate(-22 32 34)">' +
+    '<rect x="8" y="27.5" width="37" height="5.6" rx="2" fill="#d4a017"/>' +
+    '<rect x="42" y="29" width="6.5" height="3" rx="1.2" fill="#f5c842"/>' +
+    '<rect x="11" y="33.1" width="20" height="3.2" rx="1.6" fill="#8b6914"/>' +
+    '<rect x="19" y="33.1" width="8" height="6" rx="1.2" fill="#8b6914"/>' +
+    '<circle cx="23" cy="36.1" r="1.3" fill="#f5c842"/>' +
+    '<path d="M21 33.1l3.4-5.2 2.7 1.9-2.7 4.1z" fill="#f5c842"/>' +
+    '<path d="M27 33.1c1.8 6.6-1.2 12-6.8 15.7l-4.6-3.6c4.4-3.3 6.2-7.6 5.6-12.1z" fill="#5c3317"/>' +
+    '<path d="M22.4 39.8c1.5 1 3.1 1.8 4.9 2.1" stroke="#d4a017" stroke-width="1.4" fill="none" stroke-linecap="round"/>' +
+    '<path d="M31 36.3c2.8.4 4.6 2 5.2 4.7" stroke="#d4a017" stroke-width="1.4" fill="none" stroke-linecap="round"/>' +
     '</g>' +
-    '<circle cx="50" cy="52" r="5.2" fill="#d4a017"/>' +
+    '<g fill="#f5c842"><circle cx="14" cy="50" r="1.5"/><circle cx="48" cy="52" r="1.3"/></g>' +
     '</svg>',
-  shadow:   /* hooded figure silhouette */
-    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
-    '<path d="M50 12c14 0 22 10 22 24v7c0 4-1.6 6.4-3.6 8.4C74 55.6 78 63.6 78 74H22c0-10.4 4-18.4 9.6-22.6-2-2-3.6-4.4-3.6-8.4v-7c0-14 8-24 22-24z" fill="#241708" stroke="#d4a017" stroke-width="3" stroke-linejoin="round"/>' +
-    '<path d="M50 22c8.4 0 13.6 6.2 13.6 14.4C63.6 46.6 57.4 53 50 53s-13.6-6.4-13.6-16.6C36.4 28.2 41.6 22 50 22z" fill="#0e0903"/>' +
-    '<ellipse cx="44.4" cy="37" rx="2.7" ry="1.9" fill="#d4a017"/>' +
-    '<ellipse cx="55.6" cy="37" rx="2.7" ry="1.9" fill="#d4a017"/>' +
+  sniper:   /* long musket inside a ranging reticle */
+    '<svg class="cicon-art" viewBox="0 0 64 64" aria-hidden="true">' +
+    '<circle cx="32" cy="32" r="24" fill="none" stroke="#8b6914" stroke-width="1.6"/>' +
+    '<path stroke="#8b6914" stroke-width="1.6" stroke-linecap="round" d="M32 3v9M32 52v9M3 32h9M52 32h9"/>' +
+    '<g transform="rotate(-20 32 32)">' +
+    '<rect x="4" y="29.6" width="48" height="3.8" rx="1.8" fill="#d4a017"/>' +
+    '<g fill="#8b6914"><rect x="16" y="29.2" width="2.4" height="4.6"/><rect x="30" y="29.2" width="2.4" height="4.6"/><rect x="44" y="29.2" width="2.4" height="4.6"/></g>' +
+    '<circle cx="55" cy="31.5" r="2" fill="#f5c842"/>' +
+    '<path d="M4 29.6l11-3.4 3.2 7.2L7 36.6z" fill="#5c3317"/>' +
+    '<rect x="22" y="33.4" width="5.6" height="9" rx="1.8" fill="#5c3317"/>' +
+    '<path d="M24.8 33.4c0 3-1.9 4.8-4.4 5.4" stroke="#d4a017" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
+    '</g>' +
+    '<circle cx="32" cy="32" r="2" fill="#f5c842"/>' +
     '</svg>',
-  tech:   /* mechanical gear with a lightning bolt */
-    '<svg class="cicon-art" viewBox="0 0 100 100" aria-hidden="true">' +
+  mage:   /* chrono staff: ringed orb, prongs, orbiting motes */
+    '<svg class="cicon-art" viewBox="0 0 64 64" aria-hidden="true">' +
+    '<rect x="29.9" y="20" width="4.2" height="39" rx="2.1" fill="#5c3317"/>' +
+    '<path d="M29.9 27l4.2-2.6M29.9 35l4.2-2.6M29.9 43l4.2-2.6M29.9 51l4.2-2.6" stroke="#d4a017" stroke-width="1.3" stroke-linecap="round"/>' +
+    '<path d="M25.6 24.6 32 21l6.4 3.6" stroke="#d4a017" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<circle cx="32" cy="13" r="8.8" fill="#d4a017" fill-opacity=".2"/>' +
+    '<circle cx="32" cy="13" r="8.2" fill="none" stroke="#d4a017" stroke-width="1.6"/>' +
+    '<circle cx="32" cy="13" r="4.9" fill="#d4a017"/>' +
+    '<circle cx="30.3" cy="11.3" r="1.4" fill="#f5c842"/>' +
+    '<ellipse cx="32" cy="13" rx="14.5" ry="5.2" fill="none" stroke="#f5c842" stroke-width="1.1" stroke-dasharray="2.4 3" transform="rotate(-18 32 13)"/>' +
+    '<g fill="#f5c842"><circle cx="13" cy="23" r="1.5"/><circle cx="51" cy="21" r="1.3"/><circle cx="47" cy="36" r="1.1"/><circle cx="16" cy="38" r="1.1"/></g>' +
+    '</svg>',
+  berserker:   /* crossed crescent hand-axes, notched edges, war medallion */
+    '<svg class="cicon-art" viewBox="0 0 64 64" aria-hidden="true">' +
+    '<g transform="rotate(34 32 32)">' +
+    '<rect x="29.8" y="20" width="4.6" height="36" rx="2.2" fill="#5c3317"/>' +
+    '<path d="M32 9c7.4.8 12.8 5.4 14.2 12.2C40.8 18.4 36.2 17.6 32 17.6z" fill="#d4a017"/>' +
+    '<path d="M32 9c7.4.8 12.8 5.4 14.2 12.2" fill="none" stroke="#f5c842" stroke-width="1.3"/>' +
+    '<path d="M35.2 13.2l2.4 2.1M38.8 16.2l2.2 1.5" stroke="#241708" stroke-width="1.2" stroke-linecap="round"/>' +
+    '<path d="M30 40h4.2M30 46h4.2" stroke="#d4a017" stroke-width="1.2"/>' +
+    '</g>' +
+    '<g transform="rotate(-34 32 32)">' +
+    '<rect x="29.8" y="20" width="4.6" height="36" rx="2.2" fill="#5c3317"/>' +
+    '<path d="M32 9c-7.4.8-12.8 5.4-14.2 12.2C23.2 18.4 27.8 17.6 32 17.6z" fill="#d4a017"/>' +
+    '<path d="M32 9c-7.4.8-12.8 5.4-14.2 12.2" fill="none" stroke="#f5c842" stroke-width="1.3"/>' +
+    '<path d="M28.8 13.2l-2.4 2.1M25.2 16.2l-2.2 1.5" stroke="#241708" stroke-width="1.2" stroke-linecap="round"/>' +
+    '<path d="M30 40h4.2M30 46h4.2" stroke="#d4a017" stroke-width="1.2"/>' +
+    '</g>' +
+    '<circle cx="32" cy="34" r="4.8" fill="#241708" stroke="#d4a017" stroke-width="1.6"/>' +
+    '<circle cx="32" cy="34" r="1.9" fill="#f5c842"/>' +
+    '</svg>',
+  shadow:   /* hooded silhouette, ember eyes, crossed daggers */
+    '<svg class="cicon-art" viewBox="0 0 64 64" aria-hidden="true">' +
+    '<path d="M32 7c9.4 0 15 6.8 15 16v4.6c0 2.8-1.1 4.4-2.4 5.7 3.8 2.9 6.4 8 6.4 14.7H13c0-6.7 2.6-11.8 6.4-14.7C18.1 32 17 30.4 17 27.6V23c0-9.2 5.6-16 15-16z" fill="#241708" stroke="#d4a017" stroke-width="2.2" stroke-linejoin="round"/>' +
+    '<path d="M32 14.6c5.6 0 9 4.2 9 9.8 0 6.8-4.2 10.8-9 10.8s-9-4-9-10.8c0-5.6 3.4-9.8 9-9.8z" fill="#0e0903"/>' +
+    '<ellipse cx="27.6" cy="24.6" rx="1.9" ry="1.3" fill="#f5c842"/>' +
+    '<ellipse cx="36.4" cy="24.6" rx="1.9" ry="1.3" fill="#f5c842"/>' +
+    '<path d="M32 32.4v4" stroke="#8b6914" stroke-width="1.3" stroke-linecap="round"/>' +
+    '<g stroke-linecap="round">' +
+    '<path d="M18 52l10-8" stroke="#ffe9ae" stroke-width="2.2"/>' +
+    '<path d="M46 52l-10-8" stroke="#ffe9ae" stroke-width="2.2"/>' +
+    '<path d="M21 47.2l3.4 1.4M43 47.2l-3.4 1.4" stroke="#d4a017" stroke-width="1.8"/>' +
+    '<path d="M18 52l-3.4 3.2M46 52l3.4 3.2" stroke="#5c3317" stroke-width="2.8"/>' +
+    '</g>' +
+    '</svg>',
+  tech:   /* clockwork gear ring, bolt core, riveted plate */
+    '<svg class="cicon-art" viewBox="0 0 64 64" aria-hidden="true">' +
     '<g fill="#d4a017">' +
-    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2"/>' +
-    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2" transform="rotate(45 50 50)"/>' +
-    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2" transform="rotate(90 50 50)"/>' +
-    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2" transform="rotate(135 50 50)"/>' +
-    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2" transform="rotate(180 50 50)"/>' +
-    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2" transform="rotate(225 50 50)"/>' +
-    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2" transform="rotate(270 50 50)"/>' +
-    '<rect x="46.4" y="8" width="7.2" height="13" rx="2.2" transform="rotate(315 50 50)"/>' +
+    '<rect x="29.8" y="4.6" width="4.4" height="9" rx="1.6"/>' +
+    '<rect x="29.8" y="4.6" width="4.4" height="9" rx="1.6" transform="rotate(45 32 32)"/>' +
+    '<rect x="29.8" y="4.6" width="4.4" height="9" rx="1.6" transform="rotate(90 32 32)"/>' +
+    '<rect x="29.8" y="4.6" width="4.4" height="9" rx="1.6" transform="rotate(135 32 32)"/>' +
+    '<rect x="29.8" y="4.6" width="4.4" height="9" rx="1.6" transform="rotate(180 32 32)"/>' +
+    '<rect x="29.8" y="4.6" width="4.4" height="9" rx="1.6" transform="rotate(225 32 32)"/>' +
+    '<rect x="29.8" y="4.6" width="4.4" height="9" rx="1.6" transform="rotate(270 32 32)"/>' +
+    '<rect x="29.8" y="4.6" width="4.4" height="9" rx="1.6" transform="rotate(315 32 32)"/>' +
     '</g>' +
-    '<circle cx="50" cy="50" r="23" fill="#241708" stroke="#d4a017" stroke-width="3.4"/>' +
-    '<circle cx="50" cy="50" r="9.5" fill="#141414" stroke="#8b6914" stroke-width="2"/>' +
-    '<path d="M54.5 30l-13 21h8.4l-4.4 17 14.5-22h-9l3-16z" fill="#d4a017"/>' +
+    '<circle cx="32" cy="32" r="15.5" fill="#241708" stroke="#d4a017" stroke-width="2.4"/>' +
+    '<circle cx="32" cy="32" r="11.5" fill="none" stroke="#8b6914" stroke-width="1.2" stroke-dasharray="2.4 3"/>' +
+    '<path d="M35.4 19L26 34h5.6l-3 11L38 29.4h-6l2-10.4z" fill="#f5c842"/>' +
+    '<g fill="#f5c842"><circle cx="24.2" cy="24.2" r="1.1"/><circle cx="39.8" cy="24.2" r="1.1"/><circle cx="24.2" cy="39.8" r="1.1"/><circle cx="39.8" cy="39.8" r="1.1"/></g>' +
     '</svg>'
 };
 
@@ -9541,58 +9614,71 @@ const ABILITY_IDS = ALL_CLASS_ABILITY_IDS;
    icons can never go stale or mismatch the ability.
    --------------------------------------------------------------------------- */
 function classAbilityIcon(body) {
-  return '<svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+  return '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
 }
+/* heraldic ability emblems: layered multi-path silhouettes on the 64 grid,
+   one distinct mark per class ability, drawn in the button's gold */
 const CLASS_ABILITY_ICONS = {
   knight: {
-    q:     classAbilityIcon('<path d="M13 3.5 21.6 9.8 18.3 20.5H7.7L4.4 9.8Z"/>'),
-    e:     classAbilityIcon('<path d="M20 13a7 7 0 1 1-2.05-4.95"/><path d="M20.6 3.4V8h-4.6"/><path d="M6 13a7 7 0 1 0 2.05 4.95"/><path d="M5.4 22.6V18h4.6"/>'),
-    shift: classAbilityIcon('<path d="M13 3l8 3v6c0 5-3.5 8.6-8 10.2C8.5 20.6 5 17 5 12V6z"/><path d="M7.5 13h8.5"/><path d="M13.5 9.5 17 13l-3.5 3.5"/>'),
-    f:     classAbilityIcon('<path d="M4 10v6h4l6 5V5l-6 5z"/><path d="M17.2 9.6q3 3.4 0 6.8"/><path d="M20.6 6.8q5 6.2 0 12.4"/>'),
-    r:     classAbilityIcon('<path d="M13 13V3.5M13 13v9.5M13 13H3.5M13 13h9.5M13 13l6.7-6.7M13 13l-6.7 6.7M13 13l6.7 6.7M13 13l-6.7-6.7"/><circle cx="13" cy="13" r="1.7"/>')
+    q:     classAbilityIcon('<path d="M32 8l15 5.4V25c0 10-6.2 16.8-15 20.8C23.2 41.8 17 35 17 25V13.4z" fill="currentColor" fill-opacity=".16"/><path d="M32 8l15 5.4V25c0 10-6.2 16.8-15 20.8C23.2 41.8 17 35 17 25V13.4z"/><circle cx="32" cy="26" r="4.6"/><path d="M32 14.6v4.2M21.6 20.6l3.2 2.6M42.4 20.6l-3.2 2.6M13.4 30H8M56 30h-5.4M15.4 41.6 12 45M48.6 41.6 52 45"/>'),
+    e:     classAbilityIcon('<path d="M50 32a18 18 0 1 1-5.2-12.7"/><path d="M51.4 7.8V19.6H39.6"/><path d="M14 32a18 18 0 0 0 5.2 12.7"/><path d="M12.6 56.2V44.4h11.8"/><path d="M32 32l9.4-13.4" stroke-width="4.6"/><circle cx="32" cy="32" r="3" fill="currentColor" stroke="none"/>'),
+    shift: classAbilityIcon('<path d="M32 8l15 5.4V25c0 10-6.2 16.8-15 20.8C23.2 41.8 17 35 17 25V13.4z" fill="currentColor" fill-opacity=".16"/><path d="M32 8l15 5.4V25c0 10-6.2 16.8-15 20.8C23.2 41.8 17 35 17 25V13.4z"/><path d="M24 32h13"/><path d="M33 24l8 8-8 8"/><path d="M4.5 24H12M3 32h9M4.5 40H12"/>'),
+    f:     classAbilityIcon('<path d="M10 26v12h9l15 11V15L19 26z" fill="currentColor" fill-opacity=".16"/><path d="M10 26v12h9l15 11V15L19 26z"/><path d="M14.5 38v8.4"/><path d="M41.5 23q7.5 9 0 18"/><path d="M49.5 17q11 15 0 30"/>'),
+    r:     classAbilityIcon('<path d="M32 32V9M32 32v23M32 32H9M32 32h23M32 32l16.3-16.3M32 32l-16.3 16.3M32 32l16.3 16.3M32 32l-16.3-16.3"/><g fill="currentColor" stroke="none"><path d="M32 4.6 34.8 10h-5.6z"/><path d="M32 59.4l-2.8-5.4h5.6z"/><path d="M4.6 32l5.4-2.8v5.6z"/><path d="M59.4 32L54 34.8v-5.6z"/></g><circle cx="32" cy="32" r="4.6"/><circle cx="32" cy="32" r="1.6" fill="currentColor" stroke="none"/>')
   },
   gunslinger: {
-    q:     classAbilityIcon('<circle cx="9.5" cy="13" r="5.6"/><circle cx="16.5" cy="13" r="5.6"/>'),
-    e:     classAbilityIcon('<path d="M3 20 9 7l5 10 5-10 4 7"/>'),
-    shift: classAbilityIcon('<path d="M8 16.5a4 4 0 0 1 .6-7.96 5 5 0 0 1 9.8 1.46 3.7 3.7 0 0 1-.4 7.4z"/><path d="M6 22h11"/><path d="M14 19l3 3-3 3"/>'),
-    f:     classAbilityIcon('<path d="M4 21h18"/><path d="M13 21v-8"/><path d="M8 13h10"/><path d="M13 13V6"/><path d="M9.5 6h7"/>'),
-    r:     classAbilityIcon('<path d="M11 2 4.5 13.5h5.5L8 24l8.5-12h-5.5z" fill="currentColor" stroke="none" opacity=".5"/><path d="M17.5 2.5 11 14h4.5L14 23.5 21.5 11H17z" fill="currentColor" stroke="none"/>')
+    q:     classAbilityIcon('<circle cx="19" cy="45" r="6.4"/><path d="M23.6 40.6 44 15M25 45.8 52 29M19 38.6V14"/><g fill="currentColor" stroke="none"><circle cx="46.4" cy="12.4" r="2.3"/><circle cx="55.4" cy="27.6" r="2.3"/><circle cx="19" cy="10" r="2.3"/></g><path d="M13.4 49.6l-3 5"/>'),
+    e:     classAbilityIcon('<circle cx="24" cy="17" r="4.6"/><circle cx="37" cy="47" r="4.6"/><circle cx="49" cy="17" r="4.6"/><path d="M8 53 21.6 21.6 34 42.8 46.2 21.4 52 31"/><path d="M45.4 29.6 52 31l-.8-6.8"/>'),
+    shift: classAbilityIcon('<path d="M20 44a9.4 9.4 0 0 1 1.3-18.7A12.4 12.4 0 0 1 45.6 28 9 9 0 0 1 43.8 45.4z" fill="currentColor" fill-opacity=".16"/><path d="M20 44a9.4 9.4 0 0 1 1.3-18.7A12.4 12.4 0 0 1 45.6 28 9 9 0 0 1 43.8 45.4z"/><path d="M13 55h23"/><path d="M42 48.4 48.6 55 42 61.6" transform="translate(0 -2)"/>'),
+    f:     classAbilityIcon('<path d="M9 52h46"/><path d="M20 52v-9h24v9"/><path d="M32 43V31"/><path d="M21 31h22"/><path d="M43 31l13.4-6.4"/><circle cx="32" cy="31" r="4.2"/><path d="M23 52l-4.4 7M41 52l4.4 7"/>'),
+    r:     classAbilityIcon('<path d="M27.4 4.6 12 35h12.4L19 59.4 38.4 26H26z" fill="currentColor" fill-opacity=".32"/><path d="M41.6 7.6 30.4 30h9.4L36.4 50 49.6 25h-9.8z" fill="currentColor" stroke="none" opacity=".9"/>')
   },
   sniper: {
-    q:     classAbilityIcon('<path d="M2.5 13h20"/><path d="M17.5 8.5 23 13l-5.5 4.5"/>'),
-    e:     classAbilityIcon('<circle cx="5.5" cy="13" r="2.5"/><circle cx="13" cy="13" r="2.5"/><circle cx="20.5" cy="13" r="2.5"/><path d="M2 13h22"/><path d="M19.5 9.5 23 13l-3.5 3.5"/>'),
-    shift: classAbilityIcon('<path d="M2.5 13S7 6.5 13 6.5 23.5 13 23.5 13 19 19.5 13 19.5 2.5 13 2.5 13z"/><circle cx="13" cy="13" r="3"/><path d="M5 21 21 5"/>'),
-    f:     classAbilityIcon('<path d="M3 19.5h20"/><path d="M6.5 12.5 9 15l-2.5 2.5L4 15z"/><path d="M13 12.5 15.5 15 13 17.5 10.5 15z"/><path d="M19.5 12.5 22 15l-2.5 2.5L17 15z"/>'),
-    r:     classAbilityIcon('<circle cx="13" cy="13" r="8.5"/><path d="M13 2v4M13 20v4M2 13h4M20 13h4"/><circle cx="13" cy="13" r="3.4"/><path d="M13 10.8V13l2.2 1.5"/>')
+    q:     classAbilityIcon('<circle cx="10" cy="32" r="3.2" fill="currentColor" stroke="none"/><path d="M7 32h37"/><path d="M40 22.4 54.6 32 40 41.6"/><path d="M17 23.4v17.2M27 23.4v17.2M37 23.4v17.2"/>'),
+    e:     classAbilityIcon('<circle cx="17" cy="32" r="6.4"/><circle cx="32" cy="32" r="6.4"/><circle cx="47" cy="32" r="6.4"/><path d="M3 32h50"/><path d="M47.4 23 58 32l-10.6 9"/>'),
+    shift: classAbilityIcon('<path d="M6 32S17 15.4 32 15.4 58 32 58 32 47 48.6 32 48.6 6 32 6 32z"/><circle cx="32" cy="32" r="7.4"/><circle cx="32" cy="32" r="2.4" fill="currentColor" stroke="none"/><path d="M11 53 53 11"/><path d="M13.4 13.4c4.2 1 6.4 3.2 7.4 7.4-4.2-1-6.4-3.2-7.4-7.4zM50.6 50.6c-4.2-1-6.4-3.2-7.4-7.4 4.2 1 6.4 3.2 7.4 7.4z" fill="currentColor" fill-opacity=".3"/>'),
+    f:     classAbilityIcon('<path d="M5 53h54"/><path d="M16 38.4 22.4 46 16 53.6 9.6 46z"/><path d="M32 38.4 38.4 46 32 53.6 25.6 46z"/><path d="M48 38.4 54.4 46 48 53.6 41.6 46z"/><path d="M16 33.4v-5M32 33.4v-5M48 33.4v-5"/><g fill="currentColor" stroke="none"><circle cx="16" cy="46" r="1.9"/><circle cx="32" cy="46" r="1.9"/><circle cx="48" cy="46" r="1.9"/></g><path d="M12 22l2.6 2.6M32 20v4M52 22l-2.6 2.6"/>'),
+    r:     classAbilityIcon('<circle cx="32" cy="32" r="20.4"/><path d="M32 3.4v9.4M32 51.2v9.4M3.4 32h9.4M51.2 32h9.4"/><circle cx="32" cy="32" r="8.4"/><path d="M32 26.8V32l5.2 3.6"/>')
   },
   mage: {
-    q:     classAbilityIcon('<path d="M13 13a1.3 1.3 0 0 1 1.3 1.3 2.7 2.7 0 0 1-2.7 2.7 4.6 4.6 0 0 1-4.6-4.6A6.9 6.9 0 0 1 13.3 5.4 9.3 9.3 0 0 1 22.6 14.7"/>'),
-    e:     classAbilityIcon('<circle cx="13" cy="13" r="6"/><path d="M13 10v3l2.4 1.7"/><path d="M13 2.5v2.5M13 21v2.5M2.5 13H5M21 13h2.5M5.2 5.2l1.8 1.8M19 19l1.8 1.8M20.8 5.2 19 7M7 19l-1.8 1.8"/>'),
-    shift: classAbilityIcon('<g stroke-dasharray="1.5 2" opacity=".7"><circle cx="6" cy="8" r="2.2"/><path d="M3 21c0-3.5 1.3-5.5 3-5.5s3 2 3 5.5"/></g><circle cx="20" cy="8" r="2.2"/><path d="M17 21c0-3.5 1.3-5.5 3-5.5s3 2 3 5.5"/><path d="M13 4l-2 6h3l-2 8 5-9h-3z" fill="currentColor" stroke="none"/>'),
-    f:     classAbilityIcon('<circle cx="13" cy="13" r="4"/><ellipse cx="13" cy="13" rx="10" ry="4.5"/><circle cx="23" cy="13" r="1.8" fill="currentColor" stroke="none"/>'),
-    r:     classAbilityIcon('<path d="M6.5 13a6.5 6.5 0 1 0 1.9-4.6"/><path d="M6.5 4v4.5H11"/><path d="M13 9.8V13l2.4 1.6"/>')
+    q:     classAbilityIcon('<path d="M32 32a2.6 2.6 0 0 1 2.6 2.6 5.4 5.4 0 0 1-5.4 5.4A9.2 9.2 0 0 1 20 30.8a14 14 0 0 1 14-14 19 19 0 0 1 19 19"/><g fill="currentColor" stroke="none"><circle cx="53.6" cy="36" r="2.6"/><circle cx="11.6" cy="20" r="2" opacity=".7"/><circle cx="20" cy="52.4" r="1.7" opacity=".55"/></g><path d="M47 10l1.2 3.4L51.6 14.6l-3.4 1.2L47 19.2l-1.2-3.4-3.4-1.2 3.4-1.2z" fill="currentColor" stroke="none" opacity=".8"/>'),
+    e:     classAbilityIcon('<circle cx="32" cy="32" r="13.4"/><path d="M32 24.8V32l5.6 4"/><path d="M32 11.6v3M32 49.4v3M11.6 32h3M49.4 32h3"/><path d="M32 4.4v4M32 55.6v4M4.4 32h4M55.6 32h4M12.4 12.4l3.4 3.4M48.2 48.2l3.4 3.4M51.6 12.4l-3.4 3.4M15.8 48.2l-3.4 3.4"/>'),
+    shift: classAbilityIcon('<g stroke-dasharray="3.5 4" opacity=".65"><circle cx="17" cy="20" r="5.6"/><path d="M7.6 52c0-9.4 3.8-14.6 9.4-14.6s9.4 5.2 9.4 14.6"/></g><circle cx="47" cy="20" r="5.6"/><path d="M37.6 52c0-9.4 3.8-14.6 9.4-14.6s9.4 5.2 9.4 14.6"/><path d="M34.4 9.4 29 24h7.2l-4.8 18.6L42.6 22h-7.6z" fill="currentColor" stroke="none"/>'),
+    f:     classAbilityIcon('<circle cx="32" cy="32" r="9.4"/><circle cx="32" cy="32" r="3.6" fill="currentColor" stroke="none"/><ellipse cx="32" cy="32" rx="24.4" ry="10.4"/><circle cx="56.4" cy="32" r="3.8" fill="currentColor" stroke="none"/><circle cx="12.6" cy="23.6" r="2.3" fill="currentColor" stroke="none" opacity=".7"/><path d="M32 22.6v-5M52 13l2.4 2.4M12 51l2.4-2.4"/>'),
+    r:     classAbilityIcon('<path d="M15.4 32a16.6 16.6 0 1 0 4.8-11.8"/><path d="M15.4 9.2v11.4h11.4"/><path d="M32 24.4V32l5.8 4"/>')
   },
   berserker: {
-    q:     classAbilityIcon('<path d="M5.5 5.5l4 3-2 3 5 4.5-2 3 5.5 3.5"/><path d="M20.5 5.5l-4 3 2 3-5 4.5 2 3-5.5 3.5"/>'),
-    e:     classAbilityIcon('<path d="M8 3h10v6l-2 2v4h-6v-4l-2-2z"/><path d="M8 9h10"/><path d="M6 19q7 3.5 14 0"/>'),
-    shift: classAbilityIcon('<path d="M3 20l7-3.5-4-2.5 8-1-3-4 12 7.5-12 7 3-4-8 1z"/>'),
-    f:     classAbilityIcon('<path d="M13 21.5s-8-4.9-8-11.2a4.4 4.4 0 0 1 8-2.4 4.4 4.4 0 0 1 8 2.4c0 6.3-8 11.2-8 11.2z"/><path d="M13 6.5 10.5 11h4L12 16.5l3 4.5"/>'),
-    r:     classAbilityIcon('<path d="M13 2.5l8.5 3.2v6.3c0 5.4-3.7 9.2-8.5 11-4.8-1.8-8.5-5.6-8.5-11V5.7z"/><path d="M5.5 13H17"/><path d="M14.5 8.5 20 13l-5.5 4.5"/>')
+    q:     classAbilityIcon('<path d="M13.4 11.4l10.4 8.4-5.2 8.4 13.4 11.4-5.2 8.4 13.8 9.6"/><path d="M50.6 11.4l-10.4 8.4 5.2 8.4L32 39.6l5.2 8.4-13.8 9.6"/><path d="M32 17v30" stroke-width="4.8"/>'),
+    e:     classAbilityIcon('<path d="M32 7v23"/><path d="M20.4 19 32 31.6 43.6 19"/><path d="M7 52.6l10.4-7.4 7.2 4.2 7.4-6.4 7.4 6.4 7.2-4.2L57 52.6"/><path d="M13 58.6l6.4-3.2M44.6 58.6 51 55.4"/>'),
+    shift: classAbilityIcon('<path d="M7 50.4l17.4-9.2-10.2-6.2 20.4-3.2-8.2-10.2 30.6 19.4-30.6 18.4 8.2-11.2-20.4 3.2z" fill="currentColor" fill-opacity=".14"/><path d="M7 50.4l17.4-9.2-10.2-6.2 20.4-3.2-8.2-10.2 30.6 19.4-30.6 18.4 8.2-11.2-20.4 3.2z"/>'),
+    f:     classAbilityIcon('<path d="M32 54.6S11.4 42.2 11.4 24.8A11.4 11.4 0 0 1 32 18.6a11.4 11.4 0 0 1 20.6 6.2c0 17.4-20.6 29.8-20.6 29.8z" fill="currentColor" fill-opacity=".16"/><path d="M32 54.6S11.4 42.2 11.4 24.8A11.4 11.4 0 0 1 32 18.6a11.4 11.4 0 0 1 20.6 6.2c0 17.4-20.6 29.8-20.6 29.8z"/><path d="M33.4 15.4 26.6 27h9.8l-6.4 13.8 7.6 9.8"/>'),
+    r:     classAbilityIcon('<path d="M32 6l20 7.2V27c0 13.4-8.4 22.4-20 27.4C20.4 49.4 12 40.4 12 27V13.2z" fill="currentColor" fill-opacity=".16"/><path d="M32 6l20 7.2V27c0 13.4-8.4 22.4-20 27.4C20.4 49.4 12 40.4 12 27V13.2z"/><path d="M21.4 32h14"/><path d="M31.4 21.6 42 32l-10.6 10.4"/>')
   },
   shadow: {
-    q:     classAbilityIcon('<circle cx="13" cy="13" r="7.5"/><path d="M13 2v5M13 19v5M2 13h5M19 13h5"/><circle cx="13" cy="13" r="1.3" fill="currentColor" stroke="none"/>'),
-    e:     classAbilityIcon('<g opacity=".55"><circle cx="9" cy="8" r="3"/><path d="M4 21c0-4 2.2-6 5-6s5 2 5 6"/></g><circle cx="17.5" cy="8" r="3"/><path d="M12.5 21c0-4 2.2-6 5-6s5 2 5 6"/>'),
-    shift: classAbilityIcon('<circle cx="5" cy="8" r="2.4"/><path d="M2 21c0-3.5 1.4-5.5 3-5.5s3 2 3 5.5"/><g opacity=".5"><circle cx="13" cy="8" r="2.4"/><path d="M10 21c0-3.5 1.4-5.5 3-5.5s3 2 3 5.5"/></g><g opacity=".22" stroke-dasharray="1.5 2"><circle cx="21" cy="8" r="2.4"/><path d="M18 21c0-3.5 1.4-5.5 3-5.5s3 2 3 5.5"/></g>'),
-    f:     classAbilityIcon('<path d="M8 18a4.5 4.5 0 0 1 .5-9 5.5 5.5 0 0 1 10.6 1.6A4 4 0 0 1 18.5 18z"/><circle cx="10" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="17" cy="14" r="1" fill="currentColor" stroke="none"/>'),
-    r:     classAbilityIcon('<path d="M13 2v13"/><path d="M8 6h10"/><path d="M10.5 2h5"/><path d="M13 15l-2.8-3.5h5.6z" fill="currentColor" stroke="none"/><path d="M13 18.5c1.4 1.8 1.4 3 0 4-1.4-1-1.4-2.2 0-4z" fill="currentColor" stroke="none"/>')
+    q:     classAbilityIcon('<circle cx="32" cy="32" r="17.4"/><path d="M32 4.6v12.4M32 47v12.4M4.6 32H17M47 32h12.4"/><circle cx="32" cy="32" r="3.4" fill="currentColor" stroke="none"/><path d="M32 20.4l4.2 7.4h-8.4z" fill="currentColor" stroke="none" opacity=".85"/><path d="M20 44.6a17.4 17.4 0 0 0 24 0" opacity=".6"/>'),
+    e:     classAbilityIcon('<g opacity=".5"><circle cx="21" cy="19" r="7.2"/><path d="M8.6 52c0-10.4 5.2-15.6 12.4-15.6s12.4 5.2 12.4 15.6"/></g><circle cx="43" cy="19" r="7.2"/><path d="M30.6 52c0-10.4 5.2-15.6 12.4-15.6s12.4 5.2 12.4 15.6"/><g fill="currentColor" stroke="none"><circle cx="40" cy="19" r="1.4"/><circle cx="46" cy="19" r="1.4"/></g>'),
+    shift: classAbilityIcon('<circle cx="13" cy="20" r="5.8"/><path d="M4.8 52c0-9.4 3.6-14.4 8.2-14.4s8.2 5 8.2 14.4"/><g opacity=".5"><circle cx="32" cy="20" r="5.8"/><path d="M23.8 52c0-9.4 3.6-14.4 8.2-14.4s8.2 5 8.2 14.4"/></g><g opacity=".22" stroke-dasharray="3.5 4"><circle cx="51" cy="20" r="5.8"/><path d="M42.8 52c0-9.4 3.6-14.4 8.2-14.4s8.2 5 8.2 14.4"/></g>'),
+    f:     classAbilityIcon('<path d="M19 45.4a11.4 11.4 0 0 1 1.4-22.7A14.4 14.4 0 0 1 48.6 27 10.4 10.4 0 0 1 45.6 47z" fill="currentColor" fill-opacity=".16"/><path d="M19 45.4a11.4 11.4 0 0 1 1.4-22.7A14.4 14.4 0 0 1 48.6 27 10.4 10.4 0 0 1 45.6 47z"/><g fill="currentColor" stroke="none"><circle cx="24" cy="35" r="2.3"/><circle cx="33" cy="39.4" r="2.3"/><circle cx="41.4" cy="33.4" r="2.3"/><path d="M21.6 53.4c2.2 2.8 2.2 4.8 0 6.6-2.2-1.8-2.2-3.8 0-6.6z" opacity=".85"/><path d="M38.4 53.4c2.2 2.8 2.2 4.8 0 6.6-2.2-1.8-2.2-3.8 0-6.6z" opacity=".85"/></g>'),
+    r:     classAbilityIcon('<path d="M32 4.6V34"/><path d="M20.4 13.6h23.2"/><path d="M26.6 4.6h10.8"/><path d="M32 34l-7.2-9.4h14.4z" fill="currentColor" stroke="none"/><path d="M32 43.4c3.6 4.8 3.6 8 0 10.8-3.6-2.8-3.6-6 0-10.8z" fill="currentColor" stroke="none"/>')
   },
   tech: {
-    q:     classAbilityIcon('<circle cx="13" cy="13" r="4.5"/><path d="M13 3.5v4M13 18.5v4M3.5 13h4M18.5 13h4M6.2 6.2l2.8 2.8M17 17l2.8 2.8M19.8 6.2 17 9M9 17l-2.8 2.8"/>'),
-    e:     classAbilityIcon('<circle cx="13" cy="13" r="2.5"/><circle cx="13" cy="13" r="6" opacity=".7"/><circle cx="13" cy="13" r="9.5" opacity=".45" stroke-dasharray="2.5 2.5"/>'),
-    shift: classAbilityIcon('<path d="M15 3c4 1 6 3 7 7l-9 9-7-7z"/><circle cx="15.5" cy="10.5" r="1.8"/><path d="M9 17l-4.5 4.5"/><path d="M7 14l-3.5 1M12 19l-1 3.5"/>'),
-    f:     classAbilityIcon('<path d="M13 3.5 16 9h-6z"/><path d="M6 14.5 9 20H3z"/><path d="M20 14.5 23 20h-6z"/>'),
-    r:     classAbilityIcon('<rect x="3" y="9" width="17" height="9" rx="1.5"/><path d="M22.5 11.5v4"/><path d="M6.5 11.5v4M10 11.5v4M13.5 11.5v4M17 11.5v4"/>')
+    q:     classAbilityIcon('<circle cx="32" cy="32" r="10.4"/><path d="M32 7.4v9.4M32 47.2v9.4M7.4 32h9.4M47.2 32h9.4M14.6 14.6l6.6 6.6M42.8 42.8l6.6 6.6M49.4 14.6l-6.6 6.6M21.2 42.8l-6.6 6.6"/><path d="M34.4 23.4 27 33.4h5.6l-3.4 8.8 8.4-10.8h-5.8z" fill="currentColor" stroke="none"/>'),
+    e:     classAbilityIcon('<circle cx="32" cy="32" r="5.8"/><circle cx="32" cy="32" r="14.4" opacity=".7"/><circle cx="32" cy="32" r="23" opacity=".45" stroke-dasharray="5.4 5.4"/><circle cx="32" cy="32" r="2" fill="currentColor" stroke="none"/><path d="M32 17.6v-4M32 50.4v-4M17.6 32h-4M50.4 32h-4"/>'),
+    shift: classAbilityIcon('<path d="M17.4 45 32 30.4 46.6 45"/><path d="M17.4 30.4 32 15.8l14.6 14.6"/><g fill="currentColor" stroke="none" opacity=".9"><path d="M23.6 53.4c1.8 2.2 1.8 4 0 5.6-1.8-1.6-1.8-3.4 0-5.6z"/><path d="M32 51.4c2.2 2.8 2.2 5.2 0 7.2-2.2-2-2.2-4.4 0-7.2z"/><path d="M40.4 53.4c1.8 2.2 1.8 4 0 5.6-1.8-1.6-1.8-3.4 0-5.6z"/></g>'),
+    f:     classAbilityIcon('<g><path d="M19 13.4l5.4 6-5.4 6-5.4-6z"/><path d="M9.6 10.4h18.8"/><circle cx="19" cy="19.4" r="1.8" fill="currentColor" stroke="none"/></g><g><path d="M46 10.4l5.4 6-5.4 6-5.4-6z"/><path d="M36.6 7.4h18.8"/><circle cx="46" cy="16.4" r="1.8" fill="currentColor" stroke="none"/></g><g><path d="M32 38.6l6.4 7.2-6.4 7.2-6.4-7.2z"/><path d="M20.8 35h22.4"/><circle cx="32" cy="45.8" r="2.1" fill="currentColor" stroke="none"/></g>'),
+    r:     classAbilityIcon('<circle cx="32" cy="32" r="20.4"/><path d="M32 7.6v6M32 50.4v6M7.6 32h6M50.4 32h6M14.8 14.8l4.2 4.2M45 45l4.2 4.2M49.2 14.8 45 19M19 45l-4.2 4.2"/><path d="M35.4 19.4 26.6 31.6h6.4l-4.8 13 10.8-14h-6.8z" fill="currentColor" stroke="none"/>')
   }
+};
+
+/* one-word HUD labels under each ability emblem (Q labels live on cls.q) */
+const ABILITY_LABELS = {
+  knight:     { e: 'WHIRL',    shift: 'CHARGE', f: 'WARCRY',   r: 'BLADES' },
+  gunslinger: { e: 'RICOCHET', shift: 'SMOKE',  f: 'TURRET',   r: 'OVERLOAD' },
+  sniper:     { e: 'PIERCE',   shift: 'GHILLIE', f: 'MINES',   r: 'EAGLE' },
+  mage:       { e: 'BURST',    shift: 'BLINK',  f: 'FAMILIAR', r: 'LOOP' },
+  berserker:  { e: 'SLAM',     shift: 'FRENZY', f: 'BLOOD',    r: 'JUGGERNAUT' },
+  shadow:     { e: 'CLONE',    shift: 'VANISH', f: 'POISON',   r: 'EXECUTE' },
+  tech:       { e: 'EMP',      shift: 'BOOST',  f: 'DRONES',   r: 'OVERCLOCK' }
 };
 
 function updateAbilityIcons(className) {
@@ -9606,12 +9692,24 @@ function updateAbilityIcons(className) {
     const btn = wrap.querySelector('.ab-btn');
     if (!btn) continue;
     const svg = icons[slot] || icons.q;
-    /* every slot is rewritten fresh from CLASS_ABILITY_ICONS on every call:
-       icon SVG + cooldown sweep span, so a stale or mismatched glyph can
-       never survive a class change or a run start */
-    btn.innerHTML = svg + '<span class="ab-sweep" aria-hidden="true"></span>';
-    btn.setAttribute('data-icon-class', cls.id);
-    btn.setAttribute('data-icon-slot', slot);
+    /* rewritten fresh from CLASS_ABILITY_ICONS whenever the class actually
+       changes (icon SVG + cooldown sweep span) — skipped when the slot
+       already wears this class's emblem, so the bar costs nothing per frame */
+    const fresh = btn.getAttribute('data-icon-class') === cls.id &&
+                  btn.getAttribute('data-icon-slot') === slot && btn.querySelector('svg');
+    if (!fresh) {
+      btn.innerHTML = svg + '<span class="ab-sweep" aria-hidden="true"></span>';
+      btn.setAttribute('data-icon-class', cls.id);
+      btn.setAttribute('data-icon-slot', slot);
+    }
+    /* one-word label under the emblem: Q carries its label in the class data */
+    const lbl = wrap.querySelector('.ab-label');
+    if (lbl) {
+      const txt = slot === 'q'
+        ? ((cls.q && cls.q.label) || '')
+        : ((ABILITY_LABELS[cls.id] || {})[slot] || '');
+      if (lbl.textContent !== txt) lbl.textContent = txt;
+    }
   }
 }
 
@@ -13225,22 +13323,93 @@ const PLAY_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
   '<path fill="currentColor" d="M8 5.2v13.6c0 .8.9 1.3 1.6.9l10.2-6.8a1 1 0 0 0 0-1.7L9.6 4.3A1 1 0 0 0 8 5.2z"/></svg>';
 
 function zoneArt(i) {
-  /* small emblem per zone: village, forest, gate, orb, rift */
-  const col = ['#f97316', '#22c55e', '#cbd5e1', '#a855f7', '#38bdf8'][i] || '#e8c874';
-  if (i === 1) {
-    return '<svg class="zart" viewBox="0 0 64 64"><path fill="#152015" d="M32 8l7 12h-4l6 10h-5l7 12H21l7-12h-5l6-10h-4z"/><rect x="29" y="42" width="6" height="14" fill="' + col + '" opacity=".85"/></svg>';
+  /* heraldic level emblems (64-grid, layered silhouettes, gold strokes):
+     village, forest, castle gates, sorcerer's tower, time portal */
+  const lvl = ((i | 0) % LEVELS_PER_UNIVERSE + LEVELS_PER_UNIVERSE) % LEVELS_PER_UNIVERSE;
+  if (lvl === 1) {
+    /* Dark Forest: gnarled trees, crescent moon, horned skull totem */
+    return '<svg class="zart" viewBox="0 0 64 64" aria-hidden="true">' +
+      '<path fill="#f5c842" d="M44 4a9.5 9.5 0 1 0 6.4 17A11.5 11.5 0 0 1 44 4z"/>' +
+      '<g fill="#17100a" stroke="#8b6914" stroke-width="1.3" stroke-linejoin="round">' +
+      '<path d="M11 60c1.2-9 .4-16-1.6-23 2.8.8 4.8.8 6.6-.8-.9-2.8-2.8-5.4-5.6-7.3 3.8 0 5.6-.9 7.5-2.8-.9-3.8 0-7.5 1.9-11.3 2.8 3.8 3.8 7.5 2.8 11.3 1.9 1.9 3.8 2.8 6.6 2.8-2.8 1.9-4.7 4.5-5.6 7.3 1.8 1.9 3.8 1.9 6.5.9-1.9 7-2.7 14-1.6 23z"/>' +
+      '<path d="M47 60c.9-7 .3-12.4-1.2-18 2.2.6 3.7.6 5.1-.6-.7-2.2-2.1-4.2-4.3-5.7 2.9 0 4.3-.7 5.8-2.1-.7-2.9 0-5.8 1.4-8.7 2.2 2.9 2.9 5.8 2.2 8.7 1.4 1.4 2.9 2.1 5.1 2.1-2.2 1.5-3.6 3.5-4.3 5.7 1.4 1.4 2.9 1.4 5 .7-1.4 5.6-2 11-1.2 18z"/>' +
+      '</g>' +
+      '<path fill="#e5d7b0" stroke="#8b6914" stroke-width="1.2" stroke-linejoin="round" d="M32 37c5.5 0 9 3.9 9 8.8 0 3-1.4 5.1-3.4 6.3V57H26.4v-4.9C24.4 50.9 23 48.8 23 45.8 23 40.9 26.5 37 32 37z"/>' +
+      '<path fill="none" stroke="#d4a017" stroke-width="2" stroke-linecap="round" d="M24.6 40.4c-3-1-5.6-3.6-6.2-7.4 2.7 1.7 4.9 2 7.2 1.5M39.4 40.4c3-1 5.6-3.6 6.2-7.4-2.7 1.7-4.9 2-7.2 1.5"/>' +
+      '<ellipse cx="28" cy="46.4" rx="2.3" ry="2.9" fill="#17100a"/><ellipse cx="36" cy="46.4" rx="2.3" ry="2.9" fill="#17100a"/>' +
+      '<path fill="#17100a" d="M32 49.8l1.4 2.7h-2.8z"/>' +
+      '<path stroke="#17100a" stroke-width="1.3" d="M29.2 57v-3M32 57v-3.4M34.8 57v-3"/>' +
+      '<path stroke="#8b6914" stroke-width="1.6" stroke-linecap="round" d="M5 60.5h54"/>' +
+      '</svg>';
   }
-  if (i === 2) {
-    return '<svg class="zart" viewBox="0 0 64 64"><path fill="#1b2230" d="M12 20h40v6H12zm0 12h16v6H12zm24 0h16v6H36zM12 44h40v6H12z"/><path fill="' + col + '" opacity=".8" d="M30 26h4v18h-4z"/></svg>';
+  if (lvl === 2) {
+    /* Castle Gates: twin towers, spiked portcullis, war banner */
+    return '<svg class="zart" viewBox="0 0 64 64" aria-hidden="true">' +
+      '<path stroke="#d4a017" stroke-width="1.8" stroke-linecap="round" d="M32 8v13"/>' +
+      '<path fill="#f5c842" d="M32 8.6 43 12l-11 3.8z"/>' +
+      '<g fill="#24190d" stroke="#d4a017" stroke-width="1.5" stroke-linejoin="round">' +
+      '<path d="M7 58V25h3v-5h4v5h3v-5h4v38z"/>' +
+      '<path d="M57 58V25h-3v-5h-4v5h-3v-5h-4v38z"/>' +
+      '<path d="M21 31h22v6H21z"/>' +
+      '</g>' +
+      '<rect x="12" y="32" width="4.4" height="7" fill="#ff9d45"/><rect x="47.6" y="32" width="4.4" height="7" fill="#ff9d45"/>' +
+      '<path fill="#17100a" stroke="#8b6914" stroke-width="1.4" d="M25 58V41a7 7 0 0 1 14 0v17z"/>' +
+      '<g stroke="#d4a017" stroke-width="1.6" stroke-linecap="round"><path d="M28.4 38v15M32 37v16M35.6 38v15M25 45.5h14"/></g>' +
+      '<g fill="#d4a017"><path d="M28.4 53l-1.7 4h3.4z"/><path d="M32 53l-1.7 4h3.4z"/><path d="M35.6 53l-1.7 4h3.4z"/></g>' +
+      '<path stroke="#8b6914" stroke-width="1.6" stroke-linecap="round" d="M4 58.5h56"/>' +
+      '</svg>';
   }
-  if (i === 3) {
-    return '<svg class="zart" viewBox="0 0 64 64"><circle cx="32" cy="32" r="15" fill="none" stroke="' + col + '" stroke-width="2.4" opacity=".9"/><circle cx="32" cy="32" r="6" fill="' + col + '" opacity=".9"/><circle cx="32" cy="32" r="23" fill="none" stroke="' + col + '" stroke-width="1.2" opacity=".4"/></svg>';
+  if (lvl === 3) {
+    /* Sorcerer's Tower: crooked spire, runic rings, all-seeing eye */
+    return '<svg class="zart" viewBox="0 0 64 64" aria-hidden="true">' +
+      '<ellipse cx="32" cy="29" rx="25" ry="9.5" fill="none" stroke="#d4a017" stroke-width="1.4" stroke-dasharray="4 3" transform="rotate(-13 32 29)"/>' +
+      '<ellipse cx="32" cy="29" rx="25" ry="9.5" fill="none" stroke="#f5c842" stroke-width="1.1" stroke-dasharray="2.4 3.6" opacity=".7" transform="rotate(15 32 29)"/>' +
+      '<path fill="#24190d" stroke="#d4a017" stroke-width="1.5" stroke-linejoin="round" d="M27 58c-.4-9.6.4-17.6 2.4-25.4l3.4-2c2 8.4 3 17.6 3.2 27.4z"/>' +
+      '<path fill="#17100a" stroke="#d4a017" stroke-width="1.5" stroke-linejoin="round" d="M24.6 33.4c2.8-8 7.8-15.2 16.2-20.2-1 5-.8 8.2 1.2 11.4-5 4-11 7-17.4 8.8z"/>' +
+      '<path fill="#17100a" stroke="#f5c842" stroke-width="1.6" stroke-linejoin="round" d="M20 23.4c4-5 8-7.5 12-7.5s8 2.5 12 7.5c-4 5-8 7.5-12 7.5s-8-2.5-12-7.5z"/>' +
+      '<circle cx="32" cy="23.4" r="4.4" fill="none" stroke="#f5c842" stroke-width="1.6"/><circle cx="32" cy="23.4" r="1.9" fill="#f5c842"/>' +
+      '<rect x="30.2" y="42" width="4.4" height="7" fill="#ff9d45"/>' +
+      '<g fill="#f5c842"><circle cx="10" cy="20" r="1.4"/><circle cx="54" cy="38" r="1.3"/><circle cx="16" cy="44" r="1.1"/></g>' +
+      '<path stroke="#8b6914" stroke-width="1.6" stroke-linecap="round" d="M14 58.5h36"/>' +
+      '</svg>';
   }
-  if (i === 4) {
-    return '<svg class="zart" viewBox="0 0 64 64"><circle cx="32" cy="32" r="21" fill="none" stroke="' + col + '" stroke-width="2.2" opacity=".85"/><circle cx="32" cy="32" r="11" fill="none" stroke="' + col + '" stroke-width="1.6" opacity=".55"/><circle cx="32" cy="32" r="4.5" fill="' + col + '"/><path stroke="' + col + '" stroke-width="1.4" opacity=".45" d="M32 4v10M32 50v10M4 32h10M50 32h10"/></svg>';
+  if (lvl === 4) {
+    /* Time Portal: shattered hourglass in interlocking clockwork rings */
+    return '<svg class="zart" viewBox="0 0 64 64" aria-hidden="true">' +
+      '<circle cx="32" cy="32" r="26" fill="none" stroke="#d4a017" stroke-width="2"/>' +
+      '<path stroke="#d4a017" stroke-width="2" stroke-linecap="round" d="M32 5.5V11M32 53v5.5M5.5 32H11M53 32h5.5M13.3 13.3l3.9 3.9M46.8 46.8l3.9 3.9M50.7 13.3l-3.9 3.9M17.2 46.8l-3.9 3.9"/>' +
+      '<circle cx="32" cy="32" r="20.5" fill="none" stroke="#8b6914" stroke-width="1.3" stroke-dasharray="3 4"/>' +
+      '<path fill="#24190d" stroke="#f5c842" stroke-width="1.8" stroke-linejoin="round" d="M23 15h18l-5.6 13.6a3.4 3.4 0 0 0 0 6.8L41 49H23l5.6-13.6a3.4 3.4 0 0 0 0-6.8z"/>' +
+      '<g stroke="#f5c842" stroke-width="2.4" stroke-linecap="round"><path d="M20.6 15h22.8"/><path d="M20.6 49h22.8"/></g>' +
+      '<path fill="#f5c842" d="M26.8 18.6h10.4l-3.2 5.8h-4z"/><path fill="#f5c842" d="M27 45.4h10L32 38.6z"/>' +
+      '<g fill="#f5c842"><circle cx="32" cy="28.6" r="1"/><circle cx="32" cy="33.4" r="1"/></g>' +
+      '<path fill="none" stroke="#ffe9ae" stroke-width="1.3" stroke-linejoin="round" d="M24.8 19.6l4 3-2 3.4M39.6 42.4l-4-2.6 2-3.6"/>' +
+      '</svg>';
   }
-  return '<svg class="zart" viewBox="0 0 64 64"><path fill="#1b2230" d="M14 46h36v6H14zM20 38h24v6H20z"/><path fill="' + col + '" opacity=".85" d="M26 24h12v12H26z"/><path fill="none" stroke="' + col + '" stroke-width="2" opacity=".7" d="M18 20l6-8 8 7 8-7 6 8"/></svg>';
+  /* The Village: crossed broadswords before a burning watchtower + shield crest */
+  return '<svg class="zart" viewBox="0 0 64 64" aria-hidden="true">' +
+    '<path fill="#24190d" stroke="#d4a017" stroke-width="1.6" stroke-linejoin="round" d="M25 58V27l-3-4h20l-3 4v31z"/>' +
+    '<path fill="#17100a" stroke="#8b6914" stroke-width="1.2" stroke-linejoin="round" d="M20 23l12-9.4L44 23z"/>' +
+    '<path stroke="#8b6914" stroke-width="1.5" d="M25 35h14M25 45h14"/>' +
+    '<rect x="29.5" y="28" width="5" height="7.5" fill="#ff9d45"/>' +
+    '<path fill="#ff9d45" d="M29 13.6c.6-3.4 1.8-5.2 3-7.4 1.2 2.2 2.4 4 3 7.4-1.8 1.2-4.2 1.2-6 0z"/>' +
+    '<path fill="#f5c842" d="M30.8 13.6c.3-1.8.7-2.8 1.2-4 .5 1.2.9 2.2 1.2 4-.8.6-1.6.6-2.4 0z"/>' +
+    '<g stroke-linecap="round">' +
+    '<path d="M13 54 45 24" stroke="#ffe9ae" stroke-width="3"/>' +
+    '<path d="M51 54 19 24" stroke="#ffe9ae" stroke-width="3"/>' +
+    '<path d="M16.5 47.5l5.5 2.5M47.5 47.5 42 50" stroke="#d4a017" stroke-width="2.6"/>' +
+    '<path d="M13 54l-2.5 4.5M51 54l2.5 4.5" stroke="#5c3317" stroke-width="3.6"/>' +
+    '</g>' +
+    '<path fill="#d4a017" stroke="#8b6914" stroke-width="1" stroke-linejoin="round" d="M32 43l5.5 1.8v4.7c0 3.6-2.6 5.8-5.5 7.3-2.9-1.5-5.5-3.7-5.5-7.3v-4.7z"/>' +
+    '<circle cx="32" cy="49.2" r="1.6" fill="#24190d"/>' +
+    '</svg>';
 }
+
+/* clean card titles: the era lives in its own badge, never inside the name */
+const UNIVERSE_TITLES = {
+  medieval: 'Medieval', egypt: 'Ancient Egypt', japan: 'Feudal Japan',
+  wasteland: 'Post-Apocalypse', space: 'Deep Space', void: 'The Void'
+};
 
 /* six universe cards in a row: the frontier universe and everything behind it
    is open, the rest stay locked until Rael gets there */
@@ -13268,7 +13437,7 @@ function drawUniverseCards() {
     card.setAttribute('aria-label', u.name + (locked ? ' (locked)' : ''));
     card.innerHTML =
       '<div class="unum">Universe ' + u.number + '</div>' +
-      '<div class="uname">' + u.name + '</div>' +
+      '<div class="uname">' + (UNIVERSE_TITLES[u.id] || u.name) + '</div>' +
       '<div class="uera">' + u.era + '</div>' +
       (locked
         ? '<span class="ustate">' + LOCK_SVG + 'Locked</span>'
