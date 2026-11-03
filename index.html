@@ -3746,8 +3746,8 @@ function setUniversePanel(which) {
 const MEDIEVAL_LEVELS = [
   {
     id: 1,
-    name: 'The Village',
-    blurb: 'Ashen hamlet. Iron knights in the smoke, three war camps blocking the rift.',
+    name: 'The Ashen Hamlet',
+    blurb: 'A hamlet of ash and iron. Knights in the smoke, three war camps on the rift road.',
     story: 'Rael crashes through a burning sky and lands among the ashes of a medieval hamlet. Iron-clad knights pour out of the smoke. Three war camps block the road to the time rift.',
     tile: 'cobble',
     ambient: 'ember',
@@ -3766,9 +3766,9 @@ const MEDIEVAL_LEVELS = [
   },
   {
     id: 2,
-    name: 'The Dark Forest',
-    blurb: 'Black roots and green fog. Hooded archers watch from between the trunks.',
-    story: 'Past the village the road vanishes under black roots. Green fog crawls along the soil and hooded archers watch from between the trunks. The Plague Witch is close.',
+    name: 'Blightwood Thicket',
+    blurb: 'Black roots, green fog, hooded archers between the trunks.',
+    story: 'The road drowns under black roots in the Blightwood. Green fog crawls along the soil and hooded archers watch from between the trunks. The Plague Witch is close.',
     tile: 'soil',
     ambient: 'fog',
     obstacle: 'forest',
@@ -3786,8 +3786,8 @@ const MEDIEVAL_LEVELS = [
   },
   {
     id: 3,
-    name: 'The Castle Gates',
-    blurb: 'A ruined portcullis and a rain-soaked courtyard held by the garrison.',
+    name: 'Garrison Portcullis',
+    blurb: 'A ruined portcullis, a rain-soaked courtyard, the garrison already formed up.',
     story: 'Dreadkeep’s portcullis hangs in ruins. Rain hammers the courtyard while the garrison forms up behind shattered walls. Baron Von Crest has already called his shield knights.',
     tile: 'stone',
     ambient: 'rain',
@@ -3806,9 +3806,9 @@ const MEDIEVAL_LEVELS = [
   },
   {
     id: 4,
-    name: 'The Sorcerer’s Tower',
-    blurb: 'Cracked violet stone. Drifting orbs and robed figures whisper in the dark.',
-    story: 'The stairwell opens into a sanctum of cracked violet stone. Magic orbs drift upward from the floor and robed figures whisper in the dark. The Siege Engine is waiting at the summit.',
+    name: 'Astral Belfry',
+    blurb: 'Cracked violet stone under a broken bell. Robed figures whisper in the dark.',
+    story: 'The belfry stair opens into a sanctum of cracked violet stone. Magic orbs drift upward from the floor and robed figures whisper in the dark. The Siege Engine waits at the summit.',
     tile: 'crack',
     ambient: 'orbs',
     obstacle: 'tower',
@@ -3826,9 +3826,9 @@ const MEDIEVAL_LEVELS = [
   },
   {
     id: 5,
-    name: 'The Time Portal',
-    blurb: 'The summit is gone. Only the roaring rift home — and the Black Knight.',
-    story: 'The summit is gone. Only black stone, glowing energy fractures and the roaring rift home. Every dark legion Rael has fought stands between him and the portal — and the Black Knight.',
+    name: 'The Fractured Rift',
+    blurb: 'The summit is gone. Only the fractured rift home — and the Black Knight.',
+    story: 'The summit is gone. Only black stone, glowing fractures and the roaring rift home. Every dark legion Rael has fought stands between him and the portal — and the Black Knight.',
     tile: 'void',
     ambient: 'portal',
     obstacle: 'portal',
@@ -3916,26 +3916,26 @@ const UNIVERSE_BLUEPRINTS = [
     era: '2500 BC',
     subtitle: 'The Sun That Never Sets',
     story: 'The rift opens on the Nile at the height of the old kingdom — and the sand is already moving.',
-    accent: '#f5b642',
+    accent: '#eab308',
     tile: 'sand', ambient: 'sand', obstacle: 'desert', skyArt: 'sun',
     sky: { top: '#2a0d06', bottom: '#f0873a' },
     enemies: ['anubis', 'mummy', 'scorpion', 'sandshade'],
     power: 1.35,
     boss: { name: 'The Pharaoh', hp: 100, r: 46, color: '#f5b642', speed: 66, kit: 'pharaoh' },
-    levelTitles: ['The Sun-Scorched Dunes', 'Colonnade of Kings', 'The Necropolis', 'Temple of Ra', 'The Pharaoh\u2019s Throne'],
+    levelTitles: ['Sunken Obelisk', 'Valley of Jackals', 'Sandstone Catacombs', 'Temple of Anubis', 'Solar Pyramid Core'],
     levelBlurbs: [
-      'Bleached dunes under a dying sun. Jackal-headed soldiers stand in the heat haze.',
-      'Avenues of broken columns. Something wrapped is walking between them.',
+      'A fallen obelisk half-drowned in sand. Jackal-headed soldiers in the heat haze.',
+      'A dry valley of bones and broken columns. Something wrapped is walking.',
       'Tombs stacked to the horizon, and scorpions the size of dogs in the dark.',
-      'Gold doors, gold floor, gold light. The temple has not forgiven the intrusion.',
-      'The throne room. The Pharaoh has been waiting three thousand years.'
+      'Black stone, gold doors. The temple of the jackal has not forgiven the intrusion.',
+      'The pyramid\u2019s burning heart. The Pharaoh has waited three thousand years.'
     ],
     levelStories: [
-      'Sand pours through the rift and swallows the medieval road behind him. Anubis warriors rise out of the dunes with spears already levelled.',
-      'Beyond the dunes a colonnade of kings marks the way inland. Wrapped figures drag themselves between the columns, and the air tastes of dust and myrrh.',
-      'The necropolis is a city of doors that open downwards. Sand scorpions boil out of the tombs, stinging as they come.',
-      'The Temple of Ra is still lit, still warm, still guarded. Every step inward is a step further from the exit.',
-      'The Pharaoh sits at the end of it all, staff in hand. Win, and the rift home opens over the Nile.'
+      'Sand pours through the rift and swallows the medieval road behind him. Anubis warriors rise around the sunken obelisk with spears already levelled.',
+      'Beyond the obelisk a valley of jackals marks the way inland. Wrapped figures drag themselves between the columns, and the air tastes of dust and myrrh.',
+      'The catacombs are a city of doors that open downwards. Sand scorpions boil out of the tombs, stinging as they come.',
+      'The Temple of Anubis is still lit, still warm, still guarded. Every step inward is a step further from the exit.',
+      'At the core of the pyramid the Pharaoh sits in solar fire, staff in hand. Win, and the rift home opens over the Nile.'
     ]
   },
   {
@@ -3944,26 +3944,26 @@ const UNIVERSE_BLUEPRINTS = [
     era: '1600 AD',
     subtitle: 'The Last Blossom',
     story: 'The next rift opens in a burning dojo, under cherry blossom and ash, in the last spring of the old shogunate.',
-    accent: '#f472b6',
+    accent: '#ec4899',
     tile: 'dojo', ambient: 'petals', obstacle: 'dojo', skyArt: 'petals',
     sky: { top: '#2b0a1e', bottom: '#f7a8c8' },
     enemies: ['samurai', 'ninja', 'oni', 'ronin'],
     power: 1.7,
     boss: { name: 'Shogun Kage', hp: 110, r: 44, color: '#f472b6', speed: 96, kit: 'shogun' },
-    levelTitles: ['The Burning Torii', 'Bamboo Approach', 'The Empty Dojo', 'Hall of Blades', 'Shogun\u2019s Keep'],
+    levelTitles: ['Bamboo Outpost', 'Weeping Shrine', 'Iron Tenshu Keep', 'Blood Moon Courtyard', 'Torii of the Abyss'],
     levelBlurbs: [
-      'A torii gate on fire at the top of a stone stair. Red armour in the smoke.',
-      'Bamboo so thick the sky is a rumour. Something keeps throwing steel.',
-      'Tatami, paper walls, no students. Only the ones who stayed.',
-      'A hall of racks, every blade taken down. The floor remembers footsteps.',
-      'The keep. Kage has been listening to the fight for an hour.'
+      'A fence of bamboo and red lacquer on a stone stair. Steel comes out of the green.',
+      'A rain-drowned shrine. Bells ring themselves; shadows move between the stalks.',
+      'Tatami, iron-bound doors, no students. Only the ones who stayed.',
+      'A courtyard under a red moon, every blade taken down from the racks.',
+      'A black torii at the edge of the world. Kage has been listening for an hour.'
     ],
     levelStories: [
-      'The rift spits Rael out at the foot of a burning torii. Samurai in red lacquer turn as one, and the first blade is already drawn.',
-      'Past the gate the road narrows into bamboo. Shurikens come out of the green without a sound, and the shadows between the stalks are not empty.',
-      'The dojo is pristine and completely empty, which is worse. Then the paper wall slides open and an oni fills the doorway.',
-      'The hall of blades has been stripped bare. Kage\u2019s guard fight with their hands and their hate, and they do not stop.',
-      'The keep is burning from the top down. The Shogun waits on the last intact floor, and the rift home hangs over his shoulder.'
+      'The rift spits Rael out at a bamboo outpost above the valley. Samurai in red lacquer turn as one, and the first blade is already drawn.',
+      'Past the outpost the road narrows to a weeping shrine where the rain never stops. Shurikens come out of the dark without a sound.',
+      'The tenshu keep is pristine and completely empty, which is worse. Then the iron door grinds open and an oni fills the frame.',
+      'Under a blood moon the courtyard racks stand empty. Kage\u2019s guard fight with their hands and their hate, and they do not stop.',
+      'The keep burns from the top down, and beyond it a torii hangs over nothing. The Shogun waits beneath it, the rift home at his shoulder.'
     ]
   },
   {
@@ -3972,26 +3972,26 @@ const UNIVERSE_BLUEPRINTS = [
     era: '2087 AD',
     subtitle: 'The Rust Between Stars',
     story: 'The rift drops him into the year the world ran out — cracked concrete, glowing dust, and men who trade in both.',
-    accent: '#a3b42c',
+    accent: '#84cc16',
     tile: 'concrete', ambient: 'ash', obstacle: 'wasteland', skyArt: 'dust',
     sky: { top: '#23240c', bottom: '#8a9432' },
     enemies: ['raider', 'mutant', 'drone', 'scavengerbot'],
     power: 2.0,
     boss: { name: 'Warlord Rex', hp: 120, r: 50, color: '#a3b42c', speed: 84, kit: 'warlord' },
-    levelTitles: ['Ash Highway', 'The Rust Yard', 'Dead Mall', 'Reactor Breach', 'Warlord\u2019s Fortress'],
+    levelTitles: ['Scorched Overpass', 'Dead-Zone Refinery', 'Scrap Titan Boneyard', 'Reactor Crater', 'Vault Zero Silo'],
     levelBlurbs: [
-      'Eight lanes of cracked asphalt and burnt-out cars. Shotgun shells in the dust.',
-      'A yard of stacked wrecks. Something big is breathing behind the third row.',
-      'A shopping mall with the roof gone. Drones nest in the ceiling.',
-      'The reactor still hums. So does everything that grew in it.',
-      'Rex\u2019s fortress is a wall of welded hulls and a tank that still runs.'
+      'Eight lanes of cracked asphalt over a dead city. Shotgun shells in the dust.',
+      'Rusted tanks and pipe mazes. Something big breathes behind the third row.',
+      'A boneyard of fallen war-machines. Drones nest in the ribcages.',
+      'The reactor blew a crater and kept humming. So did everything that grew in it.',
+      'A missile silo converted into a fortress. Rex keeps a tank that still runs.'
     ],
     levelStories: [
-      'Heat, then concrete, then the smell of ozone. Raiders watch from the wrecks and rack a shell the moment he lands.',
-      'The rust yard is a maze of dead vehicles and live traps. Mutants nest in the chassis, and they are done being patient.',
-      'The mall is a cathedral of broken glass. Combat drones hang in the dark like bats and open up with lasers.',
-      'The reactor breach glows through three floors of concrete. Everything down here has too many limbs and no fear.',
-      'Warlord Rex keeps a working tank behind a wall of hulls. He has been waiting for something worth shooting.'
+      'Heat, then concrete, then the smell of ozone. Raiders watch from the overpass wrecks and rack a shell the moment he lands.',
+      'The refinery is a maze of dead tanks and live traps. Mutants nest in the pipework, and they are done being patient.',
+      'Scrap titans the size of buildings rust in rows. Combat drones hang in their ribcages like bats and open up with lasers.',
+      'The crater glows through three floors of concrete. Everything down here has too many limbs and no fear.',
+      'Warlord Rex holds Vault Zero, a silo with one missile left and a working tank in front of it. He has been waiting for something worth shooting.'
     ]
   },
   {
@@ -4000,26 +4000,26 @@ const UNIVERSE_BLUEPRINTS = [
     era: '3500 AD',
     subtitle: 'The Hive at the Edge',
     story: 'A rift in open space. The derelict ship is already infested, and the Hive Queen has been expecting him.',
-    accent: '#38bdf8',
+    accent: '#06b6d4',
     tile: 'metal', ambient: 'stars', obstacle: 'spaceship', skyArt: 'stars',
     sky: { top: '#000308', bottom: '#0b1730' },
     enemies: ['aliendrone', 'voidwraith', 'mech', 'voidleech'],
     power: 2.3,
     boss: { name: 'The Hive Queen', hp: 130, r: 52, color: '#7c3aed', speed: 62, kit: 'hivequeen' },
-    levelTitles: ['Docking Ring', 'Cryo Corridor', 'Reactor Spine', 'The Bridge', 'Hive Core'],
+    levelTitles: ['Derelict Hangar', 'Cryo-Pod Deck', 'Orbital Rail Spine', 'Xeno-Bio Lab', 'Singularity Engine'],
     levelBlurbs: [
-      'A docking ring open to hard vacuum, and something silver moving in it.',
+      'A hangar open to hard vacuum, and something silver moving in it.',
       'Frozen sleepers in fogged glass. Some of the pods are open from the inside.',
-      'Cable runs and coolant steam. The ship is warm where it should be cold.',
-      'The bridge is dark, the crew is gone, and the consoles are still logging.',
-      'The core is not a reactor any more. It is a nest.'
+      'Cable runs and coolant steam along the rail spine. Warm where it should be cold.',
+      'Dark labs, ruptured tanks, consoles still logging something growing.',
+      'The core is not an engine any more. It is a nest around a captive star.'
     ],
     levelStories: [
-      'The rift opens onto a hull and the hull is still pressurised. Silver drones detach from the ring and come for him in a line.',
-      'The cryo corridor is a mile of frosted glass. Wraiths drift between the pods, invisible until the last three metres.',
-      'Something has been growing in the reactor spine for a decade. Mech guardians stand in the coolant fog, and their rockets are already lit.',
-      'The bridge is the last clean room on the ship. It does not stay clean for long.',
-      'The Hive Core pulses under a lattice of ribs. Every drone on the ship turns toward the intrusion at once.'
+      'The rift opens onto a hull and the hull is still pressurised. Silver drones detach from the hangar gantries and come for him in a line.',
+      'The cryo deck is a mile of frosted glass. Wraiths drift between the pods, invisible until the last three metres.',
+      'Something has been growing in the rail spine for a decade. Mech guardians stand in the coolant fog, rockets already lit.',
+      'The bio lab is the last clean room on the ship. It does not stay clean for long.',
+      'The singularity engine pulses inside a lattice of ribs. Every drone on the ship turns toward the intrusion at once.'
     ]
   },
   {
@@ -4034,19 +4034,19 @@ const UNIVERSE_BLUEPRINTS = [
     enemies: ['shade', 'timewraith', 'titan', 'echo'],
     power: 2.6,
     boss: { name: 'The Architect of Oblivion', hp: 200, r: 56, color: '#9333ea', speed: 70, kit: 'architect' },
-    levelTitles: ['The Last Door', 'Fractured Yesterday', 'Where Time Died', 'The Hollow Throne', 'Oblivion'],
+    levelTitles: ['Shattered Chronos', 'Echoes of Rael', 'Null-Gravity Sanctum', 'Paradox Citadel', 'Throne of Oblivion'],
     levelBlurbs: [
-      'Black floor, purple fractures, and a copy of Rael standing at the far end.',
+      'A broken clock the size of a cathedral. A copy of Rael stands at the far end.',
       'Yesterday keeps happening in pieces. Some of the pieces fight back.',
-      'The place where the timeline snapped. Nothing here agrees on what it is.',
-      'A throne with nothing on it, guarded by everything that ever wore a crown.',
+      'The place where the timeline snapped. Debris hangs motionless; nothing agrees what it is.',
+      'A citadel built from every crown he ever broke, guarded by all of them.',
       'The Architect waits at the centre of the nothing, and it is smiling.'
     ],
     levelStories: [
-      'The door closes behind him and there is no door. A shade wearing his face lifts the weapon he chose and comes on.',
-      'Time has come apart into slabs of yesterday. Wraiths slip backwards through their own tracks to avoid the hit.',
-      'This is where the timeline snapped. Chaos titans patrol the break, wearing the attacks of every universe he has already survived.',
-      'The hollow throne is a monument to every champion he has killed. They are all standing on it.',
+      'The door closes behind him and there is no door. Beneath the shattered chronos a shade wearing his face lifts the weapon he chose.',
+      'Time has come apart into slabs of yesterday, and every echo of Rael fights to be the real one. Wraiths slip backwards through their own tracks.',
+      'This is where the timeline snapped. Chaos titans drift through the null-gravity sanctum wearing the attacks of every universe he survived.',
+      'The paradox citadel is a monument to every champion he has killed. They are all standing on it.',
       'Everything the Architect unmade is in this room. Kill it, and the timeline can still be put back.'
     ]
   }
@@ -4709,6 +4709,7 @@ function loadZone(zoneIndex, opts) {
   UI.zoneBadge.textContent = 'U' + zUni.number + ' · ZONE ' + z.level;
   UI.zoneName.textContent = z.name;
   document.documentElement.style.setProperty('--zone-accent', z.accent);
+  applyEraAccent(gameState.currentUniverse);
   updateObjective();
   if (UI.objective) { UI.objective.classList.remove('zone-fade'); void UI.objective.offsetWidth; UI.objective.classList.add('zone-fade'); }
   updateHealthOrbs();
@@ -13702,87 +13703,49 @@ const CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"
 const PLAY_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
   '<path fill="currentColor" d="M8 5.2v13.6c0 .8.9 1.3 1.6.9l10.2-6.8a1 1 0 0 0 0-1.7L9.6 4.3A1 1 0 0 0 8 5.2z"/></svg>';
 
+/* thirty era emblems — one per zone, stroked in the era accent
+   (currentColor follows --era-accent on the card) */
+const ZONE_ART = [
+  /* U1 Medieval: Ashen Hamlet, Blightwood, Portcullis, Belfry, Rift */
+  '<path d="M12 30 32 12l20 18"/><path d="M18 28v24h28V28"/><path d="M28 52V38h8v14"/><path d="M24 20c1-3 3-4 4-6" opacity=".6"/><g fill="currentColor" stroke="none"><circle cx="20" cy="46" r="1.6"/><circle cx="45" cy="42" r="1.4"/><circle cx="39" cy="17" r="1.3"/></g>',
+  '<path d="M32 54V30"/><path d="M32 38c-6-4-12-4-17-1M32 32c6-4 12-4 17-1M32 30c-1-8-4-13-9-17M32 30c2-8 6-12 11-15"/><path d="M22 54h20M26 54l3-4M38 54l-3-4"/><circle cx="48" cy="11" r="3.2"/>',
+  '<path d="M14 54V22l18-10 18 10v32"/><path d="M24 54V26M32 54V22M40 54V26"/><path d="M20 36h24"/><path d="M22 49l2 4 2-4M30 49l2 4 2-4M38 49l2 4 2-4" fill="currentColor" stroke="none" opacity=".85"/>',
+  '<path d="M24 54V24h16v30"/><path d="M20 24l12-10 12 10"/><path d="M27 38a5 5 0 0 1 10 0l1.6 4H25.4z"/><circle cx="32" cy="45" r="1.7" fill="currentColor" stroke="none"/><path d="M48 9l1.2 3.2L52.4 13.4l-3.2 1.2L48 17.8l-1.2-3.2-3.2-1.2 3.2-1.2z" fill="currentColor" stroke="none"/>',
+  '<circle cx="32" cy="32" r="19" stroke-dasharray="7 5"/><path d="M32 20l-4 9 7 3-6 10"/><circle cx="32" cy="32" r="3" fill="currentColor" stroke="none"/><path d="M13 14l4 4M51 14l-4 4M13 50l4-4M51 50l-4-4" opacity=".6"/>',
+  /* U2 Egypt: Obelisk, Jackals, Catacombs, Temple of Anubis, Pyramid Core */
+  '<path d="M27 54V18l5-8 5 8v36"/><path d="M20 54h24"/><path d="M27 26h10M27 34h10"/><g fill="currentColor" stroke="none"><circle cx="32" cy="42" r="1.6"/><circle cx="32" cy="48" r="1.6"/></g><path d="M8 54c6-3 12-3 18 0M38 54c6-3 12-3 18 0" opacity=".6"/>',
+  '<path d="M24 10l2 14M40 10l-2 14"/><path d="M24 24c0 8 3 12 8 16 5-4 8-8 8-16l-8-5z"/><path d="M28 40l4 10 4-10"/><g fill="currentColor" stroke="none"><circle cx="27" cy="28" r="1.7"/><circle cx="37" cy="28" r="1.7"/></g>',
+  '<path d="M14 54V30a18 14 0 0 1 36 0v24"/><path d="M22 54V34a10 8 0 0 1 20 0v20"/><circle cx="32" cy="40" r="5"/><g fill="currentColor" stroke="none"><circle cx="30" cy="39" r="1.2"/><circle cx="34" cy="39" r="1.2"/></g><path d="M29 45h6"/>',
+  '<path d="M10 54 18 20h10v34M54 54 46 20H36v34"/><path d="M28 20h8"/><path d="M24 32c3-3.4 5.4-5 8-5s5 1.6 8 5c-3 3.4-5.4 5-8 5s-5-1.6-8-5z"/><circle cx="32" cy="32" r="2.4" fill="currentColor" stroke="none"/>',
+  '<path d="M32 10 56 54H8z"/><path d="M32 10v44M20.6 32h22.8"/><circle cx="32" cy="24" r="4.4" fill="currentColor" stroke="none"/><path d="M14 54l8-14M50 54l-8-14" opacity=".55"/>',
+  /* U3 Japan: Bamboo, Shrine, Tenshu, Blood Moon, Torii of the Abyss */
+  '<path d="M22 54V12M32 54V8M42 54V16"/><path d="M18.6 24h6.8M28.6 20h6.8M38.6 28h6.8M18.6 38h6.8M28.6 34h6.8M38.6 42h6.8"/><path d="M32 14c5-1 8-4 9-8-5 0-8 2-9 8zM22 18c-5-1-7-3-8-7 4 0 7 2 8 7z" fill="currentColor" stroke="none" opacity=".8"/>',
+  '<path d="M10 26c8-6 36-6 44 0l-4 4H14z"/><path d="M20 34v14M44 34v14"/><path d="M14 50h36"/><rect x="28" y="36" width="8" height="10" rx="2"/><circle cx="32" cy="41" r="1.6" fill="currentColor" stroke="none"/><path d="M18 12l-2 5M30 9l-2 5M44 11l-2 5" opacity=".55"/>',
+  '<path d="M16 54V38h32v16"/><path d="M12 38h40l-5-6H17z"/><path d="M22 32v-8h20v8"/><path d="M18 24h28l-4-6H22z"/><path d="M27 18v-5h10v5"/><path d="M23 13h18l-3-5H26z"/><rect x="29" y="44" width="6" height="10"/>',
+  '<circle cx="32" cy="22" r="11"/><circle cx="28" cy="19" r="2" fill="currentColor" stroke="none" opacity=".8"/><path d="M16 40h32M21 40v14M43 40v14M14 54h36"/><g fill="currentColor" stroke="none"><circle cx="14" cy="16" r="1.4"/><circle cx="50" cy="14" r="1.4"/><circle cx="46" cy="30" r="1.2"/></g>',
+  '<path d="M8 16h48M13 24h38"/><path d="M18 16v34M46 16v34"/><path d="M32 30a7 7 0 1 1-7 7"/><circle cx="32" cy="37" r="2" fill="currentColor" stroke="none"/><path d="M12 54h40" stroke-dasharray="4 4"/>',
+  /* U4 Wasteland: Overpass, Refinery, Boneyard, Reactor, Silo */
+  '<path d="M6 26h52M6 32h52"/><path d="M16 32v18M48 32v18"/><path d="M10 50h44" stroke-dasharray="6 5"/><path d="M24 26l3-6h10l3 6"/><path d="M41 14l4-3" opacity=".6"/>',
+  '<rect x="12" y="28" width="14" height="24" rx="3"/><rect x="38" y="20" width="14" height="32" rx="3"/><path d="M26 36h12M19 28v-6h26"/><path d="M45 20v-8M41 8h8"/><path d="M8 54h48"/>',
+  '<circle cx="25" cy="35" r="13"/><path d="M18 44v6h14v-6"/><g fill="currentColor" stroke="none"><circle cx="20.5" cy="35" r="2.2"/><circle cx="29.5" cy="35" r="2.2"/></g><circle cx="45" cy="18" r="6"/><path d="M45 8v4M45 24v4M35 18h4M51 18h4M38 11l3 3M49 22l3 3M52 11l-3 3M41 22l-3 3"/>',
+  '<circle cx="32" cy="32" r="4.4" fill="currentColor" stroke="none"/><path d="M28.4 26.2 21 13a20 20 0 0 1 22 0l-7.4 13.2M38 36.4l14.6 3.8a20 20 0 0 1-14 13.3L33 39M26 36.4l-5.6 17.1A20 20 0 0 1 11.4 40.2L26 36.4"/><path d="M10 58c8-3 36-3 44 0" opacity=".55"/>',
+  '<path d="M22 54V22a10 10 0 0 1 20 0v32"/><path d="M22 34h20M22 44h20"/><path d="M29 7l3-4 3 4M32 3v11"/><path d="M32 23l1.7 3.6 3.6 1.7-3.6 1.7L32 33.6l-1.7-3.6-3.6-1.7 3.6-1.7z" fill="currentColor" stroke="none" opacity=".85"/><path d="M12 54h40"/>',
+  /* U5 Deep Space: Hangar, Cryo Deck, Rail Spine, Bio Lab, Singularity */
+  '<path d="M8 54V30a24 18 0 0 1 48 0v24"/><path d="M18 54V34a14 10 0 0 1 28 0v20"/><path d="M32 30l4 10h-8z" fill="currentColor" stroke="none" opacity=".85"/><path d="M6 54h52"/>',
+  '<rect x="22" y="8" width="20" height="44" rx="10"/><path d="M22 22h20"/><circle cx="32" cy="15.5" r="3.4"/><path d="M27 34l4 4M37 30l-4 5M28 44l3 3" opacity=".65"/><path d="M12 20v24M52 20v24" opacity=".45"/><path d="M14 54h36"/>',
+  '<path d="M10 54 26 10M54 54 38 10"/><path d="M19.4 32h25.2M15.4 43h33.2"/><ellipse cx="32" cy="20" rx="15" ry="5.4"/><circle cx="32" cy="20" r="2.2" fill="currentColor" stroke="none"/>',
+  '<path d="M28 10h8M30 10v12l-8 18a6 6 0 0 0 5.4 9h9.2A6 6 0 0 0 42 40l-8-18V10"/><path d="M26 38c4-3 8 2 12-1"/><g fill="currentColor" stroke="none"><circle cx="30" cy="32" r="1.6"/><circle cx="35" cy="27" r="1.3"/></g><path d="M42 44c5 1 7-2 9-5" opacity=".7"/>',
+  '<circle cx="32" cy="32" r="7"/><ellipse cx="32" cy="32" rx="22" ry="8"/><ellipse cx="32" cy="32" rx="22" ry="8" transform="rotate(58 32 32)" opacity=".65"/><circle cx="52" cy="23" r="1.8" fill="currentColor" stroke="none"/>',
+  /* U6 The Void: Chronos, Echoes, Null-G Sanctum, Paradox Citadel, Throne */
+  '<circle cx="32" cy="32" r="20" stroke-dasharray="16 6"/><path d="M32 24v8l6 4"/><path d="M22 18l5 6-3 5M44 44l-5-4 2-6"/><path d="M32 6v5M32 53v5M6 32h5M53 32h5" opacity=".6"/>',
+  '<circle cx="22" cy="18" r="6"/><path d="M12 52c0-10 4-15 10-15s10 5 10 15"/><g opacity=".55" stroke-dasharray="4 3"><circle cx="43" cy="18" r="6"/><path d="M33 52c0-10 4-15 10-15s10 5 10 15"/></g>',
+  '<path d="M18 18l7 4-3 8-8-3z"/><path d="M40 12l8 6-6 6-7-5z"/><path d="M28 38l9 5-4 9-9-4z"/><path d="M46 36l6 4-2 7-7-3z"/><circle cx="21" cy="47" r="2"/><ellipse cx="32" cy="32" rx="24" ry="9" stroke-dasharray="3 5" opacity=".6"/>',
+  '<path d="M14 54V26h12v28"/><path d="M38 54V26h12v28"/><path d="M26 34h12"/><path d="M27 10h10l-2 14h-6z"/><path d="M14 26l6-7 6 7M38 26l6-7 6 7"/><path d="M32 34v8" stroke-dasharray="3 3"/>',
+  '<path d="M22 54V22M42 54V22"/><path d="M22 30h20"/><path d="M18 54h28"/><path d="M24 16l3-7 5 5 5-5 3 7z"/><circle cx="32" cy="42" r="4.6"/><circle cx="32" cy="42" r="1.6" fill="currentColor" stroke="none"/>'
+];
 function zoneArt(i) {
-  /* heraldic level emblems (64-grid, layered silhouettes, gold strokes):
-     village, forest, castle gates, sorcerer's tower, time portal */
-  const lvl = ((i | 0) % LEVELS_PER_UNIVERSE + LEVELS_PER_UNIVERSE) % LEVELS_PER_UNIVERSE;
-  if (lvl === 1) {
-    /* Dark Forest: gnarled trees, crescent moon, horned skull totem */
-    return '<svg class="zart" viewBox="0 0 64 64" aria-hidden="true">' +
-      '<path fill="#f5c842" d="M44 4a9.5 9.5 0 1 0 6.4 17A11.5 11.5 0 0 1 44 4z"/>' +
-      '<g fill="#17100a" stroke="#8b6914" stroke-width="1.3" stroke-linejoin="round">' +
-      '<path d="M11 60c1.2-9 .4-16-1.6-23 2.8.8 4.8.8 6.6-.8-.9-2.8-2.8-5.4-5.6-7.3 3.8 0 5.6-.9 7.5-2.8-.9-3.8 0-7.5 1.9-11.3 2.8 3.8 3.8 7.5 2.8 11.3 1.9 1.9 3.8 2.8 6.6 2.8-2.8 1.9-4.7 4.5-5.6 7.3 1.8 1.9 3.8 1.9 6.5.9-1.9 7-2.7 14-1.6 23z"/>' +
-      '<path d="M47 60c.9-7 .3-12.4-1.2-18 2.2.6 3.7.6 5.1-.6-.7-2.2-2.1-4.2-4.3-5.7 2.9 0 4.3-.7 5.8-2.1-.7-2.9 0-5.8 1.4-8.7 2.2 2.9 2.9 5.8 2.2 8.7 1.4 1.4 2.9 2.1 5.1 2.1-2.2 1.5-3.6 3.5-4.3 5.7 1.4 1.4 2.9 1.4 5 .7-1.4 5.6-2 11-1.2 18z"/>' +
-      '</g>' +
-      '<path fill="#e5d7b0" stroke="#8b6914" stroke-width="1.2" stroke-linejoin="round" d="M32 37c5.5 0 9 3.9 9 8.8 0 3-1.4 5.1-3.4 6.3V57H26.4v-4.9C24.4 50.9 23 48.8 23 45.8 23 40.9 26.5 37 32 37z"/>' +
-      '<path fill="none" stroke="#d4a017" stroke-width="2" stroke-linecap="round" d="M24.6 40.4c-3-1-5.6-3.6-6.2-7.4 2.7 1.7 4.9 2 7.2 1.5M39.4 40.4c3-1 5.6-3.6 6.2-7.4-2.7 1.7-4.9 2-7.2 1.5"/>' +
-      '<ellipse cx="28" cy="46.4" rx="2.3" ry="2.9" fill="#17100a"/><ellipse cx="36" cy="46.4" rx="2.3" ry="2.9" fill="#17100a"/>' +
-      '<path fill="#17100a" d="M32 49.8l1.4 2.7h-2.8z"/>' +
-      '<path stroke="#17100a" stroke-width="1.3" d="M29.2 57v-3M32 57v-3.4M34.8 57v-3"/>' +
-      '<path stroke="#8b6914" stroke-width="1.6" stroke-linecap="round" d="M5 60.5h54"/>' +
-      '</svg>';
-  }
-  if (lvl === 2) {
-    /* Castle Gates: twin towers, spiked portcullis, war banner */
-    return '<svg class="zart" viewBox="0 0 64 64" aria-hidden="true">' +
-      '<path stroke="#d4a017" stroke-width="1.8" stroke-linecap="round" d="M32 8v13"/>' +
-      '<path fill="#f5c842" d="M32 8.6 43 12l-11 3.8z"/>' +
-      '<g fill="#24190d" stroke="#d4a017" stroke-width="1.5" stroke-linejoin="round">' +
-      '<path d="M7 58V25h3v-5h4v5h3v-5h4v38z"/>' +
-      '<path d="M57 58V25h-3v-5h-4v5h-3v-5h-4v38z"/>' +
-      '<path d="M21 31h22v6H21z"/>' +
-      '</g>' +
-      '<rect x="12" y="32" width="4.4" height="7" fill="#ff9d45"/><rect x="47.6" y="32" width="4.4" height="7" fill="#ff9d45"/>' +
-      '<path fill="#17100a" stroke="#8b6914" stroke-width="1.4" d="M25 58V41a7 7 0 0 1 14 0v17z"/>' +
-      '<g stroke="#d4a017" stroke-width="1.6" stroke-linecap="round"><path d="M28.4 38v15M32 37v16M35.6 38v15M25 45.5h14"/></g>' +
-      '<g fill="#d4a017"><path d="M28.4 53l-1.7 4h3.4z"/><path d="M32 53l-1.7 4h3.4z"/><path d="M35.6 53l-1.7 4h3.4z"/></g>' +
-      '<path stroke="#8b6914" stroke-width="1.6" stroke-linecap="round" d="M4 58.5h56"/>' +
-      '</svg>';
-  }
-  if (lvl === 3) {
-    /* Sorcerer's Tower: crooked spire, runic rings, all-seeing eye */
-    return '<svg class="zart" viewBox="0 0 64 64" aria-hidden="true">' +
-      '<ellipse cx="32" cy="29" rx="25" ry="9.5" fill="none" stroke="#d4a017" stroke-width="1.4" stroke-dasharray="4 3" transform="rotate(-13 32 29)"/>' +
-      '<ellipse cx="32" cy="29" rx="25" ry="9.5" fill="none" stroke="#f5c842" stroke-width="1.1" stroke-dasharray="2.4 3.6" opacity=".7" transform="rotate(15 32 29)"/>' +
-      '<path fill="#24190d" stroke="#d4a017" stroke-width="1.5" stroke-linejoin="round" d="M27 58c-.4-9.6.4-17.6 2.4-25.4l3.4-2c2 8.4 3 17.6 3.2 27.4z"/>' +
-      '<path fill="#17100a" stroke="#d4a017" stroke-width="1.5" stroke-linejoin="round" d="M24.6 33.4c2.8-8 7.8-15.2 16.2-20.2-1 5-.8 8.2 1.2 11.4-5 4-11 7-17.4 8.8z"/>' +
-      '<path fill="#17100a" stroke="#f5c842" stroke-width="1.6" stroke-linejoin="round" d="M20 23.4c4-5 8-7.5 12-7.5s8 2.5 12 7.5c-4 5-8 7.5-12 7.5s-8-2.5-12-7.5z"/>' +
-      '<circle cx="32" cy="23.4" r="4.4" fill="none" stroke="#f5c842" stroke-width="1.6"/><circle cx="32" cy="23.4" r="1.9" fill="#f5c842"/>' +
-      '<rect x="30.2" y="42" width="4.4" height="7" fill="#ff9d45"/>' +
-      '<g fill="#f5c842"><circle cx="10" cy="20" r="1.4"/><circle cx="54" cy="38" r="1.3"/><circle cx="16" cy="44" r="1.1"/></g>' +
-      '<path stroke="#8b6914" stroke-width="1.6" stroke-linecap="round" d="M14 58.5h36"/>' +
-      '</svg>';
-  }
-  if (lvl === 4) {
-    /* Time Portal: shattered hourglass in interlocking clockwork rings */
-    return '<svg class="zart" viewBox="0 0 64 64" aria-hidden="true">' +
-      '<circle cx="32" cy="32" r="26" fill="none" stroke="#d4a017" stroke-width="2"/>' +
-      '<path stroke="#d4a017" stroke-width="2" stroke-linecap="round" d="M32 5.5V11M32 53v5.5M5.5 32H11M53 32h5.5M13.3 13.3l3.9 3.9M46.8 46.8l3.9 3.9M50.7 13.3l-3.9 3.9M17.2 46.8l-3.9 3.9"/>' +
-      '<circle cx="32" cy="32" r="20.5" fill="none" stroke="#8b6914" stroke-width="1.3" stroke-dasharray="3 4"/>' +
-      '<path fill="#24190d" stroke="#f5c842" stroke-width="1.8" stroke-linejoin="round" d="M23 15h18l-5.6 13.6a3.4 3.4 0 0 0 0 6.8L41 49H23l5.6-13.6a3.4 3.4 0 0 0 0-6.8z"/>' +
-      '<g stroke="#f5c842" stroke-width="2.4" stroke-linecap="round"><path d="M20.6 15h22.8"/><path d="M20.6 49h22.8"/></g>' +
-      '<path fill="#f5c842" d="M26.8 18.6h10.4l-3.2 5.8h-4z"/><path fill="#f5c842" d="M27 45.4h10L32 38.6z"/>' +
-      '<g fill="#f5c842"><circle cx="32" cy="28.6" r="1"/><circle cx="32" cy="33.4" r="1"/></g>' +
-      '<path fill="none" stroke="#ffe9ae" stroke-width="1.3" stroke-linejoin="round" d="M24.8 19.6l4 3-2 3.4M39.6 42.4l-4-2.6 2-3.6"/>' +
-      '</svg>';
-  }
-  /* The Village: crossed broadswords before a burning watchtower + shield crest */
-  return '<svg class="zart" viewBox="0 0 64 64" aria-hidden="true">' +
-    '<path fill="#24190d" stroke="#d4a017" stroke-width="1.6" stroke-linejoin="round" d="M25 58V27l-3-4h20l-3 4v31z"/>' +
-    '<path fill="#17100a" stroke="#8b6914" stroke-width="1.2" stroke-linejoin="round" d="M20 23l12-9.4L44 23z"/>' +
-    '<path stroke="#8b6914" stroke-width="1.5" d="M25 35h14M25 45h14"/>' +
-    '<rect x="29.5" y="28" width="5" height="7.5" fill="#ff9d45"/>' +
-    '<path fill="#ff9d45" d="M29 13.6c.6-3.4 1.8-5.2 3-7.4 1.2 2.2 2.4 4 3 7.4-1.8 1.2-4.2 1.2-6 0z"/>' +
-    '<path fill="#f5c842" d="M30.8 13.6c.3-1.8.7-2.8 1.2-4 .5 1.2.9 2.2 1.2 4-.8.6-1.6.6-2.4 0z"/>' +
-    '<g stroke-linecap="round">' +
-    '<path d="M13 54 45 24" stroke="#ffe9ae" stroke-width="3"/>' +
-    '<path d="M51 54 19 24" stroke="#ffe9ae" stroke-width="3"/>' +
-    '<path d="M16.5 47.5l5.5 2.5M47.5 47.5 42 50" stroke="#d4a017" stroke-width="2.6"/>' +
-    '<path d="M13 54l-2.5 4.5M51 54l2.5 4.5" stroke="#5c3317" stroke-width="3.6"/>' +
-    '</g>' +
-    '<path fill="#d4a017" stroke="#8b6914" stroke-width="1" stroke-linejoin="round" d="M32 43l5.5 1.8v4.7c0 3.6-2.6 5.8-5.5 7.3-2.9-1.5-5.5-3.7-5.5-7.3v-4.7z"/>' +
-    '<circle cx="32" cy="49.2" r="1.6" fill="#24190d"/>' +
-    '</svg>';
+  const idx = ((i | 0) % ZONE_ART.length + ZONE_ART.length) % ZONE_ART.length;
+  return '<svg class="zart" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ZONE_ART[idx] + '</svg>';
 }
 
 /* clean card titles: the era lives in its own badge, never inside the name */
@@ -13842,7 +13805,15 @@ function drawUniverseCards() {
   }
 }
 
+/* the era palette: one accent per universe drives card keylines, pills,
+   stat ticks and ready-states through --era-accent */
+function applyEraAccent(universeIndex) {
+  const u = UNIVERSES[clamp(universeIndex | 0, 0, UNIVERSES.length - 1)];
+  if (u && u.accent) document.documentElement.style.setProperty('--era-accent', u.accent);
+}
+
 function drawZoneCards() {
+  applyEraAccent(game.uiUniverse);
   drawUniverseCards();
   const row = UI.zoneRow;
   if (!row) return;
