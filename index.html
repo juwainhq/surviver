@@ -3075,8 +3075,8 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
     <div id="classBadge">
       <div class="class-badge-row"><div id="badgeIcon" class="badge-icon" aria-hidden="true"></div>
       <span id="className">Vanguard Knight</span><span id="hudClassLevel">LV. 1</span></div>
-      <div id="classXpTrack" role="progressbar" aria-label="Class experience" aria-valuemin="0" aria-valuemax="80" aria-valuenow="0"><div id="classXpFill"></div></div>
-      <div id="classXpCaption"><span id="classXpText">0 / 80 XP</span><span id="hudSkillPoints">0 SP</span></div>
+      <div id="classXpTrack" role="progressbar" aria-label="Class experience" aria-valuemin="0" aria-valuemax="70" aria-valuenow="0"><div id="classXpFill"></div></div>
+      <div id="classXpCaption"><span id="classXpText">0 / 70 XP</span><span id="hudSkillPoints">0 SP</span></div>
     </div>
 
     <canvas id="minimap" width="300" height="300"></canvas>
@@ -3239,10 +3239,10 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
         <div><div class="skill-eyebrow">PERMANENT CLASS PROGRESSION</div><h1 id="skillTreeTitle">SKILL TREE</h1><div id="skillTreeClass">Vanguard Knight</div></div>
         <div class="skill-points-box"><span>SKILL POINTS</span><strong id="skillTreePoints">0</strong></div>
       </header>
-      <div class="skill-xp-summary"><span id="skillTreeLevel">LEVEL 1 / 20</span><div class="skill-tree-xp-track"><div id="skillTreeXpFill"></div></div><span id="skillTreeXp">0 / 80 XP</span></div>
+      <div class="skill-xp-summary"><span id="skillTreeLevel">LEVEL 1 / 20</span><div class="skill-tree-xp-track"><div id="skillTreeXpFill"></div></div><span id="skillTreeXp">0 / 70 XP</span></div>
       <div class="skill-grid-scroll"><div id="skillTreeRows" aria-label="Class skill nodes"></div></div>
       <div class="skill-legend"><span><i class="legend-dot owned"></i>Purchased</span><span><i class="legend-dot available"></i>Available</span><span><i class="legend-dot"></i>Locked</span></div>
-      <footer class="skill-footer"><p>Earn 1 Skill Point every time your class levels up. Unlock each row from left to right to master all 12 class skills.<span id="skillTreeStatus" aria-live="polite">Class levels and skills are saved separately for every class.</span></p><button class="btn" id="btnSkillTreeBack" type="button">BACK</button></footer>
+      <footer class="skill-footer"><p>Earn 1 Skill Point every class level, plus 1 bonus SP at Levels 5, 10 and 15 (22 total). Unlock each row left to right: tiers cost 1/1/2/3 SP and require Levels 2/5/10/15.<span id="skillTreeStatus" aria-live="polite">Class levels and skills are saved separately for every class.</span></p><button class="btn" id="btnSkillTreeBack" type="button">BACK</button></footer>
     </div>
     <div id="skillTooltip" role="tooltip" hidden><strong id="skillTooltipName"></strong><span id="skillTooltipDesc"></span><span id="skillTooltipState"></span></div>
   </div>
@@ -3258,7 +3258,7 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
       <div class="row"><b>Q</b> Class ability · <b>E</b> Ability 2 · <b>SHIFT</b> Ability 3 · <b>F</b> Ability 4 · <b>R</b> Ability 5</div>
       <div class="row"><b>1 2 3</b> use a satchel supply</div>
       <div class="row">Each class has four unique unlockable abilities. Boss 1 unlocks E, boss 2 unlocks SHIFT, boss 3 unlocks F, and boss 4 unlocks R.</div>
-      <div class="row">Class XP: regular enemies 10 · elites (Oni, Mutant, Mech, Chaos Titan) 25 · bosses 150. Earn 1 Skill Point every time your class levels up. Unlock each row from left to right to master all 12 class skills.</div>
+      <div class="row">Class XP: regular enemies 10 · elites (Oni, Mutant, Mech, Chaos Titan) 25 · bosses 150. Earn 1 Skill Point every class level, plus 1 bonus SP at Levels 5, 10 and 15 (22 total). Unlock each row left to right: tiers cost 1/1/2/3 SP and require Levels 2/5/10/15.</div>
       <div class="row">Open SKILL TREE from pause or a level-up banner. Each class keeps its own level, XP and permanent skills across every zone and universe.</div>
       <div class="row">Clear every arena, beat the champion, then walk into the portal it leaves behind. Six universes, five levels each.</div>
       <button class="btn" id="btnHowToBack" type="button">Back</button>
@@ -6199,12 +6199,28 @@ const CLASSES = [
    Each doctrine owns a separate localStorage slot. Run resets never touch it.
    ============================================================================= */
 const CLASS_MAX_LEVEL = 20;
-const CLASS_XP_PER_LEVEL = 80;
-const CLASS_SKILL_POINT_CAP = 12;
-const CLASS_SKILL_POINT_LAST_LEVEL = 13; /* levels 2-13 earn the 12 lifetime SP */
+const CLASS_XP_BASE = 70;
+const CLASS_XP_EXPONENT = 1.35;
+const CLASS_SKILL_POINT_TOTAL = 22;
+const CLASS_SKILL_POINT_CAP = CLASS_SKILL_POINT_TOTAL;
+const CLASS_SKILL_POINT_LAST_LEVEL = 20;
+const CLASS_SKILL_POINT_MILESTONE_LEVELS = [5, 10, 15];
+const SKILL_TIER_COSTS = [1, 1, 2, 3];
+const SKILL_TIER_REQUIRED_LEVELS = [2, 5, 10, 15];
+const SKILL_TIER_NAMES = ['Starter', 'Adept', 'Master', 'Ultimate'];
+const CLASS_SKILL_TREE_TOTAL_COST = 21; /* 3 rows * (1 + 1 + 2 + 3) SP */
 const CLASS_PROGRESS_PREFIX = 'surviveClassProgress.';
 const CLASS_XP_VALUES = { regular: 10, elite: 25, boss: 150 };
-function skillNode(id, name, desc, icon) { return { id, name, desc, icon, cost: 1 }; }
+function skillNode(id, name, desc, icon) {
+  return {
+    id, name, desc, icon,
+    col: 0, tier: 1, tierName: SKILL_TIER_NAMES[0],
+    cost: SKILL_TIER_COSTS[0], spCost: SKILL_TIER_COSTS[0],
+    reqLevel: SKILL_TIER_REQUIRED_LEVELS[0], requiredLevel: SKILL_TIER_REQUIRED_LEVELS[0],
+    minLevel: SKILL_TIER_REQUIRED_LEVELS[0], levelRequirement: SKILL_TIER_REQUIRED_LEVELS[0],
+    requiredClassLevel: SKILL_TIER_REQUIRED_LEVELS[0]
+  };
+}
 const CLASS_SKILL_TREES = {
   knight: [
     { name: 'Offense', nodes: [
@@ -6348,6 +6364,27 @@ const CLASS_SKILL_TREES = {
   ]
 };
 const skillTreeData = CLASS_SKILL_TREES;
+/* Column is the tier: 0 Starter, 1 Adept, 2 Master, 3 Ultimate. */
+for (const rows of Object.values(CLASS_SKILL_TREES)) {
+  for (const row of rows) {
+    row.nodes.forEach((node, col) => {
+      const nodeCost = SKILL_TIER_COSTS[col];
+      const nodeReqLevel = SKILL_TIER_REQUIRED_LEVELS[col];
+      Object.assign(node, {
+        col,
+        tier: col + 1,
+        tierName: SKILL_TIER_NAMES[col],
+        cost: nodeCost,
+        spCost: nodeCost,
+        reqLevel: nodeReqLevel,
+        requiredLevel: nodeReqLevel,
+        minLevel: nodeReqLevel,
+        levelRequirement: nodeReqLevel,
+        requiredClassLevel: nodeReqLevel
+      });
+    });
+  }
+}
 const SKILL_ICON_PATHS = {
   sword: '<path d="m5 19 11-11 3-5 2 2-5 3L5 19zM4 14l6 6M3 21l3-3"/>',
   hammer: '<path d="m5 20 9-9M10 4l4-2 7 7-2 4zM8 6l10 10"/>',
@@ -6414,10 +6451,16 @@ let skillTreeReturn = 'pauseMenu';
 let skillTreeClassId = 'knight';
 let skillTooltipButton = null;
 function classProgressKey(id) { return CLASS_PROGRESS_PREFIX + id; }
-function xpForLevel(level) { return Math.max(1, level) * CLASS_XP_PER_LEVEL; }
+function xpForNextLevel(level) {
+  const safeLevel = clamp(Math.floor(Number(level) || 1), 1, CLASS_MAX_LEVEL);
+  return Math.round(70 * Math.pow(safeLevel, 1.35));
+}
+function xpForLevel(level) { return xpForNextLevel(level); }
 function totalEarnedSkillPoints(level) {
-  const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
-  return Math.min(12, Math.max(0, safeLevel - 1));
+  const safeLevel = clamp(Math.floor(Number(level) || 1), 1, CLASS_MAX_LEVEL);
+  const levelPoints = Math.max(0, safeLevel - 1); /* +1 for Levels 2-20: 19 */
+  const milestonePoints = CLASS_SKILL_POINT_MILESTONE_LEVELS.filter(milestone => safeLevel >= milestone).length;
+  return Math.min(CLASS_SKILL_POINT_TOTAL, levelPoints + milestonePoints);
 }
 function classOwnedSkills(record) {
   if (!record || typeof record !== 'object') return [];
@@ -6429,6 +6472,94 @@ function classOwnedSkills(record) {
 function classSkillPointBalance(record) {
   if (!record || typeof record !== 'object') return 0;
   return Math.max(0, Math.floor(Number(record.skillPoints) || 0), Math.floor(Number(record.sp) || 0));
+}
+function skillNodeColumn(node, row) {
+  if (row && Array.isArray(row.nodes)) {
+    const index = row.nodes.indexOf(node);
+    if (index >= 0) return clamp(index, 0, SKILL_TIER_COSTS.length - 1);
+  }
+  const stored = node && Number.isFinite(Number(node.col)) ? Math.floor(Number(node.col)) : 0;
+  return clamp(stored, 0, SKILL_TIER_COSTS.length - 1);
+}
+function skillNodeCost(node, row) {
+  const col = skillNodeColumn(node, row);
+  return SKILL_TIER_COSTS[col] || Math.max(1, Math.floor(Number(node && (node.cost ?? node.spCost)) || 1));
+}
+function skillNodeRequiredLevel(node, row) {
+  const col = skillNodeColumn(node, row);
+  return SKILL_TIER_REQUIRED_LEVELS[col] || Math.max(1, Math.floor(Number(node && (node.reqLevel ?? node.requiredLevel ?? node.minLevel)) || 1));
+}
+function skillNodeTierName(node, row) { return SKILL_TIER_NAMES[skillNodeColumn(node, row)] || 'Starter'; }
+function skillRequirementLabel(node, row) {
+  const col = skillNodeColumn(node, row);
+  const nodeCost = skillNodeCost(node, row);
+  return col === 0 ? nodeCost + ' SP' : nodeCost + ' SP · LV ' + skillNodeRequiredLevel(node, row);
+}
+function skillRequirementText(node, row) {
+  return 'COST ' + skillNodeCost(node, row) + ' SP · LV ' + skillNodeRequiredLevel(node, row);
+}
+function skillLevelRequirementMet(node, row, record) {
+  const level = record && Number.isFinite(Number(record.level)) ? Math.floor(Number(record.level)) : 1;
+  return level >= skillNodeRequiredLevel(node, row);
+}
+function findSkillNodeInClass(classId, nodeId) {
+  const tree = CLASS_SKILL_TREES[classId] || [];
+  for (const row of tree) {
+    for (let col = 0; col < row.nodes.length; col++) {
+      if (row.nodes[col].id === nodeId) return { node: row.nodes[col], row, col };
+    }
+  }
+  return null;
+}
+function findSkillNodeAnywhere(nodeId) {
+  for (const classId of Object.keys(CLASS_SKILL_TREES)) {
+    const found = findSkillNodeInClass(classId, nodeId);
+    if (found) return found;
+  }
+  return null;
+}
+function classSpentSkillPoints(record) {
+  const owned = classOwnedSkills(record);
+  const seen = new Set();
+  let spentSP = 0;
+  for (const nodeId of owned) {
+    if (seen.has(nodeId)) continue;
+    seen.add(nodeId);
+    const found = record && record.classId ? findSkillNodeInClass(record.classId, nodeId) : findSkillNodeAnywhere(nodeId);
+    spentSP += found ? skillNodeCost(found.node, found.row) : 1;
+  }
+  return spentSP;
+}
+function validatedOwnedSkillIds(record, ownedSkills) {
+  const owned = Array.isArray(ownedSkills) ? ownedSkills : classOwnedSkills(record);
+  const tree = record && record.classId ? CLASS_SKILL_TREES[record.classId] : null;
+  if (!tree) return owned.slice();
+  const saved = new Set(owned);
+  const valid = new Set();
+  const level = clamp(Math.floor(Number(record.level) || 1), 1, CLASS_MAX_LEVEL);
+  const totalEarnedSP = totalEarnedSkillPoints(level);
+  let spentSP = 0;
+  for (const row of tree) {
+    for (let col = 0; col < row.nodes.length; col++) {
+      const node = row.nodes[col];
+      if (!saved.has(node.id)) break;
+      const nodeCost = skillNodeCost(node, row);
+      if (level < skillNodeRequiredLevel(node, row) || spentSP + nodeCost > totalEarnedSP) break;
+      valid.add(node.id);
+      spentSP += nodeCost;
+    }
+  }
+  return owned.filter((nodeId, index) => valid.has(nodeId) && owned.indexOf(nodeId) === index);
+}
+function validateClassSkillOwnership(record) {
+  if (!record || typeof record !== 'object' || !record.classId || !CLASS_SKILL_TREES[record.classId]) return false;
+  const before = classOwnedSkills(record);
+  const after = validatedOwnedSkillIds(record, before);
+  const changed = before.length !== after.length || before.some((nodeId, index) => nodeId !== after[index]);
+  if (!changed) return false;
+  record.owned = after;
+  if (classProgress[record.classId] === record) syncClassPassiveState(record.classId);
+  return true;
 }
 function freshClassProgress(id) {
   const record = { version: 1, classId: id, level: 1, xp: 0, totalXp: 0, skillPoints: 0, owned: [] };
@@ -6453,16 +6584,20 @@ function freshClassProgress(id) {
   });
   return record;
 }
-function recalculateSkillPoints(recordOrId, persist) {
+function recalculateSkillPoints(recordOrId, persist, validateOwnership = true) {
   const record = (recordOrId && typeof recordOrId === 'object') ? recordOrId : getClassProgress(recordOrId);
   if (!record || typeof record !== 'object') return 0;
-  const owned = classOwnedSkills(record);
-  if (record.owned !== owned) record.owned = owned;
+  const ownedBeforeValidation = classOwnedSkills(record);
+  if (record.owned !== ownedBeforeValidation) record.owned = ownedBeforeValidation;
+  /* Nodes bought ahead of their new level gate (or beyond the new budget)
+     are removed here; their tier costs flow back through earned - spent. */
+  const ownershipChanged = validateOwnership ? validateClassSkillOwnership(record) : false;
   const totalEarnedSP = totalEarnedSkillPoints(record.level);
-  const spentSP = owned.length;
+  const spentSP = classSpentSkillPoints(record);
+  const earnedBalance = Math.max(0, totalEarnedSP - spentSP);
   const currentSP = classSkillPointBalance(record);
-  const nextSP = Math.max(currentSP, totalEarnedSP - spentSP);
-  const changed = record.skillPoints !== nextSP || record.sp !== nextSP;
+  const nextSP = ownershipChanged ? earnedBalance : Math.max(currentSP, earnedBalance);
+  const changed = ownershipChanged || record.skillPoints !== nextSP || record.sp !== nextSP;
   record.skillPoints = nextSP;
   if (record.sp !== nextSP) record.sp = nextSP;
   if (persist && changed && record.classId && classProgress[record.classId] === record) saveClassProgress(record.classId);
@@ -6477,7 +6612,6 @@ function normalizeClassProgress(id, raw) {
   const integer = (v, max) => Number.isFinite(Number(v)) ? clamp(Math.floor(Number(v)), 0, max) : 0;
   out.level = clamp(integer(raw.level, CLASS_MAX_LEVEL), 1, CLASS_MAX_LEVEL);
   out.totalXp = integer(raw.totalXp, 100000000);
-  const tree = CLASS_SKILL_TREES[id] || [];
   const saved = Array.isArray(raw.owned)
     ? raw.owned
     : Array.isArray(raw.purchasedSkills)
@@ -6485,15 +6619,9 @@ function normalizeClassProgress(id, raw) {
       : Array.isArray(raw.purchasedNodes)
         ? raw.purchasedNodes
         : [];
-  const totalEarnedSP = totalEarnedSkillPoints(out.level);
-  for (const row of tree) {
-    for (const node of row.nodes) {
-      if (!saved.includes(node.id)) break;
-      if (out.owned.length < totalEarnedSP) out.owned.push(node.id);
-    }
-  }
-  /* Preserve any larger banked balance, then retroactively top the record up
-     to totalEarnedSP - spentSP under the every-level economy. */
+  out.owned = saved.slice();
+  /* Preserve a larger valid bank, but let recalculation refund any nodes that
+     fail the new left-to-right, level-gate, or tier-budget validation. */
   out.skillPoints = Math.max(integer(raw.skillPoints, 1000000), integer(raw.sp, 1000000));
   out.xp = out.level === CLASS_MAX_LEVEL ? 0 : integer(raw.xp, xpForLevel(out.level) - 1);
   recalculateSkillPoints(out);
@@ -6528,7 +6656,11 @@ function loadAllClassProgress() {
     try { raw = JSON.parse(localStorage.getItem(classProgressKey(cls.id)) || 'null'); } catch (e) { /* corrupt or unavailable storage */ }
     const normalized = normalizeClassProgress(cls.id, raw);
     classProgress[cls.id] = normalized;
-    if (raw && normalized.skillPoints > classSkillPointBalance(raw)) migrated.push(cls.id);
+    if (raw) {
+      const rawOwned = classOwnedSkills(raw);
+      const ownedChanged = rawOwned.length !== normalized.owned.length || rawOwned.some((nodeId, index) => nodeId !== normalized.owned[index]);
+      if (ownedChanged || normalized.skillPoints !== classSkillPointBalance(raw)) migrated.push(cls.id);
+    }
   }
   syncAllClassPassiveStates();
   for (const id of migrated) saveClassProgress(id);
@@ -6547,16 +6679,21 @@ function skillPrerequisiteMet(node, row, record) {
 }
 function skillState(node, row, record) {
   if (classOwnedSkills(record).includes(node.id)) return 'owned';
-  if (skillPrerequisiteMet(node, row, record) && classSkillPointBalance(record) >= node.cost) return 'available';
+  const col = skillNodeColumn(node, row);
+  const previousNodeInRowOwned = col === 0 || skillPrerequisiteMet(node, row, record);
+  const nodeCost = skillNodeCost(node, row);
+  const nodeReqLevel = skillNodeRequiredLevel(node, row);
+  const classLevel = record && Number.isFinite(Number(record.level)) ? Math.floor(Number(record.level)) : 1;
+  if (previousNodeInRowOwned && classLevel >= nodeReqLevel && classSkillPointBalance(record) >= nodeCost) return 'available';
   return 'locked';
 }
 function awardClassXP(amount, source) {
   const id = gameState.currentClass;
   const record = getClassProgress(id);
   const xp = Math.max(0, Math.floor(Number(amount) || 0));
-  /* Dynamic retroactive top-up first: old saves gain every SP already earned
-     by their level before this XP award is applied. */
-  recalculateSkillPoints(record);
+  /* Top up to the current level first without pruning nodes that this same
+     XP award may make level-valid; validation runs again after level-up. */
+  recalculateSkillPoints(record, false, false);
   const earnedBefore = totalEarnedSkillPoints(record.level);
   if (!xp || record.level >= CLASS_MAX_LEVEL) return 0;
   record.xp += xp;
@@ -6568,8 +6705,8 @@ function awardClassXP(amount, source) {
     gained++;
   }
   if (record.level === CLASS_MAX_LEVEL) record.xp = 0;
-  /* Levels 2-13 each add exactly one lifetime SP, including multi-level
-     jumps. Levels 14-20 retain the full 12-SP budget already earned. */
+  /* Every level from 2 through 20 adds +1 SP (19 total). Levels 5, 10 and
+     15 also add one milestone SP, for 22 lifetime SP at Level 20. */
   const skillPointsGained = Math.max(0, totalEarnedSkillPoints(record.level) - earnedBefore);
   if (skillPointsGained) record.skillPoints += skillPointsGained;
   recalculateSkillPoints(record);
@@ -6697,6 +6834,7 @@ function openSkillTree(source) {
   skillTreeReturn = currentScreen === 'pauseMenu' ? 'pauseMenu' : 'gameCanvas';
   skillTreeClassId = gameState.currentClass;
   recalculateSkillPoints(getClassProgress(skillTreeClassId), true);
+  if (game.player && game.player.classId === skillTreeClassId) applyClassSkillStats();
   hideClassLevelUp();
   saveGame('skill-tree');
   showScreen('skillTree');
@@ -6733,13 +6871,17 @@ function renderSkillTree() {
     const title = document.createElement('h2'); title.textContent = row.name;
     heading.append(number, title);
     const nodes = document.createElement('div'); nodes.className = 'skill-row-nodes';
-    row.nodes.forEach(node => {
+    row.nodes.forEach((node, col) => {
       const state = skillState(node, row, record);
+      const nodeCost = skillNodeCost(node, row);
+      const nodeReqLevel = skillNodeRequiredLevel(node, row);
       const btn = document.createElement('button');
       btn.type = 'button'; btn.className = 'skill-node ' + state;
-      btn.dataset.skill = node.id; btn.dataset.row = String(ri);
-      btn.setAttribute('aria-label', node.name + ', ' + node.cost + ' skill point, ' + state + '. ' + node.desc);
-      btn.setAttribute('aria-disabled', String(state !== 'available' || record.skillPoints < node.cost));
+      btn.dataset.skill = node.id; btn.dataset.row = String(ri); btn.dataset.col = String(col);
+      btn.dataset.tier = String(col + 1); btn.dataset.cost = String(nodeCost);
+      btn.dataset.reqLevel = String(nodeReqLevel); btn.dataset.requiredLevel = String(nodeReqLevel);
+      btn.setAttribute('aria-label', node.name + ', Tier ' + (col + 1) + ' ' + skillNodeTierName(node, row) + ', ' + nodeCost + ' skill points, requires class level ' + nodeReqLevel + ', ' + state + '. ' + node.desc);
+      btn.setAttribute('aria-disabled', String(state !== 'available'));
       if (state === 'owned') btn.setAttribute('aria-pressed', 'true');
       const disc = document.createElement('span'); disc.className = 'skill-disc'; disc.innerHTML = skillIconSVG(node.icon);
       if (state === 'owned') {
@@ -6752,7 +6894,7 @@ function renderSkillTree() {
         disc.append(lock);
       }
       const name = document.createElement('span'); name.className = 'skill-node-name'; name.textContent = node.name;
-      const cost = document.createElement('span'); cost.className = 'skill-node-cost'; cost.textContent = state === 'owned' ? 'OWNED' : node.cost + ' SP';
+      const cost = document.createElement('span'); cost.className = 'skill-node-cost'; cost.textContent = state === 'owned' ? 'OWNED' : skillRequirementLabel(node, row);
       btn.append(disc, name, cost);
       btn.addEventListener('pointerenter', (event) => showSkillTooltip(btn, node, row, record, event));
       btn.addEventListener('pointermove', (event) => positionSkillTooltip(btn, event));
@@ -6794,13 +6936,18 @@ function showSkillTooltip(btn, node, row, record, event) {
   const state = skillState(node, row, record);
   document.getElementById('skillTooltipName').textContent = node.name;
   document.getElementById('skillTooltipDesc').textContent = node.desc;
+  const nodeCost = skillNodeCost(node, row);
+  const nodeReqLevel = skillNodeRequiredLevel(node, row);
+  const requirement = skillRequirementText(node, row) + ' · TIER ' + (skillNodeColumn(node, row) + 1) + ' ' + skillNodeTierName(node, row).toUpperCase();
   document.getElementById('skillTooltipState').textContent = state === 'owned'
-    ? 'COST ' + node.cost + ' SP · PURCHASED · permanent for this class'
+    ? requirement + ' · PURCHASED · permanent for this class'
     : !skillPrerequisiteMet(node, row, record)
-      ? 'COST ' + node.cost + ' SP · LOCKED · purchase the node to the left first'
-      : classSkillPointBalance(record) < node.cost
-        ? 'COST ' + node.cost + ' SP · LOCKED · level up to earn 1 Skill Point'
-        : 'COST ' + node.cost + ' SP · AVAILABLE · click to purchase';
+      ? requirement + ' · LOCKED · purchase the node to the left first'
+      : !skillLevelRequirementMet(node, row, record)
+        ? requirement + ' · LOCKED · requires class LV ' + nodeReqLevel + ' (current LV ' + record.level + ')'
+        : classSkillPointBalance(record) < nodeCost
+          ? requirement + ' · LOCKED · need ' + nodeCost + ' SP (have ' + classSkillPointBalance(record) + ' SP)'
+          : requirement + ' · AVAILABLE · click to purchase';
   UI.skillTooltip.hidden = false;
   btn.setAttribute('aria-describedby', 'skillTooltip');
   positionSkillTooltip(btn, event);
@@ -6818,11 +6965,14 @@ function purchaseSkill(classId, nodeId) {
   const node = row && row.nodes.find(n => n.id === nodeId);
   if (!node) return false;
   const state = skillState(node, row, record);
+  const nodeCost = skillNodeCost(node, row);
+  const nodeReqLevel = skillNodeRequiredLevel(node, row);
   if (state === 'owned') { UI.skillTreeStatus.textContent = node.name + ' is already owned.'; return false; }
   if (!skillPrerequisiteMet(node, row, record)) { UI.skillTreeStatus.textContent = 'Purchase the node to the left first.'; return false; }
-  if (classSkillPointBalance(record) < node.cost) { UI.skillTreeStatus.textContent = 'Not enough skill points — level up your class to earn another.'; return false; }
+  if (!skillLevelRequirementMet(node, row, record)) { UI.skillTreeStatus.textContent = node.name + ' requires class LV ' + nodeReqLevel + ' (current LV ' + record.level + ').'; return false; }
+  if (classSkillPointBalance(record) < nodeCost) { UI.skillTreeStatus.textContent = 'Not enough skill points — ' + node.name + ' costs ' + nodeCost + ' SP.'; return false; }
   record.owned.push(node.id);
-  record.skillPoints = Math.max(0, record.skillPoints - node.cost);
+  record.skillPoints = Math.max(0, record.skillPoints - nodeCost);
   syncClassPassiveState(classId);
   const saved = saveClassProgress(classId);
   if (game.player && game.player.classId === classId) applyClassSkillStats();
@@ -7315,9 +7465,7 @@ function swingSword() {
     if (!inSwordArc(p.x, p.y, p.angle, e.x, e.y, e.r, arc, SWORD_RANGE)) continue;
     const a = Math.atan2(e.y - p.y, e.x - p.x);
     damageEnemy(e, dmg, true, false, meta);
-    /* the flat of the blade shoves whatever survives */
-    e.x = clamp(e.x + Math.cos(a) * 9, 40, WORLD - 40);
-    e.y = clamp(e.y + Math.sin(a) * 9, 40, WORLD - 40);
+    /* damageEnemy assigns kbVx/kbVy for this weapon hit; no position jump. */
     for (let k = 0; k < 3; k++) {
       spawnParticle(e.x, e.y, Math.cos(a + rand(-0.7, 0.7)) * rand(80, 220),
         Math.sin(a + rand(-0.7, 0.7)) * rand(80, 220), 0.26, 4, swordDef().edge, 3);
@@ -7639,9 +7787,8 @@ function swingAxes() {
     const e = game.enemies[i];
     if (!inSwordArc(p.x, p.y, p.angle, e.x, e.y, e.r, AXE_ARC, AXE_RANGE)) continue;
     const a = Math.atan2(e.y - p.y, e.x - p.x);
-    damageEnemy(e, dmg, true);
-    e.x = clamp(e.x + Math.cos(a) * 14, 40, WORLD - 40);
-    e.y = clamp(e.y + Math.sin(a) * 14, 40, WORLD - 40);
+    damageEnemy(e, dmg, true, false, { kind: 'axe', weapon: true, fromX: p.x, fromY: p.y });
+    /* The axes assign smooth kbVx/kbVy through damageEnemy, never a teleport. */
     for (let k = 0; k < 3; k++) {
       spawnParticle(e.x, e.y, Math.cos(a + rand(-0.8, 0.8)) * rand(80, 240),
         Math.sin(a + rand(-0.8, 0.8)) * rand(80, 240), 0.26, 5, '#ffb27a', 3);
@@ -7828,6 +7975,7 @@ function updateDiscs(dt) {
       d.bounces -= 1;
       if (currentSkill('disc_mastery')) game.player.fireTimer = Math.max(0, (game.player.fireTimer || 0) - 1);
       damageEnemy(e, d.dmg, true, false, Object.assign({}, d.skillMeta || { kind: 'disc' }, { projectile: true, fromX: d.x, fromY: d.y }));
+      if (game.enemies.indexOf(e) >= 0) applyEnemyKnockback(e, d.vx, d.vy, ENEMY_WEAPON_KNOCKBACK_SPEED);
       for (let k = 0; k < 5; k++) {
         const a2 = rand(0, TAU);
         spawnParticle(e.x, e.y, Math.cos(a2) * rand(50, 190), Math.sin(a2) * rand(50, 190),
@@ -8060,7 +8208,7 @@ function shieldBash() {
   for (let i = game.enemies.length - 1; i >= 0; i--) {
     const e = game.enemies[i];
     if (dist(p.x, p.y, e.x, e.y) > R + e.r) continue;
-    knockEnemy(e, p.x, p.y, 190);
+    knockEnemy(e, p.x, p.y, 520);
   }
   for (let i = 0; i < 22; i++) {
     const a = Math.atan2(dir.y, dir.x) + rand(-1.1, 1.1);
@@ -8074,12 +8222,83 @@ function shieldBash() {
   game.particles.push({ ring: true, x: p.x, y: p.y, r: 10, maxR: R, life: 0, maxLife: 0.42, color: '#fcd34d' });
 }
 
+const ENEMY_CONTACT_KNOCKBACK_SPEED = 220;
+const ENEMY_WEAPON_KNOCKBACK_SPEED = 140;
+const ENEMY_ATTACK_RECOVERY_SECONDS = 0.45;
+const ENEMY_ATTACK_RECOVERY_SPEED_MULT = 0.2;
+function setEnemyKnockbackVelocity(enemy, kbVx, kbVy) {
+  if (!enemy || typeof enemy !== 'object') return enemy;
+  enemy.kbVx = Number.isFinite(Number(kbVx)) ? Number(kbVx) : 0;
+  enemy.kbVy = Number.isFinite(Number(kbVy)) ? Number(kbVy) : 0;
+  enemy.knockX = enemy.kbVx; /* legacy alias, kept synchronized */
+  enemy.knockY = enemy.kbVy;
+  return enemy;
+}
+function applyEnemyKnockback(enemy, nx, ny, kbSpeed) {
+  if (!enemy || typeof enemy !== 'object') return enemy;
+  const len = Math.hypot(Number(nx) || 0, Number(ny) || 0);
+  const ux = len > 0.001 ? Number(nx) / len : 1;
+  const uy = len > 0.001 ? Number(ny) / len : 0;
+  const speed = Number.isFinite(Number(kbSpeed)) ? Math.max(0, Number(kbSpeed)) : ENEMY_WEAPON_KNOCKBACK_SPEED;
+  enemy.kbVx = ux * speed;
+  enemy.kbVy = uy * speed;
+  enemy.knockX = enemy.kbVx;
+  enemy.knockY = enemy.kbVy;
+  return enemy;
+}
+function applyEnemyKnockbackFrom(enemy, fx, fy, kbSpeed) {
+  if (!enemy || typeof enemy !== 'object') return enemy;
+  const dx = enemy.x - fx;
+  const dy = enemy.y - fy;
+  const d = Math.hypot(dx, dy);
+  const nx = d > 0.001 ? dx / d : 1;
+  const ny = d > 0.001 ? dy / d : 0;
+  return applyEnemyKnockback(enemy, nx, ny, kbSpeed);
+}
+function recoilEnemyAfterMeleeHit(enemy) {
+  const p = game.player;
+  if (!enemy || enemy.dead || !p) return enemy;
+  const dx = enemy.x - p.x;
+  const dy = enemy.y - p.y;
+  const d = Math.hypot(dx, dy);
+  const nx = d > 0.001 ? dx / d : Math.cos(enemy.heading || 0);
+  const ny = d > 0.001 ? dy / d : Math.sin(enemy.heading || 0);
+  enemy.kbVx = nx * 220;
+  enemy.kbVy = ny * 220;
+  enemy.knockX = enemy.kbVx;
+  enemy.knockY = enemy.kbVy;
+  enemy.attackCooldown = 0.45;
+  return enemy;
+}
+function updateEnemyKnockback(enemy, dt) {
+  if (!enemy || typeof enemy !== 'object') return enemy;
+  dt = Number.isFinite(Number(dt)) && Number(dt) > 0 ? Number(dt) : 0;
+  if (!Number.isFinite(enemy.kbVx)) enemy.kbVx = enemy.knockX || 0;
+  if (!Number.isFinite(enemy.kbVy)) enemy.kbVy = enemy.knockY || 0;
+  if (!enemy.kbVx && enemy.knockX) enemy.kbVx = enemy.knockX;
+  if (!enemy.kbVy && enemy.knockY) enemy.kbVy = enemy.knockY;
+  if (enemy.kbVx || enemy.kbVy) {
+    enemy.x += enemy.kbVx * dt;
+    enemy.y += enemy.kbVy * dt;
+    enemy.x = clamp(enemy.x, 30, WORLD - 30);
+    enemy.y = clamp(enemy.y, 30, WORLD - 30);
+    const decay = Math.exp(-8 * dt);
+    enemy.kbVx *= decay;
+    enemy.kbVy *= decay;
+    if (Math.hypot(enemy.kbVx, enemy.kbVy) < 4) { enemy.kbVx = 0; enemy.kbVy = 0; }
+    enemy.knockX = enemy.kbVx;
+    enemy.knockY = enemy.kbVy;
+  }
+  return enemy;
+}
 function knockEnemy(e, fx, fy, power) {
+  if (!e || e.dead) return e;
+  const kbSpeed = Number.isFinite(Number(power)) ? Math.max(0, Number(power)) : ENEMY_WEAPON_KNOCKBACK_SPEED;
   const a = Math.atan2(e.y - fy, e.x - fx);
-  e.x = clamp(e.x + Math.cos(a) * power, 40, WORLD - 40);
-  e.y = clamp(e.y + Math.sin(a) * power, 40, WORLD - 40);
-  e.contactCd = Math.max(e.contactCd, 0.4);
+  applyEnemyKnockbackFrom(e, fx, fy, kbSpeed);
+  e.contactCd = Math.max(e.contactCd || 0, 0.4);
   spawnParticle(e.x, e.y, Math.cos(a) * 120, Math.sin(a) * 120, 0.26, 6, '#fde68a', 3);
+  return e;
 }
 
 function updateShieldBash(dt) {
@@ -8093,7 +8312,7 @@ function updateShieldBash(dt) {
   for (let i = game.enemies.length - 1; i >= 0; i--) {
     const e = game.enemies[i];
     if (dist(p.x, p.y, e.x, e.y) > 78 + e.r) continue;
-    knockEnemy(e, p.x, p.y, 54);
+    knockEnemy(e, p.x, p.y, 320);
   }
 }
 
@@ -8484,9 +8703,8 @@ function explodeBomb(b) {
     const e = game.enemies[i];
     if (dist(b.x, b.y, e.x, e.y) > R + e.r) continue;
     const a = Math.atan2(e.y - b.y, e.x - b.x);
-    damageEnemy(e, 14, true);
-    e.x = clamp(e.x + Math.cos(a) * 44, 40, WORLD - 40);
-    e.y = clamp(e.y + Math.sin(a) * 44, 40, WORLD - 40);
+    damageEnemy(e, 14, true, false, { kind: 'bomb', explosion: true, fromX: b.x, fromY: b.y });
+    if (game.enemies.indexOf(e) >= 0) applyEnemyKnockback(e, Math.cos(a), Math.sin(a), 260);
   }
   if (game.boss && dist(b.x, b.y, game.boss.x, game.boss.y) <= R + game.boss.r) {
     damageBoss(10);
@@ -8518,10 +8736,9 @@ function explodeAt(x, y, dmg, colour, skip) {
     if (e === skip) continue;
     if (dist(x, y, e.x, e.y) > R + e.r) continue;
     const a = Math.atan2(e.y - y, e.x - x);
-    damageEnemy(e, dmg, true, true);
+    damageEnemy(e, dmg, true, true, { kind: 'explosion', explosion: true, fromX: x, fromY: y });
     if (game.enemies.indexOf(e) < 0) continue;
-    e.x = clamp(e.x + Math.cos(a) * 16, 40, WORLD - 40);
-    e.y = clamp(e.y + Math.sin(a) * 16, 40, WORLD - 40);
+    applyEnemyKnockback(e, Math.cos(a), Math.sin(a), ENEMY_WEAPON_KNOCKBACK_SPEED);
   }
   if (game.boss && game.boss !== skip && dist(x, y, game.boss.x, game.boss.y) <= R + game.boss.r) {
     damageBoss(dmg * 0.7);
@@ -8580,17 +8797,13 @@ function updateBombs(dt) {
 
 /* ------------------------------ damage to player --------------------------- */
 function pushEnemiesAfterPlayerHit(source) {
-  const p = game.player;
-  if (!p || !game.enemies) return;
-  for (let i = 0; i < game.enemies.length; i++) {
-    const e = game.enemies[i];
-    if (!e || e.dead) continue;
-    if (dist(p.x, p.y, e.x, e.y) <= 150 + e.r) {
-      /* A Ghost that lands the hit recoils a full 90px; every other nearby
-         body gets the standard 60px breathing-room shove. */
-      knockEnemy(e, p.x, p.y, source === e && e.type === 'ghost' ? 90 : 60);
-    }
-  }
+  if (!source || source.dead || typeof source !== 'object') return;
+  const listed = Array.isArray(game.enemies) && game.enemies.indexOf(source) >= 0;
+  const enemyLike = source !== game.player && source !== game.boss &&
+    Number.isFinite(Number(source.x)) && Number.isFinite(Number(source.y)) &&
+    (typeof source.type === 'string' || Number.isFinite(Number(source.hp)));
+  if (!listed && !enemyLike) return; /* bosses/ranged sources do not shove the horde */
+  recoilEnemyAfterMeleeHit(source);
 }
 
 const DEATH_SEQUENCE_DURATION = 2.2;
@@ -8923,7 +9136,7 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
     alertT: 0,
     feintT: 0, feintState: 0, feintCd: rand(1, 3),
     shield: 0, maxShield: 0,
-    knockX: 0, knockY: 0,
+    knockX: 0, knockY: 0, kbVx: 0, kbVy: 0, attackCooldown: 0,
     aimT: 0, aimA: 0, fuseT: 0, detonateNow: false, exploded: false,
     summonT: rand(1.8, 3.2),
     brutePhase: 'stalk', bruteT: 0, bruteCd: rand(0.7, 1.5), chargeA: 0,
@@ -9176,6 +9389,8 @@ function tetherArenaEnemies(arena, arenaIndex, dt) {
       e.y += (ty - e.y) * (step / pullDist);
     }
     e.heading = angleTo(e.x, e.y, arena.x, arena.y);
+    e.kbVx = 0;
+    e.kbVy = 0;
     e.knockX = 0;
     e.knockY = 0;
     e.arenaTethered = true;
@@ -9682,7 +9897,7 @@ function updateEchoEnemy(e, dt, ang, d, canSee) {
     e.echoChargeT = Math.max(0, e.echoChargeT - dt);
     e.wantX = Math.cos(e.echoChargeA) * 2.2;
     e.wantY = Math.sin(e.echoChargeA) * 2.2;
-    if (d < e.r + game.player.r + 8 && e.contactCd <= 0) { e.contactCd = 0.5; hurtPlayer(enemyDamage(1, e)); }
+    if (d < e.r + game.player.r + 8 && e.contactCd <= 0) { e.contactCd = 0.5; hurtPlayer(enemyDamage(1, e), false, e); }
     return;
   }
   if (melee) {
@@ -9797,7 +10012,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
         const a = rand(0, TAU);
         spawnParticle(e.x, e.y + e.r * 0.4, Math.cos(a) * rand(80, 260), Math.sin(a) * rand(80, 260), 0.35, 7, '#93c5fd', 3);
       }
-      if (d < 145) hurtPlayer(enemyDamage(2, e));
+      if (d < 145) hurtPlayer(enemyDamage(2, e), false, e);
     }
   } else if (ai === 'raider') {
     standoff(270);
@@ -9878,7 +10093,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
       if (cls.weapon === 'blade') {
         e.wantX = Math.cos(ang) * 1.6;
         e.wantY = Math.sin(ang) * 1.6;
-        if (d < 120) hurtPlayer(enemyDamage(1, e));
+        if (d < 120) hurtPlayer(enemyDamage(1, e), false, e);
       } else if (cls.weapon === 'rail') {
         fireEnemyBullet(e.x, e.y, ang, 1500, 'laser', 4, 1);
       } else {
@@ -9921,7 +10136,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
             const a = rand(0, TAU);
             spawnParticle(e.x, e.y, Math.cos(a) * rand(60, 240), Math.sin(a) * rand(60, 240), 0.4, 6, '#d8b06a', 3);
           }
-          if (dist(e.x, e.y, p.x, p.y) < 80) hurtPlayer(enemyDamage(2, e));
+          if (dist(e.x, e.y, p.x, p.y) < 80) hurtPlayer(enemyDamage(2, e), false, e);
           Sound.enemyShot();
         }
       } else {
@@ -9992,8 +10207,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
     if (e.attached) {
       if (p.dashTimer > 0 || p.bashTimer > 0 || p.frenzyT > 0) {
         e.attached = false; e.attachCd = 2.2;
-        const a = angleTo(p.x, p.y, e.x, e.y);
-        e.x = p.x + Math.cos(a) * 70; e.y = p.y + Math.sin(a) * 70;
+        recoilEnemyAfterMeleeHit(e);
         e.disabledT = 0.6;
         addText(p.x, p.y - 40, 'SHAKEN OFF', '#a3e635', 13, 24, 0.7);
         Sound.dash();
@@ -10105,13 +10319,14 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
     } else if (e.brutePhase === 'charge') {
       e.bruteT = Math.max(0, e.bruteT - dt);
       e.heading = e.chargeA;
-      e.x = clamp(e.x + Math.cos(e.chargeA) * 520 * dt, 40, WORLD - 40);
-      e.y = clamp(e.y + Math.sin(e.chargeA) * 520 * dt, 40, WORLD - 40);
+      const chargeSpeed = 520 * (e.attackCooldown > 0 ? ENEMY_ATTACK_RECOVERY_SPEED_MULT : 1);
+      e.x = clamp(e.x + Math.cos(e.chargeA) * chargeSpeed * dt, 40, WORLD - 40);
+      e.y = clamp(e.y + Math.sin(e.chargeA) * chargeSpeed * dt, 40, WORLD - 40);
       e.wantX = Math.cos(e.chargeA);
       e.wantY = Math.sin(e.chargeA);
-      if (dist(e.x, e.y, p.x, p.y) < e.r + p.r + 4 && e.contactCd <= 0) {
+      if (dist(e.x, e.y, p.x, p.y) < e.r + p.r + 4 && e.contactCd <= 0 && !(e.attackCooldown > 0)) {
         e.contactCd = 0.9;
-        hurtPlayer(enemyDamage(2, e));
+        hurtPlayer(enemyDamage(2, e), false, e);
       }
       if (Math.random() < 0.65) {
         spawnParticle(e.x, e.y + e.r * 0.55, rand(-50, 50), rand(-25, 25), 0.28, 6, '#fca5a5', 3);
@@ -10329,6 +10544,8 @@ function updateEnemies(dt) {
     if (e.shieldFlashT > 0) e.shieldFlashT = Math.max(0, e.shieldFlashT - dt);
     if (e.materializeT > 0) e.materializeT = Math.max(0, e.materializeT - dt);
     if (e.contactCd > 0) e.contactCd = Math.max(0, e.contactCd - dt);
+    if (e.attackCooldown > 0) e.attackCooldown -= dt;
+    if (!(e.attackCooldown > 0)) e.attackCooldown = 0;
     if (e.dodgeT > 0) e.dodgeT = Math.max(0, e.dodgeT - dt);
     if (e.alertT > 0) e.alertT = Math.max(0, e.alertT - dt);
     if (e.feintCd > 0) e.feintCd = Math.max(0, e.feintCd - dt);
@@ -10349,6 +10566,9 @@ function updateEnemies(dt) {
     if (e.disabledT > 0) {
       e.disabledT = Math.max(0, e.disabledT - dt);
       e.throttle = approach(e.throttle, 0, dt * 6);
+      /* A stunned body still slides from the blow that stunned it. */
+      updateEnemyKnockback(e, dt);
+      collideObstacles(e);
       continue;
     }
     if (e.slowT > 0) e.slowT = Math.max(0, e.slowT - dt);
@@ -10475,17 +10695,11 @@ function updateEnemies(dt) {
     }
     /* and ease into (or out of) its stride so nothing lurches */
     e.throttle = approach(e.throttle, clamp(wantLen, 0, 1), dt * 5.5);
-    const stride = e.speed * e.throttle * (e.slowT > 0 ? 0.45 : 1);
+    const attackRecoverySpeed = e.attackCooldown > 0 ? ENEMY_ATTACK_RECOVERY_SPEED_MULT : 1;
+    const stride = e.speed * e.throttle * (e.slowT > 0 ? 0.45 : 1) * attackRecoverySpeed;
     e.x += Math.cos(e.heading) * stride * dt;
     e.y += Math.sin(e.heading) * stride * dt;
-    if (e.knockX || e.knockY) {
-      e.x = clamp(e.x + (e.knockX || 0) * dt, 30, WORLD - 30);
-      e.y = clamp(e.y + (e.knockY || 0) * dt, 30, WORLD - 30);
-      const knockDecay = Math.exp(-9 * dt);
-      e.knockX = (e.knockX || 0) * knockDecay;
-      e.knockY = (e.knockY || 0) * knockDecay;
-      if (Math.hypot(e.knockX, e.knockY) < 4) { e.knockX = 0; e.knockY = 0; }
-    }
+    updateEnemyKnockback(e, dt);
 
     collideObstacles(e);
 
@@ -10503,7 +10717,7 @@ function updateEnemies(dt) {
     }
 
     /* contact damage, plus whatever status the body carries */
-    if (canSee && d < e.r + p.r + 2 && e.contactCd <= 0 && !(e.materializeT > 0)) {
+    if (canSee && d < e.r + p.r + 2 && e.contactCd <= 0 && !(e.attackCooldown > 0) && !(e.materializeT > 0)) {
       const cdef = ENEMY_DEFS[e.type] || ENEMY_DEFS.knight;
       e.contactCd = cdef.contact ? 0.9 : 0.4;
       if (cdef.contact) hurtPlayer(enemyContactDamage(e, cdef), false, e);
@@ -10593,10 +10807,9 @@ function updateBullets(dt) {
     if (hitKind === 'enemy') {
       damageEnemy(hitObj, b.dmg * odm(), false, false, Object.assign({}, b.skillMeta || { kind: b.kind }, { projectile: true, fromX: px, fromY: py }));
       if (b.skillMeta && b.skillMeta.oneShot) b.skillMeta.oneShot = false;
-      if (b.knock) {
-        const a = Math.atan2(b.vy, b.vx);
-        hitObj.x = clamp(hitObj.x + Math.cos(a) * b.knock, 40, WORLD - 40);
-        hitObj.y = clamp(hitObj.y + Math.sin(a) * b.knock, 40, WORLD - 40);
+      if (b.knock && game.enemies.indexOf(hitObj) >= 0) {
+        const kbSpeed = 140;
+        applyEnemyKnockback(hitObj, b.vx, b.vy, kbSpeed);
       }
       if (b.pierce > 0) {
         /* gunslinger bolts keep going through the crowd */
@@ -10887,14 +11100,12 @@ function damageEnemy(e, dmg, silent, noChain, meta) {
   }
   e.hp -= dmg;
   e.hitFlash = 0.05;
-  if (!silent || meta.explosion) {
+  const isWeaponHit = !!(meta.weapon || meta.projectile);
+  if (!meta.selfDestruct && !meta.noKnockback && (isWeaponHit || meta.explosion || !silent)) {
     const sx = typeof meta.fromX === 'number' ? meta.fromX : (game.player ? game.player.x : e.x - 1);
     const sy = typeof meta.fromY === 'number' ? meta.fromY : (game.player ? game.player.y : e.y);
-    const ka = Math.atan2(e.y - sy, e.x - sx);
-    const mass = clamp(18 / Math.max(8, e.r || 16), 0.45, 1.35);
-    const impulse = (meta.explosion ? 260 : 170) * mass;
-    e.knockX = (e.knockX || 0) + Math.cos(ka) * impulse;
-    e.knockY = (e.knockY || 0) + Math.sin(ka) * impulse;
+    const kbSpeed = meta.explosion ? 260 : 140;
+    applyEnemyKnockbackFrom(e, sx, sy, kbSpeed);
   }
   if (e.hp > 0) return;
   e.dead = true;
@@ -11015,7 +11226,7 @@ function spawnBoss(opts) {
     charging: 0,
     chargeDir: { x: 1, y: 0 },
     spiral: 0,
-    contactCd: 0,
+    contactCd: 0, knockX: 0, knockY: 0, kbVx: 0, kbVy: 0, attackCooldown: 0,
     phase3Timer: 4,
     entering: o.entrance? {
       t: 0, dur: 1.7,
@@ -12220,7 +12431,7 @@ const CLASS_ABILITY_CASTS = {
   /* ---- Vanguard Knight ---- */
   knight_whirlwind() {
     const p = game.player;
-    damageEnemiesNear(p.x, p.y, 150, buffedDamage(swordDamage() * 1.4), 40);
+    damageEnemiesNear(p.x, p.y, 150, buffedDamage(swordDamage() * 1.4), 280);
     game.swings.push({ x: p.x, y: p.y, a0: p.angle - Math.PI, a1: p.angle + Math.PI, life: 0, maxLife: 0.35, tier: swordTier() });
     game.particles.push({ ring: true, x: p.x, y: p.y, r: 10, maxR: 160, life: 0, maxLife: 0.35, color: '#fcd34d' });
     Sound.swordSwing(swordTier());
@@ -12382,7 +12593,7 @@ const CLASS_ABILITY_CASTS = {
   berserker_slam() {
     const p = game.player;
     const slamR = 190 * (currentSkill('carnage') ? 1.6 : 1);
-    damageEnemiesNear(p.x, p.y, slamR, buffedDamage(p.damage * 3), 90);
+    damageEnemiesNear(p.x, p.y, slamR, buffedDamage(p.damage * 3), 460);
     game.shake = Math.max(game.shake, 0.8);
     game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: slamR * 1.1, life: 0, maxLife: 0.45, color: '#ff7a45' });
     Sound.bombBoom();
@@ -12411,7 +12622,7 @@ const CLASS_ABILITY_CASTS = {
     const p = game.player;
     setClassBuff('juggernaut', 4);
     p.invuln = Math.max(p.invuln, 4);
-    eachEnemy(e => { if (e !== game.boss) knockEnemy(e, p.x, p.y, 160); });
+    eachEnemy(e => { if (e !== game.boss) knockEnemy(e, p.x, p.y, 420); });
     game.particles.push({ ring: true, x: p.x, y: p.y, r: 12, maxR: 240, life: 0, maxLife: 0.5, color: '#ff7a45' });
     Sound.overcharge();
     addText(p.x, p.y - 46, 'JUGGERNAUT', '#ffd6a5');
@@ -12529,7 +12740,7 @@ function updateClassAbilities(dt) {
   if (classBuff('juggernaut') > 0) {
     for (let i = game.enemies.length - 1; i >= 0; i--) {
       const e = game.enemies[i];
-      if (dist(p.x, p.y, e.x, e.y) < 190 + e.r) knockEnemy(e, p.x, p.y, 140 * dt);
+      if (dist(p.x, p.y, e.x, e.y) < 190 + e.r) knockEnemy(e, p.x, p.y, 140);
     }
   }
   /* Jet Boost leaves a burning trail. */
