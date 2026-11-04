@@ -2840,6 +2840,176 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
   }
 }
 </style>
+<style id="skill-tree-matte-polish">
+/* Final skill-tree state layer: flat matte slate, structural borders only,
+   and no yellow outer glow. Purchased and available are distinguished by a
+   solid gold keyline/check versus a border-only warm-amber pulse. */
+#skillTree{
+  background:#0d0f17 !important;
+  color:#cbd5e1;
+}
+#skillTree .skill-panel{
+  background:#0d0f17 !important;
+  border:1px solid #262a3b !important;
+  border-radius:4px !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 18px 50px rgba(0,0,0,.6) !important;
+  scrollbar-color:#39415a #0d0f17;
+}
+#skillTree .skill-grid-scroll{ scrollbar-color:#39415a #0d0f17; }
+#skillTreeTitle,
+#skillTreeLevel,
+#skillTreePoints,
+#skillTreeStatus{
+  color:#f8fafc;
+  text-shadow:none !important;
+}
+#skillTree .skill-eyebrow,
+#skillTree .skill-row-heading h2{ color:#94a3b8; text-shadow:none !important; }
+#skillTree .skill-points-box{
+  background:#12141d !important;
+  border:1px solid #262a3b !important;
+  border-radius:4px !important;
+  box-shadow:none !important;
+}
+#skillTree .skill-tree-xp-track{
+  background:#1e2230;
+  border:1px solid #262a3b;
+  border-radius:2px;
+}
+#skillTreeXpFill{
+  background:#38bdf8;
+  box-shadow:none !important;
+  transition:width .45s cubic-bezier(.22,1,.36,1);
+  transition-property:width;
+  transition-duration:.45s;
+  transition-timing-function:cubic-bezier(.22,1,.36,1);
+}
+#classXpFill{
+  transition:width .45s cubic-bezier(.22,1,.36,1) !important;
+  transition-property:width !important;
+  transition-duration:.45s !important;
+  transition-timing-function:cubic-bezier(.22,1,.36,1) !important;
+}
+#skillTree .skill-node .skill-disc{
+  box-shadow:none !important;
+  filter:none !important;
+}
+#skillTree .skill-node.owned{
+  color:#f8d47c;
+  cursor:default;
+  opacity:1;
+}
+#skillTree .skill-node.owned .skill-disc{
+  background:#17130a !important;
+  border:2px solid #f5c542 !important;
+  color:#ffe08a;
+  opacity:1;
+}
+#skillTree .skill-node.owned .skill-node-name,
+#skillTree .skill-node.owned .skill-node-cost{ color:#f8d47c; }
+.skill-check{
+  position:absolute;
+  top:-5px;
+  right:-5px;
+  z-index:2;
+  width:20px;
+  height:20px;
+  border:1px solid #ffe08a;
+  border-radius:50%;
+  background:#f5c542;
+  color:#0d0f17;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:13px;
+  font-weight:900;
+  line-height:1;
+}
+#skillTree .skill-node.available{
+  color:#f1f5f9;
+  cursor:pointer;
+  opacity:1;
+}
+#skillTree .skill-node.available .skill-disc{
+  background:#171a26 !important;
+  border:2px solid #f59e0b !important;
+  color:#fde68a;
+  opacity:1;
+  animation:skillAvailableAmberPulse 1.6s ease-in-out infinite !important;
+  animation-name:skillAvailableAmberPulse !important;
+  animation-duration:1.6s !important;
+  animation-timing-function:ease-in-out !important;
+  animation-iteration-count:infinite !important;
+}
+@keyframes skillAvailableAmberPulse{
+  0%,100%{ border-color:#b45309; }
+  50%{ border-color:#fbbf24; }
+}
+#skillTree .skill-node.locked{
+  color:#94a3b8;
+  cursor:not-allowed;
+  opacity:.55;
+}
+#skillTree .skill-node.locked .skill-disc{
+  background:#1e2230 !important;
+  border:2px solid #262a3b !important;
+  color:#94a3b8;
+  opacity:1;
+}
+.skill-lock{
+  position:absolute;
+  right:-4px;
+  bottom:-4px;
+  z-index:2;
+  width:20px;
+  height:20px;
+  border:1px solid #39415a;
+  border-radius:50%;
+  background:#0d0f17;
+  color:#cbd5e1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.skill-lock svg{ width:11px !important; height:11px !important; }
+#skillTree .skill-node.owned+.skill-node::before{
+  background:#f5c542;
+  box-shadow:none !important;
+}
+#skillTree .skill-node:not(.owned)+.skill-node::before{
+  background:#262a3b;
+  box-shadow:none !important;
+}
+#skillTree .skill-node.available:hover .skill-disc,
+#skillTree .skill-node.available:focus-visible .skill-disc{ border-color:#fbbf24 !important; }
+#skillTree .skill-node.owned:hover .skill-disc,
+#skillTree .skill-node.owned:focus-visible .skill-disc{ border-color:#f5c542 !important; }
+#skillTree .skill-node.locked:hover .skill-disc,
+#skillTree .skill-node.locked:focus-visible .skill-disc{
+  border-color:#262a3b !important;
+  transform:none;
+}
+#skillTree .legend-dot{
+  background:#1e2230;
+  border-color:#262a3b;
+  box-shadow:none !important;
+}
+#skillTree .legend-dot.available{ background:#f59e0b; border-color:#fbbf24; }
+#skillTree .legend-dot.owned{ background:#f5c542; border-color:#ffe08a; }
+#skillTooltip{
+  background:#0d0f17 !important;
+  border:1px solid #262a3b !important;
+  border-radius:4px !important;
+  color:#cbd5e1;
+  box-shadow:0 14px 34px rgba(0,0,0,.55) !important;
+}
+#skillTooltipName{ color:#f8fafc; text-shadow:none !important; }
+#skillTooltipState{ color:#fbbf24; text-shadow:none !important; }
+@media (prefers-reduced-motion:reduce){
+  /* Keep the amber available keyline identifiable, but do not cycle it. */
+  #skillTree .skill-node.available .skill-disc{ animation-play-state:paused !important; }
+}
+</style>
 </head>
 <body>
 <div id="gameCanvas" class="screen game-screen">
@@ -4050,7 +4220,7 @@ const MEDIEVAL_LEVELS = [
     waves: [
       { count: 8, types: ['knight'] },
       { count: 12, types: ['knight', 'archer'] },
-      { count: 16, types: ['knight', 'archer'], eliteMin: 2 }
+      { count: 16, types: ['knight', 'archer'] }
     ],
     arenas: [[1440, 1520], [4640, 1760], [2960, 4840]],
     bossPos: [3000, 800],
@@ -4070,7 +4240,7 @@ const MEDIEVAL_LEVELS = [
     waves: [
       { count: 8, types: ['archer'] },
       { count: 12, types: ['archer', 'knight'] },
-      { count: 16, types: ['archer', 'knight', 'wizard'], eliteMin: 2 }
+      { count: 16, types: ['archer', 'knight'] }
     ],
     arenas: [[1280, 1320], [4760, 1520], [2900, 4800]],
     bossPos: [4720, 4720],
@@ -4089,8 +4259,8 @@ const MEDIEVAL_LEVELS = [
     groundTint: null,
     waves: [
       { count: 8, types: ['knight'] },
-      { count: 12, types: ['knight', 'archer'] },
-      { count: 16, types: ['knight', 'archer', 'ghost'], eliteMin: 2 }
+      { count: 12, types: ['knight', 'archer', 'wizard'] },
+      { count: 16, types: ['knight', 'archer', 'wizard', 'ghost'], eliteMin: 2 }
     ],
     arenas: [[1400, 1800], [4600, 1280], [3120, 4680]],
     bossPos: [3000, 760],
@@ -4182,6 +4352,12 @@ function universeDifficulty(index) {
   const i = clamp((index === undefined ? gameState.currentUniverse : index) | 0, 0, UNIVERSE_DIFFICULTY.length - 1);
   return UNIVERSE_DIFFICULTY[i];
 }
+function isUniverseOneTutorial() {
+  return gameState.currentUniverse === 0 && levelInUniverse(gameState.currentZone) <= 2;
+}
+function isTutorialBasicEnemy(type) {
+  return type === 'knight' || type === 'archer' || type === 'swarm';
+}
 function enemyDamageMult(source) {
   return universeDifficulty().damage * (source && source.eliteVariant ? 1.5 : 1);
 }
@@ -4208,6 +4384,7 @@ function enemyDamage(amount, source) {
 }
 function enemyContactDamage(e, cdef) {
   if (!cdef || !cdef.contact) return 0;
+  if (gameState.currentUniverse === 0 && !isHeavyDamageSource(e)) return 0.5;
   let base = cdef.contact;
   if (isHeavyDamageSource(e)) base = Math.max(1, base);
   return quantizeHeartDamage(base * universeDifficulty().damage);
@@ -4758,6 +4935,8 @@ const gameState = {
   pendingWave: null,
   upgrades: {},
   currentClass: 'knight',   /* picked on the class screen; knight is the fallback */
+  skillPoints: 0,       /* accessor below: the active class's unspent SP bank */
+  classPassives: {},    /* class id -> permanent purchased passive flags */
   lifetimeGems: 0,     /* every gem ever collected, across every run */
   maxZone: 0,          /* highest zone index ever reached: unlocks the zone select */
   uiUniverse: 0,       /* which universe the zone select is currently showing */
@@ -4804,6 +4983,23 @@ Object.defineProperty(gameState, 'universeIndex', {
 Object.defineProperty(gs, 'mult', {
   get() { return this.multiplier; },
   set(value) { this.multiplier = value; },
+  enumerable: true,
+  configurable: true
+});
+/* Skill points are banked per class in classProgress. This scalar is the
+   active-class view of that same bank: reading or writing
+   gameState.skillPoints always touches the current class, never a shared pool. */
+Object.defineProperty(gameState, 'skillPoints', {
+  get() {
+    try { return getClassProgress(this.currentClass).skillPoints | 0; }
+    catch (e) { return 0; }
+  },
+  set(value) {
+    try {
+      const record = getClassProgress(this.currentClass);
+      record.skillPoints = Math.max(0, Math.floor(Number(value) || 0));
+    } catch (e) { /* classProgress is initialized later in the same script */ }
+  },
   enumerable: true,
   configurable: true
 });
@@ -5472,9 +5668,11 @@ function tickRiftStalkers(dt) {
     const d = rand(620, 780);
     const x = Math.max(60, Math.min(WORLD - 60, p.x + Math.cos(a) * d));
     const y = Math.max(60, Math.min(WORLD - 60, p.y + Math.sin(a) * d));
-    const roamType = Math.random() < 0.42 ? 'swarm' : 'stalker';
+    const roamType = gameState.currentUniverse === 0
+      ? pick(isUniverseOneTutorial() ? ['knight', 'archer'] : ['knight', 'archer', 'ghost'])
+      : (Math.random() < 0.42 ? 'swarm' : 'stalker');
     const roamer = spawnEnemy(roamType, x, y, null, {});
-    if (roamType === 'swarm') roamer.roamer = true;
+    if (roamType !== 'stalker') roamer.roamer = true;
     else spawnedStalker = true;
     for (let j = 0; j < 10; j++) {
       const pa = rand(0, Math.PI * 2);
@@ -6085,6 +6283,7 @@ const CLASS_SKILL_TREES = {
     ] }
   ]
 };
+const skillTreeData = CLASS_SKILL_TREES;
 const SKILL_ICON_PATHS = {
   sword: '<path d="m5 19 11-11 3-5 2 2-5 3L5 19zM4 14l6 6M3 21l3-3"/>',
   hammer: '<path d="m5 20 9-9M10 4l4-2 7 7-2 4zM8 6l10 10"/>',
@@ -6116,7 +6315,8 @@ const SKILL_ICON_PATHS = {
   rage: '<path d="m5 3 14 18M19 3 5 21M3 5l4-2 1 5M21 5l-4-2-1 5"/>',
   clone: '<circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2.5"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M15 14a5 5 0 0 1 7 4v3"/>',
   turret: '<path d="M4 21h16M7 21v-8h10v8M12 13V5M8 5h13M10 9h4"/>',
-  disc: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="m5 5 5 5M14 14l5 5M19 5l-5 5M10 14l-5 5"/>'
+  disc: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="m5 5 5 5M14 14l5 5M19 5l-5 5M10 14l-5 5"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V8a4 4 0 0 1 8 0v3M12 15v2"/>'
 };
 function skillIconSVG(icon) {
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (SKILL_ICON_PATHS[icon] || SKILL_ICON_PATHS.power) + '</svg>';
@@ -6158,8 +6358,20 @@ function getClassProgress(id) {
   if (!classProgress[key]) classProgress[key] = freshClassProgress(key);
   return classProgress[key];
 }
+function syncClassPassiveState(id) {
+  const record = getClassProgress(id);
+  if (!gameState.classPassives || typeof gameState.classPassives !== 'object') gameState.classPassives = {};
+  const passives = { owned: record.owned.slice() };
+  for (const skillId of record.owned) passives[skillId] = true;
+  gameState.classPassives[record.classId] = passives;
+  return passives;
+}
+function syncAllClassPassiveStates() {
+  for (const cls of CLASSES) syncClassPassiveState(cls.id);
+}
 function saveClassProgress(id) {
   const record = getClassProgress(id);
+  syncClassPassiveState(record.classId);
   try { localStorage.setItem(classProgressKey(record.classId), JSON.stringify(record)); return true; }
   catch (e) { return false; }
 }
@@ -6169,16 +6381,22 @@ function loadAllClassProgress() {
     try { raw = JSON.parse(localStorage.getItem(classProgressKey(cls.id)) || 'null'); } catch (e) { /* corrupt or unavailable storage */ }
     classProgress[cls.id] = normalizeClassProgress(cls.id, raw);
   }
+  syncAllClassPassiveStates();
   syncClassXpHud();
 }
 function hasSkill(id, classId) {
   const key = classId || gameState.currentClass;
-  return getClassProgress(key).owned.includes(id);
+  const passives = gameState.classPassives && gameState.classPassives[key];
+  return getClassProgress(key).owned.includes(id) || !!(passives && passives[id]);
 }
 function currentSkill(id) { return !!game.player && hasSkill(id, game.player.classId); }
+function skillPrerequisiteMet(node, row, record) {
+  const index = row.nodes.indexOf(node);
+  return index === 0 || (index > 0 && record.owned.includes(row.nodes[index - 1].id));
+}
 function skillState(node, row, record) {
   if (record.owned.includes(node.id)) return 'owned';
-  if (row.nodes[0].id === node.id || record.owned.includes(row.nodes[row.nodes.indexOf(node) - 1].id)) return 'available';
+  if (skillPrerequisiteMet(node, row, record) && record.skillPoints >= node.cost) return 'available';
   return 'locked';
 }
 function awardClassXP(amount, source) {
@@ -6347,10 +6565,20 @@ function renderSkillTree() {
       btn.setAttribute('aria-disabled', String(state !== 'available' || record.skillPoints < node.cost));
       if (state === 'owned') btn.setAttribute('aria-pressed', 'true');
       const disc = document.createElement('span'); disc.className = 'skill-disc'; disc.innerHTML = skillIconSVG(node.icon);
+      if (state === 'owned') {
+        const check = document.createElement('span');
+        check.className = 'skill-check'; check.setAttribute('aria-hidden', 'true'); check.textContent = '✓';
+        disc.append(check);
+      } else if (state === 'locked') {
+        const lock = document.createElement('span');
+        lock.className = 'skill-lock'; lock.setAttribute('aria-hidden', 'true'); lock.innerHTML = skillIconSVG('lock');
+        disc.append(lock);
+      }
       const name = document.createElement('span'); name.className = 'skill-node-name'; name.textContent = node.name;
       const cost = document.createElement('span'); cost.className = 'skill-node-cost'; cost.textContent = state === 'owned' ? 'OWNED' : node.cost + ' SP';
       btn.append(disc, name, cost);
-      btn.addEventListener('pointerenter', () => showSkillTooltip(btn, node, row, record));
+      btn.addEventListener('pointerenter', (event) => showSkillTooltip(btn, node, row, record, event));
+      btn.addEventListener('pointermove', (event) => positionSkillTooltip(btn, event));
       btn.addEventListener('pointerleave', hideSkillTooltip);
       btn.addEventListener('focus', () => showSkillTooltip(btn, node, row, record));
       btn.addEventListener('blur', hideSkillTooltip);
@@ -6360,22 +6588,45 @@ function renderSkillTree() {
     section.append(heading, nodes); UI.skillTreeRows.append(section);
   });
 }
-function showSkillTooltip(btn, node, row, record) {
+function positionSkillTooltip(btn, event) {
+  const tip = UI.skillTooltip;
+  if (!tip || tip.hidden || skillTooltipButton !== btn) return;
+  const width = tip.offsetWidth || 260;
+  const height = tip.offsetHeight || 120;
+  const limitX = Math.max(12, window.innerWidth - width - 12);
+  const limitY = Math.max(12, window.innerHeight - height - 12);
+  let left;
+  let top;
+  if (event && Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+    left = event.clientX + 16;
+    top = event.clientY + 16;
+    if (left > limitX) left = event.clientX - width - 16;
+    if (top > limitY) top = event.clientY - height - 16;
+  } else {
+    const rect = btn.getBoundingClientRect();
+    left = rect.left + rect.width / 2 - width / 2;
+    top = rect.top - height - 10;
+    if (top < 12) top = rect.bottom + 10;
+  }
+  tip.style.left = clamp(left, 12, limitX) + 'px';
+  tip.style.top = clamp(top, 12, limitY) + 'px';
+}
+function showSkillTooltip(btn, node, row, record, event) {
   if (currentScreen !== 'skillTree') return;
   skillTooltipButton = btn;
   const state = skillState(node, row, record);
   document.getElementById('skillTooltipName').textContent = node.name;
   document.getElementById('skillTooltipDesc').textContent = node.desc;
-  document.getElementById('skillTooltipState').textContent = state === 'owned' ? 'PURCHASED · permanent for this class' : state === 'locked' ? 'LOCKED · purchase the node to the left first' : record.skillPoints < node.cost ? 'AVAILABLE · earn a skill point every 5 levels' : 'AVAILABLE · click to purchase for 1 skill point';
+  document.getElementById('skillTooltipState').textContent = state === 'owned'
+    ? 'COST ' + node.cost + ' SP · PURCHASED · permanent for this class'
+    : !skillPrerequisiteMet(node, row, record)
+      ? 'COST ' + node.cost + ' SP · LOCKED · purchase the node to the left first'
+      : record.skillPoints < node.cost
+        ? 'COST ' + node.cost + ' SP · LOCKED · earn 1 SP at levels 5, 10, 15 and 20'
+        : 'COST ' + node.cost + ' SP · AVAILABLE · click to purchase';
   UI.skillTooltip.hidden = false;
   btn.setAttribute('aria-describedby', 'skillTooltip');
-  const rect = btn.getBoundingClientRect();
-  const tip = UI.skillTooltip;
-  const left = clamp(rect.left + rect.width / 2 - tip.offsetWidth / 2, 12, window.innerWidth - tip.offsetWidth - 12);
-  let top = rect.top - tip.offsetHeight - 10;
-  if (top < 12) top = rect.bottom + 10;
-  tip.style.left = left + 'px';
-  tip.style.top = clamp(top, 12, window.innerHeight - tip.offsetHeight - 12) + 'px';
+  positionSkillTooltip(btn, event);
 }
 function hideSkillTooltip() {
   if (UI.skillTooltip) UI.skillTooltip.hidden = true;
@@ -6390,12 +6641,14 @@ function purchaseSkill(classId, nodeId) {
   if (!node) return false;
   const state = skillState(node, row, record);
   if (state === 'owned') { UI.skillTreeStatus.textContent = node.name + ' is already owned.'; return false; }
-  if (state !== 'available') { UI.skillTreeStatus.textContent = 'Purchase the node to the left first.'; return false; }
+  if (!skillPrerequisiteMet(node, row, record)) { UI.skillTreeStatus.textContent = 'Purchase the node to the left first.'; return false; }
   if (record.skillPoints < node.cost) { UI.skillTreeStatus.textContent = 'Not enough skill points. Earn 1 at levels 5, 10, 15 and 20.'; return false; }
   record.owned.push(node.id);
-  record.skillPoints -= node.cost;
+  record.skillPoints = Math.max(0, record.skillPoints - node.cost);
+  syncClassPassiveState(classId);
   const saved = saveClassProgress(classId);
   if (game.player && game.player.classId === classId) applyClassSkillStats();
+  syncClassXpHud();
   renderSkillTree();
   UI.skillTreeStatus.textContent = saved ? node.name + ' purchased. This skill is permanent.' : 'Skill applied, but storage is unavailable. Keep this tab open.';
   Sound.ability();
@@ -8403,14 +8656,15 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
   const lvlSpeed = scaling ? 1 + 0.15 * (lvl - 1) : 1;
   const lvlHp = scaling ? 1 + 0.20 * (lvl - 1) : 1;
   const eliteVariant = !!o.eliteVariant;
-  const hp = Math.round(def.hp * diff.hp * lvlHp * (eliteVariant ? 2.5 : 1) * 10) / 10;
+  const tutorialBasic = isUniverseOneTutorial() && !eliteVariant && isTutorialBasicEnemy(type);
+  const hp = tutorialBasic ? 1.5 : Math.round(def.hp * diff.hp * lvlHp * (eliteVariant ? 2.5 : 1) * 10) / 10;
   const e = {
     type,
     x, y,
     r: def.r * (eliteVariant ? 1.3 : 1),
     hp,
     maxHp: hp,
-    speed: def.speed * diff.speed * lvlSpeed,
+    speed: def.speed * diff.speed * lvlSpeed * (tutorialBasic ? 0.85 : 1),
     damageMult: diff.damage * (eliteVariant ? 1.5 : 1),
     elite: !!def.elite || eliteVariant,
     eliteVariant,
@@ -8495,18 +8749,41 @@ function releaseSpawnGroup(arena) {
   return n;
 }
 const WAVE_ROLE_TYPES = ['swarm', 'vanguard', 'sniper', 'bomber', 'summoner', 'brute', 'trapper', 'goblin'];
+function waveRoleUnlocks() {
+  const universe = clamp(gameState.currentUniverse | 0, 0, UNIVERSE_DIFFICULTY.length - 1);
+  const level = levelInUniverse(gameState.currentZone);
+  return {
+    /* Medieval knights are Universe 1's basic rushers; universal role bodies
+       join from Egypt onward so the tutorial never sees an advanced kit. */
+    swarm: universe >= 1,
+    vanguard: universe >= 1,
+    sniper: universe >= 1,
+    trapper: universe >= 1,
+    bomber: universe >= 3,
+    brute: universe >= 3,
+    summoner: universe >= 3,
+    goblin: !(universe === 0 && level <= 2)
+  };
+}
 function buildWaveSpawnPlan(arena, types, count, waveIndex) {
+  const roles = waveRoleUnlocks();
+  const allowedNativeTypes = isUniverseOneTutorial()
+    ? types.filter((type) => type === 'knight' || type === 'archer')
+    : types;
+  const nativeTypes = allowedNativeTypes.length ? allowedNativeTypes : ['knight'];
   const plan = [];
-  for (let i = 0; i < count; i++) plan.push(pick(types));
-  const put = (index, type) => { if (index >= 0 && index < plan.length) plan[index] = type; };
+  for (let i = 0; i < count; i++) plan.push(pick(nativeTypes));
+  const put = (index, type) => { if (roles[type] && index >= 0 && index < plan.length) plan[index] = type; };
 
   /* Swarm Rushers always arrive as a literal 5-8 body pack, with another
      pack folded into larger waves instead of being sprinkled one by one. */
-  for (let start = 0; start < count; start += 14) {
-    const packSize = start === 0 ? (count >= 20 ? 7 : 5) : 5;
-    const pack = Math.min(packSize, count - start);
-    for (let k = 0; k < pack; k++) plan[start + k] = 'swarm';
-    if (count < 18) break;
+  if (roles.swarm) {
+    for (let start = 0; start < count; start += 14) {
+      const packSize = start === 0 ? (count >= 20 ? 7 : 5) : 5;
+      const pack = Math.min(packSize, count - start);
+      for (let k = 0; k < pack; k++) plan[start + k] = 'swarm';
+      if (count < 18) break;
+    }
   }
 
   put(5, 'vanguard');
@@ -8525,7 +8802,7 @@ function buildWaveSpawnPlan(arena, types, count, waveIndex) {
     const roll = Math.random();
     arena.goblinWave = roll < 0.2 ? 0 : (roll < 0.64 ? 1 : 2);
   }
-  if (arena && !arena.goblinSpawned && count >= 8 && (waveIndex === arena.goblinWave || waveIndex >= 2)) {
+  if (roles.goblin && arena && !arena.goblinSpawned && count >= 8 && (waveIndex === arena.goblinWave || waveIndex >= 2)) {
     let slot = -1;
     const mid = Math.floor(count / 2);
     for (let off = 0; off < count && slot < 0; off++) {
@@ -8556,7 +8833,7 @@ function spawnWave(arena, arenaIndex, waveIndex) {
   arena.spawnTypes = wave.types;
   arena.spawnPlan = buildWaveSpawnPlan(arena, wave.types, count, waveIndex);
   arena.spawnArenaIndex = arenaIndex;
-  arena.eliteMin = wave.eliteMin || 0;
+  arena.eliteMin = isUniverseOneTutorial() ? 0 : (wave.eliteMin || 0);
   arena.elitesSpawned = 0;
   arena.wave = waveIndex + 1;
   arena.remaining = count;
@@ -8574,10 +8851,10 @@ function spawnWaveEnemy(arena) {
   const planIndex = clamp(i - 1, 0, Math.max(0, count - 1));
   const type = arena.spawnPlan && arena.spawnPlan[planIndex] ? arena.spawnPlan[planIndex] : pick(types);
   /* elites unlock from universe 3 onward — and always on the final wave */
-  const elitesAllowed = gameState.currentUniverse >= 2 || waveIndex >= 2;
+  const elitesAllowed = !isUniverseOneTutorial() && (gameState.currentUniverse >= 2 || waveIndex >= 2);
   let eliteVariant = elitesAllowed && ((i + 1) % 3 === 0) && Math.random() < 0.25;
   /* guarantee the final wave's elite quota by forcing the tail spawns */
-  if (arena.eliteMin > arena.elitesSpawned && arena.spawnQueue <= arena.eliteMin - arena.elitesSpawned) eliteVariant = true;
+  if (elitesAllowed && arena.eliteMin > arena.elitesSpawned && arena.spawnQueue <= arena.eliteMin - arena.elitesSpawned) eliteVariant = true;
   if (type === 'goblin') eliteVariant = false;   /* the courier is a chase, not a tank */
   else if (eliteVariant) arena.elitesSpawned++;
   /* alternate between the two flank anchors so each dense pack closes from
