@@ -3010,6 +3010,17 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
   #skillTree .skill-node.available .skill-disc{ animation-play-state:paused !important; }
 }
 </style>
+<style id="tactical-crosshair-cursor">
+/* The canvas-drawn tactical reticle replaces the OS pointer only while the
+   game stage is the active, unpaused screen. Menu/modal layers are separate
+   roots and explicitly return to the default cursor. */
+#gameCanvas{ cursor:default; }
+#gameCanvas.tactical-cursor{ cursor:none !important; }
+#gameCanvas.tactical-cursor canvas{ cursor:none !important; }
+#mainMenu, #howToPlay, #classSelect, #zoneSelect, #pauseMenu,
+#skillTree, #shopScreen, #upgradeCard, #levelTransition,
+#universeTransition, #gameOver, #victoryScreen{ cursor:default; }
+</style>
 </head>
 <body>
 <div id="gameCanvas" class="screen game-screen">
@@ -4128,6 +4139,17 @@ const SCREEN_NAMES = Object.keys(SCREENS);
 let currentScreen = null;
 let universePanel = 'complete';
 
+function syncTacticalCursor() {
+  const stage = document.getElementById('gameCanvas');
+  if (!stage) return false;
+  const hideSystemCursor = currentScreen === 'gameCanvas' &&
+    game.screen === 'playing' && !gameState.isDying;
+  stage.classList.toggle('tactical-cursor', hideSystemCursor);
+  stage.style.setProperty('cursor', hideSystemCursor ? 'none' : 'default',
+    hideSystemCursor ? 'important' : '');
+  return hideSystemCursor;
+}
+
 /* This is the only screen transition in the file. Hide every managed screen
    before revealing exactly the requested one; no caller toggles screen CSS. */
 function showScreen(id) {
@@ -4181,6 +4203,7 @@ function showScreen(id) {
   currentScreen = id;
   game.screen = id === 'universeTransition' && universePanel === 'intro'
     ? 'universeIntro' : def.state;
+  syncTacticalCursor();
   setLoopPausedFor(id);
   /* back on the canvas while a cleared-arena level-up card is still owed
      (resumed from pause, or closed the skill tree opened from that card):
@@ -4903,6 +4926,7 @@ const gameState = {
   floorArt: null,      /* per-zone ground scenery, rebuilt on every zone load */
   rippleCd: 0,         /* throttle for puddle step ripples */
   arenas: [],
+  clearedArenas: 0,
   boss: null,
   bossUnlocked: false,
   bossZone: null,     /* { x, y, r } — the marked ring the player must walk into */
@@ -4912,7 +4936,13 @@ const gameState = {
   portal: null,
   fog: null,
   cam: { x: 0, y: 0 },
-  mouse: { x: W / 2, y: H / 2, down: false },
+  mouse: {
+    x: W / 2, y: H / 2, down: false,
+    get screenX() { return this.x; },
+    set screenX(v) { this.x = v; },
+    get screenY() { return this.y; },
+    set screenY(v) { this.y = v; }
+  },
   keys: Object.create(null),
   abilityCdScale: 1,   /* set by the Reactor Coils upgrade */
   /* --- shop (permanent, bought with the gem bank) -------------------------- */
@@ -5024,6 +5054,11 @@ function makePlayer() {
     vy: 0,
     angle: 0,
     fireTimer: 0,
+    recoilBloom: 0,
+    primaryCooldownMax: 0,
+    primaryCdMax: 0,
+    primaryFireCdMax: 0,
+    primaryReloadMax: 0,
     fireRate: cls.fireRate,
     bulletSpeed: cls.bulletSpeed,
     damage: cls.damage,
@@ -5236,15 +5271,34 @@ function loadZone(zoneIndex, opts) {
   /* the ward persists across zones, but it is never handed out for free */
   p.swingCd = 0;
   p.swingT = 0;
+  p.recoilBloom = 0;
+  p.primaryCooldownMax = 0;
+  p.primaryCdMax = 0;
+  p.primaryFireCdMax = 0;
+  p.primaryReloadMax = 0;
+  p.reloadT = 0;
   game.swings.length = 0;
 
   game.obstacles = buildObstacles(gameState.currentZone);
   buildDestructibles(gameState.currentZone);
   game.floorArt = buildFloorArt(gameState.currentZone);
-  game.arenas = z.arenas.map((a) => ({
+  game.arenas = z.arenas.map((a, arenaIndex) => ({
+    id: arenaIndex,
     x: a[0], y: a[1], r: ARENA_R,
-    cleared: false, active: false, wave: 0, remaining: 0, nextWaveTimer: 0, spawnQueue: 0, spawnTimer: 0
+    get radius() { return this.r; },
+    set radius(v) { this.r = v; },
+    cleared: false, active: false, wave: 0,
+    get currentWave() { return this.wave; },
+    set currentWave(v) { this.wave = v; },
+    totalWaves: z.waves.length,
+    remaining: 0, enemiesRemaining: 0, liveEnemyCount: 0,
+    nextWaveTimer: 0, spawnQueue: 0,
+    get toSpawn() { return this.spawnQueue; },
+    set toSpawn(v) { this.spawnQueue = v; },
+    spawnTimer: 0, lastDamageAt: 0, noDamageTimer: 0, lastLiveHp: null,
+    watchdogTarget: null, strayTarget: null
   }));
+  gameState.clearedArenas = 0;
   game.fog = new Uint8Array(FOG_COLS * FOG_COLS);
   revealFog();
   game.cam.x = cameraTargetX();
@@ -5557,6 +5611,8 @@ function onPointerMove(e) {
   const p = pointerToWorldScreen(e);
   game.mouse.x = p.x;
   game.mouse.y = p.y;
+  game.mouse.screenX = p.x;
+  game.mouse.screenY = p.y;
 }
 
 UI.canvas.addEventListener('pointermove', onPointerMove);
@@ -5954,6 +6010,12 @@ function updatePlayer(dt) {
     p.trail[i].life -= dt;
     if (p.trail[i].life <= 0) p.trail.splice(i, 1);
   }
+
+  /* Tactical crosshair recoil: exponential settle toward the resting gap. */
+  const player = p;
+  player.recoilBloom = player.recoilBloom || 0;
+  player.recoilBloom *= Math.pow(0.001, dt);
+  if (!Number.isFinite(player.recoilBloom) || player.recoilBloom < 0.01) player.recoilBloom = 0;
 
   /* the class weapon fires only while the trigger is actively held */
   fireClassWeapon(dt);
@@ -7065,6 +7127,39 @@ function paintClassIcon(el, id) {
   el.innerHTML = classIconSVG(id);
 }
 
+function registerPrimaryAttack(p, cooldown) {
+  if (!p) return 0;
+  const cd = Number.isFinite(Number(cooldown)) ? Math.max(0, Number(cooldown)) : 0;
+  const reload = Math.max(0, Number(p.reloadT) || 0);
+  p.recoilBloom = 8;
+  p.primaryFireCdMax = cd;
+  p.primaryReloadMax = reload;
+  p.primaryCooldownMax = cd + reload;
+  p.primaryCdMax = p.primaryCooldownMax;
+  return p.primaryCooldownMax;
+}
+
+function primaryCooldownProgress() {
+  const p = game.player;
+  if (!p) return 1;
+  let weapon = '';
+  try { weapon = getClass().weapon || ''; } catch (err) { weapon = ''; }
+  let remaining = 0;
+  let max = Math.max(0, Number(p.primaryCooldownMax) || 0, Number(p.primaryCdMax) || 0);
+  if (weapon === 'blade' || weapon === 'axes') {
+    remaining = Math.max(0, Number(p.swingCd) || 0, Number(p.swingT) || 0);
+    if (!(max > 0)) max = weapon === 'axes' ? AXE_COOLDOWN : SWORD_COOLDOWN;
+  } else {
+    const reload = Math.max(0, Number(p.reloadT) || 0);
+    const fire = Math.max(0, Number(p.fireTimer) || 0);
+    remaining = reload > 0 ? reload + fire : fire;
+    if (!(max > 0)) max = Math.max(0, Number(p.primaryFireCdMax) || 0, Number(p.fireRate) || 0);
+  }
+  if (!(max > 0)) return remaining <= 0 ? 1 : 0;
+  if (remaining > max) max = remaining;
+  return clamp(1 - remaining / max, 0, 1);
+}
+
 /* ------------------------------ knight sword -------------------------------
    Left click sweeps the longsword through a wide arc. Everything caught in
    that arc (and within reach) takes the hit the instant the swing begins.
@@ -7091,6 +7186,7 @@ function swingSword() {
   const half = arc / 2;
   p.swingT = SWORD_SWING_TIME / (currentSkill('blade_dance') ? 1.3 : 1);
   p.swingCd = SWORD_COOLDOWN / (shopMagazineMult() * odm() * (currentSkill('blade_dance') ? 1.3 : 1));
+  registerPrimaryAttack(p, p.swingCd);
   p.swingFrom = p.angle - half * dir;
   p.swingTo = p.angle + half * dir;
 
@@ -7194,6 +7290,7 @@ function nearestTarget(x, y, maxRange) {
 
 function firePistols(charged) {
   const p = game.player;
+  p.recoilBloom = 8;
   const attack = skillAttackMeta('pistol');
   const pistolCount = 1 + (firstUpgradeOwned() ? 1 : 0);   /* 1 pistol at base, the second comes with the first skill-tree upgrade */
   const spread = pistolCount >= 2 ? (p.arc ? [-0.075, 0, 0.075] : [-0.014, 0.014]) : [0];
@@ -7224,7 +7321,7 @@ function firePistols(charged) {
   if (currentSkill('extended_mag') || currentSkill('speed_loader')) {
     p.magShots = (p.magShots || 0) + spread.length;
     const cap = 12 + (currentSkill('extended_mag') ? 4 : 0);
-    if (p.magShots >= cap) { p.magShots = 0; p.reloadT = Math.max(0.05, 0.35 - (currentSkill('speed_loader') ? 0.1 : 0)); }
+    if (p.magShots >= cap) { p.magShots = 0; p.reloadT = Math.max(0.05, 0.35 - (currentSkill('speed_loader') ? 0.1 : 0)); p.primaryReloadMax = p.reloadT; }
   }
   Sound.pistol();
   p.muzzleAt = game.time;          /* flintlock muzzle flashes orange at the barrel end */
@@ -7239,6 +7336,7 @@ function firePistols(charged) {
    touches, with a single chip of damage for a boss */
 function fireSniper(charged) {
   const p = game.player;
+  p.recoilBloom = 8;
   const a = p.angle;
   const meta = skillAttackMeta('sniper');
   meta.sniperInstant = true;
@@ -7304,6 +7402,7 @@ function fireSniper(charged) {
 
 function fireMageOrbs(charged) {
   const p = game.player;
+  p.recoilBloom = 8;
   const attack = skillAttackMeta('orb');
   const n = mageOrbCount();   /* base 1 orb; +1 Orb Mastery; +1 Singularity */
   for (let i = 0; i < n; i++) {
@@ -7386,6 +7485,7 @@ function fireClassWeapon(dt) {
     let rate = p.fireRate;
     if (cls.weapon === 'rail' && !firstUpgradeOwned()) rate *= 1.75;
     p.fireTimer = (rate * (charged ? 0.5 : 1)) / (odm() * skillFireRateMult());
+    registerPrimaryAttack(p, p.fireTimer);
   }
 }
 
@@ -7412,6 +7512,7 @@ function swingAxes() {
   p.swingSign = -dir;
   p.swingT = AXE_SWING_TIME;
   p.swingCd = AXE_COOLDOWN / (shopMagazineMult() * odm());
+  registerPrimaryAttack(p, p.swingCd);
   p.swingFrom = p.angle - half * dir;
   p.swingTo = p.angle + half * dir;
 
@@ -7492,6 +7593,7 @@ function updateAxes(dt) {
    ------------------------------------------------------------------------- */
 function fireDaggers(charged) {
   const p = game.player;
+  p.recoilBloom = 8;
   const attack = skillAttackMeta('dagger');
   const n = currentSkill('multishot') ? 3 : 2;
   for (let i = 0; i < n; i++) {
@@ -7528,6 +7630,7 @@ function fireDaggers(charged) {
    ------------------------------------------------------------------------- */
 function fireDisc(charged) {
   const p = game.player;
+  p.recoilBloom = 8;
   const a = p.angle;
   if (!game.discs) game.discs = [];
   game.discs.push({
@@ -8396,6 +8499,7 @@ function resetDeathSequence() {
   game.timeScale = 1;
   game.slowmo = 0;
   if (game.player) game.player.invincibleTimer = 0;
+  syncTacticalCursor();
 }
 function spawnDeathCoreParticles() {
   const p = game.player;
@@ -8447,6 +8551,7 @@ function beginDeathSequence() {
   p.invuln = DEATH_SEQUENCE_DURATION;
   p.invincibleTimer = DEATH_SEQUENCE_DURATION;
   gameState.isDying = true;
+  syncTacticalCursor();
   gameState.deathTimer = DEATH_SEQUENCE_DURATION;
   gameState.deathZoom = 1;
   gameState.deathParticlesSpawned = false;
@@ -8642,8 +8747,11 @@ function hurtPlayer(amount, raw, source) {
 
 /* ------------------------------ spawning ----------------------------------- */
 function spawnEnemy(type, x, y, arenaIndex, opts) {
-  const def = ENEMY_DEFS[type] || ENEMY_DEFS.knight;
+  const safeType = ENEMY_DEFS[type] ? type : 'knight';
+  const def = ENEMY_DEFS[safeType];
   const o = opts || {};
+  const safeX = Number.isFinite(Number(x)) ? clamp(Number(x), 30, WORLD - 30) : WORLD / 2;
+  const safeY = Number.isFinite(Number(y)) ? clamp(Number(y), 30, WORLD - 30) : WORLD / 2;
   /* The universe index saved in gameState selects the exact multiplier set.
      Regular enemies use the table verbatim; the old per-zone power curve is
      intentionally no longer stacked on top of it. */
@@ -8656,11 +8764,11 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
   const lvlSpeed = scaling ? 1 + 0.15 * (lvl - 1) : 1;
   const lvlHp = scaling ? 1 + 0.20 * (lvl - 1) : 1;
   const eliteVariant = !!o.eliteVariant;
-  const tutorialBasic = isUniverseOneTutorial() && !eliteVariant && isTutorialBasicEnemy(type);
+  const tutorialBasic = isUniverseOneTutorial() && !eliteVariant && isTutorialBasicEnemy(safeType);
   const hp = tutorialBasic ? 1.5 : Math.round(def.hp * diff.hp * lvlHp * (eliteVariant ? 2.5 : 1) * 10) / 10;
   const e = {
-    type,
-    x, y,
+    type: safeType,
+    x: safeX, y: safeY,
     r: def.r * (eliteVariant ? 1.3 : 1),
     hp,
     maxHp: hp,
@@ -8705,48 +8813,421 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
     brutePhase: 'stalk', bruteT: 0, bruteCd: rand(0.7, 1.5), chargeA: 0,
     escapeT: 16, escaped: false, shieldFlashT: 0, roamer: false, materializeT: 0
   };
-  if (eliteVariant && type === 'knight') {
+  Object.defineProperty(e, 'arenaId', {
+    enumerable: true,
+    configurable: true,
+    get: function () { return (typeof this.arena === 'number' && Number.isFinite(this.arena)) ? this.arena : null; },
+    set: function (v) { this.arena = (typeof v === 'number' && Number.isFinite(v) && v >= 0) ? v : null; }
+  });
+  if (eliteVariant && safeType === 'knight') {
     e.shield = Math.max(2, Math.ceil(e.maxHp * 0.5));
     e.maxShield = e.shield;
   }
-  if (eliteVariant && type === 'ghost') { e.invis = 1; e.revealT = 0; }
-  if (type === 'sandshade') { e.underground = true; e.burrowT = rand(1.4, 2.4); e.invis = 1; }
-  if (type === 'ronin') { e.guard = true; e.guardCd = 0; }
-  if (type === 'scavengerbot') { e.stolen = 0; }
-  if (type === 'voidleech') { e.attached = false; e.attachT = 0; e.drainTick = 0; e.attachCd = 0; }
-  if (type === 'echo') { e.echoAbilityCd = rand(2.5, 4.5); e.echoAbilityIndex = 0; e.echoStormT = 0; e.echoChargeT = 0; e.echoBuffT = 0; }
+  if (eliteVariant && safeType === 'ghost') { e.invis = 1; e.revealT = 0; }
+  if (safeType === 'sandshade') { e.underground = true; e.burrowT = rand(1.4, 2.4); e.invis = 1; }
+  if (safeType === 'ronin') { e.guard = true; e.guardCd = 0; }
+  if (safeType === 'scavengerbot') { e.stolen = 0; }
+  if (safeType === 'voidleech') { e.attached = false; e.attachT = 0; e.drainTick = 0; e.attachCd = 0; }
+  if (safeType === 'echo') { e.echoAbilityCd = rand(2.5, 4.5); e.echoAbilityIndex = 0; e.echoStormT = 0; e.echoChargeT = 0; e.echoBuffT = 0; }
   game.enemies.push(e);
-  petWarnSpawn(x, y);
+  petWarnSpawn(safeX, safeY);
   return e;
 }
 
-/* Wave spawning is built for instant pressure: the first dense pack of
-   6-8 enemies lands the moment a wave starts, then another aggressive pack
-   follows every 1.0-1.5 seconds until the authored wave count is on the
-   field. A wave only counts as cleared once the queue is empty AND every
-   spawned enemy is dead. The final wave of every arena is guaranteed at
-   least 2 elites, and every level beyond level 1 of a universe adds +1
-   enemy per wave (difficulty scaling, Universe 2+). */
+/* Wave spawning is built so an arena can never sit red with an empty field:
+   the authored 6-8 opening pack lands at wave start, then a guaranteed 3-5
+   enemy batch lands every time the spawn timer expires. The queue is consumed
+   per attempted spawn, including a failed spawn, and wave completion is
+   computed from live bodies rather than from a kill counter. */
 const WAVE_PACK_INTERVAL_MIN = 1.0;
 const WAVE_PACK_INTERVAL_MAX = 1.5;
-const WAVE_PACK_MIN = 6;
-const WAVE_PACK_MAX = 8;
-const WAVE_BREATHER = 1.25;
+const WAVE_PACK_MIN = 3;
+const WAVE_PACK_MAX = 5;
+const WAVE_OPENING_PACK_MIN = 6;
+const WAVE_OPENING_PACK_MAX = 8;
+const WAVE_BREATHER = 1.2;
 function nextWavePackDelay() {
   return rand(WAVE_PACK_INTERVAL_MIN, WAVE_PACK_INTERVAL_MAX);
 }
-function releaseSpawnGroup(arena) {
-  if (!arena || arena.spawnQueue <= 0) return 0;
-  /* two tight flank clusters: one shared radius and a narrow fan per pack */
-  arena.flankAngle = rand(0, Math.PI * 2);
-  arena.clusterRadius = arena.r * rand(0.72, 0.9);
-  const size = WAVE_PACK_MIN + Math.floor(Math.random() * (WAVE_PACK_MAX - WAVE_PACK_MIN + 1));
-  const n = Math.min(arena.spawnQueue, size);
-  for (let k = 0; k < n; k++) {
-    arena.spawnQueue--;
-    spawnWaveEnemy(arena);
+
+function arenaEnemyId(e) {
+  if (!e) return null;
+  if (typeof e.arenaId === 'number' && Number.isFinite(e.arenaId)) return e.arenaId;
+  if (typeof e.arena === 'number' && Number.isFinite(e.arena)) return e.arena;
+  return null;
+}
+
+function arenaRadiusValue(arena) {
+  if (!arena) return ARENA_R;
+  const alias = Number(arena.radius);
+  if (Number.isFinite(alias) && alias > 0) return alias;
+  const canonical = Number(arena.r);
+  return (Number.isFinite(canonical) && canonical > 0) ? canonical : ARENA_R;
+}
+
+function arenaAliasedNumber(arena, canonicalKey, aliasKey, shadowKey, fallback) {
+  const canonical = Number(arena[canonicalKey]);
+  const alias = Number(arena[aliasKey]);
+  const shadow = arena[shadowKey];
+  let value;
+  if (Number.isFinite(alias) && shadow !== alias &&
+      (!Number.isFinite(canonical) || shadow === canonical || shadow === undefined)) {
+    value = alias;
+  } else if (Number.isFinite(canonical)) {
+    value = canonical;
+  } else if (Number.isFinite(alias)) {
+    value = alias;
+  } else {
+    value = fallback;
   }
-  return n;
+  arena[shadowKey] = value;
+  return value;
+}
+
+function arenaQueueValue(arena) {
+  if (!arena) return 0;
+  const queue = Number(arena.spawnQueue);
+  if (Number.isFinite(queue)) return Math.max(0, Math.floor(queue));
+  const alias = Number(arena.toSpawn);
+  return Number.isFinite(alias) ? Math.max(0, Math.floor(alias)) : 0;
+}
+
+function syncClearedArenas() {
+  const count = Array.isArray(game.arenas)
+    ? game.arenas.filter((a) => !!(a && a.cleared)).length : 0;
+  gameState.clearedArenas = count;
+  return count;
+}
+
+function normalizeArenaState(arena, arenaIndex, totalWaves) {
+  if (!arena) return null;
+  const zone = ZONES[gameState.currentZone];
+  const zoneWaves = zone && Array.isArray(zone.waves) ? zone.waves.length : 0;
+  const requestedTotal = Number(totalWaves);
+  const storedTotal = Number(arena.totalWaves);
+  const total = Number.isFinite(requestedTotal) && requestedTotal >= 0
+    ? Math.floor(requestedTotal)
+    : (Number.isFinite(storedTotal) && storedTotal >= 0 ? Math.floor(storedTotal) : zoneWaves);
+
+  if (Number.isFinite(Number(arenaIndex)) && Number(arenaIndex) >= 0) {
+    arena.id = Math.floor(Number(arenaIndex));
+    arena.spawnArenaIndex = arena.id;
+  }
+  if (!Number.isFinite(Number(arena.x))) arena.x = WORLD / 2;
+  if (!Number.isFinite(Number(arena.y))) arena.y = WORLD / 2;
+
+  let radius = arenaAliasedNumber(arena, 'r', 'radius', '_radiusAliasSync', ARENA_R);
+  if (!(radius > 0)) radius = ARENA_R;
+  arena.r = radius;
+  arena.radius = radius;
+  arena._radiusAliasSync = radius;
+
+  let wave = arenaAliasedNumber(arena, 'wave', 'currentWave', '_waveAliasSync', 0);
+  wave = clamp(Math.floor(wave) || 0, 0, total);
+  arena.wave = wave;
+  arena.currentWave = wave;
+  arena._waveAliasSync = wave;
+
+  let queue = arenaAliasedNumber(arena, 'spawnQueue', 'toSpawn', '_toSpawnAliasSync', 0);
+  queue = Math.max(0, Math.floor(queue) || 0);
+  arena.spawnQueue = queue;
+  arena.toSpawn = queue;
+  arena._toSpawnAliasSync = queue;
+  arena.totalWaves = total;
+
+  if (!Number.isFinite(Number(arena.spawnTimer)) || arena.spawnTimer < 0 ||
+      arena.spawnTimer > WAVE_PACK_INTERVAL_MAX) arena.spawnTimer = 0;
+  if (!Number.isFinite(Number(arena.nextWaveTimer)) || arena.nextWaveTimer < 0) arena.nextWaveTimer = 0;
+  else if (arena.nextWaveTimer > WAVE_BREATHER) arena.nextWaveTimer = WAVE_BREATHER;
+  if (!Number.isFinite(Number(arena.spawnTotal)) || arena.spawnTotal < queue) arena.spawnTotal = queue;
+  else arena.spawnTotal = Math.max(0, Math.floor(arena.spawnTotal));
+  if (!Number.isFinite(Number(arena.noDamageTimer)) || arena.noDamageTimer < 0) arena.noDamageTimer = 0;
+  if (arena.lastLiveHp !== null && !Number.isFinite(Number(arena.lastLiveHp))) arena.lastLiveHp = null;
+  if (!Number.isFinite(Number(arena.lastDamageAt))) arena.lastDamageAt = 0;
+
+  if (arena.cleared) {
+    arena.active = false;
+    arena.spawnQueue = 0;
+    arena.toSpawn = 0;
+    arena._toSpawnAliasSync = 0;
+    arena.spawnTimer = 0;
+    arena.nextWaveTimer = 0;
+    arena.remaining = 0;
+    arena.enemiesRemaining = 0;
+    arena.liveEnemyCount = 0;
+    arena.watchdogTarget = null;
+    arena.strayTarget = null;
+  }
+  return arena;
+}
+
+function isLiveArenaEnemy(e, arenaIndex) {
+  return !!e && !e.dead && !e.escaped && Number(e.hp) > 0 &&
+    Number.isFinite(Number(e.x)) && Number.isFinite(Number(e.y)) &&
+    arenaEnemyId(e) === arenaIndex;
+}
+
+function liveArenaEnemies(arenaIndex) {
+  if (!Array.isArray(game.enemies)) return [];
+  return game.enemies.filter((e) => isLiveArenaEnemy(e, arenaIndex));
+}
+
+function arenaRemainingCount(arena, arenaIndex) {
+  return arenaQueueValue(arena) + countArenaEnemies(arenaIndex);
+}
+
+function arenaWaveProgressText(arena, arenaIndex) {
+  if (!arena) return '';
+  const zone = ZONES[gameState.currentZone];
+  const zoneWaves = zone && Array.isArray(zone.waves) ? zone.waves.length : 0;
+  const total = Math.max(1, Math.floor(Number(arena.totalWaves) || zoneWaves || 1));
+  const waveRaw = Number.isFinite(Number(arena.currentWave)) ? Number(arena.currentWave) : Number(arena.wave);
+  const current = clamp(Math.floor(waveRaw) || 1, 1, total);
+  const remaining = arenaRemainingCount(arena, arenaIndex);
+  return 'ARENA WAVE ' + current + '/' + total + ' · ' + remaining + ' ENEMIES REMAINING';
+}
+
+function activeArenaForHud() {
+  if (!Array.isArray(game.arenas)) return null;
+  const p = game.player;
+  for (let i = 0; i < game.arenas.length; i++) {
+    const a = game.arenas[i];
+    if (!a || !a.active || a.cleared) continue;
+    if (p && Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)) &&
+        dist(p.x, p.y, a.x, a.y) < arenaRadiusValue(a)) return { arena: a, index: i };
+  }
+  const preferred = Math.floor(Number(game.arenaIndexActive));
+  if (Number.isFinite(preferred) && game.arenas[preferred] &&
+      game.arenas[preferred].active && !game.arenas[preferred].cleared) {
+    return { arena: game.arenas[preferred], index: preferred };
+  }
+  for (let i = 0; i < game.arenas.length; i++) {
+    const a = game.arenas[i];
+    if (a && a.active && !a.cleared) return { arena: a, index: i };
+  }
+  return null;
+}
+
+function cleanupInvalidArenaEnemies(arena, arenaIndex) {
+  if (!Array.isArray(game.enemies)) return 0;
+  let removed = 0;
+  for (let i = game.enemies.length - 1; i >= 0; i--) {
+    const e = game.enemies[i];
+    if (!e || arenaEnemyId(e) !== arenaIndex) continue;
+    const invalid = !!e.dead || !!e.escaped || !(Number(e.hp) > 0) ||
+      !Number.isFinite(Number(e.x)) || !Number.isFinite(Number(e.y)) ||
+      Number(e.x) < -80 || Number(e.y) < -80 || Number(e.x) > WORLD + 80 || Number(e.y) > WORLD + 80;
+    if (!invalid) continue;
+    e.dead = true;
+    e.hp = 0;
+    game.enemies.splice(i, 1);
+    removed++;
+  }
+  return removed;
+}
+
+function tetherArenaEnemies(arena, arenaIndex, dt) {
+  if (!arena || arena.cleared || !arena.active) return 0;
+  const safeDt = Number.isFinite(Number(dt)) && Number(dt) > 0 ? Number(dt) : 0;
+  const radius = arenaRadiusValue(arena);
+  const limit = radius + 220;
+  const live = liveArenaEnemies(arenaIndex);
+  let pulled = 0;
+  for (let i = 0; i < live.length; i++) {
+    const e = live[i];
+    const dx = e.x - arena.x;
+    const dy = e.y - arena.y;
+    const d = Math.hypot(dx, dy);
+    let targetR = Math.max(24, radius - clamp((Number(e.r) || 14) + 10, 20, 64));
+    if (targetR >= radius) targetR = radius * 0.82;
+    if (d > limit) e.arenaTetherPull = true;
+    if (!e.arenaTetherPull || d <= targetR) {
+      if (d <= targetR) e.arenaTetherPull = false;
+      continue;
+    }
+    const ang = d > 0.001 ? Math.atan2(dy, dx) : 0;
+    const tx = arena.x + Math.cos(ang) * targetR;
+    const ty = arena.y + Math.sin(ang) * targetR;
+    const pullDist = Math.hypot(tx - e.x, ty - e.y);
+    const step = Math.max(1200 * safeDt, pullDist * (1 - Math.exp(-7 * safeDt)));
+    let snapped = false;
+    if (safeDt <= 0 || d > limit + 420 || step >= pullDist) {
+      e.x = tx;
+      e.y = ty;
+      snapped = true;
+    } else if (pullDist > 0.001) {
+      e.x += (tx - e.x) * (step / pullDist);
+      e.y += (ty - e.y) * (step / pullDist);
+    }
+    e.heading = angleTo(e.x, e.y, arena.x, arena.y);
+    e.knockX = 0;
+    e.knockY = 0;
+    e.arenaTethered = true;
+    if (Math.hypot(e.x - arena.x, e.y - arena.y) <= targetR) e.arenaTetherPull = false;
+    if (snapped && Array.isArray(game.particles)) {
+      for (let k = 0; k < 4; k++) {
+        const pa = rand(0, TAU);
+        spawnParticle(e.x, e.y, Math.cos(pa) * rand(25, 95), Math.sin(pa) * rand(25, 95), 0.32, 5, '#f43f5e', 2);
+      }
+    }
+    pulled++;
+  }
+  return pulled;
+}
+
+function updateArenaWatchdog(arena, arenaIndex, liveEnemies, dt) {
+  if (!arena) return null;
+  const live = Array.isArray(liveEnemies) ? liveEnemies : liveArenaEnemies(arenaIndex);
+  const safeDt = Number.isFinite(Number(dt)) && Number(dt) > 0 ? Number(dt) : 0;
+  let totalHp = 0;
+  for (let i = 0; i < live.length; i++) totalHp += Math.max(0, Number(live[i].hp) || 0);
+
+  if (!arena.active || arena.cleared || arenaQueueValue(arena) > 0 || !live.length) {
+    arena.noDamageTimer = 0;
+    arena.lastLiveHp = live.length ? totalHp : null;
+    arena.watchdogTarget = null;
+    arena.strayTarget = null;
+    arena.watchdogActive = false;
+    return null;
+  }
+
+  if (Number.isFinite(Number(arena.lastLiveHp)) && totalHp < Number(arena.lastLiveHp) - 0.0001) {
+    arena.noDamageTimer = 0;
+    arena.lastDamageAt = game.time || 0;
+    arena.lastDamageTime = arena.lastDamageAt;
+  } else {
+    arena.noDamageTimer = (Number.isFinite(Number(arena.noDamageTimer)) ? Number(arena.noDamageTimer) : 0) + safeDt;
+  }
+  arena.lastLiveHp = totalHp;
+
+  const p = game.player;
+  let nearest = live[0];
+  let best = Infinity;
+  for (let i = 0; i < live.length; i++) {
+    const e = live[i];
+    const d = p ? dist(p.x, p.y, e.x, e.y) : i;
+    if (d < best) { best = d; nearest = e; }
+  }
+  arena.nearestArenaEnemy = nearest;
+  arena.lastArenaEnemy = nearest;
+
+  let offScreen = false;
+  if (nearest) {
+    const sx = toScreenX(nearest.x);
+    const sy = toScreenY(nearest.y);
+    offScreen = !(sx >= 0 && sx <= W && sy >= SKY_H && sy <= H);
+  }
+  arena.watchdogOffScreen = offScreen;
+  if (nearest && (offScreen || arena.noDamageTimer >= 6)) {
+    arena.watchdogTarget = nearest;
+    arena.strayTarget = nearest;
+    arena.watchdogActive = true;
+    return nearest;
+  }
+  arena.watchdogTarget = null;
+  arena.strayTarget = null;
+  arena.watchdogActive = false;
+  return null;
+}
+
+function spawnGuaranteedFallbackEnemy(arena) {
+  if (!arena) return null;
+  const arenaIndex = (typeof arena.spawnArenaIndex === 'number') ? arena.spawnArenaIndex
+    : ((typeof arena.id === 'number') ? arena.id : (Array.isArray(game.arenas) ? game.arenas.indexOf(arena) : -1));
+  const zone = ZONES[gameState.currentZone];
+  const waves = zone && Array.isArray(zone.waves) ? zone.waves : [];
+  const waveIndex = waves.length
+    ? clamp(Math.floor(Number(arena.spawnWaveIndex) || 0), 0, waves.length - 1) : 0;
+  const sourceTypes = (Array.isArray(arena.spawnTypes) && arena.spawnTypes.length)
+    ? arena.spawnTypes : ((waves[waveIndex] && waves[waveIndex].types) || ['knight']);
+  const safeTypes = sourceTypes.filter((type) => !!ENEMY_DEFS[type]);
+  const type = safeTypes.length ? pick(safeTypes) : 'knight';
+  const spot = waveSpawnPoint(arena, rand(0, TAU), arena.clusterRadius);
+  return spawnEnemy(type, spot.x, spot.y, arenaIndex >= 0 ? arenaIndex : null, {});
+}
+
+function spawnArenaWaveSafely(arena, arenaIndex, waveIndex) {
+  try {
+    return spawnWave(arena, arenaIndex, waveIndex);
+  } catch (err) {
+    if (arena) arena.lastSpawnError = String((err && err.message) || err);
+    const zone = ZONES[gameState.currentZone];
+    const total = zone && Array.isArray(zone.waves) ? zone.waves.length : 0;
+    normalizeArenaState(arena, arenaIndex, total);
+    if (arena && !arena.cleared && arenaQueueValue(arena) <= 0 && countArenaEnemies(arenaIndex) === 0) {
+      arena.active = true;
+      arena.wave = clamp(Math.floor(Number(waveIndex) || 0) + 1, 1, Math.max(1, total));
+      arena.currentWave = arena.wave;
+      arena.spawnWaveIndex = clamp(Math.floor(Number(waveIndex) || 0), 0, Math.max(0, total - 1));
+      arena.spawnArenaIndex = arenaIndex;
+      arena.spawnTotal = 3;
+      arena.spawnQueue = 3;
+      arena.toSpawn = 3;
+      arena.spawnTimer = 0;
+      releaseSpawnGroup(arena);
+    }
+    return 0;
+  }
+}
+function releaseSpawnGroup(arena, batchMin, batchMax) {
+  if (!arena || arena.cleared) return 0;
+  const inferredIndex = (typeof arena.spawnArenaIndex === 'number') ? arena.spawnArenaIndex
+    : ((typeof arena.id === 'number') ? arena.id : (Array.isArray(game.arenas) ? game.arenas.indexOf(arena) : -1));
+  if (inferredIndex >= 0) normalizeArenaState(arena, inferredIndex, arena.totalWaves);
+  else {
+    arena.spawnQueue = arenaQueueValue(arena);
+    arena.toSpawn = arena.spawnQueue;
+  }
+  if (arena.spawnQueue <= 0) return 0;
+
+  const radius = arenaRadiusValue(arena);
+  arena.r = radius;
+  arena.radius = radius;
+  arena.flankAngle = rand(0, Math.PI * 2);
+  arena.clusterRadius = radius * rand(0.72, 0.9);
+  if (!Number.isFinite(Number(arena.spawnTotal)) || arena.spawnTotal < arena.spawnQueue) {
+    arena.spawnTotal = arena.spawnQueue;
+  }
+
+  const minBatch = Number.isFinite(Number(batchMin)) ? Math.max(1, Math.floor(Number(batchMin))) : WAVE_PACK_MIN;
+  const maxBatch = Number.isFinite(Number(batchMax)) ? Math.max(minBatch, Math.floor(Number(batchMax))) : WAVE_PACK_MAX;
+  const size = minBatch + Math.floor(Math.random() * (maxBatch - minBatch + 1));
+  const attempts = Math.min(arena.spawnQueue, size);
+  let spawned = 0;
+  for (let k = 0; k < attempts; k++) {
+    if (arena.spawnQueue <= 0) break;
+    arena.spawnQueue--;
+    arena.toSpawn = arena.spawnQueue;
+    arena._toSpawnAliasSync = arena.spawnQueue;
+    const before = Array.isArray(game.enemies) ? game.enemies.length : 0;
+    let enemy = null;
+    try {
+      enemy = spawnWaveEnemy(arena);
+    } catch (err) {
+      arena.lastSpawnError = String((err && err.message) || err);
+      enemy = null;
+    }
+    if (!enemy && Array.isArray(game.enemies) && game.enemies.length > before) {
+      enemy = game.enemies[game.enemies.length - 1];
+    }
+    if (!enemy) {
+      try {
+        enemy = spawnGuaranteedFallbackEnemy(arena);
+      } catch (err) {
+        arena.lastSpawnError = String((err && err.message) || err);
+        enemy = null;
+      }
+    }
+    if (enemy && !enemy.dead && Number(enemy.hp) > 0 &&
+        Number.isFinite(Number(enemy.x)) && Number.isFinite(Number(enemy.y))) spawned++;
+  }
+  arena.toSpawn = arena.spawnQueue;
+  arena._toSpawnAliasSync = arena.spawnQueue;
+  if (inferredIndex >= 0) {
+    arena.remaining = arenaRemainingCount(arena, inferredIndex);
+    arena.enemiesRemaining = arena.remaining;
+  }
+  return spawned;
 }
 const WAVE_ROLE_TYPES = ['swarm', 'vanguard', 'sniper', 'bomber', 'summoner', 'brute', 'trapper', 'goblin'];
 function waveRoleUnlocks() {
@@ -8819,72 +9300,141 @@ function buildWaveSpawnPlan(arena, types, count, waveIndex) {
 }
 
 function spawnWave(arena, arenaIndex, waveIndex) {
+  if (!arena || arena.cleared) return 0;
   const z = ZONES[gameState.currentZone];
-  const wave = z.waves[Math.min(waveIndex, z.waves.length - 1)];
+  if (!z || !Array.isArray(z.waves) || !z.waves.length) return 0;
+  const totalWaves = z.waves.length;
+  const safeWaveIndex = clamp(Math.floor(Number(waveIndex) || 0), 0, totalWaves - 1);
+  const safeArenaIndex = Number.isFinite(Number(arenaIndex)) ? Math.floor(Number(arenaIndex))
+    : (Number.isFinite(Number(arena.id)) ? Math.floor(Number(arena.id)) : 0);
+  normalizeArenaState(arena, safeArenaIndex, totalWaves);
+  const wave = z.waves[safeWaveIndex] || { count: 1, types: ['knight'] };
   const diff = universeDifficulty(gameState.currentUniverse);
   /* +1 enemy per wave for each level past level 1 — difficulty scaling, so
      it applies from Universe 2 onward; Universe 1 keeps its base wave sizes */
   const levelBonus = gameState.currentUniverse >= 1 ? levelInUniverse(gameState.currentZone) - 1 : 0;
-  const count = Math.max(1, Math.round(wave.count * diff.wave) + levelBonus);
+  const count = Math.max(1, Math.round((Number(wave.count) || 1) * diff.wave) + levelBonus);
+  arena.active = true;
   arena.spawnQueue = count;
-  arena.spawnTimer = nextWavePackDelay();   /* first reinforcement pack is only 1.0-1.5s behind */
+  arena.toSpawn = count;
+  arena._toSpawnAliasSync = count;
+  arena.spawnTimer = nextWavePackDelay();   /* first reinforcement batch is only 1.0-1.5s behind */
   arena.spawnTotal = count;
-  arena.spawnWaveIndex = waveIndex;
-  arena.spawnTypes = wave.types;
-  arena.spawnPlan = buildWaveSpawnPlan(arena, wave.types, count, waveIndex);
-  arena.spawnArenaIndex = arenaIndex;
+  arena.spawnWaveIndex = safeWaveIndex;
+  arena.spawnTypes = (Array.isArray(wave.types) && wave.types.length) ? wave.types : ['knight'];
+  arena.spawnPlan = buildWaveSpawnPlan(arena, arena.spawnTypes, count, safeWaveIndex);
+  arena.spawnArenaIndex = safeArenaIndex;
   arena.eliteMin = isUniverseOneTutorial() ? 0 : (wave.eliteMin || 0);
   arena.elitesSpawned = 0;
-  arena.wave = waveIndex + 1;
+  arena.wave = safeWaveIndex + 1;
+  arena.currentWave = arena.wave;
+  arena._waveAliasSync = arena.wave;
+  arena.totalWaves = totalWaves;
   arena.remaining = count;
-  /* opening pack (6-8 enemies) lands instantly on activation */
-  releaseSpawnGroup(arena);
+  arena.enemiesRemaining = count;
+  arena.nextWaveTimer = 0;
+  arena.noDamageTimer = 0;
+  arena.lastLiveHp = null;
+  arena.lastDamageAt = game.time || 0;
+  arena.lastDamageTime = arena.lastDamageAt;
+  arena.watchdogTarget = null;
+  arena.strayTarget = null;
+  /* the authored opening pressure pack remains 6-8; timer-driven guaranteed
+     reinforcement batches use the 3-5 anti-soft-lock cadence */
+  releaseSpawnGroup(arena, WAVE_OPENING_PACK_MIN, WAVE_OPENING_PACK_MAX);
+  arena.remaining = arenaRemainingCount(arena, safeArenaIndex);
+  arena.enemiesRemaining = arena.remaining;
   Sound.arenaStart();
-  addText(arena.x, arena.y - 120, 'WAVE ' + (waveIndex + 1), '#fca5a5');
+  addText(arena.x, arena.y - 120, 'WAVE ' + (safeWaveIndex + 1), '#fca5a5');
+  return count;
 }
 function spawnWaveEnemy(arena) {
-  const i = arena.spawnTotal - arena.spawnQueue;      /* 0-based spawn index */
-  const count = arena.spawnTotal;
-  const types = arena.spawnTypes;
-  const waveIndex = arena.spawnWaveIndex;
+  if (!arena) return null;
+  const totalRaw = Number(arena.spawnTotal);
+  const queueRaw = Number(arena.spawnQueue);
+  const count = (Number.isFinite(totalRaw) && totalRaw > 0)
+    ? Math.floor(totalRaw)
+    : Math.max(1, (Number.isFinite(queueRaw) ? Math.floor(queueRaw) : 0) + 1);
+  arena.spawnTotal = count;
+  const queueAfter = Number.isFinite(queueRaw) ? Math.max(0, Math.floor(queueRaw)) : 0;
   /* releaseSpawnGroup has already decremented the queue, so i runs 1..count */
+  const i = clamp(count - queueAfter, 1, count);
+  const zone = ZONES[gameState.currentZone];
+  const zoneWaves = zone && Array.isArray(zone.waves) ? zone.waves : [];
+  const waveIndex = zoneWaves.length
+    ? clamp(Math.floor(Number(arena.spawnWaveIndex) || 0), 0, zoneWaves.length - 1)
+    : Math.max(0, Math.floor(Number(arena.spawnWaveIndex) || 0));
+  const fallbackTypes = (zoneWaves[waveIndex] && Array.isArray(zoneWaves[waveIndex].types) && zoneWaves[waveIndex].types.length)
+    ? zoneWaves[waveIndex].types : ['knight'];
+  const types = (Array.isArray(arena.spawnTypes) && arena.spawnTypes.length) ? arena.spawnTypes : fallbackTypes;
   const planIndex = clamp(i - 1, 0, Math.max(0, count - 1));
-  const type = arena.spawnPlan && arena.spawnPlan[planIndex] ? arena.spawnPlan[planIndex] : pick(types);
+  let type = arena.spawnPlan && arena.spawnPlan[planIndex] ? arena.spawnPlan[planIndex] : pick(types);
+  if (!ENEMY_DEFS[type]) {
+    const safeTypes = types.filter((candidate) => !!ENEMY_DEFS[candidate]);
+    type = safeTypes.length ? pick(safeTypes) : 'knight';
+  }
+  arena.eliteMin = Number.isFinite(Number(arena.eliteMin)) ? Math.max(0, Math.floor(Number(arena.eliteMin))) : 0;
+  arena.elitesSpawned = Number.isFinite(Number(arena.elitesSpawned)) ? Math.max(0, Math.floor(Number(arena.elitesSpawned))) : 0;
   /* elites unlock from universe 3 onward — and always on the final wave */
   const elitesAllowed = !isUniverseOneTutorial() && (gameState.currentUniverse >= 2 || waveIndex >= 2);
   let eliteVariant = elitesAllowed && ((i + 1) % 3 === 0) && Math.random() < 0.25;
   /* guarantee the final wave's elite quota by forcing the tail spawns */
-  if (elitesAllowed && arena.eliteMin > arena.elitesSpawned && arena.spawnQueue <= arena.eliteMin - arena.elitesSpawned) eliteVariant = true;
+  if (elitesAllowed && arena.eliteMin > arena.elitesSpawned && queueAfter <= arena.eliteMin - arena.elitesSpawned) eliteVariant = true;
   if (type === 'goblin') eliteVariant = false;   /* the courier is a chase, not a tank */
   else if (eliteVariant) arena.elitesSpawned++;
-  /* alternate between the two flank anchors so each dense pack closes from
-     both sides at once instead of dribbling in around the ring */
-  const a = (arena.flankAngle || 0) + (i % 2) * Math.PI + rand(-0.24, 0.24);
-  /* every enemy of a new wave arrives at least 300px from the player */
-  const spot = waveSpawnPoint(arena, a, arena.clusterRadius);
-  spawnEnemy(type, spot.x, spot.y, arena.spawnArenaIndex, {
+  const a = (Number.isFinite(Number(arena.flankAngle)) ? Number(arena.flankAngle) : 0) +
+    (i % 2) * Math.PI + rand(-0.24, 0.24);
+  const rawSpot = waveSpawnPoint(arena, a, arena.clusterRadius);
+  const spot = rawSpot && Number.isFinite(Number(rawSpot.x)) && Number.isFinite(Number(rawSpot.y))
+    ? { x: Number(rawSpot.x), y: Number(rawSpot.y) }
+    : { x: Number.isFinite(Number(arena.x)) ? Number(arena.x) : WORLD / 2,
+        y: Number.isFinite(Number(arena.y)) ? Number(arena.y) : WORLD / 2 };
+  const arenaIndex = (typeof arena.spawnArenaIndex === 'number') ? arena.spawnArenaIndex
+    : ((typeof arena.id === 'number') ? arena.id : null);
+  const spawned = spawnEnemy(type, spot.x, spot.y, arenaIndex, {
     eliteVariant,
     coordSide: i % 2 === 0 ? 1 : -1,
     lineSlot: i
   });
-  for (let k = 0; k < 6; k++) {
-    const pa = rand(0, TAU);
-    spawnParticle(spot.x, spot.y, Math.cos(pa) * rand(20, 90), Math.sin(pa) * rand(20, 90), 0.4, 7, '#f87171', 2);
+  if (spawned && Array.isArray(game.particles)) {
+    for (let k = 0; k < 6; k++) {
+      const pa = rand(0, TAU);
+      spawnParticle(spot.x, spot.y, Math.cos(pa) * rand(20, 90), Math.sin(pa) * rand(20, 90), 0.4, 7, '#f87171', 2);
+    }
   }
+  return spawned || null;
 }
 function tickArenaSpawns(a, dt) {
-  if (!a.spawnQueue || a.spawnQueue <= 0) return;
-  a.spawnTimer -= dt;
-  while (a.spawnQueue > 0 && a.spawnTimer <= 0) {
-    a.spawnTimer += nextWavePackDelay();
-    releaseSpawnGroup(a);
+  if (!a || a.cleared) return 0;
+  const arenaIndex = (typeof a.spawnArenaIndex === 'number') ? a.spawnArenaIndex
+    : ((typeof a.id === 'number') ? a.id : (Array.isArray(game.arenas) ? game.arenas.indexOf(a) : -1));
+  if (arenaIndex >= 0) normalizeArenaState(a, arenaIndex, a.totalWaves);
+  else {
+    a.spawnQueue = arenaQueueValue(a);
+    a.toSpawn = a.spawnQueue;
   }
+  if (a.spawnQueue <= 0) return 0;
+
+  const step = Number.isFinite(Number(dt)) && Number(dt) > 0 ? Number(dt) : 0;
+  if (!Number.isFinite(Number(a.spawnTimer)) || a.spawnTimer < 0 || a.spawnTimer > WAVE_PACK_INTERVAL_MAX) {
+    a.spawnTimer = 0;
+  }
+  a.spawnTimer -= step;
+  let spawned = 0;
+  let guard = 0;
+  while (a.spawnQueue > 0 && a.spawnTimer <= 0 && guard++ < 100) {
+    spawned += releaseSpawnGroup(a);
+    if (a.spawnQueue > 0) a.spawnTimer += nextWavePackDelay();
+    else a.spawnTimer = 0;
+  }
+  if (a.spawnTimer < 0) a.spawnTimer = 0;
+  a.toSpawn = a.spawnQueue;
+  a._toSpawnAliasSync = a.spawnQueue;
+  return spawned;
 }
 
 function countArenaEnemies(arenaIndex) {
-  let n = 0;
-  for (let i = 0; i < game.enemies.length; i++) if (game.enemies[i].arena === arenaIndex) n++;
-  return n;
+  return liveArenaEnemies(arenaIndex).length;
 }
 
 /* --------------------------- universe cast --------------------------------- */
@@ -11945,37 +12495,52 @@ function updateClassAbilities(dt) {
    closing in the moment the fight starts, and without it the first contact tick
    landed on the same breath as the arena trigger. */
 const ARENA_GRACE = 1.5;          /* seconds of invincibility on arena entry */
-const WAVE_SPAWN_MIN_DIST = 300;  /* enemies never appear closer than this */
+const WAVE_SPAWN_MIN_DIST = 140;       /* guaranteed separation inside the ring */
+const WAVE_SPAWN_PREFERRED_DIST = 300; /* used whenever the ring geometry allows it */
 
-/* pick a spawn point for one enemy of a new wave. The classic ring inside the
-   arena is tried first; if that point sits too close to the player we swing to
-   the far side of the arena and push the ring out until a clean 300px gap
-   opens, so a wave can never drop an enemy into contact range. */
+/* Pick a spawn point for one enemy of a new wave. The point's centre always
+   remains inside arena.radius; a 300px gap is preferred when geometrically
+   possible, and the far side of the ring guarantees at least 140px. */
 function waveSpawnPoint(arena, baseAngle, preferredRadius) {
-  const p = game.player;
-  let a = baseAngle;
-  let rr = typeof preferredRadius === 'number'
-    ? clamp(preferredRadius + rand(-18, 18), 42, arena.r * 0.96)
-    : arena.r * rand(0.6, 0.92);
-  let x = clamp(arena.x + Math.cos(a) * rr, 30, WORLD - 30);
-  let y = clamp(arena.y + Math.sin(a) * rr, 30, WORLD - 30);
+  const p = game.player || {};
+  const cx = Number.isFinite(Number(arena && arena.x)) ? Number(arena.x) : WORLD / 2;
+  const cy = Number.isFinite(Number(arena && arena.y)) ? Number(arena.y) : WORLD / 2;
+  const px = Number.isFinite(Number(p.x)) ? Number(p.x) : cx;
+  const py = Number.isFinite(Number(p.y)) ? Number(p.y) : cy;
+  const radius = arenaRadiusValue(arena || { r: ARENA_R });
+  const maxR = Math.max(20, radius - 16);
+  const base = Number.isFinite(Number(baseAngle)) ? Number(baseAngle) : rand(0, TAU);
 
-  if (dist(x, y, p.x, p.y) < WAVE_SPAWN_MIN_DIST) {
-    /* far side of the arena, fanned out around the away-from-player ray */
-    const away = angleTo(p.x, p.y, arena.x, arena.y);
-    a = away + (((baseAngle % TAU) + TAU) % TAU - Math.PI) * 0.12;
-    rr = arena.r * rand(0.7, 0.95);
-    x = clamp(arena.x + Math.cos(a) * rr, 30, WORLD - 30);
-    y = clamp(arena.y + Math.sin(a) * rr, 30, WORLD - 30);
-    for (let guard = 0; guard < 12; guard++) {
-      const d = dist(x, y, p.x, p.y);
-      if (d >= WAVE_SPAWN_MIN_DIST) break;
-      rr += (WAVE_SPAWN_MIN_DIST - d) + 4;
-      x = clamp(arena.x + Math.cos(a) * rr, 30, WORLD - 30);
-      y = clamp(arena.y + Math.sin(a) * rr, 30, WORLD - 30);
+  function makePoint(angle, rr) {
+    let x = clamp(cx + Math.cos(angle) * rr, 30, WORLD - 30);
+    let y = clamp(cy + Math.sin(angle) * rr, 30, WORLD - 30);
+    const centreDist = Math.hypot(x - cx, y - cy);
+    if (centreDist > maxR && centreDist > 0.001) {
+      x = cx + (x - cx) * (maxR / centreDist);
+      y = cy + (y - cy) * (maxR / centreDist);
     }
+    return { x: x, y: y };
   }
-  return { x: x, y: y };
+
+  const preferredR = Number.isFinite(Number(preferredRadius))
+    ? clamp(Number(preferredRadius) + rand(-18, 18), Math.min(42, maxR), maxR)
+    : radius * rand(0.6, 0.92);
+  let best = makePoint(base, preferredR);
+  let bestDist = dist(best.x, best.y, px, py);
+  if (bestDist >= WAVE_SPAWN_PREFERRED_DIST) return best;
+
+  const away = dist(px, py, cx, cy) > 0.001 ? angleTo(px, py, cx, cy) : base;
+  const offsets = [0, -0.28, 0.28, -0.56, 0.56, -0.84, 0.84, Math.PI];
+  for (let i = 0; i < offsets.length; i++) {
+    const candidate = makePoint(away + offsets[i], maxR * (i === 0 ? 1 : 0.94));
+    const candidateDist = dist(candidate.x, candidate.y, px, py);
+    if (candidateDist > bestDist) {
+      best = candidate;
+      bestDist = candidateDist;
+    }
+    if (candidateDist >= WAVE_SPAWN_PREFERRED_DIST) return candidate;
+  }
+  return best;
 }
 
 function grantArenaGrace(reason) {
@@ -11993,51 +12558,109 @@ function grantArenaGrace(reason) {
 
 function updateArenas(dt) {
   const p = game.player;
-  const waveCount = ZONES[gameState.currentZone].waves.length;
+  if (!p || !Array.isArray(game.arenas)) return;
+  const zone = ZONES[gameState.currentZone];
+  const waveCount = zone && Array.isArray(zone.waves) ? zone.waves.length : 0;
+  const safeDt = Number.isFinite(Number(dt)) && Number(dt) > 0 ? Number(dt) : 0;
 
   for (let i = 0; i < game.arenas.length; i++) {
     const a = game.arenas[i];
+    if (!a) continue;
+    normalizeArenaState(a, i, waveCount);
     if (a.cleared) continue;
 
     if (!a.active) {
-      if (dist(p.x, p.y, a.x, a.y) < a.r) {
+      if (Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)) &&
+          dist(p.x, p.y, a.x, a.y) < arenaRadiusValue(a)) {
         a.active = true;
         a.wave = 0;
+        a.currentWave = 0;
+        a._waveAliasSync = 0;
+        a.nextWaveTimer = 0;
+        a.noDamageTimer = 0;
+        a.lastDamageAt = game.time || 0;
+        a.lastDamageTime = a.lastDamageAt;
         game.arenaIndexActive = i;
         /* 1.5s of grace before anything can touch the player */
         grantArenaGrace('INVULNERABLE');
-        spawnWave(a, i, 0);
+        spawnArenaWaveSafely(a, i, 0);
         addText(a.x, a.y - 110, 'ARENA ENGAGED', '#fca5a5');
         updateObjective();
       }
       continue;
     }
 
-    tickArenaSpawns(a, dt);
+    /* Failsafe order matters: remove impossible bodies, run the spawner no
+       matter where the player is standing, leash live strays, then compute
+       completion from the bodies actually present in game.enemies. */
+    cleanupInvalidArenaEnemies(a, i);
+    tickArenaSpawns(a, safeDt);
+    cleanupInvalidArenaEnemies(a, i);
+    tetherArenaEnemies(a, i, safeDt);
 
-    if (a.nextWaveTimer > 0) {
-      a.nextWaveTimer -= dt;
-      if (a.nextWaveTimer <= 0) spawnWave(a, i, a.wave);
-      continue;
-    }
+    const liveEnemies = liveArenaEnemies(i);
+    a.liveEnemyCount = liveEnemies.length;
+    a.remaining = arenaRemainingCount(a, i);
+    a.enemiesRemaining = a.remaining;
+    updateArenaWatchdog(a, i, liveEnemies, safeDt);
+    normalizeArenaState(a, i, waveCount);
 
-    /* a wave is only done when the spawn queue is empty and nothing is alive */
-    if (a.spawnQueue <= 0 && countArenaEnemies(i) === 0) {
+    if (a.spawnQueue <= 0 && a.toSpawn <= 0 && liveEnemies.length === 0) {
+      a.noDamageTimer = 0;
+      a.watchdogTarget = null;
+      a.strayTarget = null;
       if (a.wave < waveCount) {
-        /* a short 1.25s regroup beat, then the next wave opens with a full pack */
-        a.nextWaveTimer = WAVE_BREATHER;
-        showBanner('WAVE ' + (a.wave + 1) + ' INCOMING');
-        addText(a.x, a.y - 110, 'WAVE CLEARED', '#fde68a');
+        if (!(a.nextWaveTimer > 0)) {
+          a.nextWaveTimer = WAVE_BREATHER;
+          showBanner('WAVE ' + (a.wave + 1) + ' INCOMING');
+          addText(a.x, a.y - 110, 'WAVE CLEARED', '#fde68a');
+        }
+        a.nextWaveTimer -= safeDt;
+        if (a.nextWaveTimer <= 0) {
+          a.nextWaveTimer = 0;
+          spawnArenaWaveSafely(a, i, a.wave);
+        }
       } else {
         clearArena(a, i);
       }
+    } else if (a.spawnQueue > 0 || liveEnemies.length > 0) {
+      a.nextWaveTimer = 0;
     }
+    normalizeArenaState(a, i, waveCount);
   }
+
+  syncClearedArenas();
+  updateObjective();
 }
 
 function clearArena(arena, index) {
+  if (!arena || arena.cleared) return false;
+  const zone = ZONES[gameState.currentZone];
+  const totalWaves = zone && Array.isArray(zone.waves) ? zone.waves.length : Math.max(0, Math.floor(Number(arena.totalWaves) || 0));
+  const arenaIndex = Number.isFinite(Number(index)) ? Math.floor(Number(index))
+    : (Number.isFinite(Number(arena.id)) ? Math.floor(Number(arena.id)) : -1);
+  if (arenaIndex >= 0) normalizeArenaState(arena, arenaIndex, totalWaves);
+  const clearedBefore = Array.isArray(game.arenas)
+    ? game.arenas.filter((x) => !!(x && x.cleared)).length
+    : Math.max(0, Math.floor(Number(gameState.clearedArenas) || 0));
   arena.cleared = true;
   arena.active = false;
+  arena.spawnQueue = 0;
+  arena.toSpawn = 0;
+  arena._toSpawnAliasSync = 0;
+  arena.spawnTimer = 0;
+  arena.nextWaveTimer = 0;
+  arena.wave = totalWaves;
+  arena.currentWave = totalWaves;
+  arena._waveAliasSync = totalWaves;
+  arena.totalWaves = totalWaves;
+  arena.remaining = 0;
+  arena.enemiesRemaining = 0;
+  arena.liveEnemyCount = 0;
+  arena.watchdogTarget = null;
+  arena.strayTarget = null;
+  syncClearedArenas();
+  if (gameState.clearedArenas <= clearedBefore) gameState.clearedArenas = clearedBefore + 1;
   addScore(300);
   Sound.levelClear();
   game.shake = Math.max(game.shake, 0.25);
@@ -12065,6 +12688,7 @@ function clearArena(arena, index) {
   /* the arena is fully cleared — combat is over — so this is the first safe
      moment for the level-up card: show it now, and only then the upgrade card */
   if (!flushPendingClassLevelUp()) showUpgrades();
+  return true;
 }
 
 function updatePortal(dt) {
@@ -12248,8 +12872,8 @@ function loadUniverseStart(index) {
 }
 
 function updateObjective() {
-  if (!game.arenas) return;
-  const cleared = game.arenas.filter((a) => a.cleared).length;
+  if (!game.arenas || !UI.objective) return;
+  const cleared = syncClearedArenas();
   if (game.portal) {
     UI.objective.textContent = 'Enter the time portal';
   } else if (game.boss) {
@@ -12259,7 +12883,13 @@ function updateObjective() {
   } else if (game.bossUnlocked) {
     UI.objective.textContent = 'Enter the marked ring to challenge your champion';
   } else {
-    UI.objective.textContent = 'Find and clear all ' + game.arenas.length + ' arenas · ' + cleared + '/' + game.arenas.length;
+    const active = activeArenaForHud();
+    if (active) {
+      const text = arenaWaveProgressText(active.arena, active.index);
+      if (UI.objective.textContent !== text) UI.objective.textContent = text;
+    } else {
+      UI.objective.textContent = 'Find and clear all ' + game.arenas.length + ' arenas · ' + cleared + '/' + game.arenas.length;
+    }
   }
 }
 
@@ -12574,6 +13204,7 @@ const SaveSystem = (function () {
         spawnWave(a, i, Math.min(live - 1, waves - 1));
       }
     }
+    syncClearedArenas();
 
     if (slot.bossDefeated && slot.portal) {
       game.portal = { x: slot.portal.x, y: slot.portal.y, r: 76, t: 0, open: 1 };
@@ -21742,6 +22373,8 @@ function drawGround() {
 function drawArenaGround() {
   for (let i = 0; i < game.arenas.length; i++) {
     const a = game.arenas[i];
+    if (!a) continue;
+    a.r = arenaRadiusValue(a);
     const active = a.active;
     const cleared = a.cleared;
     const color = cleared ? '#34d399' : (active ? '#f87171' : '#fbbf24');
@@ -21782,6 +22415,28 @@ function drawArenaGround() {
       ctx.stroke();
     }
     ctx.restore();
+
+    if (active && !cleared) {
+      const label = arenaWaveProgressText(a, i);
+      const labelY = a.y - a.r * pulse - 18;
+      ctx.save();
+      ctx.font = '700 13px Rajdhani, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const measured = ctx.measureText ? (ctx.measureText(label) || {}) : {};
+      const labelW = Math.max(120, (Number(measured.width) || label.length * 7) + 22);
+      const labelH = 24;
+      ctx.fillStyle = 'rgba(9,10,15,0.84)';
+      ctx.strokeStyle = 'rgba(248,113,113,0.92)';
+      ctx.lineWidth = 1;
+      ctx.fillRect(a.x - labelW / 2, labelY - labelH / 2, labelW, labelH);
+      ctx.strokeRect(a.x - labelW / 2, labelY - labelH / 2, labelW, labelH);
+      ctx.fillStyle = '#fecdd3';
+      ctx.shadowColor = 'rgba(0,0,0,0.9)';
+      ctx.shadowBlur = 4;
+      ctx.fillText(label, a.x, labelY + 0.5);
+      ctx.restore();
+    }
 
     if (cleared) {
       ctx.fillStyle = 'rgba(52,211,153,0.9)';
@@ -24834,6 +25489,81 @@ function drawObjectiveArrows() {
   }
 }
 
+function drawArenaWatchdogArrows() {
+  if (game.screen !== 'playing' || !game.player || !Array.isArray(game.arenas)) return;
+  const p = game.player;
+  const psx = toScreenX(p.x);
+  const psy = toScreenY(p.y);
+  const pulse = 0.5 + 0.5 * Math.sin(game.time * 7);
+
+  for (let i = 0; i < game.arenas.length; i++) {
+    const a = game.arenas[i];
+    if (!a || !a.active || a.cleared || arenaQueueValue(a) > 0) continue;
+    let target = a.watchdogTarget || a.strayTarget || null;
+    if (!target || !isLiveArenaEnemy(target, i)) {
+      const live = liveArenaEnemies(i);
+      let nearest = null;
+      let best = Infinity;
+      for (let k = 0; k < live.length; k++) {
+        const d = dist(p.x, p.y, live[k].x, live[k].y);
+        if (d < best) { best = d; nearest = live[k]; }
+      }
+      if (!nearest) continue;
+      const nsx = toScreenX(nearest.x);
+      const nsy = toScreenY(nearest.y);
+      const nearestOffScreen = !(nsx >= 0 && nsx <= W && nsy >= SKY_H && nsy <= H);
+      if (!nearestOffScreen && !((Number(a.noDamageTimer) || 0) >= 6)) continue;
+      target = nearest;
+    }
+
+    const sx = toScreenX(target.x);
+    const sy = toScreenY(target.y);
+    const visible = sx > 40 && sx < W - 40 && sy > SKY_H + 34 && sy < H - 40;
+    const ang = Math.atan2(sy - psy, sx - psx) || 0;
+    const pt = visible
+      ? { x: sx - Math.cos(ang) * 44, y: sy - Math.sin(ang) * 44, ang: ang }
+      : edgePointFor(sx, sy, 54, 78);
+
+    if (visible) {
+      ctx.save();
+      ctx.globalAlpha = 0.72 + 0.28 * pulse;
+      ctx.strokeStyle = '#f43f5e';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#f43f5e';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(sx, sy, Math.max(18, (Number(target.r) || 14) * viewZoom() + 7 + pulse * 3), 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.translate(pt.x, pt.y);
+    ctx.rotate(pt.ang);
+    const scale = 1 + pulse * 0.16;
+    ctx.scale(scale, scale);
+    ctx.globalAlpha = 0.88 + 0.12 * pulse;
+    ctx.shadowColor = '#f43f5e';
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.moveTo(21, 0);
+    ctx.lineTo(-7, -12);
+    ctx.lineTo(-7, -4.5);
+    ctx.lineTo(-19, -4.5);
+    ctx.lineTo(-19, 4.5);
+    ctx.lineTo(-7, 4.5);
+    ctx.lineTo(-7, 12);
+    ctx.closePath();
+    ctx.fillStyle = '#f43f5e';
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#090a0f';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 /* ------------------------------ footstep trail ----------------------------- */
 function dropFootprint(p) {
   p.footSide = -(p.footSide || 1);
@@ -24926,6 +25656,86 @@ function drawMinimapPath(k) {
   mmCtx.restore();
 }
 
+function crosshairOverEnemy(mx, my) {
+  if (!Number.isFinite(Number(mx)) || !Number.isFinite(Number(my))) return false;
+  const zoomRaw = Number(viewZoom());
+  const zoom = Number.isFinite(zoomRaw) && zoomRaw > 0 ? zoomRaw : 1;
+  function touches(body) {
+    if (!body || body.dead || !(Number(body.hp) > 0) ||
+        !Number.isFinite(Number(body.x)) || !Number.isFinite(Number(body.y))) return false;
+    const sx = toScreenX(body.x);
+    const sy = toScreenY(body.y);
+    const hitboxR = Math.max(0, Number(body.r) || 0) * zoom;
+    return Math.hypot(mx - sx, my - sy) <= hitboxR + 28;
+  }
+  if (Array.isArray(game.enemies)) {
+    for (let i = 0; i < game.enemies.length; i++) if (touches(game.enemies[i])) return true;
+  }
+  if (game.boss && !game.boss.entering && touches(game.boss)) return true;
+  return false;
+}
+
+function drawTacticalCrosshair() {
+  if (game.screen !== 'playing' || gameState.isDying || !game.player || !game.mouse) return;
+  const player = game.player;
+  const mx = Number(game.mouse.screenX !== undefined ? game.mouse.screenX : game.mouse.x);
+  const my = Number(game.mouse.screenY !== undefined ? game.mouse.screenY : game.mouse.y);
+  if (!Number.isFinite(mx) || !Number.isFinite(my)) return;
+  if (!Number.isFinite(Number(player.recoilBloom))) player.recoilBloom = 0;
+
+  const gap = 7 + (player.recoilBloom || 0);
+  const tickLength = 6;
+  const hot = crosshairOverEnemy(mx, my);
+  const progress = primaryCooldownProgress();
+  game.crosshairHot = hot;
+  game.crosshairGap = gap;
+  game.crosshairCooldownProgress = progress;
+
+  ctx.save();
+  ctx.lineCap = 'butt';
+
+  if (progress > 0) {
+    ctx.strokeStyle = 'rgba(226,232,240,0.42)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(mx, my, 14, -Math.PI / 2, -Math.PI / 2 + progress * TAU);
+    ctx.stroke();
+  }
+
+  const ticks = [
+    [mx, my - gap - tickLength, mx, my - gap],
+    [mx, my + gap, mx, my + gap + tickLength],
+    [mx - gap - tickLength, my, mx - gap, my],
+    [mx + gap, my, mx + gap + tickLength, my]
+  ];
+  ctx.strokeStyle = '#090a0f';
+  ctx.lineWidth = 4;
+  for (let i = 0; i < ticks.length; i++) {
+    ctx.beginPath();
+    ctx.moveTo(ticks[i][0], ticks[i][1]);
+    ctx.lineTo(ticks[i][2], ticks[i][3]);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < ticks.length; i++) {
+    ctx.beginPath();
+    ctx.moveTo(ticks[i][0], ticks[i][1]);
+    ctx.lineTo(ticks[i][2], ticks[i][3]);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = hot ? '#f43f5e' : '#f8fafc';
+  ctx.beginPath();
+  ctx.arc(mx, my, 2.5, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawCrosshair() {
+  drawTacticalCrosshair();
+}
+
 /* ------------------------------ main render -------------------------------- */
 function render() {
   paintBackdrop();
@@ -24996,8 +25806,10 @@ function render() {
   drawAmbient();
   drawPostFx();
   drawObjectiveArrows();
+  drawArenaWatchdogArrows();
   drawMinimap();
   drawDeathVignette();
+  drawTacticalCrosshair();
 }
 
 /* ------------------------------ main loop ----------------------------------
