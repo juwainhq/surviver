@@ -2771,6 +2771,75 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
   64%{ transform:scale(1); }
 }
 </style>
+<style id="game-over-reveal">
+/* Death is a held shot, not a hard cut: the final battlefield frame remains
+   under a smoked-glass Game Over layer while the verdict lands in beats. */
+#gameCanvas.death-backdrop{
+  filter:saturate(.68) brightness(.66) contrast(1.04);
+  pointer-events:none !important;
+}
+#gameOver{
+  background:rgba(6,8,14,.84) !important;
+  backdrop-filter:blur(6px) !important;
+  -webkit-backdrop-filter:blur(6px) !important;
+}
+#gameOver.show{ animation:deathOverlayIn .6s ease-out both !important; }
+@keyframes deathOverlayIn{ from{ opacity:0; } to{ opacity:1; } }
+#gameOver h1{
+  opacity:0;
+  transform:scale(1.18);
+  letter-spacing:14px;
+}
+#gameOver.show h1{ animation:youFellIn .8s cubic-bezier(.16,1,.3,1) both; }
+@keyframes youFellIn{
+  from{ opacity:0; transform:scale(1.18); letter-spacing:14px; }
+  to{ opacity:1; transform:scale(1); letter-spacing:6px; }
+}
+#gameOver .death-divider{
+  width:min(430px,74vw); height:2px; margin:-3px auto 3px;
+  opacity:0; transform:scaleX(0); transform-origin:50% 50%;
+  background:linear-gradient(90deg, transparent, rgba(239,68,68,.9), rgba(255,196,120,.78), rgba(239,68,68,.9), transparent);
+  box-shadow:0 0 18px rgba(239,68,68,.45);
+}
+#gameOver.show .death-divider{ animation:deathDividerIn .7s ease-out .22s both; }
+@keyframes deathDividerIn{
+  from{ opacity:0; transform:scaleX(0); }
+  to{ opacity:1; transform:scaleX(1); }
+}
+#gameOver .statline,
+#gameOver .save-line{
+  opacity:0;
+  transform:translateY(10px);
+}
+#gameOver.show .statline,
+#gameOver.show .save-line{ animation:deathStatsIn .55s ease-out .35s both; }
+@keyframes deathStatsIn{
+  from{ opacity:0; transform:translateY(10px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+#gameOver .btn-row{
+  opacity:0;
+  transform:translateY(10px);
+  pointer-events:none;
+}
+#gameOver.show .btn-row{ animation:deathButtonsIn .5s ease-out .65s both; }
+@keyframes deathButtonsIn{
+  from{ opacity:0; transform:translateY(10px); pointer-events:none; }
+  1%{ pointer-events:auto; }
+  to{ opacity:1; transform:translateY(0); pointer-events:auto; }
+}
+@media (prefers-reduced-motion:reduce){
+  #gameOver.show, #gameOver.show h1, #gameOver.show .death-divider,
+  #gameOver.show .statline, #gameOver.show .save-line{
+    animation-duration:.01s !important;
+    animation-delay:0s !important;
+  }
+  #gameOver.show .btn-row{
+    animation-duration:.01s !important;
+    animation-delay:.65s !important;
+  }
+}
+</style>
 </head>
 <body>
 <div id="gameCanvas" class="screen game-screen">
@@ -3150,7 +3219,8 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
 
   <!-- ==================== GAME OVER ==================== -->
   <div class="overlay screen" id="gameOver">
-    <h1>You Fell</h1>
+    <h1>YOU FELL</h1>
+    <div class="death-divider" aria-hidden="true"></div>
     <div class="statline" id="goZone">Zone 1 · The Ashen Hamlet</div>
     <div class="statline">Score <b id="goScore">0</b> · Gems <b id="goGems">0</b></div>
     <div class="statline" id="goBest">Best score 0</div>
@@ -3402,6 +3472,13 @@ const Sound = (function () {
     rewind()     { tone({ freq: 1200, to: 260, dur: 0.28, type: 'triangle', vol: 0.04 }); },
     enemyDeath() { tone({ freq: 220, to: 70, dur: 0.2, type: 'sawtooth', vol: 0.045 }); noise({ freq: 1200, dur: 0.12, vol: 0.03 }); },
     playerHurt() { tone({ freq: 150, to: 55, dur: 0.32, type: 'sawtooth', vol: 0.07 }); noise({ freq: 500, dur: 0.2, vol: 0.05 }); },
+    playerDeath() {
+      tone({ freq: 118, to: 24, dur: 1.25, type: 'sine', vol: 0.16 });
+      tone({ freq: 72, to: 27, dur: 0.95, type: 'sawtooth', vol: 0.075, delay: 0.03 });
+      tone({ freq: 46, to: 22, dur: 1.45, type: 'triangle', vol: 0.09, delay: 0.08 });
+      noise({ freq: 4200, dur: 0.5, vol: 0.065 });
+      [1760, 2349, 3136, 2093].forEach((f, i) => tone({ freq: f, to: f * 0.42, dur: 0.16, type: 'square', vol: 0.028, delay: 0.04 + i * 0.055 }));
+    },
     bossAppear() {
       [98, 147, 196].forEach((f, i) => tone({ freq: f, dur: 0.6, type: 'sawtooth', vol: 0.06, delay: i * 0.13 }));
       noise({ freq: 300, dur: 0.7, vol: 0.05 });
@@ -3922,6 +3999,15 @@ function showScreen(id) {
   requested.hidden = false;
   requested.removeAttribute('aria-hidden');
   requested.classList.add('show');
+  const stage = document.getElementById('gameCanvas');
+  if (stage) {
+    stage.classList.toggle('death-backdrop', id === 'gameOver');
+    if (id === 'gameOver') {
+      stage.style.setProperty('display', 'block', 'important');
+      stage.hidden = false;
+      stage.removeAttribute('aria-hidden');
+    }
+  }
   currentScreen = id;
   game.screen = id === 'universeTransition' && universePanel === 'intro'
     ? 'universeIntro' : def.state;
@@ -4607,6 +4693,11 @@ const gameState = {
   menuTime: 0,
   timeScale: 1,
   slowmo: 0,
+  isDying: false,
+  deathTimer: 0,
+  deathZoom: 1,
+  deathParticles: [],
+  deathParticlesSpawned: false,
   shake: 0,
   score: 0,
   gems: 0,
@@ -4812,6 +4903,7 @@ function resetRun() {
   syncClassHud();
   game.timeScale = 1;
   game.slowmo = 0;
+  resetDeathSequence();
   game.shake = 0;
   game.qCd = 0;
   game.novaCd = 0;
@@ -4920,6 +5012,7 @@ function loadZone(zoneIndex, opts) {
   resetSkillCombat();
   game.timeScale = 1;
   game.slowmo = 0;
+  resetDeathSequence();
   game.killsThisZone = 0;
   game.shake = 0;
   /* Second Wind is a per-zone mercy: it comes back with every new arena */
@@ -5206,7 +5299,8 @@ function resolveCircleRect(actor, cx, cy, hw, hh) {
    smaller zoom, everything else renders 1:1 exactly as before */
 function viewZoom() {
   const p = game.player;
-  return p && p.zoom ? p.zoom : 1;
+  const classZoom = p && p.zoom ? p.zoom : 1;
+  return classZoom * (gameState.deathZoom || 1);
 }
 const viewW = () => W / viewZoom();
 const viewH = () => VIEW_H / viewZoom();
@@ -5490,6 +5584,11 @@ function drawShards() {
 
 function updatePlayer(dt) {
   const p = game.player;
+  if (gameState.isDying) {
+    p.vx = 0; p.vy = 0; p.moving = false;
+    p.dashTimer = 0; p.bashTimer = 0;
+    return;
+  }
 
   /* aim at the cursor (screen -> world) */
   const psx = toScreenX(p.x);
@@ -5513,6 +5612,11 @@ function updatePlayer(dt) {
         spawnParticle(p.x + rand(-8, 8), p.y + rand(-8, 8), rand(-30, 30), rand(-70, -20), 0.5, 4, '#86efac', 2);
       }
     }
+  }
+  if (gameState.isDying) {
+    p.vx = 0; p.vy = 0; p.moving = false;
+    p.dashTimer = 0; p.bashTimer = 0;
+    return;
   }
 
   /* Golden Legend: a drifting gold mote aura (visual only) */
@@ -6136,7 +6240,7 @@ function showLevelUpToast(level) {
    when a level-up was pending and is being shown. */
 function flushPendingClassLevelUp() {
   const p = pendingClassLevelUp;
-  if (!p) return false;
+  if (!p || gameState.isDying) return false;
   pendingClassLevelUp = null;
   showClassLevelUp(getClassProgress(gameState.currentClass), p.gained, p.source, p.saved);
   classLevelUpHold = true;
@@ -6391,7 +6495,7 @@ function onSkillKill(e, meta) {
   if (!p) return;
   const sc = skillCombat();
   meta = meta || {};
-  if (currentSkill('blood_lust')) {
+  if (!gameState.isDying && currentSkill('blood_lust')) {
     p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.05);
     updateHealthOrbs();
   }
@@ -7002,6 +7106,7 @@ function syncOrbBadge() {
 }
 
 function fireClassWeapon(dt) {
+  if (gameState.isDying) return;
   const p = game.player;
   if (p.reloadT > 0) { p.reloadT = Math.max(0, p.reloadT - dt); return; }
   if (p.fireTimer > 0) p.fireTimer -= dt;
@@ -7344,7 +7449,7 @@ function cdScale() {
 
 /* ---- Q: the class ability ---- */
 function castClassAbility() {
-  if (game.qCd > 0 || game.screen !== 'playing') return;
+  if (game.qCd > 0 || game.screen !== 'playing' || gameState.isDying) return;
   game.qCd = qCdMax();
   const cls = getClass();
   if (cls.q.id === 'bash') shieldBash();
@@ -7418,6 +7523,7 @@ function castDeathMark() {
 /* ---- tech specialist: System Overload ------------------------------------ */
 function turretBaseHp() { return 6 * (currentSkill('reinforced_frame') ? 1.5 : 1); }
 function deployTurretAt(x, y) {
+  if (gameState.isDying) return false;
   if (game.turrets.length >= 2) {
     const p = game.player;
     addText(p.x, p.y - 44, 'MAX 2 TURRETS', '#fbbf24');
@@ -7673,7 +7779,7 @@ function updateRift(dt) {
 /* ---- E: a ring of 16 bolts that shreds anything close ---- */
 /* while Rage burns he cannot reach for anything else */
 function abilitiesLocked() {
-  return !!(game.player && game.player.rageT > 0);
+  return !!((game.player && game.player.rageT > 0) || gameState.isDying);
 }
 
 function novaBlast() {
@@ -8015,9 +8121,137 @@ function pushEnemiesAfterPlayerHit(source) {
   }
 }
 
+const DEATH_SEQUENCE_DURATION = 2.2;
+const DEATH_CORE_PARTICLE_COUNT = 35;
+
+function deathProgress() {
+  if (!gameState.isDying && !(gameState.deathTimer > 0)) return 0;
+  return clamp(1 - (gameState.deathTimer / DEATH_SEQUENCE_DURATION), 0, 1);
+}
+function deathElapsed() { return deathProgress() * DEATH_SEQUENCE_DURATION; }
+function deathPhaseK(start, end) {
+  const k = clamp((deathElapsed() - start) / Math.max(0.001, end - start), 0, 1);
+  return k * k * (3 - 2 * k);
+}
+function resetDeathSequence() {
+  gameState.isDying = false;
+  gameState.deathTimer = 0;
+  gameState.deathZoom = 1;
+  gameState.deathParticlesSpawned = false;
+  if (Array.isArray(gameState.deathParticles)) gameState.deathParticles.length = 0;
+  else gameState.deathParticles = [];
+  game.timeScale = 1;
+  game.slowmo = 0;
+  if (game.player) game.player.invincibleTimer = 0;
+}
+function spawnDeathCoreParticles() {
+  const p = game.player;
+  if (!p || gameState.deathParticlesSpawned) return;
+  if (!Array.isArray(gameState.deathParticles)) gameState.deathParticles = [];
+  gameState.deathParticles.length = 0;
+  const cx = p.x;
+  const cy = p.y - 2.5;
+  for (let i = 0; i < DEATH_CORE_PARTICLE_COUNT; i++) {
+    const a = (i / DEATH_CORE_PARTICLE_COUNT) * TAU + rand(-0.12, 0.12);
+    const speed = rand(72, 258);
+    gameState.deathParticles.push({
+      x: cx + Math.cos(a) * 4,
+      y: cy + Math.sin(a) * 3,
+      vx: Math.cos(a) * speed,
+      vy: Math.sin(a) * speed - rand(16, 74),
+      life: 0,
+      maxLife: rand(1.15, 1.7),
+      size: rand(2.6, 6.4),
+      color: i % 3 === 0 ? '#ffb347' : (i % 5 === 0 ? '#fde68a' : '#ff2d3f'),
+      rot: a,
+      spin: rand(-3.2, 3.2),
+      drag: rand(1.45, 2.15)
+    });
+  }
+  gameState.deathParticlesSpawned = true;
+}
+function updateDeathParticles(dt) {
+  const list = gameState.deathParticles || [];
+  for (let i = list.length - 1; i >= 0; i--) {
+    const s = list[i];
+    s.life += dt;
+    if (s.life >= s.maxLife) { list.splice(i, 1); continue; }
+    const dragK = Math.exp(-s.drag * dt);
+    s.vx *= dragK;
+    s.vy = s.vy * dragK - 30 * dt;
+    s.x += s.vx * dt;
+    s.y += s.vy * dt;
+    s.rot += s.spin * dt;
+  }
+}
+function beginDeathSequence() {
+  const p = game.player;
+  if (!p || gameState.isDying || game.screen !== 'playing') return false;
+  p.hp = 0;
+  p.vx = 0; p.vy = 0; p.moving = false;
+  p.dashTimer = 0; p.bashTimer = 0; p.swingT = 0;
+  p.poisonT = 0; p.poisonAcc = 0;
+  p.invuln = DEATH_SEQUENCE_DURATION;
+  p.invincibleTimer = DEATH_SEQUENCE_DURATION;
+  gameState.isDying = true;
+  gameState.deathTimer = DEATH_SEQUENCE_DURATION;
+  gameState.deathZoom = 1;
+  gameState.deathParticlesSpawned = false;
+  if (Array.isArray(gameState.deathParticles)) gameState.deathParticles.length = 0;
+  else gameState.deathParticles = [];
+  game.timeScale = 0.05;
+  game.slowmo = 0;
+  game.shake = Math.max(game.shake || 0, 14 / 12);
+  game.flashTimer = Math.max(game.flashTimer || 0, 0.3);
+  game.flashColor = '#ff2d3f';
+  game.mouse.down = false;
+  game.keys = Object.create(null);
+  game.joyX = 0;
+  game.joyY = 0;
+  game.stormTimer = 0;
+  game.stormFire = 0;
+  if (game.swings) game.swings.length = 0;
+  BossMusic.stop();
+  Sound.playerDeath();
+  return true;
+}
+function tickDeathSequence(dt) {
+  if (!gameState.isDying) return false;
+  const step = Math.max(0, dt || 0);
+  const p = game.player;
+  gameState.deathTimer = Math.max(0, gameState.deathTimer - step);
+  const elapsed = deathElapsed();
+  if (p && p.hitFlash > 0) p.hitFlash = Math.max(0, p.hitFlash - step);
+  game.slowmo = 0;
+  if (elapsed < 0.25) {
+    game.timeScale = 0.05;
+    game.shake = Math.max(game.shake || 0, (14 / 12) * (1 - (elapsed / 0.25) * 0.22));
+  } else {
+    game.timeScale = 0.15;
+  }
+  gameState.deathZoom = 1 + 0.22 * deathPhaseK(0.25, 1.6);
+  if (p) {
+    const k = 1 - Math.exp(-7 * step);
+    game.cam.x += (cameraTargetX() - game.cam.x) * k;
+    game.cam.y += (cameraTargetY() - game.cam.y) * k;
+  }
+  if (elapsed >= 0.5 && !gameState.deathParticlesSpawned) spawnDeathCoreParticles();
+  updateDeathParticles(step);
+  if (gameState.deathTimer <= 0) {
+    gameState.isDying = false;
+    gameState.deathTimer = 0;
+    game.timeScale = 1;
+    game.slowmo = 0;
+    endRun();
+    return true;
+  }
+  return false;
+}
+
 function hurtPlayer(amount, raw, source) {
   const p = game.player;
   if (game.screen !== 'playing') return;
+  if (gameState.isDying) return;
   if (game.arenaGrace > 0) return;      /* arena entry window: fully invincible */
   /* raw damage is poison and other damage-over-time: it ignores wards and
      i-frames, because the tick already happened inside his blood */
@@ -8146,7 +8380,7 @@ function hurtPlayer(amount, raw, source) {
       updateHealthOrbs();
       return;
     }
-    endRun();
+    beginDeathSequence();
   }
 }
 /* =============================================================================
@@ -9758,7 +9992,7 @@ function damageEnemy(e, dmg, silent, noChain, meta) {
 
   /* --- class passives -------------------------------------------------- */
   if (pl) {
-    if (pl.classId === 'berserker' && game.kills > 0 && game.kills % 5 === 0 && pl.hp < pl.maxHp) {
+    if (!gameState.isDying && pl.classId === 'berserker' && game.kills > 0 && game.kills % 5 === 0 && pl.hp < pl.maxHp) {
       pl.hp += 1;
       updateHealthOrbs();
       addText(pl.x, pl.y - 42, '+1 ORB', '#ffb27a');
@@ -9777,7 +10011,7 @@ function damageEnemy(e, dmg, silent, noChain, meta) {
   }
 
   /* Vampiric Strike: every tenth kill drinks a health orb back */
-  if (pl && pl.vampiric && game.kills % 10 === 0) {
+  if (!gameState.isDying && pl && pl.vampiric && game.kills % 10 === 0) {
     if (pl.hp < pl.maxHp) pl.hp += 1;
     updateHealthOrbs();
     addText(pl.x, pl.y - 42, '+1 HP', '#f9a8d4');
@@ -9896,6 +10130,7 @@ function playerInsideBossZone() {
 /* The player has stepped into the ring: lock the arena, run the entrance,
    light the red border and start the boss score. */
 function startBossFight() {
+  if (gameState.isDying) return;
   const z = ZONES[gameState.currentZone];
   const bz = game.bossZone;
   const fallback = bossRingCentre();
@@ -10966,7 +11201,7 @@ function syncAbilityHud() {
 }
 
 function castAbilitySlot(slot) {
-  if (game.screen !== 'playing' || isPaused || abilitiesLocked()) return;
+  if (game.screen !== 'playing' || isPaused || gameState.isDying || abilitiesLocked()) return;
   if (!hasAbility(slot)) return;
   if (abilityCooldown(slot) > 0) return;
   const def = classAbilityDef(slot);
@@ -11577,7 +11812,7 @@ function updatePortal(dt) {
    once: the portal is cleared first (so the event cannot re-enter itself while
    the world is being handed over to the next card), then the level is closed. */
 function enterPortal() {
-  if (game.screen !== 'playing' || !game.portal) return;
+  if (game.screen !== 'playing' || gameState.isDying || !game.portal) return;
   game.portal = null;
   game.mouse.down = false;
   game.keys = {};
@@ -11775,6 +12010,7 @@ function rollUpgrades(n) {
 }
 
 function showUpgrades() {
+  if (gameState.isDying) return false;
   const choices = rollUpgrades(3);
   if (!choices.length) return false;
   UI.upgradeCards.innerHTML = choices.map((u) => {
@@ -12706,7 +12942,7 @@ function syncConsumableHud() {
 }
 
 function useConsumableSlot(slot) {
-  if (game.screen !== 'playing') return false;
+  if (game.screen !== 'playing' || gameState.isDying) return false;
   Shop.ensure();
   const inv = Shop.state.inventory;
   if (slot < 0 || slot >= CONSUMABLE_SLOTS) return false;
@@ -13839,7 +14075,7 @@ function updatePet(dt) {
     if (pet.hpCd <= 0) {
       pet.hpCd = 60;
       const p = game.player;
-      if (p.hp < p.maxHp) {
+      if (!gameState.isDying && p.hp > 0 && p.hp < p.maxHp) {
         p.hp = Math.min(p.maxHp, p.hp + 1);
         updateHealthOrbs();
         Sound.gem();
@@ -14825,6 +15061,7 @@ function showVictory() {
    restarts the same zone under the new doctrine with the score intact. */
 function changeClass() {
   if (game.screen !== 'gameover') return;
+  resetDeathSequence();
   Sound.ensure();
   /* same deal as a death save: keep everything, hand the zone back at full hp */
   saveGame('classchange', { hp: game.player ? game.player.maxHp : undefined });
@@ -14834,6 +15071,7 @@ function changeClass() {
 }
 
 function retryZone() {
+  resetDeathSequence();
   pendingChangeClass = false;
   loadZone(gameState.currentZone);
   showScreen('gameCanvas');
@@ -14841,6 +15079,7 @@ function retryZone() {
 }
 
 function restartRun() {
+  resetDeathSequence();
   beginMission();
 }
 
@@ -16451,6 +16690,17 @@ function drawRaelBody(p, bob, flash, mirror) {
   roundRect(ctx, -6, -21, 6, 1.2, 0.6);
   ctx.fill();
   ctx.restore();
+  if (gameState.isDying) {
+    const elapsed = deathElapsed();
+    const flicker = elapsed < 0.3 ? 0 : (Math.sin(elapsed * 31) + Math.sin(elapsed * 19) > -0.35 ? 0.28 : 0.92);
+    const out = clamp(Math.max(flicker, (elapsed - 1.05) / 0.5), 0, 1);
+    ctx.save();
+    ctx.globalAlpha = out * skinA;
+    ctx.fillStyle = '#04060a';
+    roundRect(ctx, -7.4, -21.6, 14.8, 3, 1.5);
+    ctx.fill();
+    ctx.restore();
+  }
 
   ctx.restore();
 }
@@ -20855,6 +21105,79 @@ function drawDecoy() {
   ctx.restore();
 }
 
+function drawDroppedDeathWeapon(p, dir, bob) {
+  if (!gameState.isDying || !p) return;
+  const elapsed = deathElapsed();
+  if (elapsed < 0.25) return;
+  const rawK = clamp((elapsed - 0.25) / 0.7, 0, 1);
+  const dropK = rawK * rawK * (3 - 2 * rawK);
+  const hand = playerHandAnchor(p, bob, p.angle);
+  const restX = p.x + dir * 31;
+  const restY = p.y + SOLDIER.feet - 2;
+  const x = lerp(hand.x, restX, dropK);
+  const y = lerp(hand.y, restY, dropK) + Math.sin(dropK * Math.PI) * 2;
+  const restAngle = dir >= 0 ? 0.16 : Math.PI - 0.16;
+  const ang = hand.angle + angleDelta(hand.angle, restAngle) * dropK;
+  const kind = getClass().weapon;
+
+  ctx.save();
+  ctx.globalAlpha = 0.34 * dropK;
+  ctx.fillStyle = '#000000';
+  ctx.beginPath(); ctx.ellipse(x, y + 5, 23, 4.5, 0, 0, TAU); ctx.fill();
+  ctx.restore();
+
+  if (kind === 'disc') {
+    drawEnergyDisc(x, y, 11, elapsed * 5 * (1 - dropK * 0.7));
+    return;
+  }
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(ang);
+  ctx.lineCap = 'round';
+  if (kind === 'blade') {
+    ctx.fillStyle = '#3a2615'; ctx.fillRect(-14, -2, 10, 4);
+    ctx.fillStyle = '#d4a017'; ctx.fillRect(-4, -6, 3, 12);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.beginPath(); ctx.moveTo(-1, -2.6); ctx.lineTo(28, -1.1); ctx.lineTo(35, 0); ctx.lineTo(28, 1.1); ctx.lineTo(-1, 2.6); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(1, 0); ctx.lineTo(30, 0); ctx.stroke();
+  } else if (kind === 'axes') {
+    const offsets = [{ x: -6, y: -5, r: -0.35 }, { x: 5, y: 5, r: 0.3 }];
+    for (let i = 0; i < offsets.length; i++) {
+      ctx.save(); ctx.translate(offsets[i].x, offsets[i].y); ctx.rotate(offsets[i].r);
+      ctx.fillStyle = '#4a2f1d'; ctx.fillRect(-13, -1.7, 26, 3.4);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.beginPath(); ctx.moveTo(7, -8); ctx.lineTo(16, -5); ctx.lineTo(18, 0); ctx.lineTo(16, 5); ctx.lineTo(7, 8); ctx.lineTo(10, 0); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  } else if (kind === 'daggers') {
+    for (let i = 0; i < 2; i++) {
+      ctx.save(); ctx.translate(0, i ? 5 : -5); ctx.rotate(i ? 0.12 : -0.1);
+      ctx.fillStyle = '#261725'; ctx.fillRect(-11, -1.6, 8, 3.2);
+      ctx.fillStyle = '#ddd6fe';
+      ctx.beginPath(); ctx.moveTo(-3, -2); ctx.lineTo(18, -0.8); ctx.lineTo(24, 0); ctx.lineTo(18, 0.8); ctx.lineTo(-3, 2); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  } else if (kind === 'rail') {
+    ctx.fillStyle = '#3f2d1c'; ctx.fillRect(-21, -2.6, 17, 5.2);
+    ctx.fillStyle = '#475569'; ctx.fillRect(-5, -1.6, 39, 3.2);
+    ctx.fillStyle = '#94a3b8'; ctx.fillRect(5, -5.4, 10, 3.2);
+    ctx.fillStyle = '#f5c842'; ctx.fillRect(32, -1, 3, 2);
+  } else if (kind === 'pistols') {
+    ctx.fillStyle = '#334155'; ctx.fillRect(-4, -2.2, 26, 4.4);
+    ctx.fillStyle = '#4a2f1d';
+    ctx.beginPath(); ctx.moveTo(-4, 0); ctx.lineTo(-11, 7); ctx.lineTo(-7, 9); ctx.lineTo(0, 1); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#d4a017'; ctx.fillRect(3, -4.4, 5, 2.4);
+  } else {
+    ctx.strokeStyle = '#5b4632'; ctx.lineWidth = 3.4;
+    ctx.beginPath(); ctx.moveTo(-25, 0); ctx.lineTo(24, 0); ctx.stroke();
+    ctx.fillStyle = '#a78bfa'; ctx.shadowColor = '#8b5cf6'; ctx.shadowBlur = 8 * (1 - dropK * 0.65);
+    ctx.beginPath(); ctx.arc(26, 0, 5.2, 0, TAU); ctx.fill();
+  }
+  ctx.restore();
+}
+
 function drawPlayer() {
   const p = game.player;
   if (!p) return;
@@ -20864,13 +21187,21 @@ function drawPlayer() {
   /* facing: the whole sprite mirrors toward the cursor */
   const dir = Math.cos(p.angle) >= 0 ? 1 : -1;
   const g = soldierGlow(p);
+  const dying = gameState.isDying;
+  const deathTime = dying ? deathElapsed() : 0;
+  const collapse = dying ? deathPhaseK(0.25, 1.6) : 0;
+  if (dying) {
+    const flickerPhase = Math.sin(deathTime * 29) + Math.sin(deathTime * 17);
+    g.flick = deathTime < 0.25 ? 1 : clamp((flickerPhase > -0.5 ? 0.72 : 0.16) * (1 - collapse * 0.72), 0.05, 1);
+  }
 
   /* very subtle bob while walking (plus a breath when standing still) */
   const dashing = p.dashTimer > 0;
   /* idle animation: a very subtle 2px bob on a 1.5s cycle */
-  const bob = dashing ? 0
+  let bob = dashing ? 0
     : p.moving ? Math.sin(p.walk) * 1.15
       : Math.sin(game.time * (TAU / 1.5)) * 2;
+  if (dying) bob += collapse * 7;
 
   /* ground shadow + aura ring */
   ctx.save();
@@ -21012,7 +21343,7 @@ function drawPlayer() {
   }
 
   ctx.save();
-  if (blink) ctx.globalAlpha = 0.42;
+  if (blink && !dying) ctx.globalAlpha = 0.42;
   {
     /* the body squashes through edge-on when the aim flips side to side */
     const sx = charTurn(p, dir);
@@ -21028,13 +21359,25 @@ function drawPlayer() {
     };
     /* aiming up? the weapon passes behind the soldier instead of through him */
     const behind = !bladeClass && Math.sin(p.angle) < -0.15;
-    if (behind) drawGun();
+    const heldWeapon = !dying || deathTime < 0.25;
+    if (behind && heldWeapon) drawGun();
     drawCosmeticFlourish(p, g, bob, dir, 'back');
-    drawBody();
+    if (dying) {
+      ctx.save();
+      ctx.translate(p.x, p.y + SOLDIER.feet);
+      ctx.rotate(dir * collapse * 0.5);
+      ctx.scale(1, 1 - collapse * 0.07);
+      ctx.translate(-p.x, -(p.y + SOLDIER.feet));
+      drawBody();
+      ctx.restore();
+    } else {
+      drawBody();
+    }
     drawCosmeticFlourish(p, g, bob, dir, 'front');
     drawThrusters(p, g, bob, dir);
     if (g.flames) drawBootFlames(p, bob, dir, g);
-    if (!behind) drawGun();
+    if (!behind && heldWeapon) drawGun();
+    if (dying) drawDroppedDeathWeapon(p, dir, bob);
 
     /* ---- took a hit: flash red ---- */
     if (p.hitFlash > 0) {
@@ -21044,11 +21387,12 @@ function drawPlayer() {
   ctx.restore();
 
   const weaponKind = getClass().weapon;
+  const heldMelee = !dying || deathTime < 0.25;
   if (weaponKind === 'blade') {
-    drawKnightSword(p, bob);
+    if (heldMelee) drawKnightSword(p, bob);
     drawSwordSwoosh();
   } else if (weaponKind === 'axes') {
-    drawBerserkerAxes(p, bob);
+    if (heldMelee) drawBerserkerAxes(p, bob);
     drawAxeSwoosh();
   }
 }
@@ -23073,6 +23417,80 @@ function drawAmbient() {
   ctx.restore();
 }
 
+function drawDeathImpactRing() {
+  const p = game.player;
+  if (!gameState.isDying || !p) return;
+  const elapsed = deathElapsed();
+  if (elapsed > 0.48) return;
+  const k = clamp(elapsed / 0.48, 0, 1);
+  const ease = 1 - Math.pow(1 - k, 3);
+  const radius = 16 + ease * 178;
+  const alpha = 1 - k;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.shadowColor = '#ff2d3f';
+  ctx.shadowBlur = 18 * alpha;
+  ctx.strokeStyle = 'rgba(255,45,63,' + (0.92 * alpha).toFixed(3) + ')';
+  ctx.lineWidth = 5.5 * (1 - k) + 1.2;
+  ctx.beginPath(); ctx.arc(p.x, p.y, radius, 0, TAU); ctx.stroke();
+  ctx.shadowColor = '#ffffff';
+  ctx.strokeStyle = 'rgba(255,255,255,' + (0.9 * alpha).toFixed(3) + ')';
+  ctx.lineWidth = 2.2 * (1 - k) + 0.7;
+  ctx.beginPath(); ctx.arc(p.x, p.y, radius * 0.72, 0, TAU); ctx.stroke();
+  ctx.shadowBlur = 10 * alpha;
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * TAU + 0.18;
+    ctx.strokeStyle = i % 2 ? 'rgba(255,255,255,' + (0.72 * alpha).toFixed(3) + ')' : 'rgba(255,45,63,' + (0.78 * alpha).toFixed(3) + ')';
+    ctx.lineWidth = 2.4 * (1 - k) + 0.6;
+    ctx.beginPath();
+    ctx.moveTo(p.x + Math.cos(a) * radius * 0.56, p.y + Math.sin(a) * radius * 0.56);
+    ctx.lineTo(p.x + Math.cos(a) * radius * 1.05, p.y + Math.sin(a) * radius * 1.05);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawDeathParticles() {
+  const list = gameState.deathParticles || [];
+  if (!gameState.isDying || !list.length) return;
+  for (let i = 0; i < list.length; i++) {
+    const s = list[i];
+    const alpha = clamp(1 - s.life / Math.max(0.001, s.maxLife), 0, 1);
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.rotate(s.rot);
+    ctx.globalAlpha = 0.22 + 0.78 * alpha;
+    ctx.fillStyle = s.color;
+    ctx.shadowColor = s.color;
+    ctx.shadowBlur = 13;
+    ctx.beginPath();
+    ctx.moveTo(s.size * 2.2, 0);
+    ctx.lineTo(0, -s.size * 0.55);
+    ctx.lineTo(-s.size * 1.5, 0);
+    ctx.lineTo(0, s.size * 0.55);
+    ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(255,246,220,0.82)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(-s.size, 0); ctx.lineTo(s.size * 1.45, 0); ctx.stroke();
+    ctx.restore();
+  }
+}
+function drawDeathVignette() {
+  if (!gameState.isDying) return;
+  const progress = deathProgress();
+  ctx.save();
+  ctx.fillStyle = 'rgba(90,8,20,' + (progress * 0.08).toFixed(3) + ')';
+  ctx.fillRect(0, 0, W, H);
+  const vg = ctx.createRadialGradient(W / 2, H * 0.55, Math.min(W, H) * 0.18, W / 2, H * 0.55, Math.hypot(W, H) * 0.62);
+  vg.addColorStop(0, 'rgba(6,7,12,0)');
+  vg.addColorStop(0.45, 'rgba(48,5,13,' + (progress * 0.2).toFixed(3) + ')');
+  vg.addColorStop(0.76, 'rgba(6,7,12,' + (progress * 0.48).toFixed(3) + ')');
+  vg.addColorStop(1, 'rgba(6,7,12,' + (progress * 0.85).toFixed(3) + ')');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+}
+
 /* ------------------------------ post fx ------------------------------------ */
 function drawPostFx() {
   /* slow-motion wash */
@@ -23550,6 +23968,7 @@ function grantRandomUpgrade() {
 
 function collectPickup(k) {
   const p = game.player;
+  if (gameState.isDying) return false;
   if (k.kind === 'health') {
     if (p.hp >= p.maxHp) return false;
     p.hp = Math.min(p.maxHp, p.hp + 1);
@@ -23580,7 +23999,7 @@ function updatePickups(dt) {
       k.vx *= Math.exp(-4 * dt);
       k.vy *= Math.exp(-4 * dt);
       const d = dist(k.x, k.y, p.x, p.y);
-      if (d < p.magnet + 34) {
+      if (!gameState.isDying && d < p.magnet + 34) {
         const a = angleTo(k.x, k.y, p.x, p.y);
         k.x += Math.cos(a) * 300 * dt;
         k.y += Math.sin(a) * 300 * dt;
@@ -24236,7 +24655,7 @@ function render() {
 
   /* menu, class and zone screens are opaque HTML layers — the loop is paused
      while one of them is open, so this is only a safety net */
-  if (game.screen === 'menu' || game.screen === 'class' || game.screen === 'zones') {
+  if (game.screen === 'menu' || game.screen === 'class' || game.screen === 'zones' || game.screen === 'gameover') {
     return;
   }
 
@@ -24286,6 +24705,8 @@ function render() {
   drawParticles();
   drawPetEntity();
   drawPlayer();
+  drawDeathImpactRing();
+  drawDeathParticles();
   drawDecoy();
   drawClassFx();
 
@@ -24299,6 +24720,7 @@ function render() {
   drawPostFx();
   drawObjectiveArrows();
   drawMinimap();
+  drawDeathVignette();
 }
 
 /* ------------------------------ main loop ----------------------------------
@@ -24350,6 +24772,7 @@ function update(dt) {
     return;
   }
 
+  if (!isPaused && gameState.isDying && tickDeathSequence(dt)) return;
   if (game.slowmo > 0) {
     game.slowmo = Math.max(0, game.slowmo - dt);
     if (game.slowmo === 0) game.timeScale = 1;
