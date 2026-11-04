@@ -3242,7 +3242,7 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
       <div class="skill-xp-summary"><span id="skillTreeLevel">LEVEL 1 / 20</span><div class="skill-tree-xp-track"><div id="skillTreeXpFill"></div></div><span id="skillTreeXp">0 / 80 XP</span></div>
       <div class="skill-grid-scroll"><div id="skillTreeRows" aria-label="Class skill nodes"></div></div>
       <div class="skill-legend"><span><i class="legend-dot owned"></i>Purchased</span><span><i class="legend-dot available"></i>Available</span><span><i class="legend-dot"></i>Locked</span></div>
-      <footer class="skill-footer"><p>Earn 1 skill point at levels 5, 10, 15 and 20. Unlock each row from left to right.<span id="skillTreeStatus" aria-live="polite">Class levels and skills are saved separately for every class.</span></p><button class="btn" id="btnSkillTreeBack" type="button">BACK</button></footer>
+      <footer class="skill-footer"><p>Earn 1 Skill Point every time your class levels up. Unlock each row from left to right to master all 12 class skills.<span id="skillTreeStatus" aria-live="polite">Class levels and skills are saved separately for every class.</span></p><button class="btn" id="btnSkillTreeBack" type="button">BACK</button></footer>
     </div>
     <div id="skillTooltip" role="tooltip" hidden><strong id="skillTooltipName"></strong><span id="skillTooltipDesc"></span><span id="skillTooltipState"></span></div>
   </div>
@@ -3258,7 +3258,7 @@ h1, h2, .screen h1, #pauseTitle, #zoneTitle, #classTitle{
       <div class="row"><b>Q</b> Class ability · <b>E</b> Ability 2 · <b>SHIFT</b> Ability 3 · <b>F</b> Ability 4 · <b>R</b> Ability 5</div>
       <div class="row"><b>1 2 3</b> use a satchel supply</div>
       <div class="row">Each class has four unique unlockable abilities. Boss 1 unlocks E, boss 2 unlocks SHIFT, boss 3 unlocks F, and boss 4 unlocks R.</div>
-      <div class="row">Class XP: regular enemies 10 · elites (Oni, Mutant, Mech, Chaos Titan) 25 · bosses 150. Reach level 20; earn a skill point every 5 levels.</div>
+      <div class="row">Class XP: regular enemies 10 · elites (Oni, Mutant, Mech, Chaos Titan) 25 · bosses 150. Earn 1 Skill Point every time your class levels up. Unlock each row from left to right to master all 12 class skills.</div>
       <div class="row">Open SKILL TREE from pause or a level-up banner. Each class keeps its own level, XP and permanent skills across every zone and universe.</div>
       <div class="row">Clear every arena, beat the champion, then walk into the portal it leaves behind. Six universes, five levels each.</div>
       <button class="btn" id="btnHowToBack" type="button">Back</button>
@@ -6200,6 +6200,8 @@ const CLASSES = [
    ============================================================================= */
 const CLASS_MAX_LEVEL = 20;
 const CLASS_XP_PER_LEVEL = 80;
+const CLASS_SKILL_POINT_CAP = 12;
+const CLASS_SKILL_POINT_LAST_LEVEL = 13; /* levels 2-13 earn the 12 lifetime SP */
 const CLASS_PROGRESS_PREFIX = 'surviveClassProgress.';
 const CLASS_XP_VALUES = { regular: 10, elite: 25, boss: 150 };
 function skillNode(id, name, desc, icon) { return { id, name, desc, icon, cost: 1 }; }
@@ -6221,7 +6223,7 @@ const CLASS_SKILL_TREES = {
       skillNode('war_boots', 'War Boots', '+12% movement speed.', 'boots'),
       skillNode('charge_master', 'Charge Master', 'Shield Bash cooldown -5s.', 'dash'),
       skillNode('blade_dance', 'Blade Dance', 'Sword swing speed +30%.', 'speed'),
-      skillNode('unstoppable', 'Unstoppable', 'Dashing through enemies deals sword damage.', 'dash')
+      skillNode('unstoppable', 'Unstoppable', 'Dashing through enemies deals sword damage.', 'ram')
     ] }
   ],
   gunslinger: [
@@ -6246,15 +6248,15 @@ const CLASS_SKILL_TREES = {
   ],
   sniper: [
     { name: 'Precision', nodes: [
-      skillNode('scope_mastery', 'Scope Mastery', '+25% bullet range.', 'target'),
+      skillNode('scope_mastery', 'Scope Mastery', '+25% bullet range.', 'scope'),
       skillNode('armor_piercing', 'Armor Piercing', 'Bullets penetrate shields and armor.', 'bullet'),
-      skillNode('subsonic', 'Subsonic', 'Bullets travel 30% slower but deal 2x damage.', 'bullet'),
+      skillNode('subsonic', 'Subsonic', 'Bullets travel 30% slower but deal 2x damage.', 'subsonic'),
       skillNode('headhunter', 'Headhunter', 'Every 5th shot auto-crits for 3x damage.', 'target')
     ] },
     { name: 'Stealth', nodes: [
       skillNode('ghost_protocol', 'Ghost Protocol', 'Moving slowly keeps you partially invisible.', 'stealth'),
-      skillNode('silent_step', 'Silent Step', '-50% enemy detection range.', 'stealth'),
-      skillNode('patience_rewarded', 'Patience Rewarded', 'Standing still 2s boosts next shot to 4x damage.', 'target'),
+      skillNode('silent_step', 'Silent Step', '-50% enemy detection range.', 'feather'),
+      skillNode('patience_rewarded', 'Patience Rewarded', 'Standing still 2s boosts next shot to 4x damage.', 'hourglass'),
       skillNode('one_shot_one_kill', 'One Shot One Kill', 'Instantly kill any non-boss enemy regardless of HP.', 'execute')
     ] },
     { name: 'Tech', nodes: [
@@ -6274,14 +6276,14 @@ const CLASS_SKILL_TREES = {
     { name: 'Time', nodes: [
       skillNode('chrono_efficiency', 'Chrono Efficiency', 'All time abilities last 25% longer.', 'time'),
       skillNode('paradox_shield', 'Paradox Shield', 'Taking damage briefly rewinds the hit.', 'revive'),
-      skillNode('time_rift_mastery', 'Time Rift Mastery', 'Chrono Burst freezes 2s longer.', 'time'),
+      skillNode('time_rift_mastery', 'Time Rift Mastery', 'Chrono Burst freezes 2s longer.', 'rift'),
       skillNode('epoch', 'Epoch', 'Time Loop rewinds 8 seconds instead of 5.', 'rewind')
     ] },
     { name: 'Power', nodes: [
-      skillNode('mana_surge', 'Mana Surge', '+30% orb damage.', 'orb'),
-      skillNode('dark_matter', 'Dark Matter', 'Temporal Rift black hole size doubled.', 'vortex'),
-      skillNode('familiar_bond', 'Familiar Bond', 'Familiar orb deals 2x damage.', 'orb'),
-      skillNode('time_lord', 'Time Lord', 'Cooldowns reduce by 1s per kill.', 'time')
+      skillNode('mana_surge', 'Mana Surge', '+30% orb damage.', 'mana'),
+      skillNode('dark_matter', 'Dark Matter', 'Temporal Rift black hole size doubled.', 'black_hole'),
+      skillNode('familiar_bond', 'Familiar Bond', 'Familiar orb deals 2x damage.', 'familiar'),
+      skillNode('time_lord', 'Time Lord', 'Cooldowns reduce by 1s per kill.', 'crown')
     ] }
   ],
   berserker: [
@@ -6289,7 +6291,7 @@ const CLASS_SKILL_TREES = {
       skillNode('blood_lust', 'Blood Lust', 'Kills restore 5% of max HP.', 'heart'),
       skillNode('frenzy', 'Frenzy', 'Each consecutive kill boosts damage by 10%, stacking to 5x.', 'rage'),
       skillNode('carnage', 'Carnage', 'Ground Slam radius +60%.', 'blast'),
-      skillNode('unstoppable_rage', 'Unstoppable Rage', 'Below 1 orb: all damage tripled until healed above 1 orb.', 'rage')
+      skillNode('unstoppable_rage', 'Unstoppable Rage', 'Below 1 orb: all damage tripled until healed above 1 orb.', 'flame')
     ] },
     { name: 'Body', nodes: [
       skillNode('war_hardened', 'War Hardened', '+2 max health orbs.', 'shield'),
@@ -6299,8 +6301,8 @@ const CLASS_SKILL_TREES = {
     ] },
     { name: 'Momentum', nodes: [
       skillNode('savage_rush', 'Savage Rush', 'Frenzy Dash hits 3 times.', 'dash'),
-      skillNode('berserkers_path', 'Berserker’s Path', 'Moving through enemies damages them.', 'rage'),
-      skillNode('pain_is_power', 'Pain is Power', 'Lower HP means higher damage, up to +100%.', 'heart'),
+      skillNode('berserkers_path', 'Berserker’s Path', 'Moving through enemies damages them.', 'claw'),
+      skillNode('pain_is_power', 'Pain is Power', 'Lower HP means higher damage, up to +100%.', 'pulse'),
       skillNode('last_warrior', 'Last Warrior', 'When the last orb is lost, trigger Juggernaut once per zone.', 'revive')
     ] }
   ],
@@ -6308,12 +6310,12 @@ const CLASS_SKILL_TREES = {
     { name: 'Blades', nodes: [
       skillNode('serrated_edge', 'Serrated Edge', 'Daggers cause 3s bleed for 1 damage/s.', 'sword'),
       skillNode('multishot', 'Multishot', 'Throw 3 daggers at once in a spread.', 'cleave'),
-      skillNode('shadowmark', 'Shadowmark', 'Marked enemies take +50% damage from all sources.', 'target'),
+      skillNode('shadowmark', 'Shadowmark', 'Marked enemies take +50% damage from all sources.', 'mark'),
       skillNode('lethal_tempo', 'Lethal Tempo', 'Each consecutive dagger hit speeds up throw rate.', 'speed')
     ] },
     { name: 'Shadow', nodes: [
       skillNode('fade', 'Fade', 'Taking damage triggers brief 1s invisibility.', 'stealth'),
-      skillNode('shadow_meld', 'Shadow Meld', 'Standing still 1.5s turns you fully invisible.', 'stealth'),
+      skillNode('shadow_meld', 'Shadow Meld', 'Standing still 1.5s turns you fully invisible.', 'moon'),
       skillNode('ghost_walk', 'Ghost Walk', 'Dashing leaves a shadow clone as a decoy.', 'clone'),
       skillNode('death_from_shadows', 'Death from Shadows', 'First attack from invisibility deals 5x damage.', 'execute')
     ] },
@@ -6335,10 +6337,10 @@ const CLASS_SKILL_TREES = {
       skillNode('bouncing_algorithm', 'Bouncing Algorithm', 'Disc bounces 6 times instead of 4.', 'disc'),
       skillNode('explosive_disc', 'Explosive Disc', 'Disc explodes on its last bounce, dealing area damage.', 'blast'),
       skillNode('magnetic_disc', 'Magnetic Disc', 'Disc pulls small enemies toward it.', 'vortex'),
-      skillNode('disc_mastery', 'Disc Mastery', 'Disc cooldown -1s per bounce.', 'disc')
+      skillNode('disc_mastery', 'Disc Mastery', 'Disc cooldown -1s per bounce.', 'saw')
     ] },
     { name: 'Systems', nodes: [
-      skillNode('emp_mastery', 'EMP Mastery', 'EMP duration +2s.', 'power'),
+      skillNode('emp_mastery', 'EMP Mastery', 'EMP duration +2s.', 'emp'),
       skillNode('nano_repair', 'Nano Repair', 'Turret explosions on Overload heal the player for 1 orb.', 'heart'),
       skillNode('drone_upgrade', 'Drone Upgrade', 'Drones deal 2x damage.', 'drone'),
       skillNode('overclock_system', 'Overclock System', 'Overclock cooldown -15s; turrets respawn instantly.', 'reload')
@@ -6378,6 +6380,23 @@ const SKILL_ICON_PATHS = {
   clone: '<circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2.5"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M15 14a5 5 0 0 1 7 4v3"/>',
   turret: '<path d="M4 21h16M7 21v-8h10v8M12 13V5M8 5h13M10 9h4"/>',
   disc: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="m5 5 5 5M14 14l5 5M19 5l-5 5M10 14l-5 5"/>',
+  ram: '<path d="M3 7h5M2 12h6M3 17h5M11 4h4l6 8-6 8h-4zM15 8v8"/>',
+  scope: '<circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.4"/><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5M12 2v4M12 18v4M2 12h4M18 12h4"/>',
+  subsonic: '<path d="M2 8c2-2 4-2 6 0M2 16c2 2 4 2 6 0M10 8h6l6 4-6 4h-6zM10 8v8M15 9v6"/>',
+  feather: '<path d="M20 4C11 4 4 11 4 20c9 0 16-7 16-16zM4 20c3-6 7-10 13-13M8 16h5M11 11h5"/>',
+  hourglass: '<path d="M5 2h14M5 22h14M7 2v6l5 4 5-4V2M7 22v-6l5-4 5 4v6M9 6h6"/>',
+  rift: '<path d="M13 2 8 9l4 2-5 11 9-8-4-2zM5 5l3 2M16 17l3 2M4 15l3-1M17 8l3-1"/>',
+  mana: '<path d="M12 2C8 8 5 11 5 15a7 7 0 0 0 14 0c0-4-3-7-7-13zM13 9l-3 6h3l-2 4 5-7h-3z"/>',
+  black_hole: '<circle cx="12" cy="12" r="3.2"/><path d="M3 15c5 3 13 3 18-2M5 7a8 8 0 0 1 13 2M7 19a8 8 0 0 1-3-8"/>',
+  familiar: '<path d="M5 4l3 3a8 8 0 0 1 8 0l3-3v7a7 7 0 0 1-14 0z"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M10 17c1 1 3 1 4 0"/>',
+  crown: '<path d="m3 8 5 4 4-7 4 7 5-4-2 10H5zM5 21h14"/>',
+  flame: '<path d="M12 2c1 5-5 6-5 12a5 5 0 0 0 10 0c0-3-2-4-2-8 3 2 5 5 5 8a8 8 0 1 1-16 0c0-6 5-8 8-12z"/>',
+  claw: '<path d="M5 3c4 4 5 9 3 18M12 2c4 5 5 11 2 20M19 3c3 5 3 11 0 18"/>',
+  pulse: '<circle cx="12" cy="12" r="9"/><path d="M4 12h4l2-5 4 10 2-5h4"/>',
+  mark: '<path d="M12 2 19 9l-7 13L5 9zM5 9h14M12 9v13M9 9l3 5 3-5"/>',
+  moon: '<path d="M20 14A8 8 0 1 1 10 4a7 7 0 0 0 10 10zM18 3l.7 1.8L20.5 5.5 18.7 6.3 18 8l-.7-1.7-1.8-.8 1.8-.7z"/>',
+  saw: '<circle cx="12" cy="12" r="3"/><path d="M12 2l2 4 4-1-1 4 4 2-4 2 1 4-4-1-2 4-2-4-4 1 1-4-4-2 4-2-1-4 4 1z"/>',
+  emp: '<circle cx="12" cy="12" r="2.4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/>',
   lock: '<rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V8a4 4 0 0 1 8 0v3M12 15v2"/>'
 };
 function skillIconSVG(icon) {
@@ -6388,7 +6407,7 @@ let classLevelUpClock = 0;
 /* A level-up earned during live combat is only pinged as a small toast and is
    remembered here. The big centre card is raised later — once the current arena
    is fully cleared and just before the upgrade card — never mid-fight. */
-let pendingClassLevelUp = null;    /* { level, gained, source, saved } */
+let pendingClassLevelUp = null;    /* { level, gained, source, saved, skillPointsGained } */
 let classLevelUpHold = false;      /* the post-arena level-up card is up; the upgrade card waits behind it */
 let classLevelUpHoldTimer = 0;
 let skillTreeReturn = 'pauseMenu';
@@ -6396,7 +6415,62 @@ let skillTreeClassId = 'knight';
 let skillTooltipButton = null;
 function classProgressKey(id) { return CLASS_PROGRESS_PREFIX + id; }
 function xpForLevel(level) { return Math.max(1, level) * CLASS_XP_PER_LEVEL; }
-function freshClassProgress(id) { return { version: 1, classId: id, level: 1, xp: 0, totalXp: 0, skillPoints: 0, owned: [] }; }
+function totalEarnedSkillPoints(level) {
+  const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+  return Math.min(12, Math.max(0, safeLevel - 1));
+}
+function classOwnedSkills(record) {
+  if (!record || typeof record !== 'object') return [];
+  if (Array.isArray(record.owned)) return record.owned;
+  if (Array.isArray(record.purchasedSkills)) return record.purchasedSkills;
+  if (Array.isArray(record.purchasedNodes)) return record.purchasedNodes;
+  return [];
+}
+function classSkillPointBalance(record) {
+  if (!record || typeof record !== 'object') return 0;
+  return Math.max(0, Math.floor(Number(record.skillPoints) || 0), Math.floor(Number(record.sp) || 0));
+}
+function freshClassProgress(id) {
+  const record = { version: 1, classId: id, level: 1, xp: 0, totalXp: 0, skillPoints: 0, owned: [] };
+  /* Non-enumerable aliases keep older tools/tests that use sp/purchasedSkills
+     pointed at the same canonical bank without duplicating saved fields. */
+  Object.defineProperties(record, {
+    sp: {
+      get() { return this.skillPoints; },
+      set(value) { this.skillPoints = Math.max(0, Math.floor(Number(value) || 0)); },
+      configurable: true
+    },
+    purchasedSkills: {
+      get() { return this.owned; },
+      set(value) { this.owned = Array.isArray(value) ? value.slice() : []; },
+      configurable: true
+    },
+    purchasedNodes: {
+      get() { return this.owned; },
+      set(value) { this.owned = Array.isArray(value) ? value.slice() : []; },
+      configurable: true
+    }
+  });
+  return record;
+}
+function recalculateSkillPoints(recordOrId, persist) {
+  const record = (recordOrId && typeof recordOrId === 'object') ? recordOrId : getClassProgress(recordOrId);
+  if (!record || typeof record !== 'object') return 0;
+  const owned = classOwnedSkills(record);
+  if (record.owned !== owned) record.owned = owned;
+  const totalEarnedSP = totalEarnedSkillPoints(record.level);
+  const spentSP = owned.length;
+  const currentSP = classSkillPointBalance(record);
+  const nextSP = Math.max(currentSP, totalEarnedSP - spentSP);
+  const changed = record.skillPoints !== nextSP || record.sp !== nextSP;
+  record.skillPoints = nextSP;
+  if (record.sp !== nextSP) record.sp = nextSP;
+  if (persist && changed && record.classId && classProgress[record.classId] === record) saveClassProgress(record.classId);
+  return nextSP;
+}
+function recalculateAllSkillPoints(persist) {
+  for (const cls of CLASSES) recalculateSkillPoints(getClassProgress(cls.id), persist);
+}
 function normalizeClassProgress(id, raw) {
   const out = freshClassProgress(id);
   if (!raw || typeof raw !== 'object') return out;
@@ -6404,15 +6478,25 @@ function normalizeClassProgress(id, raw) {
   out.level = clamp(integer(raw.level, CLASS_MAX_LEVEL), 1, CLASS_MAX_LEVEL);
   out.totalXp = integer(raw.totalXp, 100000000);
   const tree = CLASS_SKILL_TREES[id] || [];
-  const saved = Array.isArray(raw.owned) ? raw.owned : [];
+  const saved = Array.isArray(raw.owned)
+    ? raw.owned
+    : Array.isArray(raw.purchasedSkills)
+      ? raw.purchasedSkills
+      : Array.isArray(raw.purchasedNodes)
+        ? raw.purchasedNodes
+        : [];
+  const totalEarnedSP = totalEarnedSkillPoints(out.level);
   for (const row of tree) {
     for (const node of row.nodes) {
       if (!saved.includes(node.id)) break;
-      if (out.owned.length < Math.floor(out.level / 5)) out.owned.push(node.id);
+      if (out.owned.length < totalEarnedSP) out.owned.push(node.id);
     }
   }
-  out.skillPoints = Math.floor(out.level / 5) - out.owned.length;
+  /* Preserve any larger banked balance, then retroactively top the record up
+     to totalEarnedSP - spentSP under the every-level economy. */
+  out.skillPoints = Math.max(integer(raw.skillPoints, 1000000), integer(raw.sp, 1000000));
   out.xp = out.level === CLASS_MAX_LEVEL ? 0 : integer(raw.xp, xpForLevel(out.level) - 1);
+  recalculateSkillPoints(out);
   return out;
 }
 function getClassProgress(id) {
@@ -6438,12 +6522,16 @@ function saveClassProgress(id) {
   catch (e) { return false; }
 }
 function loadAllClassProgress() {
+  const migrated = [];
   for (const cls of CLASSES) {
     let raw = null;
     try { raw = JSON.parse(localStorage.getItem(classProgressKey(cls.id)) || 'null'); } catch (e) { /* corrupt or unavailable storage */ }
-    classProgress[cls.id] = normalizeClassProgress(cls.id, raw);
+    const normalized = normalizeClassProgress(cls.id, raw);
+    classProgress[cls.id] = normalized;
+    if (raw && normalized.skillPoints > classSkillPointBalance(raw)) migrated.push(cls.id);
   }
   syncAllClassPassiveStates();
+  for (const id of migrated) saveClassProgress(id);
   syncClassXpHud();
 }
 function hasSkill(id, classId) {
@@ -6454,17 +6542,22 @@ function hasSkill(id, classId) {
 function currentSkill(id) { return !!game.player && hasSkill(id, game.player.classId); }
 function skillPrerequisiteMet(node, row, record) {
   const index = row.nodes.indexOf(node);
-  return index === 0 || (index > 0 && record.owned.includes(row.nodes[index - 1].id));
+  const owned = classOwnedSkills(record);
+  return index === 0 || (index > 0 && owned.includes(row.nodes[index - 1].id));
 }
 function skillState(node, row, record) {
-  if (record.owned.includes(node.id)) return 'owned';
-  if (skillPrerequisiteMet(node, row, record) && record.skillPoints >= node.cost) return 'available';
+  if (classOwnedSkills(record).includes(node.id)) return 'owned';
+  if (skillPrerequisiteMet(node, row, record) && classSkillPointBalance(record) >= node.cost) return 'available';
   return 'locked';
 }
 function awardClassXP(amount, source) {
   const id = gameState.currentClass;
   const record = getClassProgress(id);
   const xp = Math.max(0, Math.floor(Number(amount) || 0));
+  /* Dynamic retroactive top-up first: old saves gain every SP already earned
+     by their level before this XP award is applied. */
+  recalculateSkillPoints(record);
+  const earnedBefore = totalEarnedSkillPoints(record.level);
   if (!xp || record.level >= CLASS_MAX_LEVEL) return 0;
   record.xp += xp;
   record.totalXp += xp;
@@ -6473,16 +6566,20 @@ function awardClassXP(amount, source) {
     record.xp -= xpForLevel(record.level);
     record.level++;
     gained++;
-    if (record.level % 5 === 0) record.skillPoints++;
   }
   if (record.level === CLASS_MAX_LEVEL) record.xp = 0;
+  /* Levels 2-13 each add exactly one lifetime SP, including multi-level
+     jumps. Levels 14-20 retain the full 12-SP budget already earned. */
+  const skillPointsGained = Math.max(0, totalEarnedSkillPoints(record.level) - earnedBefore);
+  if (skillPointsGained) record.skillPoints += skillPointsGained;
+  recalculateSkillPoints(record);
   const saved = saveClassProgress(id);
   syncClassXpHud();
   if (gained) {
     /* mid-fight the centre card must never appear: ping the toast and remember
        the level-up so the card can be shown once the arena is cleared */
-    if (game.screen === 'playing') queueClassLevelUp(record, gained, source, saved);
-    else showClassLevelUp(record, gained, source, saved);
+    if (game.screen === 'playing') queueClassLevelUp(record, gained, source, saved, skillPointsGained);
+    else showClassLevelUp(record, gained, source, saved, skillPointsGained);
   }
   if (currentScreen === 'skillTree') renderSkillTree();
   return xp;
@@ -6491,8 +6588,15 @@ function awardClassXP(amount, source) {
 /* Combat-time level-up: small non-blocking toast under the health orbs plus a
    stored record of the level reached. No popup, no pause, nothing that can get
    the player killed. */
-function queueClassLevelUp(record, gained, source, saved) {
-  pendingClassLevelUp = { level: record.level, gained: gained, source: source, saved: saved };
+function queueClassLevelUp(record, gained, source, saved, skillPointsGained) {
+  const prior = pendingClassLevelUp;
+  pendingClassLevelUp = {
+    level: record.level,
+    gained: (prior ? prior.gained || 0 : 0) + gained,
+    source: source,
+    saved: saved,
+    skillPointsGained: (prior ? prior.skillPointsGained || 0 : 0) + (skillPointsGained || 0)
+  };
   showLevelUpToast(record.level);
   Sound.classLevelUp();
   if (game.player) {
@@ -6522,7 +6626,7 @@ function flushPendingClassLevelUp() {
   const p = pendingClassLevelUp;
   if (!p || gameState.isDying) return false;
   pendingClassLevelUp = null;
-  showClassLevelUp(getClassProgress(gameState.currentClass), p.gained, p.source, p.saved);
+  showClassLevelUp(getClassProgress(gameState.currentClass), p.gained, p.source, p.saved, p.skillPointsGained);
   classLevelUpHold = true;
   stopLoop();
   if (classLevelUpHoldTimer) clearTimeout(classLevelUpHoldTimer);
@@ -6542,9 +6646,18 @@ function endClassLevelUpHold() {
   hideClassLevelUp();
   if (!showUpgrades() && currentScreen === 'gameCanvas') startLoop();   /* nothing left to offer: just resume */
 }
-function showClassLevelUp(record, gained, source, saved) {
+function showClassLevelUp(record, gained, source, saved, skillPointsGained) {
   UI.levelUpNumber.textContent = String(record.level);
-  UI.levelUpReward.textContent = (record.level % 5 === 0 ? '+1 SKILL POINT · ' : '') + (saved === false ? 'Storage unavailable — keep this tab open' : record.level === 20 ? 'MAX LEVEL · YOUR LEGEND IS COMPLETE' : getClass().name);
+  const levelsGained = Math.max(0, Math.floor(Number(gained) || 0));
+  const earnedSP = Number.isFinite(Number(skillPointsGained))
+    ? Math.max(0, Math.floor(Number(skillPointsGained) || 0))
+    : Math.max(0, totalEarnedSkillPoints(record.level) - totalEarnedSkillPoints(record.level - levelsGained));
+  const spReward = earnedSP
+    ? '+' + earnedSP + ' SKILL POINT' + (earnedSP === 1 ? '' : 'S') + ' · '
+    : record.level >= CLASS_SKILL_POINT_LAST_LEVEL
+      ? 'ALL ' + CLASS_SKILL_POINT_CAP + ' SKILL POINTS EARNED · '
+      : '';
+  UI.levelUpReward.textContent = spReward + (saved === false ? 'Storage unavailable — keep this tab open' : record.level === CLASS_MAX_LEVEL ? 'MAX LEVEL · YOUR LEGEND IS COMPLETE' : getClass().name);
   UI.classLevelUp.classList.remove('show');
   void UI.classLevelUp.offsetWidth;
   UI.classLevelUp.classList.add('show');
@@ -6583,6 +6696,7 @@ function openSkillTree(source) {
   if (currentScreen !== 'pauseMenu' && currentScreen !== 'gameCanvas') return;
   skillTreeReturn = currentScreen === 'pauseMenu' ? 'pauseMenu' : 'gameCanvas';
   skillTreeClassId = gameState.currentClass;
+  recalculateSkillPoints(getClassProgress(skillTreeClassId), true);
   hideClassLevelUp();
   saveGame('skill-tree');
   showScreen('skillTree');
@@ -6601,11 +6715,12 @@ function renderSkillTree() {
   const id = skillTreeClassId;
   const cls = CLASSES.find(c => c.id === id) || CLASSES[0];
   const record = getClassProgress(id);
+  recalculateSkillPoints(record);
   UI.skillTreeClass.textContent = cls.name;
   UI.skillTreePoints.textContent = String(record.skillPoints);
-  UI.skillTreeLevel.textContent = 'LEVEL ' + record.level + ' / 20';
-  UI.skillTreeXp.textContent = record.level === 20 ? 'MAX LEVEL' : record.xp + ' / ' + xpForLevel(record.level) + ' XP';
-  UI.skillTreeXpFill.style.width = (record.level === 20 ? 100 : record.xp / xpForLevel(record.level) * 100) + '%';
+  UI.skillTreeLevel.textContent = 'LEVEL ' + record.level + ' / ' + CLASS_MAX_LEVEL;
+  UI.skillTreeXp.textContent = record.level === CLASS_MAX_LEVEL ? 'MAX LEVEL' : record.xp + ' / ' + xpForLevel(record.level) + ' XP';
+  UI.skillTreeXpFill.style.width = (record.level === CLASS_MAX_LEVEL ? 100 : record.xp / xpForLevel(record.level) * 100) + '%';
   UI.skillTreeRows.replaceChildren();
   hideSkillTooltip();
   CLASS_SKILL_TREES[id].forEach((row, ri) => {
@@ -6683,8 +6798,8 @@ function showSkillTooltip(btn, node, row, record, event) {
     ? 'COST ' + node.cost + ' SP · PURCHASED · permanent for this class'
     : !skillPrerequisiteMet(node, row, record)
       ? 'COST ' + node.cost + ' SP · LOCKED · purchase the node to the left first'
-      : record.skillPoints < node.cost
-        ? 'COST ' + node.cost + ' SP · LOCKED · earn 1 SP at levels 5, 10, 15 and 20'
+      : classSkillPointBalance(record) < node.cost
+        ? 'COST ' + node.cost + ' SP · LOCKED · level up to earn 1 Skill Point'
         : 'COST ' + node.cost + ' SP · AVAILABLE · click to purchase';
   UI.skillTooltip.hidden = false;
   btn.setAttribute('aria-describedby', 'skillTooltip');
@@ -6698,13 +6813,14 @@ function hideSkillTooltip() {
 function purchaseSkill(classId, nodeId) {
   if (currentScreen !== 'skillTree' || classId !== skillTreeClassId) return false;
   const record = getClassProgress(classId);
+  recalculateSkillPoints(record);
   const row = CLASS_SKILL_TREES[classId].find(r => r.nodes.some(n => n.id === nodeId));
   const node = row && row.nodes.find(n => n.id === nodeId);
   if (!node) return false;
   const state = skillState(node, row, record);
   if (state === 'owned') { UI.skillTreeStatus.textContent = node.name + ' is already owned.'; return false; }
   if (!skillPrerequisiteMet(node, row, record)) { UI.skillTreeStatus.textContent = 'Purchase the node to the left first.'; return false; }
-  if (record.skillPoints < node.cost) { UI.skillTreeStatus.textContent = 'Not enough skill points. Earn 1 at levels 5, 10, 15 and 20.'; return false; }
+  if (classSkillPointBalance(record) < node.cost) { UI.skillTreeStatus.textContent = 'Not enough skill points — level up your class to earn another.'; return false; }
   record.owned.push(node.id);
   record.skillPoints = Math.max(0, record.skillPoints - node.cost);
   syncClassPassiveState(classId);
@@ -13409,6 +13525,10 @@ function loadGame() {
   } catch (e) { slot = null; }
   if (!slot) slot = SaveSystem.load();
   if (slot) restoreSavedState(slot);
+  /* Permanent class records are loaded beside the run slot; dynamically top
+     up every old save to the capped every-level SP economy. */
+  recalculateAllSkillPoints(true);
+  syncClassXpHud();
   refreshSaveUi();
   syncAbilityHud();
   return slot;
@@ -15815,6 +15935,7 @@ function drawClassCards() {
     const card = UI.classCards[i];
     if (!card) continue;
     const r = getClassProgress(CLASSES[i].id);
+    recalculateSkillPoints(r);
     let meta = card.querySelector('.class-level-meta');
     if (!meta) { meta = document.createElement('div'); meta.className = 'class-level-meta'; card.append(meta); }
     meta.replaceChildren();
