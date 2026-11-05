@@ -5290,6 +5290,9 @@ const gameState = {
   stalkerTimer: 5,
   stalkerWarned: false,
   hordeTimer: 2.5,
+  /* FAIRNESS: directional hit indicator + crimson ring on the damage source */
+  hitIndicator: null,
+  hitSource: null,
   particles: [],
   footsteps: [],
   breakables: [],
@@ -6162,8 +6165,14 @@ function tickRiftStalkers(dt) {
     ? (isUniverseOneTutorial() ? ['knight', 'archer'] : ['knight', 'archer', 'ghost'])
     : ['swarm', 'stalker'];
   for (let k = 0; k < n; k++) {
-    const a = rand(0, Math.PI * 2);
-    const d = rand(640, 860);
+    /* FAIRNESS: roamers also spawn in the safe ring (260-420px), biased into
+       the forward arc so nothing materializes behind Rael without warning. */
+    let a = rand(0, Math.PI * 2);
+    if (Number.isFinite(Number(p.angle)) && Math.random() < FORWARD_ARC_BIAS) {
+      const facing = Number.isFinite(Number(p.facingAngle)) ? Number(p.facingAngle) : Number(p.angle || 0);
+      a = facing + rand(-FORWARD_ARC_HALF, FORWARD_ARC_HALF);
+    }
+    const d = rand(MIN_SPAWN_DIST, MAX_SPAWN_DIST);
     const x = Math.max(60, Math.min(WORLD - 60, p.x + Math.cos(a) * d));
     const y = Math.max(60, Math.min(WORLD - 60, p.y + Math.sin(a) * d));
     const roamType = pick(types);
@@ -9472,6 +9481,15 @@ function hurtPlayer(amount, raw, source) {
   if (currentSkill('thick_skull')) amount *= 0.85;
   const hpBeforeHit = p.hp;
   p.hp -= amount;
+  /* FAIRNESS: record the exact damage source for a directional hit indicator
+     and a bright crimson ring on the offending enemy/projectile. */
+  if (source && Number.isFinite(Number(source.x)) && Number.isFinite(Number(source.y))) {
+    game.hitIndicator = { x: source.x, y: source.y, t: HIT_INDICATOR_TIME };
+    game.hitSource = source;
+  } else {
+    game.hitIndicator = { x: p.x, y: p.y, t: HIT_INDICATOR_TIME };
+    game.hitSource = null;
+  }
   if (currentSkill('adrenaline')) skillCombat().adrenalineT = 3;
   if (currentSkill('fade') && skillCombat().fadeCd <= 0) { skillCombat().fadeT = 1; skillCombat().fadeCd = 5; p.phaseTimer = Math.max(p.phaseTimer, 1); }
   if (currentSkill('paradox_shield') && skillCombat().paradoxCd <= 0 && hpBeforeHit > p.hp) {
@@ -9563,6 +9581,31 @@ function hurtPlayer(amount, raw, source) {
    ============================================================================= */
 
 /* ------------------------------ spawning ----------------------------------- */
+
+/* FAIRNESS: a ranged enemy may only shoot while strictly inside the camera
+   viewport, inset by a 40px inner margin on every edge. */
+function enemyOnScreen(e) {
+  const p = game.player;
+  if (!p) return false;
+  const sx = toScreenX(e.x);
+  const sy = toScreenY(e.y);
+  const m = 40;
+  return sx >= m && sx <= W - m && sy >= SKY_H + m && sy <= SKY_H + H - m;
+}
+
+/* FAIRNESS: aim-telegraph state machine. Call once per frame while the
+   enemy's fireTimer has expired. Returns true only when the 0.45s aim pause
+   is complete and the enemy is on-screen. While aiming, sets e.aimAngle and
+   the renderer draws a faint red aim line; the caller must hold fire. */
+function rangedAimStep(e, dt) {
+  if (!enemyOnScreen(e)) { e.aimTelegraph = 0; e.aimAngle = 0; return false; }
+  const p = game.player;
+  e.aimAngle = angleTo(e.x, e.y, p.x, p.y);
+  if (e.aimTelegraph <= 0) { e.aimTelegraph = RANGED_AIM_TIME; return false; }
+  e.aimTelegraph = Math.max(0, e.aimTelegraph - dt);
+  return e.aimTelegraph <= 0;
+}
+
 function spawnEnemy(type, x, y, arenaIndex, opts) {
   const safeType = ENEMY_DEFS[type] ? type : 'knight';
   const def = ENEMY_DEFS[safeType];
@@ -9628,7 +9671,18 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
     aimT: 0, aimA: 0, fuseT: 0, detonateNow: false, exploded: false,
     summonT: rand(1.8, 3.2),
     brutePhase: 'stalk', bruteT: 0, bruteCd: rand(0.7, 1.5), chargeA: 0,
-    escapeT: 16, escaped: false, shieldFlashT: 0, roamer: false, materializeT: 0
+    escapeT: 16, escaped: false, shieldFlashT: 0, roamer: false, materializeT: 0,
+    /* FAIRNESS: every enemy telegraphs its spawn for a full second and is
+       completely harmless until the ground portal finishes. */
+    spawnTelegraph: SPAWN_TELEGRAPH_TIME,
+    harmless: true,
+    /* FAIRNESS: ranged enemies must telegraph their aim for RANGED_AIM_TIME
+       before firing, and only while fully inside the camera viewport. */
+    aimTelegraph: 0,
+    aimAngle: 0,
+    /* FAIRNESS: stealth enemies must uncloak for UNCLOAK_WARN_TIME with a
+       warning flash before they are allowed to deal contact damage. */
+    uncloakWarnT: 0
   };
   Object.defineProperty(e, 'arenaId', {
     enumerable: true,
@@ -9663,6 +9717,28 @@ const WAVE_PACK_MAX = 5;
 const WAVE_OPENING_PACK_MIN = 6;
 const WAVE_OPENING_PACK_MAX = 8;
 const WAVE_BREATHER = 1.2;
+
+/* ---------------------------------------------------------------------------
+   FAIRNESS & TELEGRAPH CONSTANTS
+   No enemy may ever deal contact damage the instant it appears. Every spawn
+   is preceded by a 1.0s ground portal telegraph, enemies spawn inside a safe
+   ring (260-420px from the player, biased forward), ranged attacks require an
+   on-screen aim telegraph, projectiles are high-contrast, a 360° threat radar
+   warns of close/off-screen threats, stealth enemies stay partially visible,
+   and every hit shows a directional hit indicator.
+   --------------------------------------------------------------------------- */
+const SPAWN_TELEGRAPH_TIME = 1.0;   /* seconds every enemy telegraphs before danger */
+const MIN_SPAWN_DIST = 260;         /* never spawn closer than this to the player */
+const MAX_SPAWN_DIST = 420;         /* never spawn further than this (stays on screen) */
+const FORWARD_ARC_BIAS = 0.75;      /* share of a wave batch that spawns ahead of the player */
+const FORWARD_ARC_HALF = 70 * (Math.PI / 180); /* ±70° = 140° forward arc */
+const RANGED_AIM_TIME = 0.45;       /* ranged enemies must aim this long before firing */
+const THREAT_CLOSE_DIST = 220;      /* threat arc appears for enemies within this range */
+const THREAT_BRIGHT_DIST = 120;     /* closer than this: brighter, faster pulse */
+const THREAT_RING_RADIUS = 58;      /* HUD threat-ring radius around the player */
+const INVIS_MIN_ALPHA = 0.45;       /* no enemy may be fully invisible */
+const UNCLOAK_WARN_TIME = 0.6;      /* stealth enemies warn 0.6s before they can damage */
+const HIT_INDICATOR_TIME = 0.6;     /* how long the directional hit indicator lasts */
 function nextWavePackDelay() {
   /* Universes 4-6 reinforce in fast encircling perimeter bursts every 0.8s;
      the earlier universes keep the steadier 1.0-1.5s cadence. */
@@ -10405,9 +10481,9 @@ function updateEchoEnemy(e, dt, ang, d, canSee) {
     e.wantY = Math.sin(ang) * radial + Math.sin(perp) * Math.sin(e.t * 1.8) * 0.5;
   }
   e.fireTimer -= dt;
-  if (canSee && e.fireTimer <= 0 && d < 820) echoFireWeapon(e, ang, d);
+  if (canSee && e.fireTimer <= 0 && d < 820 && rangedAimStep(e, dt)) echoFireWeapon(e, ang, d);
   e.echoAbilityCd -= dt;
-  if (canSee && e.echoAbilityCd <= 0 && d < 760) {
+  if (canSee && e.echoAbilityCd <= 0 && d < 760 && enemyOnScreen(e)) {
     const ids = [cls.q.id];
     for (const slot of ABILITY_SLOTS) if (hasAbility(slot)) { const def = classAbilityDef(slot, cls.id); if (def) ids.push(def.id); }
     const id = ids[e.echoAbilityIndex % ids.length];
@@ -10445,7 +10521,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
     } else {
       standoff(150);
       e.fireTimer -= dt;
-      if (canSee && e.fireTimer <= 0) {
+      if (canSee && e.fireTimer <= 0 && rangedAimStep(e, dt)) {
         e.fireTimer = 1.8;
         fireEnemyBullet(e.x, e.y, ang, 620, 'spear', 5, 1);
         Sound.enemyShot();
@@ -10489,7 +10565,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
     e.invis = d > 260 ? 1 : 0;
     if (d > 300) standoff(220); else e.wantX *= 0.9;
     e.fireTimer -= dt;
-    if (canSee && e.fireTimer <= 0 && d < 520) {
+    if (canSee && e.fireTimer <= 0 && d < 520 && rangedAimStep(e, dt)) {
       e.fireTimer = 1.5;
       fireEnemyBullet(e.x, e.y, ang, 380, 'shuriken', 5, 1);
       Sound.enemyShot();
@@ -10512,7 +10588,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
   } else if (ai === 'raider') {
     standoff(270);
     e.fireTimer -= dt;
-    if (canSee && e.fireTimer <= 0 && d < 560) {
+    if (canSee && e.fireTimer <= 0 && d < 560 && rangedAimStep(e, dt)) {
       e.fireTimer = 2.4;
       /* a shotgun: five pellets in a cone */
       for (let k = -2; k <= 2; k++) {
@@ -10534,11 +10610,11 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
   } else if (ai === 'combatdrone') {
     standoff(320);
     e.fireTimer -= dt;
-    if (canSee && e.fireTimer <= 0 && d < 640) {
+    if (canSee && e.fireTimer <= 0 && d < 640 && rangedAimStep(e, dt)) {
       e.fireTimer = 2.2;
       e.burst = 3;
     }
-    if (e.burst > 0) {
+    if (e.burst > 0 && enemyOnScreen(e)) {
       e.burstT = (e.burstT || 0) - dt;
       if (e.burstT <= 0) {
         e.burstT = 0.11;
@@ -10551,7 +10627,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
     /* silver alien drone: buzzes straight in and spits plasma */
     standoff(180);
     e.fireTimer -= dt;
-    if (canSee && e.fireTimer <= 0 && d < 520) {
+    if (canSee && e.fireTimer <= 0 && d < 520 && rangedAimStep(e, dt)) {
       e.fireTimer = 1.5;
       for (let k = 0; k < 2; k++) {
         fireEnemyBullet(e.x, e.y, ang + (k ? 0.12 : -0.12), 430, 'plasma', 6, 1);
@@ -10572,7 +10648,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
   } else if (ai === 'mech') {
     standoff(420);
     e.fireTimer -= dt;
-    if (canSee && e.fireTimer <= 0 && d < 720) {
+    if (canSee && e.fireTimer <= 0 && d < 720 && rangedAimStep(e, dt)) {
       e.fireTimer = 2.8;
       const b = fireEnemyBullet(e.x, e.y, ang, 300, 'rocket', 7, 2);
       b.homing = 1.1;
@@ -10582,7 +10658,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
     /* a mirror of Rael: same weapon, same footwork, none of the mercy */
     standoff(230);
     e.fireTimer -= dt;
-    if (canSee && e.fireTimer <= 0 && d < 620) {
+    if (canSee && e.fireTimer <= 0 && d < 620 && rangedAimStep(e, dt)) {
       e.fireTimer = 0.9;
       const cls = getClass();
       if (cls.weapon === 'blade') {
@@ -10687,7 +10763,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
     } else {
       standoff(260);
       e.fireTimer -= dt;
-      if (canSee && e.fireTimer <= 0 && d < 620) {
+      if (canSee && e.fireTimer <= 0 && d < 620 && rangedAimStep(e, dt)) {
         e.fireTimer = 2.6;
         fireEnemyBullet(e.x, e.y, ang, 620, 'laser', 3.5, 1);
         Sound.enemyShot();
@@ -10750,7 +10826,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
       e.heading = e.aimA;
       e.wantX = 0;
       e.wantY = 0;
-      if (e.aimT <= 0) {
+      if (e.aimT <= 0 && enemyOnScreen(e)) {
         fireEnemyBullet(e.x, e.y, e.aimA, 1250, 'laser', 4, 1.3);
         e.fireTimer = 2.7;
         Sound.enemyShot();
@@ -10758,7 +10834,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
     } else {
       standoff(320);
       e.fireTimer -= dt;
-      if (canSee && e.fireTimer <= 0 && d > 180 && d < 920) {
+      if (canSee && e.fireTimer <= 0 && d > 180 && d < 920 && enemyOnScreen(e)) {
         e.aimT = 0.6;
         e.aimA = ang;
         e.wantX = 0;
@@ -10849,7 +10925,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
     /* Hex Trapper: lobs a slow hex bolt that blossoms into a slowing web. */
     standoff(300);
     e.fireTimer -= dt;
-    if (canSee && e.fireTimer <= 0 && d < 800) {
+    if (canSee && e.fireTimer <= 0 && d < 800 && rangedAimStep(e, dt)) {
       e.fireTimer = 3.4;
       const b = fireEnemyBullet(e.x, e.y, ang, 185, 'hex', 9, 0);
       b.dmg = 0;
@@ -10876,7 +10952,7 @@ function updateSpecialEnemy(e, dt, ang, d, canSee) {
     e.wantX = Math.cos(ang) * 0.75;
     e.wantY = Math.sin(ang) * 0.75;
     e.fireTimer -= dt;
-    if (canSee && e.fireTimer <= 0 && d < 700) {
+    if (canSee && e.fireTimer <= 0 && d < 700 && rangedAimStep(e, dt)) {
       e.fireTimer = 2.6;
       const roll = Math.floor(rand(0, 5));
       if (roll === 0) {
@@ -11089,6 +11165,15 @@ function updateEnemies(dt) {
         canSee = true;
       }
     }
+    /* FAIRNESS: spawn telegraph. While the ground portal is active the enemy
+       cannot move, shoot, or deal contact damage. It becomes harmless once the
+       telegraph expires and the player has had a full second to see it. */
+    if (e.spawnTelegraph > 0) {
+      e.spawnTelegraph = Math.max(0, e.spawnTelegraph - dt);
+      if (e.spawnTelegraph <= 0) { e.harmless = false; e.spawnTelegraph = 0; }
+      continue;
+    }
+
     /* where they think he is: the decoy first, then Rael, then a phantom heading */
     const lure = game.decoy;
     const tx = lure ? lure.x : (canSee ? p.x : e.x + Math.cos(e.heading) * 320);
@@ -11125,7 +11210,7 @@ function updateEnemies(dt) {
       wantX = Math.cos(ang) * radial + Math.cos(perp) * Math.sin(e.zig) * 0.85;
       wantY = Math.sin(ang) * radial + Math.sin(perp) * Math.sin(e.zig) * 0.85;
       e.fireTimer -= dt;
-      if (canSee && e.fireTimer <= 0 && d < 760) {
+      if (canSee && e.fireTimer <= 0 && d < 760 && rangedAimStep(e, dt)) {
         e.fireTimer = ENEMY_DEFS.archer.fire;
         if (e.eliteVariant) {
           for (let k = -1; k <= 1; k++) fireEnemyBullet(e.x, e.y, ang + k * 0.18, 330, 'arrow', 4, 1);
@@ -11139,7 +11224,7 @@ function updateEnemies(dt) {
       wantX = Math.cos(ang) * radial;
       wantY = Math.sin(ang) * radial;
       e.fireTimer -= dt;
-      if (canSee && e.fireTimer <= 0 && d < 820) {
+      if (canSee && e.fireTimer <= 0 && d < 820 && rangedAimStep(e, dt)) {
         e.fireTimer = ENEMY_DEFS.wizard.fire;
         const b = fireEnemyBullet(e.x, e.y, ang, 210, 'orb', 8, 1);
         b.homing = 1.5;
@@ -11212,7 +11297,28 @@ function updateEnemies(dt) {
     }
 
     /* contact damage, plus whatever status the body carries */
-    if (canSee && d < e.r + p.r + 2 && e.contactCd <= 0 && !(e.attackCooldown > 0) && !(e.materializeT > 0)) {
+    const stealthy = e.invis === 1 || e.underground === true ||
+      (e.eliteVariant && e.type === 'ghost' && e.invis > 0 && e.revealT <= 0);
+    let mayDamage = true;
+    if (stealthy) {
+      /* cloaked / burrowed: cannot deal contact damage until the 0.6s
+         uncloak warning has finished and the enemy is visible. Warning only
+         counts down while the enemy is visible, so the player always sees it.
+         Ghosts never auto-uncloak, so reveal them for the warning window. */
+      if (e.uncloakWarnT <= 0) {
+        e.uncloakWarnT = UNCLOAK_WARN_TIME;
+        if (e.eliteVariant && e.type === 'ghost') {
+          e.invis = 0;
+          e.revealT = UNCLOAK_WARN_TIME + 0.15; /* stays visible just past the warn */
+        }
+      }
+      mayDamage = false;
+    } else if (e.uncloakWarnT > 0) {
+      /* just uncloaked: finish the warning flash visibly, then allow damage */
+      e.uncloakWarnT = Math.max(0, e.uncloakWarnT - dt);
+      mayDamage = e.uncloakWarnT <= 0;
+    }
+    if (canSee && !e.harmless && d < e.r + p.r + 2 && e.contactCd <= 0 && !(e.attackCooldown > 0) && !(e.materializeT > 0) && mayDamage) {
       const cdef = ENEMY_DEFS[e.type] || ENEMY_DEFS.knight;
       e.contactCd = cdef.contact ? 0.9 : 0.4;
       if (cdef.contact) hurtPlayer(enemyContactDamage(e, cdef), false, e);
@@ -11224,7 +11330,7 @@ function updateEnemies(dt) {
         applyPoison(cdef.poison);
         addText(p.x, p.y - 30, 'POISONED', '#86efac');
       }
-      /* Elite Ghosts are completely invisible until the moment they strike. */
+      /* Elite Ghosts reveal for 1.2s the moment they strike. */
       if (e.eliteVariant && e.type === 'ghost') { e.invis = 0; e.revealT = 1.2; }
     }
   }
@@ -11723,6 +11829,12 @@ function spawnBoss(opts) {
     spiral: 0,
     contactCd: 0, knockX: 0, knockY: 0, kbVx: 0, kbVy: 0, attackCooldown: 0,
     phase3Timer: 4,
+    /* FAIRNESS: the boss also telegraphs its arrival and is harmless until
+       the ground portal finishes. */
+    spawnTelegraph: SPAWN_TELEGRAPH_TIME,
+    harmless: true,
+    aimTelegraph: 0,
+    aimAngle: 0,
     entering: o.entrance? {
       t: 0, dur: 1.7,
       fromX: o.fromX, fromY: o.fromY,
@@ -11992,7 +12104,7 @@ function updateBoss(dt) {
     b.attackTimer -= dt * speedUp;
     if (b.attackTimer <= 0) {
       b.attackTimer = 2.6;
-      if (d < 230) {
+      if (d < 230 && enemyOnScreen(b)) {
         for (let i = 0; i < 12; i++) {
           const a = (i / 12) * TAU;
           fireEnemyBullet(b.x, b.y, a, 220, 'shock', 6, 1);
@@ -12009,7 +12121,7 @@ function updateBoss(dt) {
     }
     if (b.phase >= 3) {
       b.spiral += dt;
-      if (b.spiral > 3.4) {
+      if (b.spiral > 3.4 && enemyOnScreen(b)) {
         b.spiral = 0;
         for (let i = 0; i < 16; i++) {
           fireEnemyBullet(b.x, b.y, (i / 16) * TAU, 190, 'shock', 6, 1);
@@ -12031,14 +12143,14 @@ function updateBoss(dt) {
       }
     }
     b.spiral += dt * speedUp;
-    if (b.spiral > 1.1) {
+    if (b.spiral > 1.1 && enemyOnScreen(b)) {
       b.spiral = 0;
       const arms = 3 + (b.phase >= 3 ? 1 : 0);
       const base = b.t * 1.4;
       for (let i = 0; i < arms; i++) {
         const a = base + (i / arms) * TAU;
         const orb = fireEnemyBullet(b.x, b.y, a, 150, 'poison', 8, 1);
-        orb.homing = 0.35;
+        if (orb) orb.homing = 0.35;
       }
     }
     b.summonTimer -= dt;
@@ -12062,7 +12174,7 @@ function updateBoss(dt) {
       game.shake = Math.max(game.shake, 0.35);
     }
     b.attackTimer -= dt * speedUp;
-    if (b.attackTimer <= 0) {
+    if (b.attackTimer <= 0 && enemyOnScreen(b)) {
       b.attackTimer = 2.4;
       for (let i = -2; i <= 2; i++) {
         fireEnemyBullet(b.x, b.y, ang + i * 0.16, 360, 'arrow', 4, 1);
@@ -12080,12 +12192,12 @@ function updateBoss(dt) {
   } else if (zone === 3) {
     /* Archon: homing orbs, magic walls, teleport */
     b.attackTimer -= dt * speedUp;
-    if (b.attackTimer <= 0) {
+    if (b.attackTimer <= 0 && enemyOnScreen(b)) {
       b.attackTimer = 2.2;
       for (let i = 0; i < 1 + b.phase; i++) {
         const a = ang + rand(-0.4, 0.4);
         const orb = fireEnemyBullet(b.x, b.y, a, 180, 'orb', 9, 1);
-        orb.homing = 1.1;
+        if (orb) orb.homing = 1.1;
       }
     }
     b.wallTimer -= dt * speedUp;
@@ -12116,7 +12228,7 @@ function updateBoss(dt) {
   } else {
     /* Time Tyrant: everything, four phases */
     b.attackTimer -= dt * speedUp;
-    if (b.attackTimer <= 0) {
+    if (b.attackTimer <= 0 && enemyOnScreen(b)) {
       b.attackTimer = 1.9;
       if (b.phase <= 2) {
         for (let i = 0; i < 14; i++) fireEnemyBullet(b.x, b.y, (i / 14) * TAU + b.t, 210, 'shock', 6, 1);
@@ -12124,7 +12236,7 @@ function updateBoss(dt) {
         for (let i = 0; i < 2 + b.phase; i++) {
           const a = ang + rand(-0.5, 0.5);
           const orb = fireEnemyBullet(b.x, b.y, a, 190, 'orb', 9, 1);
-          orb.homing = 1.2;
+          if (orb) orb.homing = 1.2;
         }
       }
     }
@@ -13376,44 +13488,24 @@ const WAVE_SPAWN_PREFERRED_DIST = 300; /* used whenever the ring geometry allows
    possible, and the far side of the ring guarantees at least 140px. */
 function waveSpawnPoint(arena, baseAngle, preferredRadius) {
   const p = game.player || {};
-  const cx = Number.isFinite(Number(arena && arena.x)) ? Number(arena.x) : WORLD / 2;
-  const cy = Number.isFinite(Number(arena && arena.y)) ? Number(arena.y) : WORLD / 2;
-  const px = Number.isFinite(Number(p.x)) ? Number(p.x) : cx;
-  const py = Number.isFinite(Number(p.y)) ? Number(p.y) : cy;
-  const radius = arenaRadiusValue(arena || { r: ARENA_R });
-  const maxR = Math.max(20, radius - 16);
-  const base = Number.isFinite(Number(baseAngle)) ? Number(baseAngle) : rand(0, TAU);
+  const px = Number.isFinite(Number(p.x)) ? Number(p.x) : WORLD / 2;
+  const py = Number.isFinite(Number(p.y)) ? Number(p.y) : WORLD / 2;
 
-  function makePoint(angle, rr) {
-    let x = clamp(cx + Math.cos(angle) * rr, 30, WORLD - 30);
-    let y = clamp(cy + Math.sin(angle) * rr, 30, WORLD - 30);
-    const centreDist = Math.hypot(x - cx, y - cy);
-    if (centreDist > maxR && centreDist > 0.001) {
-      x = cx + (x - cx) * (maxR / centreDist);
-      y = cy + (y - cy) * (maxR / centreDist);
-    }
-    return { x: x, y: y };
+  /* FAIRNESS: safe spawn ring. Never closer than MIN_SPAWN_DIST or further
+     than MAX_SPAWN_DIST from the player, so the ground portal is always
+     visible inside the camera and nothing materializes on top of Rael. */
+  let angle = Number.isFinite(Number(baseAngle)) ? Number(baseAngle) : rand(0, TAU);
+  if (Number.isFinite(Number(p.angle)) && Math.random() < FORWARD_ARC_BIAS) {
+    /* 75% of each wave batch arrives in a 140° forward arc (±70°) ahead of
+       the player's facing/movement direction, in visible clusters. */
+    const facing = Number.isFinite(Number(p.facingAngle)) ? Number(p.facingAngle) : Number(p.angle || 0);
+    angle = facing + rand(-FORWARD_ARC_HALF, FORWARD_ARC_HALF);
   }
-
-  const preferredR = Number.isFinite(Number(preferredRadius))
-    ? clamp(Number(preferredRadius) + rand(-18, 18), Math.min(42, maxR), maxR)
-    : radius * rand(0.6, 0.92);
-  let best = makePoint(base, preferredR);
-  let bestDist = dist(best.x, best.y, px, py);
-  if (bestDist >= WAVE_SPAWN_PREFERRED_DIST) return best;
-
-  const away = dist(px, py, cx, cy) > 0.001 ? angleTo(px, py, cx, cy) : base;
-  const offsets = [0, -0.28, 0.28, -0.56, 0.56, -0.84, 0.84, Math.PI];
-  for (let i = 0; i < offsets.length; i++) {
-    const candidate = makePoint(away + offsets[i], maxR * (i === 0 ? 1 : 0.94));
-    const candidateDist = dist(candidate.x, candidate.y, px, py);
-    if (candidateDist > bestDist) {
-      best = candidate;
-      bestDist = candidateDist;
-    }
-    if (candidateDist >= WAVE_SPAWN_PREFERRED_DIST) return candidate;
-  }
-  return best;
+  const rr = clamp(MIN_SPAWN_DIST + Math.random() * (MAX_SPAWN_DIST - MIN_SPAWN_DIST) + rand(-14, 14),
+    MIN_SPAWN_DIST, MAX_SPAWN_DIST);
+  const x = clamp(px + Math.cos(angle) * rr, 30, WORLD - 30);
+  const y = clamp(py + Math.sin(angle) * rr, 30, WORLD - 30);
+  return { x: x, y: y };
 }
 
 function grantArenaGrace(reason) {
@@ -19982,7 +20074,7 @@ function artNinja(e, flash) {
   ctx.save();
   ctx.translate(e.x, e.y);
   ctx.scale(dir, 1);
-  ctx.globalAlpha = e.invis ? 0.16 : 1;
+  ctx.globalAlpha = e.invis ? INVIS_MIN_ALPHA : 1;
   const bob = Math.sin(t * 5) * 0.8;
   /* legs */
   ctx.fillStyle = flash || '#0f172a';
@@ -20223,7 +20315,7 @@ function artWraith(e, flash) {
   ctx.save();
   ctx.translate(e.x, e.y + Math.sin(t * 1.8) * 3);
   ctx.scale(dir, 1);
-  ctx.globalAlpha = e.invis ? 0.1 : 0.92;
+  ctx.globalAlpha = e.invis ? INVIS_MIN_ALPHA : 0.92;
   /* tattered cloak */
   ctx.fillStyle = flash || '#4c1d95';
   ctx.beginPath();
@@ -20358,7 +20450,7 @@ function artWraithTime(e, flash) {
     const hy = hist[k].y - e.y;
     ctx.beginPath(); ctx.ellipse(hx, hy, 6, 9, 0, 0, TAU); ctx.fill();
   }
-  ctx.globalAlpha = e.invis ? 0.12 : 0.94;
+  ctx.globalAlpha = e.invis ? INVIS_MIN_ALPHA : 0.94;
   ctx.fillStyle = flash || '#3730a3';
   ctx.beginPath();
   ctx.moveTo(-8, -13);
@@ -20536,7 +20628,7 @@ function artEcho(e, flash) {
     x: e.x, y: e.y, angle: e.heading,
     moving: (e.throttle || 0) > 0.1, walk: e.t * 10, dashTimer: 0,
     hp: e.hp, maxHp: e.maxHp, cosmetic: null,
-    cosmeticAlpha: e.invis ? 0.22 : 0.92
+    cosmeticAlpha: e.invis ? INVIS_MIN_ALPHA : 0.92
   };
   ctx.save();
   ctx.shadowColor = '#e879f9'; ctx.shadowBlur = 14;
@@ -20839,14 +20931,74 @@ function drawEnemy(e) {
   const r = e.r;
   const flash = e.hitFlash > 0 ? '#ffffff' : null;
   const box = CHAR[e.type] || { w: r * 2.4, h: r * 2.9 };
+  const t = game.time;
 
-  /* Elite Ghosts are completely invisible until they attack. */
-  if (e.eliteVariant && e.type === 'ghost' && e.invis > 0 && e.revealT <= 0) return;
+  /* FAIRNESS: spawn telegraph. While the ground portal counts down, draw a
+     pulsing red rift ring at the spawn point and fade the silhouette in from
+     0.2→1.0 opacity (scaled 0.5→1.0). The enemy is harmless the whole time. */
+  let telegraphAlpha = 1;
+  if (e.spawnTelegraph > 0) {
+    const k = 1 - clamp(e.spawnTelegraph / SPAWN_TELEGRAPH_TIME, 0, 1);
+    telegraphAlpha = 0.2 + 0.8 * k;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 10);
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.strokeStyle = 'rgba(239,68,68,' + (0.5 + 0.5 * k).toFixed(3) + ')';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 10 + 14 * k;
+    ctx.beginPath(); ctx.arc(0, 0, 26 + 34 * k + pulse * 3, 0, TAU); ctx.stroke();
+    ctx.fillStyle = 'rgba(239,68,68,' + (0.12 + 0.18 * k).toFixed(3) + ')';
+    ctx.beginPath(); ctx.arc(0, 0, 18 + 26 * k, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.globalAlpha = telegraphAlpha;
+  }
+
+  /* FAIRNESS: uncloak warning. While a stealth enemy is finishing its 0.6s
+     reveal, draw a red pulse ring around it and force it fully visible so the
+     player always sees the threat before it can deal contact damage. */
+  let warnAlpha = 1;
+  if (e.uncloakWarnT > 0) {
+    const k = 1 - clamp(e.uncloakWarnT / UNCLOAK_WARN_TIME, 0, 1);
+    const pulse = 0.5 + 0.5 * Math.sin(t * 14);
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.strokeStyle = 'rgba(239,68,68,' + (0.55 + 0.45 * k).toFixed(3) + ')';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 8 + 12 * k;
+    ctx.beginPath(); ctx.arc(0, 0, 22 + 16 * k + pulse * 3, 0, TAU); ctx.stroke();
+    ctx.fillStyle = 'rgba(239,68,68,' + (0.1 + 0.15 * k).toFixed(3) + ')';
+    ctx.beginPath(); ctx.arc(0, 0, 14 + 12 * k, 0, TAU); ctx.fill();
+    ctx.restore();
+    warnAlpha = 1;
+  }
+
+  /* FAIRNESS: aim-line telegraph. While a ranged enemy is pausing 0.45s before
+     firing, draw a faint red line from the enemy toward its aim so the player
+     can see the incoming shot before it happens. */
+  if (e.aimTelegraph > 0) {
+    const k = 1 - clamp(e.aimTelegraph / RANGED_AIM_TIME, 0, 1);
+    const a = Number.isFinite(Number(e.aimAngle)) ? Number(e.aimAngle) : 0;
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.rotate(a);
+    ctx.strokeStyle = 'rgba(239,68,68,' + (0.25 + 0.35 * k).toFixed(3) + ')';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 6;
+    ctx.setLineDash([10, 10]);
+    ctx.lineDashOffset = -game.time * 40;
+    ctx.beginPath(); ctx.moveTo(e.r + 6, 0); ctx.lineTo(420, 0); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  /* Elite Ghosts are never 100% invisible — 45% minimum. */
+  if (e.eliteVariant && e.type === 'ghost' && e.invis > 0 && e.revealT <= 0) {
+    ctx.globalAlpha = INVIS_MIN_ALPHA;
+  }
 
   /* Buried Sand Shades only show a ripple / telegraph on the sand. */
   if (e.type === 'sandshade' && e.underground) {
     ctx.save();
-    const t = game.time;
     if (e.phase === 'telegraph') {
       const k = 1 - clamp(e.stateT / 0.55, 0, 1);
       ctx.strokeStyle = 'rgba(245,212,150,' + (0.35 + 0.5 * k).toFixed(2) + ')';
@@ -20860,6 +21012,7 @@ function drawEnemy(e) {
       ctx.beginPath(); ctx.ellipse(e.x, e.y, 12 + Math.sin(t * 5) * 2, 5, 0, 0, TAU); ctx.stroke();
     }
     ctx.restore();
+    ctx.globalAlpha = 1;
     return;
   }
 
@@ -20972,6 +21125,8 @@ function drawEnemy(e) {
     ctx.strokeRect(e.x - w / 2, hy, w, 5);
     ctx.restore();
   }
+
+  ctx.globalAlpha = 1;   /* always restore: nothing after an enemy may inherit alpha */
 }
 
 
@@ -25222,12 +25377,24 @@ function drawEnemyBullets() {
       ctx.fillStyle = '#f0fdfa';
       ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.34, 0, TAU); ctx.fill();
     } else {
-      /* shock */
+      /* shock: min 7px glowing crimson core, amber outer halo, motion tail */
+      const core = Math.max(7, b.r);
+      const tail = Math.atan2(b.vy, b.vx);
+      ctx.save();
+      ctx.translate(b.x, b.y);
+      ctx.rotate(tail);
+      /* motion tail */
+      ctx.fillStyle = 'rgba(239,68,68,0.35)';
+      ctx.beginPath(); ctx.moveTo(-core - 8, -2); ctx.lineTo(-core, 0); ctx.lineTo(-core - 8, 2); ctx.closePath(); ctx.fill();
+      /* amber outer halo */
+      ctx.fillStyle = 'rgba(245,158,11,0.32)';
+      ctx.beginPath(); ctx.arc(0, 0, core + 7, 0, TAU); ctx.fill();
+      /* glowing crimson core */
       ctx.fillStyle = '#fca5a5';
-      ctx.shadowColor = '#ef4444';
-      ctx.shadowBlur = 12;
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
+      ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.arc(0, 0, core, 0, TAU); ctx.fill();
       ctx.shadowBlur = 0;
+      ctx.restore();
     }
   }
 }
@@ -26859,6 +27026,84 @@ function drawCrosshair() {
 }
 
 /* ------------------------------ main render -------------------------------- */
+/* FAIRNESS: 360° proximity threat arcs around Rael. For any enemy within
+   220px of the player (especially behind) OR just outside the visible screen
+   edge, draw a subtle curved red threat chevron on the 58px HUD ring pointing
+   at the enemy. Closer than 120px: brighter, faster pulse. */
+function drawThreatArcs() {
+  const p = game.player;
+  if (!p) return;
+  const t = game.time;
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  for (let i = 0; i < game.enemies.length; i++) {
+    const e = game.enemies[i];
+    if (!e || e.dead || e.harmless) continue;
+    const d = dist(e.x, e.y, p.x, p.y);
+    const onScreen = enemyOnScreen(e);
+    if (!(d < THREAT_CLOSE_DIST || (d < 700 && !onScreen))) continue;
+    const a = Math.atan2(e.y - p.y, e.x - p.x);
+    const close = d < THREAT_BRIGHT_DIST;
+    const speed = close ? 14 : 7;
+    const bright = close ? 1 : 0.5;
+    const pulse = 0.5 + 0.5 * Math.sin(t * speed);
+    const alpha = (0.2 + 0.5 * pulse) * bright;
+    const arcLen = close ? 1.0 : 0.6;
+    ctx.save();
+    ctx.rotate(a);
+    ctx.strokeStyle = 'rgba(239,68,68,' + alpha.toFixed(3) + ')';
+    ctx.lineWidth = close ? 3 : 2;
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = close ? 12 : 0;
+    ctx.beginPath();
+    ctx.arc(0, 0, THREAT_RING_RADIUS, -arcLen, arcLen);
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/* FAIRNESS: directional hit indicator. A bold crimson arc on a ring around
+   Rael points exactly at the damage source (x, y), and a bright crimson ring
+   marks the offending enemy/projectile. */
+function drawHitIndicator() {
+  const hi = game.hitIndicator;
+  if (!hi || hi.t <= 0) return;
+  const p = game.player;
+  const t = game.time;
+  const alpha = 0.75 + 0.25 * Math.sin(t * 16);
+  const a = Math.atan2(hi.y - p.y, hi.x - p.x);
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(a);
+  ctx.strokeStyle = 'rgba(239,68,68,' + alpha.toFixed(3) + ')';
+  ctx.lineWidth = 4.5;
+  ctx.shadowColor = '#ef4444';
+  ctx.shadowBlur = 16;
+  ctx.beginPath();
+  ctx.arc(0, 0, THREAT_RING_RADIUS + 16, -0.95, 0.95);
+  ctx.stroke();
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  ctx.moveTo(THREAT_RING_RADIUS + 22, -6);
+  ctx.lineTo(THREAT_RING_RADIUS + 36, 0);
+  ctx.lineTo(THREAT_RING_RADIUS + 22, 6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  /* bright crimson ring on the damage source */
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 3.5;
+  ctx.shadowColor = '#ef4444';
+  ctx.shadowBlur = 16;
+  ctx.beginPath();
+  ctx.arc(hi.x, hi.y, 18 + 6 * Math.sin(t * 12), 0, TAU);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function render() {
   paintBackdrop();
 
@@ -26911,6 +27156,8 @@ function render() {
   drawParticles();
   drawPetEntity();
   drawPlayer();
+  drawThreatArcs();
+  drawHitIndicator();
   drawDeathImpactRing();
   drawDeathParticles();
   drawDecoy();
@@ -26992,6 +27239,10 @@ function update(dt) {
   if (!isPaused) {
     game.time += sdt;
     game.ambientClock += dt;
+    if (game.hitIndicator) {
+      game.hitIndicator.t = Math.max(0, game.hitIndicator.t - sdt);
+      if (game.hitIndicator.t <= 0) { game.hitIndicator = null; game.hitSource = null; }
+    }
   }
 
   updateHud();
