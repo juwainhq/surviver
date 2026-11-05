@@ -3066,9 +3066,8 @@ body.touch-mode #touchControls.show{ display:block; }
 #aimTouchZone{ right:0; width:45%; pointer-events:none; }
 #joyStick{
   position:absolute;
-  left:max(24px, env(safe-area-inset-left));
-  bottom:max(24px, env(safe-area-inset-bottom));
-  width:116px; height:116px; margin:0; border-radius:50%;
+  left:24px; bottom:28px;
+  width:112px; height:112px; margin:0; border-radius:50%; z-index:9000;
   border:2px solid rgba(148,163,184,.62);
   background:radial-gradient(circle at 50% 42%, rgba(51,65,85,.34), rgba(2,6,23,.52));
   box-shadow:inset 0 0 26px rgba(0,0,0,.55), 0 8px 28px rgba(0,0,0,.38);
@@ -3091,15 +3090,16 @@ body.touch-mode #touchControls.show{ display:block; }
 }
 #fireBtn.aim-stick{
   position:absolute;
-  right:max(24px, env(safe-area-inset-right));
-  bottom:max(24px, env(safe-area-inset-bottom));
-  width:110px; height:110px; min-width:110px; min-height:110px; margin:0; padding:0;
-  border-radius:50%; border:2px solid rgba(251,113,133,.72);
-  background:radial-gradient(circle at 50% 42%, rgba(127,29,29,.30), rgba(2,6,23,.55));
-  box-shadow:inset 0 0 26px rgba(0,0,0,.58), 0 8px 28px rgba(0,0,0,.4);
-  pointer-events:auto; touch-action:none; opacity:.9;
+  right:24px; bottom:28px;
+  width:112px; height:112px; min-width:112px; min-height:112px; margin:0; padding:0;
+  border-radius:50%; z-index:9000;
+  border:2px solid #f43f5e;
+  background:rgba(244, 63, 94, 0.14);
+  box-shadow:inset 0 0 26px rgba(0,0,0,.55), 0 0 24px rgba(244,63,94,.18);
+  pointer-events:auto; touch-action:none; opacity:.92;
   -webkit-appearance:none; appearance:none; -webkit-tap-highlight-color:transparent;
 }
+#fireBtn.aim-stick.active{ border-color:#f43f5e; opacity:1; box-shadow:inset 0 0 26px rgba(0,0,0,.5), 0 0 28px rgba(244,63,94,.35); }
 #fireBtn.aim-stick.active{ border-color:#fda4af; opacity:1; box-shadow:inset 0 0 26px rgba(0,0,0,.5), 0 0 24px rgba(244,63,94,.28); }
 #aimDot{
   position:absolute; left:50%; top:50%; width:46px; height:46px; border-radius:50%;
@@ -3108,9 +3108,21 @@ body.touch-mode #touchControls.show{ display:block; }
   background:radial-gradient(circle at 38% 30%, #fda4af, #e11d48 55%, #881337);
   box-shadow:0 5px 16px rgba(0,0,0,.52), inset 0 -6px 12px rgba(0,0,0,.3);
 }
+/* crosshair / sword mark inside the aim thumb knob */
+#aimDot::before{
+  content:''; position:absolute; left:50%; top:50%;
+  width:16px; height:2px; background:#f43f5e;
+  transform:translate(-50%,-50%); border-radius:1px; opacity:.92;
+}
+#aimDot::after{
+  content:''; position:absolute; left:50%; top:50%;
+  width:2px; height:16px; background:#f43f5e;
+  transform:translate(-50%,-50%); border-radius:1px; opacity:.92;
+}
 .aim-label{
-  position:absolute; left:0; right:0; bottom:8px; pointer-events:none;
-  font:700 8px var(--font-head); letter-spacing:1.6px; text-align:center; color:rgba(255,228,230,.78);
+  position:absolute; left:0; right:0; bottom:7px; pointer-events:none;
+  font:700 9px var(--font-head); letter-spacing:1.6px; text-align:center;
+  color:rgba(255,228,230,.85); text-shadow:0 0 10px rgba(0,0,0,.8);
 }
 #btnPlantTurret{
   position:absolute; right:max(14px, env(safe-area-inset-right)); bottom:calc(max(24px, env(safe-area-inset-bottom)) + 128px);
@@ -3177,8 +3189,8 @@ body.touch-mode .touch-only{ display:block !important; }
 /* ---- compact HUD: minimap leaves the right thumb zone ---- */
 @media (max-width: 900px), (max-height: 500px){
   #minimap{
-    width:110px !important; height:110px !important;
-    top:var(--mobile-minimap-top, 118px); right:max(14px, env(safe-area-inset-right));
+    width:86px !important; height:86px !important;
+    top:52px !important; right:12px !important;
     bottom:auto !important; left:auto !important;
   }
   #abilities{
@@ -3198,7 +3210,23 @@ body.touch-mode .touch-only{ display:block !important; }
   body.touch-mode .consumable-slot .cname{ display:none; }
   body.touch-mode .consumable-slot .key{ position:absolute; left:7px; top:7px; }
   body.touch-mode .consumable-slot .cicon{ width:auto; font-size:34px; }
-  body.touch-mode #classBadge{ display:none !important; }
+  body.touch-mode #classBadge{
+    display:block !important; position:absolute !important;
+    top:58px !important; left:12px !important;
+    bottom:auto !important; width:auto !important;
+  }
+  /* center ability row between the two thumb sticks */
+  body.touch-mode #abilities{
+    bottom:18px !important; left:50% !important; right:auto !important;
+    transform:translateX(-50%) !important; z-index:9000 !important;
+    --ability-size:40px !important; --ability-gap:6px !important;
+    padding:6px 10px 4px !important;
+  }
+  body.touch-mode #abilities .ab-btn{
+    width:40px !important; height:40px !important;
+    min-width:40px !important; min-height:40px !important;
+  }
+  body.touch-mode #abilities .ab-btn svg{ width:44%; height:44%; }
 }
 
 /* ---- menu overlays opt back into smooth vertical touch scrolling ---- */
@@ -4550,9 +4578,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#070c1e', bottom: '#16233f' },
     groundTint: null,
     waves: [
-      { count: 8, types: ['knight'] },
-      { count: 12, types: ['knight', 'archer'] },
-      { count: 16, types: ['knight', 'archer'] }
+      { count: 14, types: ['knight'] },
+      { count: 20, types: ['knight', 'archer'] },
+      { count: 28, types: ['knight', 'archer'] }
     ],
     arenas: [[1440, 1520], [4640, 1760], [2960, 4840]],
     bossPos: [3000, 800],
@@ -4570,9 +4598,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#040b07', bottom: '#0d2118' },
     groundTint: null,
     waves: [
-      { count: 8, types: ['archer'] },
-      { count: 12, types: ['archer', 'knight'] },
-      { count: 16, types: ['archer', 'knight'] }
+      { count: 14, types: ['archer'] },
+      { count: 20, types: ['archer', 'knight'] },
+      { count: 28, types: ['archer', 'knight'] }
     ],
     arenas: [[1280, 1320], [4760, 1520], [2900, 4800]],
     bossPos: [4720, 4720],
@@ -4590,9 +4618,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#06080e', bottom: '#1a2333' },
     groundTint: null,
     waves: [
-      { count: 8, types: ['knight'] },
-      { count: 12, types: ['knight', 'archer', 'wizard'] },
-      { count: 16, types: ['knight', 'archer', 'wizard', 'ghost'], eliteMin: 2 }
+      { count: 14, types: ['knight'] },
+      { count: 20, types: ['knight', 'archer', 'wizard'] },
+      { count: 28, types: ['knight', 'archer', 'wizard', 'ghost'], eliteMin: 2 }
     ],
     arenas: [[1400, 1800], [4600, 1280], [3120, 4680]],
     bossPos: [3000, 760],
@@ -4610,9 +4638,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#080414', bottom: '#1b1035' },
     groundTint: null,
     waves: [
-      { count: 8, types: ['wizard'] },
-      { count: 12, types: ['wizard', 'ghost'] },
-      { count: 16, types: ['wizard', 'ghost', 'archer'], eliteMin: 2 }
+      { count: 14, types: ['wizard'] },
+      { count: 20, types: ['wizard', 'ghost'] },
+      { count: 28, types: ['wizard', 'ghost', 'archer'], eliteMin: 2 }
     ],
     arenas: [[1520, 1280], [4720, 1960], [2960, 4760]],
     bossPos: [1240, 4720],
@@ -4630,9 +4658,9 @@ const MEDIEVAL_LEVELS = [
     sky: { top: '#02040a', bottom: '#061426' },
     groundTint: null,
     waves: [
-      { count: 8, types: ['knight', 'archer', 'wizard', 'ghost'] },
-      { count: 12, types: ['knight', 'archer', 'wizard', 'ghost'] },
-      { count: 16, types: ['knight', 'archer', 'wizard', 'ghost'], eliteMin: 2 }
+      { count: 14, types: ['knight', 'archer', 'wizard', 'ghost'] },
+      { count: 20, types: ['knight', 'archer', 'wizard', 'ghost'] },
+      { count: 28, types: ['knight', 'archer', 'wizard', 'ghost'], eliteMin: 2 }
     ],
     arenas: [[1400, 1440], [4640, 1440], [3000, 4720]],
     bossPos: [4540, 4600],
@@ -4890,60 +4918,97 @@ const UNIVERSE_BLUEPRINTS = [
 ];
 
 
-/* One boss per level. Index = universeIndex * 5 + zoneIndex. */
-const BOSS_ARRAY = [
-  /* Universe 1 · Medieval */
-  { name: 'Sir Malvork the Gatekeeper', hp: 40, r: 40, color: '#dc2626', speed: 92, kit: 'gatekeeper' },
-  { name: 'The Plague Witch', hp: 50, r: 36, color: '#22c55e', speed: 70, kit: 'plaguewitch' },
-  { name: 'Baron Von Crest', hp: 60, r: 42, color: '#3b82f6', speed: 82, kit: 'baroncrest' },
-  { name: 'The Siege Engine', hp: 70, r: 46, color: '#f59e0b', speed: 58, kit: 'siegeengine' },
-  { name: 'The Black Knight', hp: 100, r: 48, color: '#a855f7', speed: 86, kit: 'blackknight' },
-  /* Universe 2 · Ancient Egypt */
-  { name: 'Anubis Sentinel', hp: 40, r: 42, color: '#eab308', speed: 72, kit: 'pharaoh' },
-  { name: 'High Priest of Set', hp: 55, r: 40, color: '#b91c1c', speed: 68, kit: 'pharaoh' },
-  { name: 'The Scorpion King', hp: 70, r: 44, color: '#ea580c', speed: 78, kit: 'pharaoh' },
-  { name: 'Sphinx of the Nile', hp: 85, r: 46, color: '#0ea5e9', speed: 64, kit: 'pharaoh' },
-  { name: 'The Pharaoh', hp: 100, r: 46, color: '#f5b642', speed: 66, kit: 'pharaoh' },
-  /* Universe 3 · Feudal Japan */
-  { name: 'Ronin of the Gate', hp: 44, r: 40, color: '#ef4444', speed: 98, kit: 'shogun' },
-  { name: 'Bamboo Oni', hp: 60, r: 46, color: '#16a34a', speed: 84, kit: 'shogun' },
-  { name: 'Kitsune of Blades', hp: 77, r: 40, color: '#ec4899', speed: 104, kit: 'shogun' },
-  { name: 'Daimyo Ironclaw', hp: 94, r: 44, color: '#64748b', speed: 92, kit: 'shogun' },
-  { name: 'Shogun Kage', hp: 110, r: 44, color: '#f472b6', speed: 96, kit: 'shogun' },
-  /* Universe 4 · Post-Apocalypse */
-  { name: 'Rust Raider Captain', hp: 48, r: 44, color: '#92400e', speed: 88, kit: 'warlord' },
-  { name: 'Mutant Behemoth', hp: 66, r: 50, color: '#4d7c0f', speed: 72, kit: 'warlord' },
-  { name: 'Scrap Titan', hp: 84, r: 52, color: '#9ca3af', speed: 66, kit: 'warlord' },
-  { name: 'General Fallout', hp: 102, r: 48, color: '#d97706', speed: 84, kit: 'warlord' },
-  { name: 'Warlord Rex', hp: 120, r: 50, color: '#a3b42c', speed: 84, kit: 'warlord' },
-  /* Universe 5 · Deep Space */
-  { name: 'Alien Broodmother', hp: 52, r: 48, color: '#38bdf8', speed: 70, kit: 'hivequeen' },
-  { name: 'Void Stalker', hp: 72, r: 44, color: '#8b5cf6', speed: 86, kit: 'hivequeen' },
-  { name: 'Star Hive Guard', hp: 91, r: 50, color: '#e2e8f0', speed: 64, kit: 'hivequeen' },
-  { name: 'Nebula Warden', hp: 111, r: 50, color: '#6d28d9', speed: 68, kit: 'hivequeen' },
-  { name: 'The Hive Queen', hp: 130, r: 52, color: '#7c3aed', speed: 62, kit: 'hivequeen' },
-  /* Universe 6 · The Void */
-  { name: 'Shade of Regret', hp: 80, r: 48, color: '#c084fc', speed: 78, kit: 'architect' },
-  { name: 'Time Wraith Prime', hp: 110, r: 48, color: '#818cf8', speed: 82, kit: 'architect' },
-  { name: 'Chaos Herald', hp: 140, r: 52, color: '#f43f5e', speed: 76, kit: 'architect' },
-  { name: 'Entropy Sovereign', hp: 170, r: 54, color: '#581c87', speed: 72, kit: 'architect' },
-  { name: 'The Architect of Oblivion', hp: 200, r: 56, color: '#9333ea', speed: 70, kit: 'architect' }
+/* One unique boss per level, indexed as BOSS_ROSTER[universeIndex][zoneIndex].
+   Thirty distinct champions across six universes. Each entry carries its own
+   name, silhouette radius, colour theme, base speed and kit (signature attack
+   pattern). Actual max HP is computed dynamically by bossHpForCurrentZone() so
+   no boss can be melted in a single burst. */
+const BOSS_ROSTER = [
+  /* Universe 1 · Medieval 1347 AD */
+  [
+    { name: 'Sir Malvork, Ashen Warden', hp: 40, r: 40, color: '#dc2626', speed: 92, kit: 'gatekeeper' },
+    { name: 'Sylvara the Blight Weaver', hp: 50, r: 36, color: '#22c55e', speed: 70, kit: 'plaguewitch' },
+    { name: 'Ironclad Gregor', hp: 60, r: 42, color: '#3b82f6', speed: 82, kit: 'baroncrest' },
+    { name: 'Arch-Prelate Vane', hp: 70, r: 46, color: '#f59e0b', speed: 58, kit: 'siegeengine' },
+    { name: 'The Black Knight, Rift Sovereign', hp: 100, r: 48, color: '#a855f7', speed: 86, kit: 'blackknight' }
+  ],
+  /* Universe 2 · Ancient Egypt 2500 BC */
+  [
+    { name: 'Khepri the Sun-Scarab Colossus', hp: 40, r: 42, color: '#eab308', speed: 72, kit: 'scarab' },
+    { name: 'Anubis Blood-Stalker', hp: 55, r: 40, color: '#b91c1c', speed: 68, kit: 'lich' },
+    { name: 'High Mummy Imhotep', hp: 70, r: 44, color: '#ea580c', speed: 78, kit: 'pharaoh' },
+    { name: 'Sobek the Nile Butcher', hp: 85, r: 46, color: '#0ea5e9', speed: 64, kit: 'pharaoh' },
+    { name: 'Pharaoh Akhen-Ra, Solar God', hp: 100, r: 46, color: '#f5b642', speed: 66, kit: 'pharaoh' }
+  ],
+  /* Universe 3 · Feudal Japan 1600 AD */
+  [
+    { name: 'Kenshin the Blood Ronin', hp: 44, r: 40, color: '#ef4444', speed: 98, kit: 'shogun' },
+    { name: 'Lady Yurei of the Weeping Shrine', hp: 60, r: 46, color: '#16a34a', speed: 84, kit: 'shogun' },
+    { name: 'General Takeda the Iron Demon', hp: 77, r: 40, color: '#ec4899', speed: 104, kit: 'shogun' },
+    { name: 'Hattori the 100-Shadow Master', hp: 94, r: 44, color: '#64748b', speed: 92, kit: 'shogun' },
+    { name: 'Shogun Kage, Calamity Oni', hp: 110, r: 44, color: '#f472b6', speed: 96, kit: 'shogun' }
+  ],
+  /* Universe 4 · Post-Apocalypse 2087 AD */
+  [
+    { name: 'Road-Hound Krag', hp: 48, r: 44, color: '#92400e', speed: 88, kit: 'warlord' },
+    { name: 'Chemist Vexx', hp: 66, r: 50, color: '#4d7c0f', speed: 72, kit: 'warlord' },
+    { name: 'Goliath Scrap-Walker', hp: 84, r: 52, color: '#9ca3af', speed: 66, kit: 'warlord' },
+    { name: 'Meltdown Core-09', hp: 102, r: 48, color: '#d97706', speed: 84, kit: 'meltdown' },
+    { name: 'Warlord Rex & The Doomsday Tank', hp: 120, r: 50, color: '#a3b42c', speed: 84, kit: 'warlord' }
+  ],
+  /* Universe 5 · Deep Space 3500 AD */
+  [
+    { name: 'Warden Droid X-99', hp: 52, r: 48, color: '#38bdf8', speed: 70, kit: 'warden' },
+    { name: 'Cryo-Abomination Zero', hp: 72, r: 44, color: '#8b5cf6', speed: 86, kit: 'warden' },
+    { name: 'Valkyrie Rail-Mech', hp: 91, r: 50, color: '#e2e8f0', speed: 64, kit: 'warden' },
+    { name: 'Subject Omega Xenomorph', hp: 111, r: 50, color: '#6d28d9', speed: 68, kit: 'nullseraph' },
+    { name: 'The Hive Empress', hp: 130, r: 52, color: '#7c3aed', speed: 62, kit: 'hivequeen' }
+  ],
+  /* Universe 6 · The Void — End of Time */
+  [
+    { name: 'Chronos the Shattered', hp: 80, r: 48, color: '#c084fc', speed: 78, kit: 'architect' },
+    { name: 'Dark Rael (Fallen Paradox)', hp: 110, r: 48, color: '#818cf8', speed: 82, kit: 'architect' },
+    { name: 'Null-Seraph', hp: 140, r: 52, color: '#f43f5e', speed: 76, kit: 'nullseraph' },
+    { name: 'Leviathan of Entropy', hp: 170, r: 54, color: '#581c87', speed: 72, kit: 'leviathan' },
+    { name: 'The Architect of Oblivion', hp: 200, r: 56, color: '#9333ea', speed: 70, kit: 'architect' }
+  ]
 ];
 function bossForLevel(universeIndex, zoneIndex) {
-  return BOSS_ARRAY[clamp(universeIndex | 0, 0, 5) * 5 + clamp(zoneIndex | 0, 0, 4)] || BOSS_ARRAY[0];
+  const u = clamp(universeIndex | 0, 0, 5);
+  const z = clamp(zoneIndex | 0, 0, 4);
+  return BOSS_ROSTER[u][z] || BOSS_ROSTER[0][0];
 }
 /* Boss HP by level within a universe: L1=80, L2=120, L3=160, L4=200, L5=280.
    Set at spawn time so every champion fight lasts minutes, not seconds. */
 const BOSS_HP_BY_LEVEL = [80, 120, 160, 200, 280];
 function bossHpForCurrentZone() {
-  return BOSS_HP_BY_LEVEL[clamp(levelInUniverse(gameState.currentZone) - 1, 0, BOSS_HP_BY_LEVEL.length - 1)];
+  /* Dynamic boss HP: scales with universe, zone (level within universe) and
+     the player's class level so no boss can be melted in a few seconds. */
+  const zoneIdx = clamp(levelInUniverse(gameState.currentZone) - 1, 0, 4);
+  const universeIdx = clamp(gameState.currentUniverse | 0, 0, 5);
+  const classLevel = Math.max(1, Number(gameState.level || 1));
+  return (120 + zoneIdx * 65) * Math.pow(1.85, universeIdx) * (1 + classLevel * 0.12);
 }
 
+/* Authored arena wave sizes per universe (wave 1 / wave 2 / wave 3).
+   Universe 1 keeps the gentle medieval intro; Universes 2-6 climb into
+   true vampire-survivors horde territory. */
+const UNIVERSE_WAVE_COUNTS = [
+  [14, 20, 28],   /* U1 · Medieval   */
+  [28, 38, 50],   /* U2 · Egypt      */
+  [40, 55, 70],   /* U3 · Japan      */
+  [60, 85, 110],  /* U4 · Wasteland  */
+  [75, 100, 130], /* U5 · Deep Space */
+  [90, 115, 150]  /* U6 · The Void   */
+];
+function waveCountsFor(universeIndex) {
+  return UNIVERSE_WAVE_COUNTS[clamp(universeIndex | 0, 0, UNIVERSE_WAVE_COUNTS.length - 1)];
+}
 /* one level of a universe: the same shape as a medieval zone, themed and scaled */
 function makeUniverseLevel(uni, i) {
   const tier = i + 1;
   const types = uni.enemies;
-  const count = 8 + i * 2;
+  const counts = waveCountsFor(uni.index);
   return {
     id: tier,
     name: uni.levelTitles[i],
@@ -4957,9 +5022,9 @@ function makeUniverseLevel(uni, i) {
     skyArt: uni.skyArt,
     groundTint: null,
     waves: [
-      { count: 12, types: [types[0]] },
-      { count: 18, types: types.length > 2 ? [types[0], types[1], types[2]] : types.slice() },
-      { count: 25, types: types.slice(), eliteMin: 2 }
+      { count: counts[0], types: [types[0]] },
+      { count: counts[1], types: types.length > 2 ? [types[0], types[1], types[2]] : types.slice() },
+      { count: counts[2], types: types.slice(), eliteMin: 2 }
     ],
     arenas: ARENA_LAYOUTS[(i + uni.index * 2) % ARENA_LAYOUTS.length],
     bossPos: BOSS_SPOTS[(i + uni.index) % BOSS_SPOTS.length],
@@ -5224,6 +5289,7 @@ const gameState = {
   shards: [],
   stalkerTimer: 5,
   stalkerWarned: false,
+  hordeTimer: 2.5,
   particles: [],
   footsteps: [],
   breakables: [],
@@ -5506,6 +5572,7 @@ function loadZone(zoneIndex, opts) {
   if (game.shards) game.shards.length = 0;
   game.stalkerTimer = 5;
   game.stalkerWarned = false;
+  game.hordeTimer = 2.5;
   game.particles.length = 0;
   game.footsteps.length = 0;
   game.texts.length = 0;
@@ -5862,6 +5929,11 @@ function isPortraitMobileViewport() {
   return v.h > v.w && v.w <= 900;
 }
 function portraitZoomFactor() {
+  const w = window.innerWidth || 0;
+  const h = window.innerHeight || 0;
+  /* narrow mobile portrait: zoom in so the player, enemies and projectiles
+     are large and readable instead of tiny dots */
+  if (w < 600 && h > w) return 1.65;
   const touch = !!(
     (document.body && document.body.classList.contains('touch-mode')) ||
     (typeof game !== 'undefined' && game && game.touchMode)
@@ -6033,56 +6105,74 @@ function nearestEnemyTo(x, y, maxDist) {
    touch FIRE button drives the same flag). There is no auto-fire and no
    auto-aim anywhere in the loop. */
 function attackHeld() { return !!game.mouse.down; }
+function isTouchAiming() { return !!(touchAim && touchAim.active); }
 
 /* Time-Rift stalkers: violet hunters that slip through the rift while you
    travel between arenas. They never join a wave (arena: null), so arena
    clears are never held hostage by a roamer you left behind. */
+const HORDE_PULSE = 2.5;          /* seconds between roaming pulses */
+const HORDE_ROAMER_CAP = 220;     /* ceiling so the horde stays playable */
+const HORDE_COUNT = [
+  { min: 4, max: 6 },    /* U1 · Medieval   */
+  { min: 10, max: 14 },  /* U2 · Egypt      */
+  { min: 16, max: 22 },  /* U3 · Japan      */
+  { min: 24, max: 32 },  /* U4 · Wasteland  */
+  { min: 32, max: 42 },  /* U5 · Deep Space */
+  { min: 45, max: 60 }   /* U6 · The Void   */
+];
+function roamerCountForUniverse(u) {
+  const c = HORDE_COUNT[clamp(u | 0, 0, HORDE_COUNT.length - 1)];
+  return Math.floor(rand(c.min, c.max));
+}
+/* Time-Rift roaming horde: while the player is between arenas, a continuous
+   ring of swarm enemies pulses onto the camera perimeter every 2.5s. Density
+   climbs sharply from Universe 2 onward so the late rifts feel like a true
+   vampire-survivors horde. Roamers never join arena waves. */
 function tickRiftStalkers(dt) {
   const p = game.player;
   if (!p || p.hp <= 0) return;
+  let roamers = 0;
+  let arenaBusy = false;
   for (let i = game.enemies.length - 1; i >= 0; i--) {
     const e = game.enemies[i];
-    if (!e || (e.type !== 'stalker' && !e.roamer)) continue;
-    const d = Math.hypot(e.x - p.x, e.y - p.y);
-    e.staleT = d > 1500 ? (e.staleT || 0) + dt : 0;
-    if (e.staleT > 8) {
-      for (let k = 0; k < 8; k++) spawnParticle(e.x, e.y, rand(-60, 60), rand(-60, 60), 0.5, 4, '#c4b5fd', 2);
-      game.enemies.splice(i, 1);
+    if (!e) continue;
+    if (e.type === 'stalker' || e.roamer) {
+      roamers++;
+      const d = Math.hypot(e.x - p.x, e.y - p.y);
+      e.staleT = d > 1500 ? (e.staleT || 0) + dt : 0;
+      if (e.staleT > 8) {
+        for (let k = 0; k < 8; k++) spawnParticle(e.x, e.y, rand(-60, 60), rand(-60, 60), 0.5, 4, '#c4b5fd', 2);
+        game.enemies.splice(i, 1);
+        roamers--;
+      }
+    } else if (e.arena !== null && e.arena !== undefined) {
+      arenaBusy = true;
     }
   }
-  let arenaBusy = false;
-  let stalkers = 0;
-  for (let i = 0; i < game.enemies.length; i++) {
-    const e = game.enemies[i];
-    if (!e) continue;
-    if (e.type === 'stalker' || e.roamer) stalkers++;
-    else if (e.arena !== null && e.arena !== undefined) arenaBusy = true;
-  }
-  if (arenaBusy || stalkers >= 4) return;
-  game.stalkerTimer -= dt;
-  if (game.stalkerTimer > 0) return;
-  game.stalkerTimer = 6;
-  const n = Math.min(4 - stalkers, 1 + (Math.random() < 0.5 ? 1 : 0));
-  let spawnedStalker = false;
+  /* between arenas only; never flood an active arena fight */
+  if (arenaBusy || roamers >= HORDE_ROAMER_CAP) return;
+  game.hordeTimer -= dt;
+  if (game.hordeTimer > 0) return;
+  game.hordeTimer = HORDE_PULSE;
+  const u = gameState.currentUniverse;
+  let n = roamerCountForUniverse(u);
+  n = Math.min(n, HORDE_ROAMER_CAP - roamers);
+  if (n <= 0) return;
+  const types = u === 0
+    ? (isUniverseOneTutorial() ? ['knight', 'archer'] : ['knight', 'archer', 'ghost'])
+    : ['swarm', 'stalker'];
   for (let k = 0; k < n; k++) {
     const a = rand(0, Math.PI * 2);
-    const d = rand(620, 780);
+    const d = rand(640, 860);
     const x = Math.max(60, Math.min(WORLD - 60, p.x + Math.cos(a) * d));
     const y = Math.max(60, Math.min(WORLD - 60, p.y + Math.sin(a) * d));
-    const roamType = gameState.currentUniverse === 0
-      ? pick(isUniverseOneTutorial() ? ['knight', 'archer'] : ['knight', 'archer', 'ghost'])
-      : (Math.random() < 0.42 ? 'swarm' : 'stalker');
+    const roamType = pick(types);
     const roamer = spawnEnemy(roamType, x, y, null, {});
     if (roamType !== 'stalker') roamer.roamer = true;
-    else spawnedStalker = true;
-    for (let j = 0; j < 10; j++) {
+    for (let j = 0; j < 6; j++) {
       const pa = rand(0, Math.PI * 2);
       spawnParticle(x, y, Math.cos(pa) * rand(20, 90), Math.sin(pa) * rand(20, 90), 0.5, 5, roamType === 'swarm' ? '#facc15' : '#c4b5fd', 2);
     }
-  }
-  if (spawnedStalker && !game.stalkerWarned) {
-    game.stalkerWarned = true;
-    showBanner('A TIME-RIFT STALKER HUNTS YOU');
   }
 }
 
@@ -6198,6 +6288,24 @@ function updatePlayer(dt) {
     try { touchAimApplied = applyTouchAimToPlayer(p, psx, psy); } catch (e) { touchAimApplied = false; }
   }
   if (!touchAimApplied) p.angle = Math.atan2(game.mouse.y - psy, game.mouse.x - psx);
+
+  /* While the right fire stick is active, keep a virtual cursor out in front
+     of the player at touchAim.angle and lock the facing angle so every weapon
+     fires along the stick direction even without a mouse cursor. */
+  if (touchAim && touchAim.active && p) {
+    const aimX = p.x + Math.cos(touchAim.angle) * 180;
+    const aimY = p.y + Math.sin(touchAim.angle) * 180;
+    if (game.mouse) {
+      game.mouse.worldX = aimX;
+      game.mouse.worldY = aimY;
+      game.mouse.x = aimX;
+      game.mouse.y = aimY;
+      game.mouse.screenX = aimX;
+      game.mouse.screenY = aimY;
+    }
+    p.facingAngle = touchAim.angle;
+    if (Number.isFinite(Number(touchAim.angle))) p.angle = touchAim.angle;
+  }
 
   /* chip timers */
   if (p.phaseTimer > 0) p.phaseTimer = Math.max(0, p.phaseTimer - dt);
@@ -7910,7 +8018,7 @@ function updateSword(dt) {
   }
 
   /* hold the button to keep swinging; the cooldown paces it */
-  if (attackHeld() && p.swingCd <= 0 && p.swingT <= 0) swingSword();
+  if ((attackHeld() || isTouchAiming()) && p.swingCd <= 0 && p.swingT <= 0) swingSword();
 }
 
 /* ------------------------------ class weapons ------------------------------
@@ -8119,7 +8227,7 @@ function fireClassWeapon(dt) {
     updateAxes(dt);
     return;
   }
-  if (attackHeld() && p.fireTimer <= 0) {
+  if ((attackHeld() || isTouchAiming()) && p.fireTimer <= 0) {
     if (cls.weapon === 'pistols') firePistols(charged);
     else if (cls.weapon === 'rail') fireSniper(charged);
     else if (cls.weapon === 'daggers') fireDaggers(charged);
@@ -8227,7 +8335,7 @@ function updateAxes(dt) {
       rand(-70, 70), rand(-70, 70), rand(0.14, 0.26), rand(2, 4.6), '#ffb27a', 4);
   }
 
-  if (attackHeld() && p.swingCd <= 0) swingAxes();
+  if ((attackHeld() || isTouchAiming()) && p.swingCd <= 0) swingAxes();
 }
 
 /* --------------------------- shadow assassin daggers ------------------------
@@ -9556,6 +9664,9 @@ const WAVE_OPENING_PACK_MIN = 6;
 const WAVE_OPENING_PACK_MAX = 8;
 const WAVE_BREATHER = 1.2;
 function nextWavePackDelay() {
+  /* Universes 4-6 reinforce in fast encircling perimeter bursts every 0.8s;
+     the earlier universes keep the steadier 1.0-1.5s cadence. */
+  if (gameState.currentUniverse >= 3) return 0.8;
   return rand(WAVE_PACK_INTERVAL_MIN, WAVE_PACK_INTERVAL_MAX);
 }
 
@@ -10020,11 +10131,12 @@ function spawnWave(arena, arenaIndex, waveIndex) {
     : (Number.isFinite(Number(arena.id)) ? Math.floor(Number(arena.id)) : 0);
   normalizeArenaState(arena, safeArenaIndex, totalWaves);
   const wave = z.waves[safeWaveIndex] || { count: 1, types: ['knight'] };
-  const diff = universeDifficulty(gameState.currentUniverse);
-  /* +1 enemy per wave for each level past level 1 — difficulty scaling, so
-     it applies from Universe 2 onward; Universe 1 keeps its base wave sizes */
+  /* Wave sizes are now authored per universe (see ZONES / makeUniverseLevel).
+     Difficulty still scales enemy HP, speed and damage via spawnEnemy(); the
+     wave count itself is the explicit authored number so every universe hits
+     its target horde size. */
   const levelBonus = gameState.currentUniverse >= 1 ? levelInUniverse(gameState.currentZone) - 1 : 0;
-  const count = Math.max(1, Math.round((Number(wave.count) || 1) * diff.wave) + levelBonus);
+  const count = Math.max(1, Math.round(Number(wave.count) || 1) + levelBonus);
   arena.active = true;
   arena.spawnQueue = count;
   arena.toSpawn = count;
@@ -10088,7 +10200,10 @@ function spawnWaveEnemy(arena) {
   arena.elitesSpawned = Number.isFinite(Number(arena.elitesSpawned)) ? Math.max(0, Math.floor(Number(arena.elitesSpawned))) : 0;
   /* elites unlock from universe 3 onward — and always on the final wave */
   const elitesAllowed = !isUniverseOneTutorial() && (gameState.currentUniverse >= 2 || waveIndex >= 2);
-  let eliteVariant = elitesAllowed && ((i + 1) % 3 === 0) && Math.random() < 0.25;
+  /* Universes 4-6 field a higher share of elites (20%-35%) in their waves. */
+  const u = gameState.currentUniverse;
+  const eliteChance = u >= 3 ? (0.20 + (u - 3) * 0.075) : 0.25;
+  let eliteVariant = elitesAllowed && ((i + 1) % 3 === 0) && Math.random() < eliteChance;
   /* guarantee the final wave's elite quota by forcing the tail spawns */
   if (elitesAllowed && arena.eliteMin > arena.elitesSpawned && queueAfter <= arena.eliteMin - arena.elitesSpawned) eliteVariant = true;
   if (type === 'goblin') eliteVariant = false;   /* the courier is a chase, not a tank */
@@ -11762,6 +11877,7 @@ function updateBoss(dt) {
   if (b.disabledT > 0) { b.disabledT = Math.max(0, b.disabledT - dt); return; }
   const p = game.player;
   b.t += dt;
+  if (b.phaseInvulnT > 0) b.phaseInvulnT = Math.max(0, b.phaseInvulnT - dt);
   if (b.hitFlash > 0) b.hitFlash = Math.max(0, b.hitFlash - dt);
 
   /* ---- dramatic entrance: slide in from off screen, hold fire ---- */
@@ -11802,15 +11918,38 @@ function updateBoss(dt) {
   }
   if (newPhase !== b.phase) {
     b.phase = newPhase;
+    /* phase-transition barrier: 2.0s of invulnerability while the boss
+       rearms, plus a signature attack and +25% attack speed. */
+    b.phaseInvulnT = 2.0;
+    b.attackSpeedMult = (b.attackSpeedMult || 1) * 1.25;
     UI.bossPhase.textContent = 'PHASE ' + b.phase;
     UI.bossPhase.className = 'p' + b.phase;
     BossMusic.setPhase(b.phase);
     showBanner('PHASE ' + ['1', '2', '3', '4'][b.phase - 1]);
     Sound.bossAppear();
-    game.shake = 0.6;
+    game.shake = 0.8;
     for (let i = 0; i < 26; i++) {
       const a = rand(0, TAU);
       spawnParticle(b.x, b.y, Math.cos(a) * rand(80, 300), Math.sin(a) * rand(80, 300), 0.5, 10, b.color, 3);
+    }
+    /* signature phase attack: a bullet-hell ring or 4 elite bodyguards */
+    const phaseRing = b.phase >= 2;
+    if (phaseRing) {
+      const rings = b.phase >= 3 ? 2 : 1;
+      for (let ri = 0; ri < rings; ri++) {
+        const offset = (ri / Math.max(1, rings)) * TAU;
+        for (let i = 0; i < 12; i++) {
+          const a = offset + (i / 12) * TAU;
+          spawnEnemy('swarm', b.x + Math.cos(a) * 60, b.y + Math.sin(a) * 60, null, { eliteVariant: true });
+        }
+      }
+      showBanner('PHASE ' + b.phase + ' · BARRIER UP');
+    } else {
+      /* first transition: summon 4 elite bodyguards */
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * TAU;
+        spawnEnemy('swarm', b.x + Math.cos(a) * 140, b.y + Math.sin(a) * 140, null, { eliteVariant: true });
+      }
     }
   }
 
@@ -12047,6 +12186,8 @@ function damageBoss(dmg, meta) {
   const b = game.boss;
   if (!b) return;
   if (b.entering) return;
+  /* phase-transition barrier: the boss is invulnerable while shifting phase */
+  if (b.phaseInvulnT > 0) return;
   meta = meta || {};
   meta.dmg = dmg;
   b.lastHitMeta = meta;
@@ -12071,6 +12212,8 @@ function damageBoss(dmg, meta) {
     if (eaten >= dmg) return;
     dmg -= eaten;
   }
+  /* anti-melt: a single hit can never remove more than 12% of boss max HP */
+  dmg = Math.min(dmg, 0.12 * b.maxHp);
   b.hp -= dmg;
   b.hitFlash = 0.1;
   Sound.bossHit();
@@ -21596,6 +21739,178 @@ const BOSS_KITS = {
         ctx.stroke();
       }
     }
+  },
+
+  /* ------ distinct kits so every boss keeps its own signature pattern ------ */
+  scarab: {
+    init(b) { b.k = { roll: 2.6, swarm: 5.0 }; },
+    update(b, dt) {
+      const k = b.k, p = game.player;
+      const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
+      bossStride(b, dt, b.speed * (phase >= 2 ? 1.35 : 1), 220);
+      k.roll -= dt;
+      if (k.roll <= 0) {
+        k.roll = phase >= 2 ? 2.0 : 2.6;
+        const a = bossAim(b);
+        b.charging = 0.45;
+        b.chargeDir = { x: Math.cos(a), y: Math.sin(a) };
+        Sound.bossCast();
+      }
+      if (b.charging > 0) { bossChargeStep(b, dt, 7.2); return; }
+      k.swarm -= dt;
+      if (k.swarm <= 0) {
+        k.swarm = phase >= 2 ? 3.5 : 5.0;
+        const a = bossAim(b);
+        for (let i = 0; i < phase + 1; i++) {
+          const aa = a + rand(-0.5, 0.5);
+          spawnEnemy('swarm', b.x + Math.cos(aa) * 40, b.y + Math.sin(aa) * 40, null, { eliteVariant: phase >= 2 });
+        }
+        Sound.bossCast();
+      }
+    },
+    draw(b, flash) { drawArmouredGiant(b, MEDIEVAL_BOSS_PAL.baron, flash ? '#ffffff' : null); }
+  },
+  lich: {
+    init(b) { b.k = { bolt: 2.4, fade: 5.0, fadeT: 0 }; },
+    update(b, dt) {
+      const k = b.k, p = game.player;
+      const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
+      bossStride(b, dt, b.speed * 0.7, 300);
+      k.bolt -= dt;
+      if (k.bolt <= 0) {
+        k.bolt = phase >= 2 ? 1.6 : 2.4;
+        const a = bossAim(b);
+        fireEnemyBullet(b.x, b.y, a, 330, 'poison', 9, 1);
+        fireEnemyBullet(b.x, b.y, a + 0.35, 300, 'poison', 9, 1);
+        fireEnemyBullet(b.x, b.y, a - 0.35, 300, 'poison', 9, 1);
+        Sound.bossCast();
+      }
+      k.fadeT -= dt;
+      if (k.fadeT <= 0) {
+        k.fadeT = phase >= 2 ? 4.0 : 5.0;
+        b.invis = 0.9;
+        setTimeout(() => { if (b) b.invis = 0; }, 900);
+      }
+    },
+    draw(b, flash) { drawRobedGiant(b, ROBE_PAL.witch, flash ? '#ffffff' : null); }
+  },
+  warlord: {
+    init(b) { b.k = { gun: 1.4, tank: 5.0 }; },
+    update(b, dt) {
+      const k = b.k, p = game.player;
+      const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
+      bossStride(b, dt, b.speed * 0.8, 260);
+      k.gun -= dt;
+      if (k.gun <= 0) {
+        k.gun = phase >= 2 ? 0.9 : 1.4;
+        const a = bossAim(b);
+        for (let i = -1; i <= 1; i++) fireEnemyBullet(b.x, b.y, a + i * 0.08, 620, 'pellet', 4, 1);
+        Sound.enemyShot();
+      }
+      k.tank -= dt;
+      if (k.tank <= 0) {
+        k.tank = 5.0;
+        const a = bossAim(b);
+        fireEnemyBullet(b.x, b.y, a, 260, 'cannon', 14, 3);
+        Sound.bossCast();
+      }
+    },
+    draw(b, flash) { drawArmouredGiant(b, MEDIEVAL_BOSS_PAL.siege, flash ? '#ffffff' : null); }
+  },
+  meltdown: {
+    init(b) { b.k = { beam: 4.2, pulse: 2.2 }; },
+    update(b, dt) {
+      const k = b.k, p = game.player;
+      const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
+      bossStride(b, dt, b.speed * 0.65, 320);
+      k.beam -= dt;
+      if (k.beam <= 0 && !k.beamObj) {
+        k.beam = phase >= 2 ? 3.2 : 4.2;
+        k.beamObj = { t: 0, charge: 0.9, fire: 0.4, angle: bossAim(b) };
+        Sound.bossCast();
+      }
+      if (k.beamObj) {
+        const bm = k.beamObj;
+        bm.t += dt; bm.angle = bossAim(b);
+        if (bm.t > bm.charge && bm.t < bm.charge + bm.fire) {
+          const x2 = b.x + Math.cos(bm.angle) * 1600;
+          const y2 = b.y + Math.sin(bm.angle) * 1600;
+          if (segHitsCircle(b.x, b.y, x2, y2, p.x, p.y, 20)) hurtPlayer(enemyDamage(1));
+        }
+        if (bm.t > bm.charge + bm.fire) k.beamObj = null;
+      }
+      k.pulse -= dt;
+      if (k.pulse <= 0) {
+        k.pulse = 2.2;
+        for (let i = 0; i < 8; i++) fireEnemyBullet(b.x, b.y, (i / 8) * TAU, 260, 'plasma', 6, 1);
+      }
+    },
+    draw(b, flash) { drawArmouredGiant(b, MEDIEVAL_BOSS_PAL.siege, flash ? '#ffffff' : null); }
+  },
+  warden: {
+    init(b) { b.k = { zap: 2.0, shield: 0 }; },
+    update(b, dt) {
+      const k = b.k, p = game.player;
+      const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
+      bossStride(b, dt, b.speed * 0.9, 240);
+      k.zap -= dt;
+      if (k.zap <= 0) {
+        k.zap = phase >= 2 ? 1.4 : 2.0;
+        const a = bossAim(b);
+        for (let i = -2; i <= 2; i++) fireEnemyBullet(b.x, b.y, a + i * 0.07, 430, 'plasma', 5, 1);
+        Sound.enemyShot();
+      }
+      if ((k.shield || 0) <= 0 && phase >= 2 && Math.random() < 0.015) {
+        k.shield = 3.0;
+        b.shield = Math.ceil(b.maxHp * 0.4);
+        b.maxShield = b.shield;
+      }
+      if (k.shield > 0) { k.shield -= dt; if (k.shield <= 0) b.shield = 0; }
+    },
+    draw(b, flash) { drawArmouredGiant(b, MEDIEVAL_BOSS_PAL.gatekeeper, flash ? '#ffffff' : null); }
+  },
+  nullseraph: {
+    init(b) { b.k = { bolt: 1.8, ring: 3.6 }; },
+    update(b, dt) {
+      const k = b.k, p = game.player;
+      const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
+      bossStride(b, dt, b.speed * 1.05, 300);
+      k.bolt -= dt;
+      if (k.bolt <= 0) {
+        k.bolt = phase >= 2 ? 1.2 : 1.8;
+        const a = bossAim(b);
+        fireEnemyBullet(b.x, b.y, a, 380, 'plasma', 7, 1);
+        Sound.enemyShot();
+      }
+      k.ring -= dt;
+      if (k.ring <= 0) {
+        k.ring = phase >= 2 ? 2.6 : 3.6;
+        for (let i = 0; i < 10; i++) fireEnemyBullet(b.x, b.y, (i / 10) * TAU, 280, 'shock', 6, 1);
+        Sound.bossCast();
+      }
+    },
+    draw(b, flash) { drawRobedGiant(b, ROBE_PAL.archon, flash ? '#ffffff' : null); }
+  },
+  leviathan: {
+    init(b) { b.k = { spit: 2.2, slam: 5.0 }; },
+    update(b, dt) {
+      const k = b.k, p = game.player;
+      const phase = bossPhaseStep(b, [1, 0.66, 0.33]);
+      bossStride(b, dt, b.speed * 0.6, 340);
+      k.spit -= dt;
+      if (k.spit <= 0) {
+        k.spit = phase >= 2 ? 1.5 : 2.2;
+        const a = bossAim(b);
+        for (let i = -2; i <= 2; i++) fireEnemyBullet(b.x, b.y, a + i * 0.11, 300, 'acid', 8, 1);
+        Sound.bossCast();
+      }
+      k.slam -= dt;
+      if (k.slam <= 0) {
+        k.slam = 5.0;
+        for (let i = 0; i < 12; i++) fireEnemyBullet(b.x, b.y, (i / 12) * TAU + b.t, 220, 'plasma', 6, 1);
+      }
+    },
+    draw(b, flash) { drawRobedGiant(b, ROBE_PAL.archon, flash ? '#ffffff' : null); }
   }
 };
 
@@ -26893,6 +27208,15 @@ const touchInputState = {
     angle: 0, hasAim: false, autoAim: true, laser: false, target: null
   }
 };
+
+/* Global touch-aim authority for the right fire stick. The stick UI keeps
+   driving touchInputState.aim (laser, knob, p.angle), while touchAim drives
+   the primary-weapon trigger so shooting is explicit and identifier-tracked. */
+const touchAim = {
+  active: false,
+  angle: 0,
+  justTapped: false
+};
 game.touchInput = touchInputState;
 game.touchMove = touchInputState.move;
 game.touchAim = touchInputState.aim;
@@ -27110,6 +27434,7 @@ function updateTouchMoveFromStick(dx, dy) {
 
 function updateTouchAimFromStick(dx, dy) {
   const aim = touchInputState.aim;
+  const p = game.player;
   dx = Number(dx) || 0;
   dy = Number(dy) || 0;
   aim.dx = dx;
@@ -27117,16 +27442,44 @@ function updateTouchAimFromStick(dx, dy) {
   aim.distance = Math.hypot(aim.dx, aim.dy);
   aim.firing = true;
   game.touchFiring = true;
+  /* the right fire stick is the firing authority */
+  touchAim.active = true;
+  touchAim.justTapped = true;
   if (isTouchGameplayActive()) game.mouse.down = true;
-  if (aim.distance > TOUCH_AIM_DEADZONE) {
+  if (aim.distance > 10) {
     aim.autoAim = false;
     aim.laser = true;
     aim.target = null;
-    setTouchAimAngle(Math.atan2(dy, dx));
+    const a = Math.atan2(dy, dx);
+    setTouchAimAngle(a);
+    touchAim.angle = a;
   } else {
+    /* held near centre: auto-aim at the nearest living enemy within 500px,
+       otherwise keep the current facing angle */
     aim.autoAim = true;
     aim.laser = false;
-    refreshTouchAutoAim();
+    aim.target = null;
+    let target = null;
+    let bestD = 500;
+    if (p && Array.isArray(game.enemies)) {
+      for (let i = 0; i < game.enemies.length; i++) {
+        const e = game.enemies[i];
+        if (!e || e.dead || !(Number(e.hp) > 0)) continue;
+        const d = Math.hypot(e.x - p.x, e.y - p.y);
+        if (d < bestD) { bestD = d; target = e; }
+      }
+    }
+    let a;
+    if (target) {
+      a = Math.atan2(target.y - p.y, target.x - p.x);
+      aim.target = target;
+    } else if (p && Number.isFinite(Number(p.angle))) {
+      a = Number(p.angle);
+    } else {
+      a = 0;
+    }
+    setTouchAimAngle(a);
+    touchAim.angle = a;
   }
   setTouchKnob(touchElements().aimDot, aim.dx, aim.dy, TOUCH_AIM_KNOB_TRAVEL);
   if (game.player) applyTouchAimToPlayer(game.player);
@@ -27164,6 +27517,8 @@ function resetAimTouch() {
   aim.target = null;
   game.touchFiring = false;
   game.touchAimLaserVisible = false;
+  touchAim.active = false;
+  touchAim.justTapped = false;
   if (wasFiring) game.mouse.down = false;
   const els = touchElements();
   if (els.fire) els.fire.classList.remove('active');
