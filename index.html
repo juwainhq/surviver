@@ -168,7 +168,7 @@
     position:absolute; inset:0; pointer-events:none;
     font-family:var(--font-stat);
   }
-  #topLeft{ position:absolute; top:16px; left:22px; display:flex; flex-direction:column; gap:7px; }
+  #topLeft{ position:absolute; top:16px; padding-top:env(safe-area-inset-top, 8px); left:22px; display:flex; flex-direction:column; gap:7px; }
   #orbs{ display:flex; gap:7px; align-items:center; }
   .orb{
     width:13px; height:13px; border-radius:50%;
@@ -193,7 +193,7 @@
   }
 
   #objective{
-    position:absolute; top:18px; left:50%; transform:translateX(-50%);
+    position:absolute; top:16px; padding-top:env(safe-area-inset-top, 8px); left:50%; transform:translateX(-50%);
     font-family:var(--font-head); font-style:italic; font-size:17px;
     color:#f3d494; letter-spacing:.4px; white-space:nowrap; text-align:center;
   }
@@ -2208,7 +2208,7 @@ html,body{ background:var(--bg); color:var(--text); }
 #objective{ color:var(--text); font-style:italic; text-shadow:0 2px 12px #000; }   /* italic parchment */
 #topRight{                             /* wooden plaque, top-right */
   background:linear-gradient(180deg, rgba(18,20,29,.93), rgba(26,18,8,.93));
-  border:1px solid var(--border); border-radius:2px; padding:7px 14px; gap:16px;
+  border:1px solid var(--border); border-radius:2px; padding:7px 14px; padding-top:env(safe-area-inset-top, 8px); top:16px; gap:16px;
   box-shadow:inset 0 1px 0 rgba(226,232,240,.15), inset 0 -2px 6px rgba(0,0,0,.5), 0 4px 14px rgba(0,0,0,.5);
 }
 #topRight .stat{ color:var(--text); font-variant-numeric:tabular-nums; }
@@ -3151,7 +3151,7 @@ body.touch-mode #btnPlantTurret.show{ display:flex; }
 body.touch-mode #mobilePauseBtn{ top:max(14px, env(safe-area-inset-top)); right:max(14px, env(safe-area-inset-right)); }
 body.touch-mode #mobilePauseBtn.show{ display:flex; }
 #mobilePauseBtn:active{ background:rgba(255,255,255,.14); }
-body.touch-mode #topRight{ right:var(--pause-clearance, 72px) !important; top:14px; }
+body.touch-mode #topRight{ right:var(--pause-clearance, 72px) !important; }
 
 /* ---- portrait rotate prompt (dismissible; camera also zooms to 0.78x) ---- */
 #rotatePrompt{
@@ -5463,7 +5463,7 @@ function makePlayer() {
     dashDir: { x: 1, y: 0 },
     shield: 0,          /* only granted by the Temporal Shield upgrade */
     arc: false,
-    magnet: 26,
+    magnet: 130,
     walk: 0,
     moving: false,
     footAcc: 0,
@@ -6191,31 +6191,35 @@ function tickRiftStalkers(dt) {
    never be stranded behind a results screen. */
 function spawnXpShards(x, y, totalXp, kind) {
   if (!game.shards) game.shards = [];
-  let parts = kind === 'boss' ? 5 : kind === 'elite' ? 3 : 1;
-  parts = Math.max(1, Math.min(parts, totalXp));
-  const base = Math.floor(totalXp / parts);
-  let rem = totalXp - base * parts;
-  for (let i = 0; i < parts; i++) {
-    const v = base + (rem-- > 0 ? 1 : 0);
-    if (v <= 0) continue;
-    const a = rand(0, Math.PI * 2);
-    const sp = rand(40, 130);
-    game.shards.push({
-      x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-      value: v, kind, t: rand(0, 6), life: 0, pulled: kind === 'boss', magnetized: kind === 'boss', pullSpeed: 260
-    });
+  if (totalXp <= 0) return;
+  const nearby = game.shards.find(s => Math.hypot(s.x - x, s.y - y) <= 90);
+  if (nearby) {
+    nearby.value += totalXp;
+    if (kind === 'boss') { nearby.pulled = true; nearby.magnetized = true; nearby.kind = 'boss'; }
+    return;
   }
-  while (game.shards.length > 140) {
-    const old = game.shards.shift();
-    const last = game.shards[game.shards.length - 1];
-    if (last && old) last.value += old.value;
-  }
+  game.shards.push({ x, y, vx: 0, vy: 0, value: totalXp, kind,
+    t: rand(0, 6), life: 0, pulled: kind === 'boss', magnetized: kind === 'boss', pullSpeed: 260 });
 }
+
 function updateShards(dt) {
   if (!game.shards || !game.shards.length) return;
   const p = game.player;
   if (!p) return;
-  const magnetRadius = (p.magnet || 110) + 60;
+  const magnetRadius = p.magnet || 130;
+  // Coalesce even shards that drift into range after they were spawned.
+  for (let i = 0; i < game.shards.length; i++) {
+    const target = game.shards[i];
+    for (let j = game.shards.length - 1; j > i; j--) {
+      const other = game.shards[j];
+      if (Math.hypot(target.x - other.x, target.y - other.y) > 90) continue;
+      target.value += other.value;
+      target.pulled = target.pulled || other.pulled;
+      target.magnetized = target.magnetized || other.magnetized;
+      if (other.kind === 'boss') target.kind = 'boss';
+      game.shards.splice(j, 1);
+    }
+  }
   for (let i = game.shards.length - 1; i >= 0; i--) {
     const s = game.shards[i];
     s.t += dt;
@@ -6249,7 +6253,6 @@ function updateShards(dt) {
     if (collected) {
       game.shards.splice(i, 1);
       awardClassXP(s.value, s.kind);
-      if (s.value >= 5) addText(p.x, p.y - 42, '+' + s.value + ' XP', '#38bdf8', 13, 34, 0.7);
       for (let k = 0; k < 3; k++) spawnParticle(s.x, s.y, rand(-40, 40), rand(-60, -10), 0.35, 3, '#38bdf8', 1.5);
     }
   }
@@ -6267,7 +6270,7 @@ function drawShards() {
     ctx.rotate(Math.sin(s.t * 2.2) * 0.35);
     ctx.fillStyle = '#38bdf8';
     ctx.shadowColor = '#0284c7';
-    ctx.shadowBlur = big ? 16 : 10;
+    ctx.shadowBlur = 0;
     ctx.beginPath();
     ctx.moveTo(0, -R); ctx.lineTo(R * 0.62, 0); ctx.lineTo(0, R); ctx.lineTo(-R * 0.62, 0);
     ctx.closePath(); ctx.fill();
@@ -6456,16 +6459,7 @@ function updatePlayer(dt) {
     }
   }
 
-  /* --- footstep trail: one print every ~26px travelled --- */
-  if (p.dashTimer <= 0 && p.moving) {
-    p.footAcc += Math.max(p.speed * 0.35, Math.hypot(p.vx, p.vy)) * dt;
-    if (p.footAcc >= 26) {
-      p.footAcc = 0;
-      dropFootprint(p);
-    }
-  } else if (!p.moving) {
-    p.footAcc = 20;   /* first step lands immediately when you set off */
-  }
+
 
   if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
   if (p.invincibleTimer > 0) p.invincibleTimer = Math.max(0, p.invincibleTimer - dt);
@@ -9700,6 +9694,8 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
   if (safeType === 'scavengerbot') { e.stolen = 0; }
   if (safeType === 'voidleech') { e.attached = false; e.attachT = 0; e.drainTick = 0; e.attachCd = 0; }
   if (safeType === 'echo') { e.echoAbilityCd = rand(2.5, 4.5); e.echoAbilityIndex = 0; e.echoStormT = 0; e.echoChargeT = 0; e.echoBuffT = 0; }
+  // Capture the final scaled spawn health as the bar denominator.
+  e.maxHp = e.hp;
   game.enemies.push(e);
   petWarnSpawn(safeX, safeY);
   return e;
@@ -9727,7 +9723,7 @@ const WAVE_BREATHER = 1.2;
    warns of close/off-screen threats, stealth enemies stay partially visible,
    and every hit shows a directional hit indicator.
    --------------------------------------------------------------------------- */
-const SPAWN_TELEGRAPH_TIME = 1.0;   /* seconds every enemy telegraphs before danger */
+const SPAWN_TELEGRAPH_TIME = 0.8;   /* seconds every enemy telegraphs before danger */
 const MIN_SPAWN_DIST = 260;         /* never spawn closer than this to the player */
 const MAX_SPAWN_DIST = 420;         /* never spawn further than this (stays on screen) */
 const FORWARD_ARC_BIAS = 0.75;      /* share of a wave batch that spawns ahead of the player */
@@ -11204,8 +11200,7 @@ function updateEnemies(dt) {
       }
     } else if (e.type === 'archer') {
       e.zig += dt * 3.4;
-      const want = 250;
-      const radial = d > want + 60 ? 1 : (d < want - 70 ? -1 : 0);
+      const radial = d > 240 ? 1 : (d < 180 ? -1 : 0);
       const perp = ang + Math.PI / 2;
       wantX = Math.cos(ang) * radial + Math.cos(perp) * Math.sin(e.zig) * 0.85;
       wantY = Math.sin(ang) * radial + Math.sin(perp) * Math.sin(e.zig) * 0.85;
@@ -11277,24 +11272,19 @@ function updateEnemies(dt) {
     e.throttle = approach(e.throttle, clamp(wantLen, 0, 1), dt * 5.5);
     const attackRecoverySpeed = e.attackCooldown > 0 ? ENEMY_ATTACK_RECOVERY_SPEED_MULT : 1;
     const stride = e.speed * e.throttle * (e.slowT > 0 ? 0.45 : 1) * attackRecoverySpeed;
-    e.x += Math.cos(e.heading) * stride * dt;
-    e.y += Math.sin(e.heading) * stride * dt;
+    let stepX = Math.cos(e.heading) * stride * dt;
+    let stepY = Math.sin(e.heading) * stride * dt;
+    // Steering inertia and higher-universe AI must not carry archers inward.
+    if (e.type === 'archer' && canSee && !lure && d <= 240 && d > 0.001) {
+      const nx = (p.x - e.x) / d, ny = (p.y - e.y) / d;
+      const inward = stepX * nx + stepY * ny;
+      if (inward > 0) { stepX -= nx * inward; stepY -= ny * inward; }
+    }
+    e.x += stepX;
+    e.y += stepY;
     updateEnemyKnockback(e, dt);
 
     collideObstacles(e);
-
-    /* keep enemies from stacking on each other */
-    for (let j = i - 1; j >= 0; j--) {
-      const o = game.enemies[j];
-      const min = e.r + o.r;
-      const dx = e.x - o.x, dy = e.y - o.y;
-      const dd = Math.hypot(dx, dy);
-      if (dd > 0.001 && dd < min) {
-        const push = (min - dd) / 2;
-        e.x += (dx / dd) * push; e.y += (dy / dd) * push;
-        o.x -= (dx / dd) * push; o.y -= (dy / dd) * push;
-      }
-    }
 
     /* contact damage, plus whatever status the body carries */
     const stealthy = e.invis === 1 || e.underground === true ||
@@ -11335,6 +11325,42 @@ function updateEnemies(dt) {
     }
   }
   game.currentShooter = null;
+}
+
+// Resolve after all movement, including frozen, spawning and knocked-back enemies.
+// Repeated pair passes reduce crowd overlap; the final player pass is hard even
+// during invulnerability. Coincident centres get a deterministic direction.
+function separateEnemies() {
+  const p = game.player;
+  if (!p) return;
+  const enemies = game.enemies.filter(e => e && !e.dead);
+  function separatePlayer(e, i) {
+    let dx = e.x - p.x, dy = e.y - p.y;
+    let d = Math.hypot(dx, dy);
+    const min = (p.r || 0) + (e.r || 0);
+    if (d >= min) return;
+    if (d < 0.0001) { const a = i * 2.399963; dx = Math.cos(a); dy = Math.sin(a); d = 1; }
+    e.x = p.x + dx / d * min;
+    e.y = p.y + dy / d * min;
+  }
+  for (let pass = 0; pass < 6; pass++) {
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      separatePlayer(e, i);
+      for (let j = i + 1; j < enemies.length; j++) {
+        const o = enemies[j];
+        let dx = o.x - e.x, dy = o.y - e.y, d = Math.hypot(dx, dy);
+        const min = Math.max(24, (e.r || 0) + (o.r || 0));
+        if (d >= min) continue;
+        if (d < 0.0001) { const a = (i + j + 1) * 2.399963; dx = Math.cos(a); dy = Math.sin(a); d = 0; }
+        const nx = d ? dx / d : dx, ny = d ? dy / d : dy;
+        const push = (min - d) / 2;
+        e.x -= nx * push; e.y -= ny * push;
+        o.x += nx * push; o.y += ny * push;
+      }
+    }
+  }
+  enemies.forEach(separatePlayer);
 }
 
 /* swept test so fast bolts can never tunnel through (or skip) a target */
@@ -11714,7 +11740,7 @@ function damageEnemy(e, dmg, silent, noChain, meta) {
   if (idx >= 0) game.enemies.splice(idx, 1);
 
   const def = ENEMY_DEFS[e.type] || ENEMY_DEFS.knight;
-  /* 10 points x the gem multiplier, plus the floating +10 above the body */
+  /* Award score and leave XP for collection. */
   awardKill(e);
   onSkillKill(e, e.lastHitMeta);
   game.kills += 1;
@@ -11722,10 +11748,10 @@ function damageEnemy(e, dmg, silent, noChain, meta) {
   petOnKill();
 
   if (!silent) Sound.enemyDeath();
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 4; i++) {
     const a = rand(0, TAU);
-    spawnParticle(e.x, e.y, Math.cos(a) * rand(50, 220), Math.sin(a) * rand(50, 220),
-      rand(0.25, 0.5), rand(4, 9), def.color, 3);
+    spawnParticle(e.x, e.y, Math.cos(a) * rand(25, 65), Math.sin(a) * rand(25, 65),
+      0.25, rand(2, 4), def.color, 3);
   }
 
   /* Chain Lightning: the killing blow arcs to the nearest survivor, half power */
@@ -14288,8 +14314,7 @@ function addScore(points) {
 
 /* THE payout for an enemy death — the one place a kill becomes score.
    Every enemy dies inside damageEnemy (it is the only code that removes a body
-   from game.enemies), so every death lands here: the score, the +10 that pops
-   above the corpse and fades over 0.8 seconds, and the save that keeps it. */
+   from game.enemies), so every death lands here: score, XP and persistence. */
 function awardKill(e) {
   const xp = e && e.isBoss ? CLASS_XP_VALUES.boss : e && e.elite ? CLASS_XP_VALUES.elite : CLASS_XP_VALUES.regular;
   const xpKind = e && e.isBoss ? 'boss' : e && e.elite ? 'elite' : 'regular';
@@ -14304,7 +14329,6 @@ function awardKill(e) {
   }
   gs.score += 10 * gs.mult;
   updateHUD();
-  if (e) addText(e.x, e.y - (e.r || 14) - 8, '+10', '#ffe9a8', 17, 40, 0.8);
   saveGame('kill');
   return 10 * gs.mult;
 }
@@ -20940,16 +20964,12 @@ function drawEnemy(e) {
   if (e.spawnTelegraph > 0) {
     const k = 1 - clamp(e.spawnTelegraph / SPAWN_TELEGRAPH_TIME, 0, 1);
     telegraphAlpha = 0.2 + 0.8 * k;
-    const pulse = 0.5 + 0.5 * Math.sin(t * 10);
     ctx.save();
-    ctx.translate(e.x, e.y);
-    ctx.strokeStyle = 'rgba(239,68,68,' + (0.5 + 0.5 * k).toFixed(3) + ')';
-    ctx.lineWidth = 3;
-    ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 10 + 14 * k;
-    ctx.beginPath(); ctx.arc(0, 0, 26 + 34 * k + pulse * 3, 0, TAU); ctx.stroke();
-    ctx.fillStyle = 'rgba(239,68,68,' + (0.12 + 0.18 * k).toFixed(3) + ')';
-    ctx.beginPath(); ctx.arc(0, 0, 18 + 26 * k, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(239,68,68,0.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(e.x, e.y, Math.max(20, e.r + 8), 0, TAU); ctx.stroke();
     ctx.restore();
+
     ctx.globalAlpha = telegraphAlpha;
   }
 
@@ -21112,14 +21132,14 @@ function drawEnemy(e) {
     ctx.fillRect(e.x - w / 2, sy, w * clamp(e.shield / e.maxShield, 0, 1), 4);
   }
 
-  if (e.hp < e.maxHp) {
+  if (e.hp > 0 && e.hp < e.maxHp) {
     const w = Math.max(24, r * 1.55);
     const hy = e.y - box.h * 0.62 - 3;
     ctx.save();
     ctx.fillStyle = 'rgba(2,6,23,0.68)';
     ctx.fillRect(e.x - w / 2, hy, w, 5);
     ctx.fillStyle = '#ef4444';
-    ctx.fillRect(e.x - w / 2 + 1, hy + 1, Math.max(0, (w - 2) * clamp(e.hp / e.maxHp, 0, 1)), 3);
+    ctx.fillRect(e.x - w / 2 + 1, hy + 1, Math.max(0, Math.min(1, e.hp / e.maxHp)) * (w - 2), 3);
     ctx.strokeStyle = 'rgba(255,255,255,0.35)';
     ctx.lineWidth = 0.8;
     ctx.strokeRect(e.x - w / 2, hy, w, 5);
@@ -22563,30 +22583,10 @@ function soldierGlow(p) {
 
 /* ---- the pulsing aura ring on the ground beneath the feet ---- */
 function drawSoldierAura(p, g) {
-  const pulse = 0.5 + 0.5 * Math.sin(game.time * 1.5);   /* slow, ~4s cycle */
-  const R = 30 + pulse * 5;
   ctx.save();
-  ctx.globalAlpha = (0.32 + 0.34 * pulse) * g.flick;
-  ctx.translate(p.x, p.y + SOLDIER.feet - 3);
-  ctx.scale(1, 0.42);
-
-  const fill = ctx.createRadialGradient(0, 0, R * 0.3, 0, 0, R);
-  fill.addColorStop(0, 'rgba(' + g.rgb + ',0.02)');
-  fill.addColorStop(0.7, 'rgba(' + g.rgb + ',0.16)');
-  fill.addColorStop(1, 'rgba(' + g.rgb + ',0)');
-  ctx.fillStyle = fill;
-  ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill();
-
-  ctx.shadowColor = g.glow;
-  ctx.shadowBlur = 18;
-  ctx.strokeStyle = 'rgba(' + g.rgb + ',0.8)';
-  ctx.lineWidth = 2.6;
-  ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.stroke();
-
-  ctx.globalAlpha *= 0.62;
-  ctx.shadowBlur = 8;
-  ctx.lineWidth = 1.3;
-  ctx.beginPath(); ctx.arc(0, 0, R * 0.74, 0, TAU); ctx.stroke();
+  ctx.strokeStyle = 'rgba(' + g.rgb + ',0.25)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(p.x, p.y + SOLDIER.feet - 3, 30, 0, TAU); ctx.stroke();
   ctx.restore();
 }
 
@@ -23577,38 +23577,51 @@ function drawWorldBoundary(camX, camY, viewportW, viewportH) {
   ctx.restore();
 }
 
+// World-anchored tiles give movement a stable reference in every universe.
+const FLOOR_PALETTES = [
+  ['#1e222d', '#252a37', '#14171f'],
+  ['#2d2418', '#362b1d', '#1c160e'],
+  ['#1f2421', '#272e2a', '#131715'],
+  ['#22252a', '#2a2e35', '#16181c'],
+  ['#1a2230', '#212b3c', '#0f151f'],
+  ['#1e182b', '#261f36', '#120e1a']
+];
 function drawGround() {
-  const z = ZONES[gameState.currentZone];
-  const tileSize = GROUND_TILE_SIZE;
-  const camX = Number.isFinite(Number(game.cam.x)) ? Number(game.cam.x) : 0;
-  const camY = Number.isFinite(Number(game.cam.y)) ? Number(game.cam.y) : 0;
-  const viewportW = viewW();
-  const viewportH = viewH();
-
-  const startTileX = Math.floor(camX / tileSize) - 1;
-  const startTileY = Math.floor(camY / tileSize) - 1;
-  const endTileX = Math.ceil((camX + viewportW) / tileSize) + 1;
-  const endTileY = Math.ceil((camY + viewportH) / tileSize) + 1;
-
-  ctx.fillStyle = groundPatternFor(gameState.currentZone);
-  for (let tileY = startTileY; tileY <= endTileY; tileY++) {
-    for (let tileX = startTileX; tileX <= endTileX; tileX++) {
-      ctx.fillRect(tileX * tileSize, tileY * tileSize, tileSize, tileSize);
+  const size = 64;
+  const x = Number(game.cam.x) || 0, y = Number(game.cam.y) || 0;
+  const left = Math.floor(x / size) - 1, top = Math.floor(y / size) - 1;
+  const right = Math.ceil((x + viewW()) / size) + 1;
+  const bottom = Math.ceil((y + viewH()) / size) + 1;
+  const palette = FLOOR_PALETTES[gameState.currentUniverse] || FLOOR_PALETTES[0];
+  ctx.save();
+  for (let ty = top; ty <= bottom; ty++) {
+    for (let tx = left; tx <= right; tx++) {
+      const px = tx * size, py = ty * size;
+      ctx.fillStyle = palette[(tx + ty) & 1];
+      ctx.fillRect(px, py, size, size);
+      // Fill rather than stroke the seams so each border is exactly 2px wide.
+      ctx.fillStyle = palette[2];
+      ctx.fillRect(px, py, size, 2);
+      ctx.fillRect(px, py, 2, size);
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillRect(px + 2, py + 2, size - 2, 1);
+      ctx.fillRect(px + 2, py + 3, 1, size - 3);
     }
   }
+  ctx.restore();
+  drawWorldBoundary(x, y, viewW(), viewH());
+}
 
-  /* subtle zone tint over the same bleeding floor area */
-  ctx.fillStyle = hexToRgba(z.accent, 0.03);
-  ctx.fillRect(
-    startTileX * tileSize,
-    startTileY * tileSize,
-    (endTileX - startTileX + 1) * tileSize,
-    (endTileY - startTileY + 1) * tileSize
-  );
-
-  /* large atmosphere decals on top of the tiles, then the playable border */
-  drawFloorArt();
-  drawWorldBoundary(camX, camY, viewportW, viewportH);
+function drawArenaGround() {
+  for (const a of game.arenas) {
+    if (!a) continue;
+    a.r = arenaRadiusValue(a);
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = a.cleared ? 'rgba(16,185,129,0.45)' : 'rgba(225,29,72,0.45)';
+    ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, TAU); ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function drawArenaGround() {
@@ -23690,110 +23703,13 @@ function drawArenaGround() {
 
 /* ------------------------------ boss arena ring ---------------------------- */
 function drawBossArena() {
-  const t = game.time;
-
-  /* ---- armed ring: a red summoning circle marks where the fight happens --- */
-  const bz = game.bossZone;
-  if (bz) {
-    const pulse = 0.5 + 0.5 * Math.sin(t * 2.4);
-    ctx.save();
-    /* dark red pool so it reads as "the boss zone" from a distance */
-    const pool = ctx.createRadialGradient(bz.x, bz.y, bz.r * 0.12, bz.x, bz.y, bz.r);
-    pool.addColorStop(0, 'rgba(220,38,38,' + (0.05 + 0.05 * pulse).toFixed(3) + ')');
-    pool.addColorStop(0.72, 'rgba(160,20,20,0.05)');
-    pool.addColorStop(1, 'rgba(200,30,30,0)');
-    ctx.fillStyle = pool;
-    ctx.beginPath(); ctx.arc(bz.x, bz.y, bz.r, 0, TAU); ctx.fill();
-
-    ctx.strokeStyle = 'rgba(255,70,70,' + (0.55 + 0.3 * pulse).toFixed(3) + ')';
-    ctx.lineWidth = 3;
-    ctx.shadowColor = 'rgba(255,40,40,0.9)';
-    ctx.shadowBlur = 22;
-    ctx.beginPath(); ctx.arc(bz.x, bz.y, bz.r, 0, TAU); ctx.stroke();
-
-    ctx.lineWidth = 2;
-    ctx.setLineDash([18, 16]);
-    ctx.lineDashOffset = -t * 26;
-    ctx.strokeStyle = 'rgba(255,120,120,0.7)';
-    ctx.beginPath(); ctx.arc(bz.x, bz.y, bz.r * 0.82, 0, TAU); ctx.stroke();
-    ctx.setLineDash([]);
-
-    /* rotating inner sigil */
-    ctx.save();
-    ctx.translate(bz.x, bz.y);
-    ctx.rotate(t * 0.5);
-    ctx.strokeStyle = 'rgba(255,90,90,0.55)';
-    ctx.lineWidth = 2;
-    for (let k = 0; k < 3; k++) {
-      ctx.beginPath();
-      ctx.arc(0, 0, bz.r * 0.46, (k / 3) * TAU, (k / 3) * TAU + 1.25);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    /* central boss-zone beacon: a 60px pulsing red marker at the exact
-       world position (the render camera transform places it on screen) */
-    const beacon = ctx.createRadialGradient(bz.x, bz.y, 4, bz.x, bz.y, 60);
-    beacon.addColorStop(0, 'rgba(255,225,225,' + (0.55 + 0.25 * pulse).toFixed(3) + ')');
-    beacon.addColorStop(0.45, 'rgba(239,68,68,' + (0.34 + 0.2 * pulse).toFixed(3) + ')');
-    beacon.addColorStop(1, 'rgba(185,28,28,0)');
-    ctx.fillStyle = beacon;
-    ctx.shadowColor = 'rgba(255,40,40,0.95)';
-    ctx.shadowBlur = 26;
-    ctx.beginPath(); ctx.arc(bz.x, bz.y, 60, 0, TAU); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,120,120,' + (0.65 + 0.3 * pulse).toFixed(3) + ')';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(bz.x, bz.y, 60, 0, TAU); ctx.stroke();
-
-    ctx.fillStyle = 'rgba(255,190,190,' + (0.6 + 0.35 * pulse).toFixed(3) + ')';
-    ctx.font = '700 15px Cinzel, serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('BOSS ARENA', bz.x, bz.y - bz.r - 20);
-    ctx.restore();
-  }
-
-  /* ---- locked arena: a burning red boundary the player cannot cross ------- */
   const f = game.bossFight;
-  if (!f) return;
-  const fade = f.active ? 1 : clamp(f.fade, 0, 1);
-  if (fade <= 0.001) return;
-
-  const pulse = 0.5 + 0.5 * Math.sin(t * 3.1);
+  const arena = f && (f.active || f.fade > 0) ? f : game.bossZone;
+  if (!arena) return;
   ctx.save();
-
-  const pool = ctx.createRadialGradient(f.x, f.y, f.r * 0.2, f.x, f.y, f.r);
-  pool.addColorStop(0, 'rgba(120,10,10,0.10)');
-  pool.addColorStop(0.75, 'rgba(180,20,20,0.10)');
-  pool.addColorStop(1, 'rgba(255,60,60,0.16)');
-  ctx.globalAlpha = fade;
-  ctx.fillStyle = pool;
-  ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, TAU); ctx.fill();
-
-  /* the wall of light itself */
-  ctx.shadowColor = 'rgba(255,40,40,1)';
-  ctx.shadowBlur = 30;
-  ctx.strokeStyle = 'rgba(255,64,64,' + (0.75 + 0.25 * pulse).toFixed(3) + ')';
-  ctx.lineWidth = 6 + pulse * 3;
-  ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, TAU); ctx.stroke();
-
-  ctx.shadowBlur = 14;
-  ctx.strokeStyle = 'rgba(255,180,180,' + (0.5 + 0.3 * pulse).toFixed(3) + ')';
   ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(f.x, f.y, f.r - 7, 0, TAU); ctx.stroke();
-
-  /* inward-facing warning ticks */
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = 'rgba(255,90,90,0.55)';
-  ctx.lineWidth = 2;
-  for (let i = 0; i < 48; i++) {
-    const a = (i / 48) * TAU + t * 0.12;
-    const r0 = f.r - 16 - pulse * 5;
-    const r1 = f.r - 4;
-    ctx.beginPath();
-    ctx.moveTo(f.x + Math.cos(a) * r0, f.y + Math.sin(a) * r0);
-    ctx.lineTo(f.x + Math.cos(a) * r1, f.y + Math.sin(a) * r1);
-    ctx.stroke();
-  }
+  ctx.strokeStyle = 'rgba(225,29,72,0.45)';
+  ctx.beginPath(); ctx.arc(arena.x, arena.y, arena.r, 0, TAU); ctx.stroke();
   ctx.restore();
 }
 
@@ -24935,7 +24851,7 @@ function drawBullets() {
     ctx.rotate(a);
     ctx.fillStyle = nova ? '#ffffff' : (turret ? '#fde68a' : (storm ? '#e0fbff' : '#eaf8ff'));
     ctx.shadowColor = nova ? '#a5f3fc' : (turret ? '#f59e0b' : '#38bdf8');
-    ctx.shadowBlur = nova ? 26 : 16;
+    ctx.shadowBlur = 0;
     roundRect(ctx, -len / 2, -hh, len, hh * 2, 3);
     ctx.fill();
     ctx.fillStyle = nova ? '#a5f3fc' : (turret ? '#fbbf24' : (storm ? '#a5f3fc' : '#8fe8ff'));
@@ -24953,34 +24869,11 @@ function drawBullets() {
 /* the chrono mage's homing shot: a small glowing 8px amber circle */
 function drawTimeOrb(b) {
   ctx.save();
-  /* short amber streak tail */
-  const tail = ctx.createLinearGradient(b.x - b.vx * 0.06, b.y - b.vy * 0.06, b.x, b.y);
-  tail.addColorStop(0, 'rgba(212,160,23,0)');
-  tail.addColorStop(1, 'rgba(212,160,23,0.55)');
-  ctx.strokeStyle = tail;
-  ctx.lineWidth = 5;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(b.x - b.vx * 0.06, b.y - b.vy * 0.06);
-  ctx.lineTo(b.x, b.y);
-  ctx.stroke();
-  /* soft amber glow */
-  const R = 13 + 1.5 * Math.sin(game.time * 9 + (b.spin || 0));
-  const g = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, R);
-  g.addColorStop(0, 'rgba(255,240,190,0.95)');
-  g.addColorStop(0.45, 'rgba(245,200,66,0.85)');
-  g.addColorStop(1, 'rgba(212,160,23,0)');
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, TAU); ctx.fill();
-  /* the 8px amber circle itself */
-  ctx.shadowColor = '#f5c842';
-  ctx.shadowBlur = 12;
-  const c = ctx.createRadialGradient(b.x - 2, b.y - 2, 0.5, b.x, b.y, 8);
-  c.addColorStop(0, '#fff6d8');
-  c.addColorStop(0.6, '#f5c842');
-  c.addColorStop(1, '#d4a017');
-  ctx.fillStyle = c;
-  ctx.beginPath(); ctx.arc(b.x, b.y, 8, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#f5c842';
+  ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(212,160,23,0.7)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, TAU); ctx.stroke();
   ctx.restore();
 }
 
@@ -25765,8 +25658,7 @@ function drawMinimap() {
   mmCtx.fillStyle = 'rgba(4,7,12,0.92)';
   mmCtx.fillRect(0, 0, size, size);
 
-  /* explored fog of war */
-  mmCtx.drawImage(mmFog, 0, 0);
+  /* Keep navigation markers, but do not paint the accumulated exploration trail. */
 
   /* world border */
   mmCtx.strokeStyle = 'rgba(232,200,116,0.35)';
@@ -26656,16 +26548,7 @@ function drawArrowHead(x, y, ang, scale, alpha) {
   ctx.rotate(ang);
   ctx.scale(scale, scale);
 
-  /* soft halo so it reads over any floor */
-  const halo = ctx.createRadialGradient(0, 0, 2, 0, 0, 40);
-  halo.addColorStop(0, 'rgba(255,214,138,' + (0.30 * alpha) + ')');
-  halo.addColorStop(1, 'rgba(255,190,90,0)');
-  ctx.fillStyle = halo;
-  ctx.beginPath(); ctx.arc(0, 0, 40, 0, TAU); ctx.fill();
-
   ctx.globalAlpha = alpha;
-  ctx.shadowColor = 'rgba(255,205,110,0.95)';
-  ctx.shadowBlur = 18;
 
   /* chevron arrow pointing along +x */
   const g = ctx.createLinearGradient(-16, 0, 18, 0);
@@ -26699,7 +26582,6 @@ function drawObjectiveArrows() {
 
   const p = game.player;
   const pulse = 0.5 + 0.5 * Math.sin(game.time * 4.2);
-  const pulseSlow = 0.5 + 0.5 * Math.sin(game.time * 2.1);
 
   const t = targets[0];
   const sx = toScreenX(t.x);
@@ -26712,18 +26594,6 @@ function drawObjectiveArrows() {
   const scale = visible ? 0.76 : (0.92 + 0.16 * pulse);
 
   drawArrowHead(pt.x, pt.y, pt.ang, scale, alpha);
-
-  /* pulsing gold ring behind the arrow */
-  if (!visible) {
-    ctx.save();
-    ctx.globalAlpha = 0.5 * (0.5 + 0.5 * pulseSlow);
-    ctx.strokeStyle = '#ffe0a3';
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    ctx.arc(pt.x, pt.y, 27 + pulse * 4, 0, TAU);
-    ctx.stroke();
-    ctx.restore();
-  }
 
   /* distance readout under the arrow */
   if (!visible && p) {
@@ -27033,33 +26903,21 @@ function drawCrosshair() {
 function drawThreatArcs() {
   const p = game.player;
   if (!p) return;
-  const t = game.time;
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  for (let i = 0; i < game.enemies.length; i++) {
-    const e = game.enemies[i];
+  let nearest = null, best = 90;
+  for (const e of game.enemies) {
     if (!e || e.dead || e.harmless) continue;
-    const d = dist(e.x, e.y, p.x, p.y);
-    const onScreen = enemyOnScreen(e);
-    if (!(d < THREAT_CLOSE_DIST || (d < 700 && !onScreen))) continue;
-    const a = Math.atan2(e.y - p.y, e.x - p.x);
-    const close = d < THREAT_BRIGHT_DIST;
-    const speed = close ? 14 : 7;
-    const bright = close ? 1 : 0.5;
-    const pulse = 0.5 + 0.5 * Math.sin(t * speed);
-    const alpha = (0.2 + 0.5 * pulse) * bright;
-    const arcLen = close ? 1.0 : 0.6;
-    ctx.save();
-    ctx.rotate(a);
-    ctx.strokeStyle = 'rgba(239,68,68,' + alpha.toFixed(3) + ')';
-    ctx.lineWidth = close ? 3 : 2;
-    ctx.shadowColor = '#ef4444';
-    ctx.shadowBlur = close ? 12 : 0;
-    ctx.beginPath();
-    ctx.arc(0, 0, THREAT_RING_RADIUS, -arcLen, arcLen);
-    ctx.stroke();
-    ctx.restore();
+    const dx = e.x - p.x, dy = e.y - p.y;
+    const d = Math.hypot(dx, dy);
+    if (d < best && dx * Math.cos(p.angle) + dy * Math.sin(p.angle) < 0) {
+      nearest = e; best = d;
+    }
   }
+  if (!nearest) return;
+  const angle = Math.atan2(nearest.y - p.y, nearest.x - p.x);
+  ctx.save();
+  ctx.translate(p.x, p.y); ctx.rotate(angle);
+  ctx.fillStyle = 'rgba(239,68,68,0.35)';
+  ctx.beginPath(); ctx.moveTo(42, 0); ctx.lineTo(34, -4); ctx.lineTo(34, 4); ctx.closePath(); ctx.fill();
   ctx.restore();
 }
 
@@ -27138,7 +26996,6 @@ function render() {
   drawBossHazards();
   drawClassAbilities();
   drawHiddenSpots();
-  drawFootsteps();
   drawGems();
   drawShards();
   drawChests();
@@ -27157,7 +27014,6 @@ function render() {
   drawPetEntity();
   drawPlayer();
   drawThreatArcs();
-  drawHitIndicator();
   drawDeathImpactRing();
   drawDeathParticles();
   drawDecoy();
@@ -27169,10 +27025,8 @@ function render() {
   ctx.restore();
 
   drawPetAlerts();
-  drawAmbient();
   drawPostFx();
   drawObjectiveArrows();
-  drawArenaWatchdogArrows();
   drawMinimap();
   drawDeathVignette();
   drawTouchAimLaser();
@@ -27269,8 +27123,8 @@ function update(dt) {
   updateBossFight(sdt);
   updateBoss(sdt);
   updateBossHazards(sdt);
+  separateEnemies();
   updatePortal(sdt);
-  updateFootsteps(sdt);
   updateParticles(sdt);
   updateFog();
   updateHud();
