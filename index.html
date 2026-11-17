@@ -5693,6 +5693,10 @@ function loadZone(zoneIndex, opts) {
   if (UI.objective) { UI.objective.classList.remove('zone-fade'); void UI.objective.offsetWidth; UI.objective.classList.add('zone-fade'); }
   updateHealthOrbs();
   hideBossBar();
+  /* PIXELFX: pick the universe's ground, props, traps and weather */
+  if (typeof PFX !== 'undefined') {
+    try { PFX.hooks.onZoneLoad(); } catch (ePFX) { /* ignore */ }
+  }
   /* the zone callout is the animated briefing card, not the centre banner */
   showBriefing();
 }
@@ -7205,6 +7209,9 @@ function queueClassLevelUp(record, gained, source, saved, skillPointsGained) {
   };
   showLevelUpToast(record.level);
   Sound.classLevelUp();
+  if (typeof PFX !== 'undefined' && PFX.ready) {
+    try { PFX.hooks.onLevelUp(); } catch (ePFX) { /* ignore */ }
+  }
   if (game.player) {
     const p = game.player;
     game.particles.push({ ring: true, x: p.x, y: p.y, r: 10, maxR: 150, life: 0, maxLife: 0.65, color: '#ffdf9b' });
@@ -9481,6 +9488,9 @@ function hurtPlayer(amount, raw, source) {
   if (currentSkill('thick_skull')) amount *= 0.85;
   const hpBeforeHit = p.hp;
   p.hp -= amount;
+  if (typeof PFX !== 'undefined' && PFX.ready) {
+    try { PFX.hooks.onPlayerHit(amount, source); } catch (ePFX) { /* ignore */ }
+  }
   /* FAIRNESS: record the exact damage source for a directional hit indicator
      and a bright crimson ring on the offending enemy/projectile. */
   if (source && Number.isFinite(Number(source.x)) && Number.isFinite(Number(source.y))) {
@@ -9700,6 +9710,9 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
   if (safeType === 'scavengerbot') { e.stolen = 0; }
   if (safeType === 'voidleech') { e.attached = false; e.attachT = 0; e.drainTick = 0; e.attachCd = 0; }
   if (safeType === 'echo') { e.echoAbilityCd = rand(2.5, 4.5); e.echoAbilityIndex = 0; e.echoStormT = 0; e.echoChargeT = 0; e.echoBuffT = 0; }
+  if (typeof PFX !== 'undefined' && PFX.ready) {
+    try { PFX.hooks.onEnemySpawn(e); } catch (ePFX) { /* ignore */ }
+  }
   game.enemies.push(e);
   petWarnSpawn(safeX, safeY);
   return e;
@@ -11701,6 +11714,10 @@ function damageEnemy(e, dmg, silent, noChain, meta) {
   }
   e.hp -= dmg;
   e.hitFlash = 0.05;
+  /* PIXELFX: elemental rider + floating damage number + impact spark */
+  if (typeof PFX !== 'undefined' && PFX.ready) {
+    try { PFX.hooks.onEnemyHit(e, dmg, meta); } catch (ePFX) { /* art must never break combat */ }
+  }
   const isWeaponHit = !!(meta.weapon || meta.projectile);
   if (!meta.selfDestruct && !meta.noKnockback && (isWeaponHit || meta.explosion || !silent)) {
     const sx = typeof meta.fromX === 'number' ? meta.fromX : (game.player ? game.player.x : e.x - 1);
@@ -11712,6 +11729,9 @@ function damageEnemy(e, dmg, silent, noChain, meta) {
   e.dead = true;
   const idx = game.enemies.indexOf(e);
   if (idx >= 0) game.enemies.splice(idx, 1);
+  if (typeof PFX !== 'undefined' && PFX.ready) {
+    try { PFX.hooks.onEnemyDeath(e); } catch (ePFX) { /* ignore */ }
+  }
 
   const def = ENEMY_DEFS[e.type] || ENEMY_DEFS.knight;
   /* 10 points x the gem multiplier, plus the floating +10 above the body */
@@ -27118,9 +27138,8 @@ function render() {
   const sy = shakeAmt ? rand(-shakeAmt, shakeAmt) : 0;
 
   ctx.save();
-  ctx.beginPath();
-  ctx.rect(0, 0, W, H);
-  ctx.clip();
+  /* PIXELFX: no viewport path clip — the canvas edge is the clip, and every
+     battlefield pixel below arrives through drawImage. */
 
   /* camera transform: world -> screen, starting at the physical top-left */
   const zoom = viewZoom();
@@ -27255,6 +27274,10 @@ function update(dt) {
   updateClassKit(sdt);
   updateCamera(sdt);
   updateEnemies(sdt);
+  /* PIXELFX: z-physics, moves, live effects, ailments, props, weather clocks */
+  if (typeof PFX !== 'undefined' && PFX.ready) {
+    try { PFX.hooks.tick(sdt, dt); } catch (ePFX) { /* ignore */ }
+  }
   updateTurrets(sdt);
   updateBombs(sdt);
   updateRift(sdt);
@@ -28216,6 +28239,2613 @@ function initPauseSystem() {
 }
 initPauseSystem();
 
+/* ============================================================================
+   PIXELFX ENGINE — render + combat overhaul for SURVIVE
+   ----------------------------------------------------------------------------
+   Every visual on the battlefield (entities, projectiles, particles, pickups,
+   props, weather, combat text, battlefield UI) is a `patch-gg/pixelfx` module
+   baked into an offscreen sprite sheet by FXCacheManager and painted with
+   ctx.drawImage + imageSmoothingEnabled = false.  No ctx.fillRect / arc /
+   lineTo / fillText ever touches the world pass: see PFX.audit().
+
+   Layout of this section
+     1  config, palettes, clip manifest         (PFX.MANIFEST)
+     2  module loader (jsDelivr -> local mirror)
+     3  FXCacheManager: async bake -> atlas
+     4  render queue + sprite painter
+     5  live effect instances (one-shots / loops)
+     6  the moves rig: z-axis physics + class actions
+     7  the critters bestiary
+     8  elemental status ailments
+     9  weather, props, terrain
+    10  combat text, pickups, level-up ceremony
+    11  the render pass: every draw* override
+    12  boot: loading screen + pixel-dissolve into the game
+   ========================================================================= */
+const PFX = (function () {
+  'use strict';
+
+  /* ---------------------------------------------------------------- config */
+  const CDN_BASE = 'https://cdn.jsdelivr.net/gh/patch-gg/pixelfx@main/src/';
+  const LOCAL_BASE = 'vendor/pixelfx/src/';
+  /* A low-memory profile (phones, `?pfxlow=1`) bakes fewer frames per clip. */
+  const LOW_SPEC = (function () {
+    try {
+      if (/[?&]pfxlow=1/.test(location.search)) return true;
+      if (navigator && Number(navigator.deviceMemory) && Number(navigator.deviceMemory) <= 4) return true;
+      if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) <= 820) return true;
+    } catch (e) { /* desktop default */ }
+    return false;
+  })();
+  const CFG = {
+    lowSpec: LOW_SPEC,
+    fps: 16,            /* sprite sheets are baked at 16 fps (spec: 20)     */
+    actFps: 10,         /* moves are pose-stepped upstream at 12 fps        */
+    loopFps: 10,        /* ambient loops                                    */
+    weatherFps: 10,     /* screen weather: 10 fps is weather, not gameplay  */
+    window: 1.4,        /* seconds of a one-shot we bake                    */
+    maxFrames: 64,
+    cacheBudget: 132 * 1024 * 1024,
+    atlasW: 2048,
+    atlasArea: 7.5e6
+  };
+
+  const state = {
+    status: 'idle',          /* idle | loading | baking | ready | failed */
+    ready: false,
+    source: '',
+    base: '',
+    core: null,
+    effects: null,
+    categories: null,
+    errors: [],
+    progress: 0,
+    label: 'BOOTING',
+    clips: 0,
+    frames: 0,
+    bytes: 0,
+    bakeMs: 0,
+    strict: true,
+    audit: { canvas: 0, forbidden: 0, calls: {} }
+  };
+
+  /* --------------------------------------------------------------- palettes */
+  /* 3-stop ramps: core.fit() resamples them onto whatever length a module's
+     own palette declares, so one ramp re-skins any effect. */
+  const UNIVERSE_RAMPS = {
+    0: ['#070b10', '#22303f', '#5d7188', '#c8d6e2'],          /* Medieval      */
+    1: ['#120c05', '#3d2a10', '#8a6a2a', '#f4d98a'],          /* Egypt         */
+    2: ['#0b0810', '#2a1420', '#74222e', '#f2b0a0'],          /* Japan         */
+    3: ['#0b1008', '#22300f', '#5c7a1c', '#c8f06a'],          /* Wasteland     */
+    4: ['#050a14', '#14283f', '#2a6a8a', '#9fe8ff'],          /* Deep Space    */
+    5: ['#08040e', '#241035', '#5c1f6e', '#e08aff']           /* The Void      */
+  };
+  const CRITTER_VARIANTS = {
+    base: null,
+    sand: ['#140f06', '#3a2a12', '#7a5a22', '#c8a04a'],
+    void: ['#0a0512', '#241040', '#5a1e78', '#d47aff']
+  };
+  const INKS = {
+    spark:  ['#0b0a14', '#4a2233', '#b8332f', '#ff6a3d', '#ffc65c', '#fff3c8'],
+    steel:  ['#0b0d14', '#2b3340', '#5c6b80', '#93a4bb', '#cfdcec', '#ffffff'],
+    ice:    ['#0b1226', '#1d3a63', '#2f79b8', '#5fc8f0', '#b6f2ff', '#ffffff'],
+    toxic:  ['#0a140b', '#1c3a1a', '#2f6b28', '#5cb82f', '#a8f04a', '#f4ffd0'],
+    violet: ['#0d0818', '#2a1445', '#552a86', '#8b4fd0', '#c79bf5', '#fdf4ff'],
+    gold:   ['#1a1004', '#4a2c08', '#8a5a10', '#d49a22', '#ffd35c', '#fff8d4'],
+    blood:  ['#12060a', '#3a0d16', '#7c1524', '#c02836', '#ff5c5c', '#ffd2d2'],
+    arcane: ['#080c1a', '#152a52', '#2a5ca8', '#4a9ee0', '#9fdcff', '#ffffff'],
+    bone:   ['#0d0c12', '#2b2833', '#5d5768', '#9a92a6', '#d8d2e0', '#ffffff']
+  };
+  /* class body ramps: a straight remap of the stock 2x actor palette
+     (DUMMY_PAL in pixelfx/core/actor.js) so the same baked skeleton reads as
+     steel, indigo, leather, olive, blood, violet or chrome. */
+  const DUMMY = {
+    k: '#0e0c14', A: '#e4e6ec', B: '#b6b9c3', C: '#868995', D: '#5c5e6a',
+    E: '#6e707c', F: '#4b4d58', G: '#34353f', J: '#2a2b33', m: '#f53cd1'
+  };
+  const CLASS_BODY = {
+    knight:    { k: '#070a10', A: '#e6eef7', B: '#bcc8d6', C: '#8d9aab', D: '#65717f', E: '#7b8794', F: '#4b5563', G: '#333b46', J: '#20262e', m: '#d7b25a' },
+    gunslinger:{ k: '#120a06', A: '#f3dcc0', B: '#d6b58c', C: '#b08962', D: '#8a6444', E: '#97724f', F: '#6b4a33', G: '#4a3224', J: '#2f2018', m: '#e2a83c' },
+    sniper:    { k: '#080c06', A: '#e6ecd6', B: '#c2cd9f', C: '#9aa979', D: '#77875c', E: '#87966d', F: '#57683f', G: '#3d4b2c', J: '#252f1c', m: '#9fd84a' },
+    mage:      { k: '#0a0714', A: '#dcdcff', B: '#a8a4ee', C: '#7f78d8', D: '#5650b8', E: '#665ec8', F: '#3b348c', G: '#2a2468', J: '#191544', m: '#66e6ff' },
+    berserker: { k: '#100604', A: '#ffdccf', B: '#f2a48f', C: '#d46c53', D: '#a8422f', E: '#bd5a44', F: '#7d2a1e', G: '#571d16', J: '#350f0c', m: '#ff7043' },
+    shadow:    { k: '#08060e', A: '#d9cff2', B: '#ab9ad2', C: '#7f6caa', D: '#56467f', E: '#67578a', F: '#3a2f5e', G: '#241c41', J: '#141026', m: '#e879f9' },
+    tech:      { k: '#050f12', A: '#ddfbff', B: '#a8e9f4', C: '#74c6d9', D: '#4798ac', E: '#5babbe', F: '#2f6f80', G: '#1e4b57', J: '#123038', m: '#22d3ee' }
+  };
+  /* which skeleton the player's class animates, and what its actions are */
+  const CLASS_ACTIONS = {
+    knight:    { lmb: 'moves/sword-combo',     alt: 'moves/dash-strike',      element: 'steel',  ramp: INKS.steel },
+    gunslinger:{ lmb: 'moves/pistol-shots',    alt: 'moves/rocket-launcher',  element: 'physical', ramp: INKS.gold },
+    sniper:    { lmb: 'moves/rocket-launcher', alt: 'moves/ice-lance-throw',  element: 'ice',    ramp: INKS.ice },
+    mage:      { lmb: 'moves/fireball-throw',  alt: 'moves/lightning-call',   element: 'fire',   ramp: INKS.spark },
+    berserker: { lmb: 'moves/earth-stomp',     alt: 'moves/ground-pound',     element: 'fire',   ramp: INKS.spark },
+    shadow:    { lmb: 'moves/dash-strike',     alt: 'moves/dash-strike',      element: 'poison', ramp: INKS.toxic },
+    tech:      { lmb: 'moves/pistol-shots',    alt: 'moves/rocket-launcher',  element: 'electric', ramp: INKS.arcane }
+  };
+  /* every universe's weather + nature pair (spec §5) */
+  const WEATHER = {
+    0: { name: 'Rain over the village', tint: null,
+         fx: [{ id: 'weather/rain', tag: 'u0a' }, { id: 'weather/falling-leaves', tag: 'u0b', scale: 1 }] },
+    1: { name: 'Sand fog under god-rays', tint: [1.0, 0.8, 0.52],
+         fx: [{ id: 'weather/fog', tag: 'u1a', tint: [1.0, 0.78, 0.48] }, { id: 'weather/god-rays', tag: 'u1b', tint: [1.0, 0.86, 0.55] }] },
+    2: { name: 'Cherry blossoms on the leaf storm', tint: null,
+         fx: [{ id: 'weather/cherry-blossoms', tag: 'u2a' }, { id: 'nature/leaf-storm', tag: 'u2b', scale: 1.6, tile: true }] },
+    3: { name: 'Acid cloud and storm', tint: [0.72, 1.0, 0.6],
+         fx: [{ id: 'nature/poison-cloud', tag: 'u3a', tint: [0.75, 1.0, 0.55] }, { id: 'weather/storm', tag: 'u3b' }] },
+    4: { name: 'Shooting stars over laser grids', tint: null,
+         fx: [{ id: 'weather/shooting-stars', tag: 'u4a' }, { id: 'weather/fireflies', tag: 'u4b', tint: [0.55, 0.95, 1.0] }] },
+    5: { name: 'Eclipse under the aurora', tint: null,
+         fx: [{ id: 'shadow/eclipse', tag: 'u5a', scale: 2.4 }, { id: 'weather/aurora', tag: 'u5b' }] }
+  };
+
+  /* --------------------------------------------------------------- manifest
+     One entry = one baked clip. `kind:'act'` goes through createAct (a fully
+     posed performance with the character body), `kind:'fx'` through createFx.
+     `tint` multiplies the whole clip, `body` remaps the skeleton palette. */
+  const MANIFEST = [];
+  const add = (key, id, o) => MANIFEST.push(Object.assign({ key, id, kind: 'fx' }, o || {}));
+
+  /* --- the player: one baked performance per class action ----------------- */
+  Object.keys(CLASS_ACTIONS).forEach((cls) => {
+    const a = CLASS_ACTIONS[cls];
+    add('act:' + cls + ':lmb', a.lmb, { kind: 'act', body: CLASS_BODY[cls], palette: a.ramp, scale: 1 });
+    /* the secondary performance warms in the background after the dissolve */
+    if (a.alt && a.alt !== a.lmb) add('act:' + cls + ':alt', a.alt, { kind: 'act', body: CLASS_BODY[cls], palette: a.ramp, scale: 1, window: 0.9, lazy: true });
+  });
+
+  /* --- the bestiary: six critters, three skins (spec §3) ------------------ */
+  const CRITTERS = ['slime', 'frog', 'bat', 'eyeball', 'ghost', 'flying-skull'];
+  CRITTERS.forEach((c) => {
+    Object.keys(CRITTER_VARIANTS).forEach((v) => {
+      add('critter:' + c + ':' + v, 'critters/' + c, { palette: CRITTER_VARIANTS[v], scale: 1, loop: true });
+    });
+  });
+
+  /* --- spawn / death ------------------------------------------------------ */
+  add('spawn.portal', 'spawn/spawn-portal', { scale: 0.72, window: 1.6 });
+  add('spawn.poof', 'spawn/poof', { scale: 0.9, window: 0.9 });
+  add('death.shatter', 'spawn/shatter-death', { scale: 1, window: 1.5 });
+  add('death.soul', 'spawn/soul-rise', { scale: 1, window: 1.5 });
+  add('death.disintegrate', 'spawn/disintegrate', { scale: 1, window: 1.2, lazy: true });
+
+  /* --- status ailments ---------------------------------------------------- */
+  add('status.burning', 'status/burning', { loop: true, window: 1.2 });
+  add('status.frozen', 'status/frozen', { loop: true, window: 2 });
+  add('status.poisoned', 'status/poisoned', { loop: true, window: 1.6 });
+  add('status.stunned', 'status/stunned', { loop: true, window: 2 });
+  add('status.electrified', 'lightning/electrified', { loop: true, window: 1.4 });
+  add('status.rage', 'status/rage', { loop: true, window: 1.4, palette: INKS.spark });
+  add('fx.freeze', 'ice/freeze', { scale: 0.9, window: 1.1, lazy: true });
+  add('fx.ice-shatter', 'ice/ice-shatter', { scale: 0.9, window: 1.2, lazy: true });
+  add('fx.toxic-puddle', 'nature/toxic-puddle', { loop: true, window: 1.6, scale: 0.72 });
+  add('fx.chain-lightning', 'lightning/chain-lightning', { scale: 0.62, window: 1.0 });
+  add('fx.zap', 'lightning/zap-hit', { scale: 0.9, window: 0.6 });
+  add('fx.emp', 'scifi/emp-blast', { scale: 1, window: 1.2, lazy: true });
+  add('fx.force-field', 'scifi/force-field', { loop: true, window: 1.4, scale: 1 });
+  add('fx.magic-circle', 'arcane/magic-circle-cast', { scale: 0.8, window: 1.6, lazy: true });
+  add('fx.black-hole', 'shadow/black-hole', { loop: true, window: 1.6, scale: 1, lazy: true });
+  add('fx.holy-pillar', 'holy/holy-pillar', { scale: 1, window: 2.0, lazy: true });
+  add('fx.heal', 'holy/heal', { scale: 0.9, window: 1.0, lazy: true });
+  add('fx.portal', 'arcane/portal', { loop: true, window: 1.6, scale: 1 });
+  add('shadow.eclipse', 'shadow/eclipse', { loop: true, window: 1.8, fps: 10, scale: 1 });
+  add('critter:wisp:base', 'critters/wisp', { loop: true, window: 1.8, fps: 10, scale: 1 });
+  add('critter:bird:base', 'critters/bird', { loop: true, window: 1.6, fps: 10, scale: 1 });
+  add('fx.rune-circle', 'arcane/rune-circle', { loop: true, window: 1.6, scale: 1 });
+  add('fx.arcane-beam', 'arcane/arcane-beam', { loop: true, window: 1.2, scale: 1, lazy: true });
+  add('fx.spore', 'nature/spore-burst', { scale: 0.72, window: 1.4, lazy: true });
+  add('fx.earth-spike', 'nature/earth-spike', { scale: 0.9, window: 1.4, lazy: true });
+  add('fx.ground-slam', 'impacts/ground-slam', { scale: 1, window: 1.2, lazy: true });
+  add('fx.impact-frame', 'impacts/impact-frame', { scale: 1, window: 0.3 });
+
+  /* --- projectiles -------------------------------------------------------- */
+  add('proj.tracer', 'projectiles/bullet-tracer', { loop: true, window: 0.6, scale: 0.42 });
+  add('proj.laser', 'projectiles/laser-bolt', { loop: true, window: 0.5, scale: 0.7 });
+  add('proj.missile', 'projectiles/magic-missile', { scale: 0.8, window: 1.0 });
+  add('proj.disc', 'projectiles/energy-disc', { loop: true, window: 0.5, scale: 0.7 });
+  add('proj.rocket', 'projectiles/rocket', { loop: true, window: 1.2, scale: 0.6 });
+  add('proj.arrow', 'projectiles/arrow', { loop: true, window: 0.6, scale: 0.6 });
+  add('proj.cannon', 'projectiles/cannonball', { scale: 0.7, window: 1.2 });
+  add('proj.plasma', 'projectiles/plasma-shot', { loop: true, window: 0.8, scale: 0.55 });
+  add('proj.homing', 'projectiles/homing-missile', { loop: true, window: 1.2, scale: 0.5 });
+  add('proj.muzzle', 'projectiles/muzzle-pistol', { scale: 0.7, window: 0.5 });
+  add('proj.fireball', 'fire/fireball', { loop: true, window: 1.2, scale: 0.7 });
+
+  /* --- impacts, explosions, particles ------------------------------------ */
+  Object.keys(INKS).forEach((ink) => {
+    add('ink:' + ink, 'impacts/hit-spark', { palette: INKS[ink], scale: 1, window: 0.5 });
+    
+  });
+  add('impact.spark', 'impacts/hit-spark', { scale: 1, window: 0.5 });
+  add('impact.flash', 'impacts/hit-flash', { scale: 1, window: 0.5 });
+  add('impact.crit', 'impacts/crit-hit', { scale: 1, window: 0.9 });
+  add('boom.small', 'explosions/small-explosion', { scale: 0.8, window: 1.2 });
+  add('boom.barrel', 'explosions/barrel-explosion', { scale: 1, window: 1.3 });
+  add('boom.grenade', 'explosions/grenade', { scale: 0.85, window: 1.2, lazy: true });
+  add('boom.dirt', 'explosions/dirt-explosion', { scale: 0.8, window: 1.2, lazy: true });
+  add('boom.plasma', 'explosions/plasma-explosion', { scale: 0.8, window: 1.2, lazy: true });
+  add('slash.sword', 'melee/sword-slash', { scale: 0.9, window: 0.75 });
+  add('slash.spin', 'melee/spin-slash', { scale: 0.9, window: 0.8 });
+  add('slash.cleave', 'melee/heavy-cleave', { scale: 0.9, window: 1.2 });
+
+  /* --- pickups ------------------------------------------------------------ */
+  add('pick.xp', 'pickups/xp-orb', { loop: true, window: 1.8, scale: 0.62 });
+  add('pick.gem', 'pickups/gem-spin', { loop: true, window: 1.6, scale: 0.72 });
+  add('pick.shard', 'pickups/crystal-shard', { loop: true, window: 1.6, scale: 0.6 });
+  add('pick.chest', 'pickups/chest-open', { scale: 1, window: 1.6 });
+  add('pick.heart', 'pickups/heart-pickup', { loop: true, window: 1.2, scale: 0.8 });
+  add('pick.star', 'pickups/power-star', { loop: true, window: 1.6, scale: 0.7 });
+  add('pick.beam', 'pickups/loot-beam', { loop: true, window: 1.2, scale: 0.5 });
+  add('pick.burst', 'pickups/collect-burst', { scale: 0.8, window: 0.8 });
+  
+
+  /* --- props & terrain ---------------------------------------------------- */
+  add('prop.campfire', 'fire/campfire', { loop: true, window: 2.0, fps: 10, scale: 1 });
+  add('prop.brazier', 'fire/brazier', { loop: true, window: 2.0, fps: 10, scale: 0.9 });
+  add('prop.torch', 'fire/torch', { loop: true, window: 1.6, fps: 10, scale: 0.9 });
+  add('prop.candle', 'fire/candle', { loop: true, window: 1.6, fps: 10, scale: 1 });
+  add('prop.laser-grid', 'scifi/laser-grid', { loop: true, window: 1.8, fps: 10, scale: 1, lazy: true });
+
+  /* --- UI ----------------------------------------------------------------- */
+  add('ui.levelup', 'ui/level-up', { scale: 1, window: 1.8, fps: 12, palette: INKS.gold });
+  add('ui.crit', 'ui/crit-number', { scale: 0.85, window: 1.2, fps: 12 });
+  add('ui.exclaim', 'ui/exclamation', { scale: 1, window: 1.0, fps: 12 });
+  
+  add('ui.scanner', 'scifi/scanner', { loop: true, window: 1.6, fps: 10, scale: 1 });
+  add('ui.energy-core', 'scifi/energy-core', { loop: true, window: 1.6, fps: 10, scale: 1 });
+  add('ui.hologram', 'scifi/hologram', { loop: true, window: 1.6, fps: 10, scale: 1 });
+
+  /* --- transitions -------------------------------------------------------- */
+  add('wipe.dissolve', 'transitions/pixel-dissolve', { kind: 'screen', fps: 15, scale: 1 });
+  add('wipe.shatter', 'transitions/shatter-wipe', { kind: 'screen', fps: 15, scale: 1, lazy: true });
+
+  /* --- damage numbers: the common rolls are baked up front ---------------- */
+  const DMG_PAL = ['#1a0508', '#4a0b12', '#8c1420', '#d42a2e', '#ff5a4a', '#ff9a86', '#ffd8cc', '#ffffff'];
+  const HEAL_PAL = ['#04140f', '#0a2a20', '#12603f', '#1f9f5c', '#47d98a', '#8ff0b8', '#d4ffe6', '#ffffff'];
+  for (let n = 1; n <= 12; n++) {
+    add('num:' + n, 'ui/damage-number', { scale: 1, fps: 16, window: 1.05, opts: { text: String(n), palette: DMG_PAL } });
+    add('heal:' + n, 'ui/damage-number', { scale: 1, fps: 16, window: 1.05, opts: { text: '+' + n, palette: HEAL_PAL } });
+  }
+  ['BLOCK', 'SHIELDED', 'MISS'].forEach((w) => {
+    add('word:' + w.toLowerCase(), 'ui/damage-number', { scale: 1, fps: 16, window: 1.05, opts: { text: w, palette: INKS.steel } });
+  });
+
+  const MANIFEST_IDS = Array.from(new Set(MANIFEST.map((d) => d.id)));
+
+  /* ------------------------------------------------------------------ utils */
+  const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const yieldFrame = () => new Promise((r) => {
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => r());
+    else setTimeout(r, 0);
+  });
+  function hexRgb(h) {
+    if (typeof h !== 'string') return null;
+    const s = h.replace('#', '');
+    const v = s.length === 3 ? s.split('').map((c) => c + c).join('') : s;
+    const n = parseInt(v.slice(0, 6), 16);
+    if (!Number.isFinite(n)) return null;
+    return [n & 255, (n >> 8) & 255, (n >> 16) & 255];
+  }
+  function packRgb(rgb) { return (rgb[0] | (rgb[1] << 8) | (rgb[2] << 16)) >>> 0; }
+
+  /* ------------------------------------------------------- module loading */
+  async function importModule(path) {
+    const local = new URL(LOCAL_BASE, location.href).href;
+    const bases = [CDN_BASE, local];
+    let lastErr = null;
+    for (let i = 0; i < bases.length; i++) {
+      try {
+        const mod = await import(bases[i] + path);
+        state.base = bases[i];
+        state.source = i === 0 ? 'jsDelivr' : 'local mirror';
+        return mod;
+      } catch (e) { lastErr = e; state.errors.push((i === 0 ? 'cdn ' : 'local ') + path + ': ' + (e && e.message)); }
+    }
+    throw lastErr || new Error('cannot import ' + path);
+  }
+
+  async function load() {
+    /* already loaded (or injected by a test harness): never re-import */
+    if (state.core) { state.status = state.status === 'ready' ? 'ready' : 'baking'; return state; }
+    state.status = 'loading';
+    state.label = 'LOADING PIXELFX CORE';
+    state.core = await importModule('core/index.js');
+    state.label = 'LOADING FX MODULES';
+    try {
+      const fx = await importModule('fx/index.js');
+      state.effects = fx.effects || {};
+      state.categories = fx.categories || null;
+    } catch (e) {
+      /* category index unavailable: import the modules this build needs one by one */
+      state.effects = {};
+      for (let i = 0; i < MANIFEST_IDS.length; i++) {
+        try { state.effects[MANIFEST_IDS[i]] = await importModule('fx/' + MANIFEST_IDS[i] + '.js'); } catch (err) { state.errors.push(String(err && err.message)); }
+      }
+      state.categories = null;
+    }
+    state.status = 'baking';
+    return state;
+  }
+
+  /* ============================================================ 3 · BAKING
+     bakeClip(): run a module forward at the target fps, composite every frame
+     to RGBA (transparent background), auto-crop the union of all frames, then
+     stamp the cropped frames into a single atlas canvas in a grid.
+     The clip remembers its anchor (ox,oy) relative to the cropped art, so a
+     draw call is exactly `drawImage(atlas, frameRect, x-ox*s, y-oy*s, w*s, h*s)`.
+     ====================================================================== */
+  const clips = new Map();          /* key -> clip                                   */
+  const CLIP_DEF_BY_KEY = new Map(); /* key -> manifest def (for on-demand requests)  */
+  MANIFEST.forEach((d) => CLIP_DEF_BY_KEY.set(d.key, d));
+  const pending = new Map();        /* key -> promise while baking                   */
+  const onDemand = new Map();       /* key -> def, baked when first asked for         */
+
+  function clipFrames(def, meta) {
+    const loop = def.loop !== undefined ? !!def.loop : !!meta.loop;
+    /* the low-memory profile keeps every clip recognisable but drops frames */
+    const low = CFG.lowSpec ? 0.6 : 1;
+    const base = def.fps || (def.kind === 'act' ? CFG.actFps : loop ? CFG.loopFps : CFG.fps);
+    const fps = Math.max(6, Math.round(base * low));
+    const span = def.window || meta.duration || 1;
+    const win = def.kind === 'screen' ? (meta.duration || 1.6) : loop ? Math.min(span, 1.8) : Math.min(span, CFG.window);
+    const n = Math.max(1, Math.min(CFG.maxFrames, Math.ceil(win * fps)));
+    return { fps, n, loop };
+  }
+
+  /* a fast alpha bounding box over the frame buffers (color + additive light) */
+  function frameBounds(frame, w, h, box) {
+    const C = frame.color, L = frame.light;
+    for (let y = 0; y < h; y++) {
+      const row = y * w;
+      for (let x = 0; x < w; x++) {
+        const i = row + x;
+        if (C[i] || L[i]) {
+          if (x < box.x0) box.x0 = x;
+          if (x > box.x1) box.x1 = x;
+          if (y < box.y0) box.y0 = y;
+          if (y > box.y1) box.y1 = y;
+        }
+      }
+    }
+  }
+
+  function applyTint(data, tint, bodyMap) {
+    if (!tint && !bodyMap) return;
+    const tr = tint ? tint[0] : 1, tg = tint ? tint[1] : 1, tb = tint ? tint[2] : 1;
+    for (let i = 0; i < data.length; i += 4) {
+      if (!data[i + 3]) continue;
+      let r = data[i], g = data[i + 1], b = data[i + 2];
+      if (bodyMap) {
+        const k = (r | (g << 8) | (b << 16)) >>> 0;
+        const hit = bodyMap.get(k);
+        if (hit) { r = hit[0]; g = hit[1]; b = hit[2]; }
+      }
+      if (tint) {
+        r = Math.min(255, r * tr); g = Math.min(255, g * tg); b = Math.min(255, b * tb);
+      }
+      data[i] = r; data[i + 1] = g; data[i + 2] = b;
+    }
+  }
+
+  function bodyPaletteMap(body) {
+    if (!body) return null;
+    const map = new Map();
+    Object.keys(DUMMY).forEach((k) => {
+      const from = hexRgb(DUMMY[k]), to = hexRgb(body[k] || DUMMY[k]);
+      if (from && to) map.set(packRgb(from), to);
+    });
+    return map;
+  }
+
+  async function bakeClip(def, core) {
+    const mod = state.effects[def.id];
+    if (!mod) throw new Error('no such effect: ' + def.id);
+    const meta = Object.assign({ size: [64, 64], origin: [32, 32], duration: 1, fps: 30 }, mod.meta || {});
+    const timing = clipFrames(def, meta);
+    const opts = Object.assign({}, def.opts || {});
+    if (def.palette) opts.palette = def.palette;
+    if (def.light !== undefined) opts.light = def.light;
+
+    let w, h, ax, ay, inst, mode;
+    const bodyMap = bodyPaletteMap(def.body);
+    if (def.kind === 'act' && mod.act) {
+      mode = 'act';
+      const b = core.actBounds(mod), span = core.actSpan(mod);
+      const pad = 6;
+      w = Math.ceil(b.x1 - b.x0) + pad * 2;
+      h = Math.ceil(b.y1 - b.y0) + pad * 2;
+      ax = Math.round(pad - b.x0);
+      ay = Math.round(pad - b.y0);
+      const win = def.window || Math.min(0.95, Math.max(0.6, span.to - span.from));
+      timing.fps = Math.max(6, Math.round(timing.fps));
+      timing.n = Math.max(1, Math.min(CFG.maxFrames, Math.ceil(win * timing.fps * (CFG.lowSpec ? 0.75 : 1))));
+      inst = core.createAct(mod, Object.assign({}, opts, { x: ax, y: ay }));
+    } else {
+      mode = 'fx';
+      w = Math.ceil(meta.size[0]);
+      h = Math.ceil(meta.size[1]);
+      ax = meta.origin[0];
+      ay = meta.origin[1];
+      inst = core.createFx(mod, Object.assign({}, opts, { x: ax, y: ay }));
+    }
+    w = Math.max(8, Math.min(w, 512));
+    h = Math.max(8, Math.min(h, 320));
+    if (w * h * timing.n > 11e6) timing.n = Math.max(4, Math.floor(11e6 / (w * h)));
+
+    /* --- pass 1: run the module, capture full frames into a scratch sheet -- */
+    const frame = core.createFrame(w, h);
+    const sheet = document.createElement('canvas');
+    sheet.width = w;
+    sheet.height = h * timing.n;
+    const sctx = sheet.getContext('2d');
+    const img = new ImageData(w, h);
+    const box = { x0: w, y0: h, x1: -1, y1: -1 };
+    let advanced = false;
+
+    for (let i = 0; i < timing.n; i++) {
+      core.clearFrame(frame);
+      if (mode === 'act') {
+        inst.draw(frame, { target: false });
+      } else {
+        inst.draw(frame, 'back');
+        inst.draw(frame, 'front');
+      }
+      core.composite(frame, img.data, null);
+      applyTint(img.data, def.tint || null, bodyMap);
+      sctx.putImageData(img, 0, i * h);
+      frameBounds(frame, w, h, box);
+      /* advance after capture so frame 0 is t=0 */
+      inst.update(1 / timing.fps);
+      advanced = true;
+    }
+    if (box.x1 < 0) { box.x0 = 0; box.y0 = 0; box.x1 = 0; box.y1 = 0; }
+    /* full-frame clips (weather/transitions) keep their canvas so they can be
+       pinned edge to edge without losing the screen-space anchor */
+    if (def.noCrop) { box.x0 = 0; box.y0 = 0; box.x1 = w - 1; box.y1 = h - 1; }
+    const bw = Math.max(1, box.x1 - box.x0 + 1);
+    const bh = Math.max(1, box.y1 - box.y0 + 1);
+
+    /* --- pass 2: stamp the cropped frames into one atlas grid -------------- */
+    let cols = Math.max(1, Math.min(timing.n, Math.floor(CFG.atlasW / bw)));
+    let rows = Math.ceil(timing.n / cols);
+    while (cols * bw * rows * bh > CFG.atlasArea && cols > 1) {
+      cols--; rows = Math.ceil(timing.n / cols);
+    }
+    const atlas = document.createElement('canvas');
+    atlas.width = Math.max(1, cols * bw);
+    atlas.height = Math.max(1, rows * bh);
+    const actx = atlas.getContext('2d');
+    actx.imageSmoothingEnabled = false;
+    for (let i = 0; i < timing.n; i++) {
+      const cx = (i % cols) * bw, cy = Math.floor(i / cols) * bh;
+      actx.drawImage(sheet, box.x0, i * h + box.y0, bw, bh, cx, cy, bw, bh);
+    }
+    sheet.width = sheet.height = 1;
+
+    const clip = {
+      key: def.key, id: def.id, kind: def.kind || 'fx', mode,
+      w: bw, h: bh, ox: ax - box.x0, oy: ay - box.y0,
+      n: timing.n, cols, rows, fps: timing.fps, loop: timing.loop,
+      canvas: atlas, scale: def.scale || 1, tile: !!def.tile,
+      bytes: atlas.width * atlas.height * 4,
+      meta: { duration: meta.duration, loop: !!meta.loop, name: meta.name }
+    };
+    state.clips += 1;
+    state.frames += timing.n;
+    state.bytes += clip.bytes;
+    clips.set(def.key, clip);
+    return clip;
+  }
+
+  /* ------------------------------------------------------------ the manager */
+  const FXCache = {
+    clips,
+    defs: MANIFEST,
+    get(key) { return clips.get(key) || null; },
+    /** Is the clip on screen yet? */
+    has(key) { return clips.has(key); },
+    keys() { return Array.from(clips.keys()); },
+    stats() {
+      return {
+        clips: clips.size, frames: state.frames, bytes: state.bytes,
+        mb: +(state.bytes / 1048576).toFixed(1), source: state.source, lowSpec: CFG.lowSpec,
+        errors: state.errors.slice(0, 6), bakeMs: Math.round(state.bakeMs)
+      };
+    },
+    /** Bake one manifest entry (or an ad-hoc def) and cache it. */
+    async bake(def) {
+      if (clips.has(def.key)) return clips.get(def.key);
+      if (pending.has(def.key)) return pending.get(def.key);
+      const p = bakeClip(def, state.core).finally(() => pending.delete(def.key));
+      pending.set(def.key, p);
+      return p;
+    },
+    /**
+     * Bake a clip the manifest did not know about (new damage roll, new word),
+     * and remember it for the LRU. Used by combat text and by per-universe
+     * weather so the boot screen does not pay for content never seen.
+     */
+    request(key, id, o) {
+      if (clips.has(key)) return clips.get(key);
+      if (onDemand.has(key)) return clips.get(key) || null;
+      const base = CLIP_DEF_BY_KEY.get(key) || {};
+      onDemand.set(key, Object.assign({}, base, { key: key, id: id || base.id }, o || {}));
+      return null;
+    },
+    /** Bake a manifest clip that boot deliberately left out (warm-up). */
+    async warm(key) {
+      const def = CLIP_DEF_BY_KEY.get(key);
+      if (!def || clips.has(key)) return null;
+      return this.bake(def);
+    },
+    /** Bake everything queued by request(), a few clips per animation frame. */
+    async flushOnDemand(budgetMs) {
+      if (!state.core || !onDemand.size) return 0;
+      const t0 = now();
+      let made = 0;
+      for (const [key, def] of onDemand) {
+        if (now() - t0 > (budgetMs || 10)) return made;
+        onDemand.delete(key);
+        try { await this.bake(def); made++; } catch (e) { state.errors.push(key + ': ' + (e && e.message)); }
+      }
+      return made;
+    },
+    /** Free the least recently used non-pinned clips when over budget. */
+    trim(keepKey) {
+      if (state.bytes <= CFG.cacheBudget) return;
+      const loose = Array.from(clips.values()).filter((c) => !c.pinned && c.key !== keepKey);
+      loose.sort((a, b) => (a.used || 0) - (b.used || 0));
+      for (const c of loose) {
+        if (state.bytes <= CFG.cacheBudget * 0.8) break;
+        clips.delete(c.key);
+        state.bytes -= c.bytes;
+        state.frames -= c.n;
+      }
+    },
+    async bakeManifest(onProgress) {
+      const t0 = now();
+      const total = MANIFEST.length;
+      let done = 0;
+      const icons = [];
+      for (let i = 0; i < MANIFEST.length; i++) {
+        const def = MANIFEST[i];
+        if (def.lazy) { FXCache.request(def.key, def.id); done++; state.progress = done / total; continue; }
+        try {
+          const c = await this.bake(def);
+          /* everything the boot pass bakes is core art: the LRU trim may only
+             ever reclaim on-demand text clips and background warm-ups. */
+          c.pinned = true;
+          icons.push(c);
+        } catch (e) {
+          state.errors.push(def.key + ': ' + (e && e.message));
+        }
+        done++;
+        state.progress = done / total;
+        if (onProgress) onProgress(state.progress, def.id);
+        if ((i & 3) === 0) await yieldFrame();
+      }
+      state.bakeMs = now() - t0;
+      this.trim();
+      return state;
+    }
+  };
+
+  /* ======================================================== 4 · RENDER QUEUE
+     A frame-local queue. Entities push {layer, y, draw}; the queue is flushed
+     in layer order with a painter's sort on y inside the entity layers, so
+     2.5D depth reads correctly without any per-entity canvas state churn.
+     ====================================================================== */
+  const LAYER = { GROUND: 0, DECAL: 1, SHADOW: 2, BACK: 3, BODY: 4, FRONT: 5, AIR: 6, TEXT: 7, SCREEN: 8 };
+  const queue = { items: [], open: false };
+
+  function resetQueue() { queue.items.length = 0; queue.open = true; }
+  function enqueue(layer, y, draw) { queue.items.push({ layer, y, draw }); }
+  function flushQueue() {
+    queue.open = false;
+    const items = queue.items;
+    items.sort((a, b) => (a.layer - b.layer) || (a.y - b.y));
+    for (let i = 0; i < items.length; i++) {
+      try { items[i].draw(); } catch (e) { state.errors.push('draw: ' + (e && e.message)); }
+    }
+    items.length = 0;
+  }
+  /** The one painter. ctx is the game canvas, image smoothing off, snapped. */
+  function drawClip(key, x, y, time, o) {
+    const clip = clips.get(key);
+    if (!clip || !clip.canvas) return false;
+    const c = ctx;
+    let f = Math.floor((time || 0) * clip.fps + (o && o.phase ? o.phase * clip.n : 0));
+    if (clip.loop) f = ((f % clip.n) + clip.n) % clip.n;
+    else f = Math.max(0, Math.min(clip.n - 1, f));
+    const s = (o && o.scale) || clip.scale || 1;
+    const sx = (f % clip.cols) * clip.w;
+    const sy = Math.floor(f / clip.cols) * clip.h;
+    const px = o && o.unsnapped ? x : Math.round(x);
+    const py = o && o.unsnapped ? y : Math.round(y);
+    const rot = (o && o.rot) || 0;
+    const flip = !!(o && o.flip);
+    c.save();
+    c.imageSmoothingEnabled = false;
+    if (o && o.alpha != null) c.globalAlpha = Math.max(0, Math.min(1, o.alpha));
+    if (rot || flip) {
+      c.translate(px, py);
+      if (rot) c.rotate(rot);
+      if (flip) c.scale(-1, 1);
+      c.drawImage(clip.canvas, sx, sy, clip.w, clip.h, -clip.ox * s, -clip.oy * s, clip.w * s, clip.h * s);
+    } else {
+      c.drawImage(clip.canvas, sx, sy, clip.w, clip.h, px - clip.ox * s, py - clip.oy * s, clip.w * s, clip.h * s);
+    }
+    c.restore();
+    clip.used = now();
+    return true;
+  }
+  /** A tiled screen layer (weather): the clip repeated to cover the viewport. */
+  function drawTiled(key, time, o) {
+    const clip = clips.get(key);
+    if (!clip) return false;
+    const s = (o && o.scale) || 4;
+    const w = clip.w * s, h = clip.h * s;
+    const ox = (o && o.ox) || 0, oy = (o && o.oy) || 0;
+    const cols = Math.ceil(W / w) + 1, rows = Math.ceil(H / h) + 1;
+    const c = ctx;
+    let f = Math.floor((time || 0) * clip.fps);
+    if (clip.loop) f = ((f % clip.n) + clip.n) % clip.n;
+    else f = Math.max(0, Math.min(clip.n - 1, f));
+    const sx = (f % clip.cols) * clip.w, sy = Math.floor(f / clip.cols) * clip.h;
+    c.save();
+    c.imageSmoothingEnabled = false;
+    if (o && o.alpha != null) c.globalAlpha = Math.max(0, Math.min(1, o.alpha));
+    for (let ry = 0; ry < rows; ry++) {
+      for (let rx = 0; rx < cols; rx++) {
+        c.drawImage(clip.canvas, sx, sy, clip.w, clip.h, Math.round(ox + rx * w), Math.round(oy + ry * h), w, h);
+      }
+    }
+    c.restore();
+    return true;
+  }
+  /** Draw only part of a clip frame (progress bars, health pips). */
+  function drawClipSlice(key, x, y, time, amount, o) {
+    const clip = clips.get(key);
+    if (!clip) return false;
+    const c = ctx;
+    const s = (o && o.scale) || clip.scale || 1;
+    let f = Math.floor((time || 0) * clip.fps);
+    if (clip.loop) f = ((f % clip.n) + clip.n) % clip.n; else f = Math.max(0, Math.min(clip.n - 1, f));
+    const sx = (f % clip.cols) * clip.w, sy = Math.floor(f / clip.cols) * clip.h;
+    const take = Math.max(0, Math.min(1, amount));
+    const sw = Math.max(0, Math.round(clip.w * take));
+    if (!sw) return false;
+    c.save();
+    c.imageSmoothingEnabled = false;
+    if (o && o.alpha != null) c.globalAlpha = Math.max(0, Math.min(1, o.alpha));
+    c.drawImage(clip.canvas, sx, sy, sw, clip.h, Math.round(x) - clip.ox * s, Math.round(y) - clip.oy * s, sw * s, clip.h * s);
+    c.restore();
+    return true;
+  }
+
+  /* ==================================================== 5 · LIVE INSTANCES
+     One-shots and looping decals that live in world space: spawn portals,
+     explosions, toxic puddles, chain arcs, level-up pillars. They tick with the
+     world clock and are drawn by layer during the render pass.
+     ====================================================================== */
+  const live = [];
+  const MAX_LIVE = 900;
+
+  function spawn(key, x, y, o) {
+    const clip = clips.get(key);
+    if (!clip) { FXCache.request(key, o && o.id ? o.id : key); return null; }
+    if (live.length >= MAX_LIVE) live.shift();
+    const inst = {
+      key, x, y, t: 0,
+      life: o && o.life ? o.life : (clip.loop ? 1e9 : clip.n / clip.fps),
+      scale: (o && o.scale) || clip.scale,
+      flip: !!(o && o.flip), rot: (o && o.rot) || 0,
+      alpha: o && o.alpha != null ? o.alpha : 1,
+      layer: (o && o.layer) || 'air',
+      follow: (o && o.follow) || null,
+      ox: (o && o.ox) || 0, oy: (o && o.oy) || 0,
+      vx: (o && o.vx) || 0, vy: (o && o.vy) || 0,
+      spin: (o && o.spin) || 0,
+      fade: o && o.fade !== undefined ? o.fade : 0.22
+    };
+    live.push(inst);
+    return inst;
+  }
+
+  function tickLive(dt) {
+    for (let i = live.length - 1; i >= 0; i--) {
+      const f = live[i];
+      f.t += dt;
+      if (f.follow) {
+        const ft = typeof f.follow === 'function' ? f.follow() : f.follow;
+        if (!ft) { live.splice(i, 1); continue; }
+        f.x = ft.x + f.ox; f.y = ft.y + f.oy;
+      } else {
+        f.x += f.vx * dt; f.y += f.vy * dt;
+      }
+      if (f.spin) f.rot += f.spin * dt;
+      if (f.t >= f.life) live.splice(i, 1);
+    }
+  }
+
+  function drawLive(layer) {
+    for (let i = 0; i < live.length; i++) {
+      const f = live[i];
+      if (f.layer !== layer) continue;
+      const clip = clips.get(f.key);
+      if (!clip) continue;
+      let a = f.alpha;
+      if (f.fade > 0 && f.t > f.life - f.fade) a *= Math.max(0, (f.life - f.t) / f.fade);
+      if (f.fade > 0 && f.t < 0.08) a *= f.t / 0.08;
+      drawClip(f.key, f.x, f.y, f.t, { scale: f.scale, flip: f.flip, rot: f.rot, alpha: a });
+    }
+  }
+  function clearLive() { live.length = 0; }
+
+  /* colour -> ink bucket, for particle effects that only carry a hex string */
+  const INK_KEYS = Object.keys(INKS);
+  function inkFor(color) {
+    const rgb = hexRgb(color);
+    if (!rgb) return 'spark';
+    let best = 'spark', bd = Infinity;
+    for (let i = 0; i < INK_KEYS.length; i++) {
+      const ramp = INKS[INK_KEYS[i]];
+      const mid = hexRgb(ramp[3]) || [255, 255, 255];
+      const d = (rgb[0] - mid[0]) ** 2 + (rgb[1] - mid[1]) ** 2 + (rgb[2] - mid[2]) ** 2;
+      if (d < bd) { bd = d; best = INK_KEYS[i]; }
+    }
+    return best;
+  }
+
+  /* ================================================== 6 · THE MOVES RIG
+     z-axis physics for the player (and hover height for flyers), plus the
+     class-action state machine that decides which baked performance plays.
+     ====================================================================== */
+  const Z = {
+    gravity: 1800,
+    z: 0, vz: 0, ground: true,
+    pound: false, poundT: 0, jumps: 0,
+    lastLand: 0
+  };
+
+  const moves = {
+    clip: '', t: 0, busy: 0, kind: 'lmb', flip: false, idleT: 0,
+    queue: null, alt: false
+  };
+
+  function playerFacing() {
+    const m = game.mouse, p = game.player;
+    if (!p) return 1;
+    const wx = m.x / viewZoom() + game.cam.x;
+    const wy = (m.y - SKY_H) / viewZoom() + game.cam.y;
+    return wx >= p.x ? 1 : -1;
+  }
+
+  function playMove(cls, which, force) {
+    const key = 'act:' + cls + ':' + which;
+    if (!clips.has(key)) return false;
+    const cur = CLASS_ACTIONS[cls] || CLASS_ACTIONS.knight;
+    const id = which === 'alt' ? cur.alt : cur.lmb;
+    if (moves.busy > 0 && !force) {
+      /* chain: queue the next stroke so held triggers stay responsive */
+      moves.queue = which;
+      return false;
+    }
+    moves.clip = key;
+    moves.id = id;
+    moves.t = 0;
+    moves.kind = which;
+    moves.busy = 0.28;
+    moves.flip = playerFacing() < 0;
+    return true;
+  }
+
+  function updateMoves(dt) {
+    if (moves.busy > 0) {
+      moves.busy -= dt;
+      if (moves.busy <= 0 && moves.queue) {
+        const q = moves.queue; moves.queue = null;
+        playMove(game.player.classId, q, true);
+      }
+    }
+    moves.t += dt;
+    const clip = clips.get(moves.clip);
+    if (clip && !clip.loop && moves.t > clip.n / clip.fps + 0.15) { moves.clip = ''; moves.t = 0; }
+    if (!moves.clip) { moves.clip = 'act:' + game.player.classId + ':lmb'; moves.t = 0; }
+  }
+
+  function jump() {
+    if (!game.player || game.screen !== 'playing' || isPaused) return false;
+    if (!Z.ground) return false;
+    const cls = game.player.classId;
+    Z.vz = cls === 'berserker' ? 600 : 520;
+    Z.ground = false;
+    Z.pound = false;
+    spawn('impact.spark', game.player.x, game.player.y, { scale: 0.5, layer: 'ground', life: 0.3 });
+    if (cls === 'berserker') playMove(cls, 'alt', true);
+    Sound && Sound.dash && Sound.dash();
+    return true;
+  }
+
+  function startGroundPound() {
+    if (!game.player || Z.ground || Z.pound) return false;
+    Z.pound = true;
+    Z.vz = -1400;
+    playMove(game.player.classId, 'alt', true);
+    return true;
+  }
+
+  function updateZ(dt) {
+    const p = game.player;
+    if (!p) return;
+    if (!Z.ground) {
+      Z.vz -= (Z.pound ? Z.gravity * 2.1 : Z.gravity) * dt;
+      Z.z += Z.vz * dt;
+      if (Z.z <= 0) {
+        const impact = Z.pound;
+        Z.z = 0; Z.vz = 0; Z.ground = true; Z.pound = false;
+        Z.lastLand = game.time;
+        if (impact) {
+          /* the ground pound lands: slam fx + an AoE the whole horde feels */
+          spawn('fx.ground-slam', p.x, p.y, { scale: 1, layer: 'ground', life: 1.2 });
+          spawn('impact.crit', p.x, p.y, { scale: 1.1, layer: 'air', life: 0.6 });
+          game.shake = Math.max(game.shake, 0.4);
+          const r = 150 * (1 + (game.shopBlast - 1) * 0.35);
+          for (let i = game.enemies.length - 1; i >= 0; i--) {
+            const e = game.enemies[i];
+            if (dist(e.x, e.y, p.x, p.y) < r) {
+              damageEnemy(e, p.damage * 2.4, false, false, { ability: true, element: 'fire', fromX: p.x, fromY: p.y });
+              PFXStatus.apply(e, 'stunned', 0.9);
+            }
+          }
+          Sound && Sound.nova && Sound.nova();
+        } else {
+          spawn('impact.flash', p.x, p.y, { scale: 0.6, layer: 'ground', life: 0.35 });
+          spawn('ink:steel', p.x, p.y, { scale: 0.4, layer: 'ground', life: 0.3 });
+        }
+      }
+    }
+  }
+
+  /* ================================================== 7 · THE CRITTERS
+     Every humanoid is gone. Each enemy type resolves to one of six critters,
+     plus a skin, a scale and a hover height, so a wave reads as a bestiary and
+     never as clones of one sprite.
+     ====================================================================== */
+  const CRITTER_BY_TYPE = {
+    /* rushers */
+    knight: 'frog', archer: 'eyeball', wizard: 'flying-skull', ghost: 'ghost', stalker: 'frog',
+    swarm: 'frog', minion: 'slime', vanguard: 'slime', sniper: 'eyeball', bomber: 'slime',
+    summoner: 'flying-skull', brute: 'slime', trapper: 'eyeball', goblin: 'frog',
+    /* egypt */
+    anubis: 'frog', mummy: 'ghost', scorpion: 'frog', sandshade: 'ghost',
+    /* japan */
+    samurai: 'frog', ninja: 'ghost', oni: 'slime', ronin: 'frog',
+    /* wasteland */
+    raider: 'frog', mutant: 'slime', drone: 'bat', scavengerbot: 'bat',
+    /* space */
+    aliendrone: 'eyeball', voidwraith: 'ghost', mech: 'slime', voidleech: 'eyeball',
+    /* void */
+    shade: 'ghost', timewraith: 'flying-skull', titan: 'slime', echo: 'flying-skull'
+  };
+  const HOVER = { bat: 26, eyeball: 18, ghost: 14, 'flying-skull': 24, slime: 0, frog: 0 };
+
+  function critterFor(e) {
+    if (e.critter) return e.critter;
+    const def = ENEMY_DEFS[e.type] || {};
+    let c = CRITTER_BY_TYPE[e.type];
+    if (!c) c = def.fly ? 'bat' : def.elite ? 'slime' : e.special ? 'ghost' : 'frog';
+    e.critter = c;
+    e.critterSkin = (gameState.currentUniverse === 1 || currentUniverseIsSand()) ? 'sand'
+      : gameState.currentUniverse >= 3 ? 'void' : 'base';
+    e.critterKey = 'critter:' + c + ':' + e.critterSkin;
+    e.z = (HOVER[c] || 0) * (0.85 + Math.random() * 0.3);
+    e.zBase = e.z;
+    e.zPhase = Math.random() * TAU;
+    e.zSpeed = 1.2 + Math.random() * 0.8;
+    e.critterScale = c === 'slime' ? 0.95 * (e.r / 16) : c === 'frog' ? 0.9 * (e.r / 14)
+      : c === 'flying-skull' ? 0.85 : c === 'eyeball' ? 0.9 : 0.95;
+    if (e.elite || e.eliteVariant) e.critterScale *= 1.45;
+    if (e.isBoss) e.critterScale = 3.1;
+    return c;
+  }
+  function currentUniverseIsSand() { return gameState.currentUniverse === 2; }
+
+  function onEnemySpawn(e) {
+    critterFor(e);
+    spawn('spawn.portal', e.x, e.y, { scale: 0.72 * (e.critterScale || 1), layer: 'ground', life: 1.6 });
+    spawn('ink:violet', e.x, e.y, { scale: 0.5, layer: 'ground', life: 0.45 });
+  }
+
+  function onEnemyDeath(e) {
+    const soul = Math.random() < 0.55;
+    spawn(soul ? 'death.soul' : 'death.shatter', e.x, e.y, {
+      scale: (e.critterScale || 1) * (soul ? 1 : 1.1), layer: 'air', life: soul ? 1.6 : 1.3
+    });
+    spawn('ink:' + (soul ? 'violet' : 'blood'), e.x, e.y, { scale: 0.8, layer: 'air', life: 0.5 });
+    /* the ground puddle of what it was made of */
+    if (e.critter === 'slime' || e.critter === 'frog') spawn('pick.burst', e.x, e.y, { scale: 0.6, layer: 'ground', life: 0.5 });
+  }
+
+  function hoverUpdate(e, dt) {
+    if (!e.zBase) return;
+    e.z = e.zBase + Math.sin(game.time * e.zSpeed + e.zPhase) * 3.5;
+  }
+
+  /* ================================================ 8 · STATUS AILMENTS
+     entity.statuses = { burning, frozen, poisoned, stunned, electrified }
+     Each is a timer in seconds. Visuals are the pixelfx status loops drawn on
+     the body; DOTs tick through damageEnemy with meta.dot so they cannot
+     re-apply ailments.
+     ====================================================================== */
+  const ELEMENTS = {
+    fire:     { status: 'burning',     clip: 'status.burning',     dps: 2.4, tag: 'burning' },
+    ice:      { status: 'frozen',      clip: 'status.frozen',      dps: 0,   tag: 'frozen' },
+    poison:   { status: 'poisoned',    clip: 'status.poisoned',    dps: 1.1, tag: 'poisoned' },
+    electric: { status: 'stunned',     clip: 'status.electrified', dps: 0.6, tag: 'stunned' },
+    arcane:   { status: 'arcane',      clip: 'fx.magic-circle',    dps: 0.8, tag: 'arcane' },
+    shadow:   { status: 'poisoned',    clip: 'status.poisoned',    dps: 1.4, tag: 'poisoned' },
+    physical: null, steel: null
+  };
+
+  function statusesOf(e) {
+    if (!e.statuses) e.statuses = { burning: 0, frozen: 0, poisoned: 0, stunned: 0, electrified: 0, arcane: 0 };
+    return e.statuses;
+  }
+
+  const PFXStatus = {
+    statusesOf,
+    /** Apply an ailment; `el` is 'fire' | 'ice' | 'poison' | 'electric' | ... */
+    apply(e, name, seconds) {
+      if (!e || e.dead) return false;
+      const st = statusesOf(e);
+      const key = name === 'stunned' ? 'stunned' : name;
+      st[key] = Math.max(st[key] || 0, seconds);
+      if (name === 'frozen' || name === 'stunned') {
+        e.freeze = Math.max(e.freeze || 0, Math.min(seconds, 2.4));
+      }
+      return true;
+    },
+    /** The elemental rider on every hit. */
+    onEnemyHit(e, dmg, meta) {
+      if (!e || e.dead) return;
+      if (meta && (meta.dot || meta.status)) return;
+      const el = (meta && meta.element) || playerElement(meta);
+      /* a frozen body shatters on the next blow for bonus damage */
+      const st = statusesOf(e);
+      if (st.frozen > 0) {
+        spawn('fx.ice-shatter', e.x, e.y, { scale: 1, layer: 'air', life: 1.2 });
+        st.frozen = 0;
+        damageEnemy(e, Math.max(2, dmg * 0.6), true, true, { status: true, element: 'ice' });
+        Sound && Sound.crit && Sound.crit();
+        return;
+      }
+      const def = ELEMENTS[el];
+      if (!def) return;
+      if (el === 'electric') {
+        this.apply(e, 'stunned', 1.4);
+        this.apply(e, 'electrified', 1.4);
+        this.chain(e, dmg);
+      } else if (def.status) {
+        this.apply(e, def.status, el === 'fire' ? 3.2 : el === 'ice' ? 2.6 : 4.2);
+        if (el === 'ice') spawn('fx.freeze', e.x, e.y, { scale: 0.8 * (e.critterScale || 1), layer: 'air', life: 0.9 });
+        if (el === 'poison' || el === 'shadow') {
+          spawn('fx.toxic-puddle', e.x, e.y + 4, { scale: 0.5, layer: 'ground', life: 5 });
+        }
+        if (el === 'fire') spawn('ink:spark', e.x, e.y, { scale: 0.55, layer: 'air', life: 0.4 });
+        if (el === 'arcane') spawn('fx.magic-circle', e.x, e.y, { scale: 0.4, layer: 'ground', life: 1.4 });
+      }
+    },
+    /** Chain lightning: arcs to the two nearest bodies for 55% damage. */
+    chain(from, dmg) {
+      let hits = 0;
+      for (let i = 0; i < game.enemies.length && hits < 2; i++) {
+        const e = game.enemies[i];
+        if (!e || e === from || e.dead) continue;
+        if (dist(e.x, e.y, from.x, from.y) > 260) continue;
+        spawn('fx.chain-lightning', from.x, from.y, {
+          scale: 0.55, layer: 'air', life: 0.6,
+          rot: angleTo(from.x, from.y, e.x, e.y), flip: e.x < from.x
+        });
+        damageEnemy(e, Math.max(1, dmg * 0.55), true, true, { status: true, element: 'electric' });
+        hits++;
+      }
+      if (hits) Sound && Sound.zap && Sound.zap();
+    },
+    /** DOTs + freeze bookkeeping, once a frame. */
+    update(dt) {
+      const list = game.enemies;
+      for (let i = list.length - 1; i >= 0; i--) {
+        const e = list[i];
+        if (!e || e.dead) continue;
+        const st = e.statuses;
+        if (!st) continue;
+        let dirty = false;
+        for (const k in st) {
+          if (!st[k] || st[k] <= 0) continue;
+          st[k] = Math.max(0, st[k] - dt);
+          if (!st[k]) dirty = true;
+        }
+        if (st.burning > 0) {
+          e._burnAcc = (e._burnAcc || 0) + dt;
+          if (e._burnAcc >= 0.5) {
+            e._burnAcc = 0;
+            damageEnemy(e, 1.2, true, true, { dot: true, element: 'fire' });
+          }
+        }
+        if (st.poisoned > 0) {
+          e._poiAcc = (e._poiAcc || 0) + dt;
+          if (e._poiAcc >= 0.75) {
+            e._poiAcc = 0;
+            damageEnemy(e, 0.8, true, true, { dot: true, element: 'poison' });
+          }
+        }
+        if (st.frozen > 0 || st.stunned > 0) {
+          e.freeze = Math.max(e.freeze || 0, 0.12);
+        }
+        if (dirty) e.statuses = st;
+      }
+      /* the player can burn, freeze and rot too */
+      const p = game.player;
+      if (p && p.statuses) {
+        const st = p.statuses;
+        for (const k in st) if (st[k] > 0) {
+          st[k] = Math.max(0, st[k] - dt);
+          if ((k === 'burning' || k === 'poisoned') && st[k] > 0) {
+            p._pfxDot = (p._pfxDot || 0) + dt;
+            if (p._pfxDot >= 1) { p._pfxDot = 0; hurtPlayer(0.5, true, 'ailment'); }
+          }
+        }
+      }
+    },
+    clear(e) { if (e) e.statuses = { burning: 0, frozen: 0, poisoned: 0, stunned: 0, electrified: 0, arcane: 0 }; }
+  };
+
+  function playerElement(meta) {
+    const p = game.player;
+    if (!p) return 'physical';
+    const cls = CLASS_ACTIONS[p.classId] || CLASS_ACTIONS.knight;
+    if (meta && meta.element) return meta.element;
+    if (p.chainLightning && meta && meta.weapon) return 'electric';
+    if (p.explosiveRounds && meta && meta.projectile) return 'fire';
+    if (p.classId === 'knight' && p.swordTier >= 2) return 'ice';
+    if (p.classId === 'knight' && p.swordTier === 1) return 'electric';
+    return cls.element;
+  }
+
+  /* the status loops drawn over a body, in order of importance */
+  const STATUS_DRAW = [
+    ['frozen', 'status.frozen', 0.30], ['burning', 'status.burning', 0],
+    ['poisoned', 'status.poisoned', 0], ['electrified', 'status.electrified', 0],
+    ['stunned', 'status.stunned', 1.1]
+  ];
+  function drawStatuses(e, scale) {
+    const st = e.statuses;
+    if (!st) return;
+    for (let i = 0; i < STATUS_DRAW.length; i++) {
+      const [name, key, lift] = STATUS_DRAW[i];
+      if (!st[name] || st[name] <= 0) continue;
+      drawClip(key, e.x, e.y - (lift || 0) - (e.z || 0), game.time + e.t * 0.37, { scale: scale || 1, alpha: 0.92 });
+    }
+  }
+
+  /* ============================================ 9 · WORLD: TERRAIN, PROPS,
+     WEATHER.  The library is a VFX library, so ground and prop silhouettes are
+     rasterized once into pixel buffers (ImageData -> offscreen canvas) and
+     from then on only ever blitted with drawImage.  Everything that moves —
+     fire, spores, traps, explosions, weather — is a pixelfx clip.
+     ====================================================================== */
+  const hash = (x, y, s) => {
+    let h = (x * 374761393 + y * 668265263 + (s || 0) * 1442695040) | 0;
+    h = (h ^ (h >>> 13)) * 1274126177;
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  };
+  function prng(seed) {
+    let s = (seed | 0) || 1;
+    return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) / 4294967296); };
+  }
+  const rgba = (h, a) => {
+    const c = hexRgb(h) || [255, 0, 255];
+    return [c[0], c[1], c[2], a === undefined ? 255 : a];
+  };
+  const shade = (h, k) => {
+    const c = hexRgb(h) || [0, 0, 0];
+    return [Math.max(0, Math.min(255, c[0] * k)) | 0, Math.max(0, Math.min(255, c[1] * k)) | 0, Math.max(0, Math.min(255, c[2] * k)) | 0];
+  };
+
+  const THEMES = [
+    { name: 'village', base: '#1b2a1c', alt: '#243524', line: '#12200f', speck: '#3a4a2e', seam: '#4a5a34', stone: '#3a4038' },
+    { name: 'desert', base: '#4a3a1c', alt: '#584626', line: '#33270f', speck: '#6e5a30', seam: '#8a7040', stone: '#6a5630' },
+    { name: 'dojo', base: '#1c2a24', alt: '#233228', line: '#101c14', speck: '#3a4a3a', seam: '#5a6a4a', stone: '#3a443a' },
+    { name: 'wasteland', base: '#242018', alt: '#2c2820', line: '#14120e', speck: '#4a422e', seam: '#6a5a34', stone: '#3a3630' },
+    { name: 'spaceship', base: '#141c26', alt: '#1a2430', line: '#0a1018', speck: '#2c3a4a', seam: '#2a6a8a', stone: '#26303c' },
+    { name: 'void', base: '#120c1a', alt: '#1a1024', line: '#080510', speck: '#3a2050', seam: '#6a2c8a', stone: '#241834' }
+  ];
+
+  /* ---- ground: one seamless 128 px tile per universe --------------------- */
+  const groundCache = new Map();
+  function groundTile(themeIndex, detail) {
+    const key = themeIndex + (detail ? 'd' : '');
+    if (groundCache.has(key)) return groundCache.get(key);
+    const th = THEMES[themeIndex % THEMES.length];
+    const S = 128;
+    const cv = document.createElement('canvas');
+    cv.width = S; cv.height = S;
+    const g = cv.getContext('2d');
+    const img = g.createImageData(S, S);
+    const d = img.data;
+    const base = rgba(th.base), alt = rgba(th.alt), line = rgba(th.line), speck = rgba(th.speck), seam = rgba(th.seam);
+    for (let y = 0; y < S; y++) {
+      for (let x = 0; x < S; x++) {
+        const i = (y * S + x) * 4;
+        const n = hash(x >> 2, y >> 2, themeIndex) * 0.55 + hash(x, y, themeIndex + 9) * 0.45;
+        let c = n > 0.62 ? alt : base;
+        /* flagstone courses */
+        const course = Math.floor(y / 16);
+        const off = (course & 1) * 16;
+        if ((x + off) % 32 === 0 || y % 16 === 0) c = line;
+        if (detail) {
+          /* detail layer: only sparse marks, transparent elsewhere */
+          let a = 0;
+          const r = hash(x, y, themeIndex + 41);
+          if (r > 0.982) { c = speck; a = 210; }
+          else if (r > 0.972) { c = seam; a = 150; }
+          else if (r > 0.965 && (x % 5 === 0 || y % 5 === 0)) { c = line; a = 120; }
+          d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = a;
+          continue;
+        }
+        const j = (hash(x, y, themeIndex + 3) - 0.5) * 14;
+        d[i] = clamp(c[0] + j, 0, 255);
+        d[i + 1] = clamp(c[1] + j, 0, 255);
+        d[i + 2] = clamp(c[2] + j, 0, 255);
+        d[i + 3] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    groundCache.set(key, cv);
+    return cv;
+  }
+
+  /* ---- props: flat-shaded pixel objects built from a material mask -------- */
+  const PROP_ART = {
+    barrel:      { shape: 'cylinder', w: 40, h: 46, pal: ['#2a1a12', '#8a5a30', '#c08a4a', '#5a3a20'], accent: '#d8b06a' },
+    crate:       { shape: 'box', w: 46, h: 42, pal: ['#2a1c10', '#8a6432', '#b98a4a', '#6a4a24'], accent: '#e0c088' },
+    haybale:     { shape: 'hay', w: 52, h: 38, pal: ['#3a2e10', '#a88a34', '#d8b850', '#7a6420'], accent: '#f0dc88' },
+    mossrock:    { shape: 'boulder', w: 58, h: 46, pal: ['#1a1e1c', '#4a5450', '#74807a', '#2e3634'], accent: '#5a7a4a' },
+    log:         { shape: 'log', w: 104, h: 32, pal: ['#241a10', '#6a4a2a', '#96703c', '#3a2a18'], accent: '#c8a06a' },
+    brokenwall:  { shape: 'wall', w: 100, h: 44, pal: ['#1a1c20', '#5a6068', '#8a929a', '#3a4048'], accent: '#c0c8d0' },
+    portcullis:  { shape: 'wall', w: 92, h: 52, pal: ['#14161a', '#3a4048', '#5a626a', '#24282e'], accent: '#8a929a' },
+    crystalpillar: { shape: 'spire', w: 56, h: 96, pal: ['#0e1424', '#24508a', '#5aa0e0', '#16325c'], accent: '#c8f0ff' },
+    shard:       { shape: 'spire', w: 48, h: 70, pal: ['#140e24', '#4a2a8a', '#8a5ad0', '#2a1648'], accent: '#e0c8ff' },
+    sandstone:   { shape: 'boulder', w: 60, h: 46, pal: ['#2a2010', '#8a6a34', '#c09a54', '#5a4520'], accent: '#e8c888' },
+    obelisk:     { shape: 'spire', w: 44, h: 104, pal: ['#241c10', '#7a6438', '#b09050', '#4a3c20'], accent: '#f0dca0' },
+    urn:         { shape: 'cylinder', w: 34, h: 40, pal: ['#2a1e12', '#8a6034', '#b98a52', '#5a3e20'], accent: '#e8c890' },
+    stonelantern: { shape: 'lantern', w: 40, h: 62, pal: ['#1a1c1e', '#4a5054', '#788087', '#2e3438'], accent: '#ffe9a8' },
+    bambooclump: { shape: 'plant', w: 56, h: 82, pal: ['#16240f', '#3a6a24', '#6aa83c', '#264a18'], accent: '#a8e070' },
+    ricebarrel:  { shape: 'cylinder', w: 38, h: 42, pal: ['#2a2416', '#8a7a44', '#c0aa68', '#5a4e28'], accent: '#f0e0a0' },
+    carhulk:     { shape: 'wreck', w: 76, h: 52, pal: ['#1a1612', '#5a4a34', '#8a6a44', '#3a2e22'], accent: '#a8b0a0' },
+    jersey:      { shape: 'box', w: 96, h: 30, pal: ['#1c1c1e', '#5a5a5c', '#8a8a8c', '#3a3a3c'], accent: '#c8c8c8' },
+    oildrum:     { shape: 'cylinder', w: 38, h: 44, pal: ['#241408', '#8a4a1a', '#c06a24', '#4a2a10'], accent: '#ffcc66' },
+    rack:        { shape: 'box', w: 50, h: 54, pal: ['#101820', '#2c3a48', '#4a5c6c', '#1a242e'], accent: '#66e0ff' },
+    canister:    { shape: 'cylinder', w: 34, h: 50, pal: ['#0e1a22', '#2a5a6a', '#4a8a9a', '#16303a'], accent: '#8ff0ff' },
+    hullcrate:   { shape: 'box', w: 48, h: 42, pal: ['#141c26', '#33465a', '#55708a', '#202e3c'], accent: '#8fd6ff' },
+    voidspire:   { shape: 'spire', w: 52, h: 92, pal: ['#0c0614', '#3a1a5a', '#6a34a0', '#1e0e30'], accent: '#e0a8ff' },
+    voidslab:    { shape: 'box', w: 58, h: 40, pal: ['#0c0614', '#2a1440', '#4a2468', '#180a26'], accent: '#c084ff' },
+    voidshard:   { shape: 'spire', w: 38, h: 58, pal: ['#0c0614', '#2a1440', '#5a2a8a', '#180a26'], accent: '#d4a0ff' }
+  };
+
+  const propCache = new Map();
+  function propSprite(kind, variant) {
+    const key = kind + '|' + (variant | 0);
+    if (propCache.has(key)) return propCache.get(key);
+    const spec = PROP_ART[kind] || PROP_ART.crate;
+    const W = spec.w, H = spec.h;
+    const mat = new Uint8Array(W * H);          /* 0 empty, 1 top, 2 front, 3 side, 4 accent */
+    const R = prng(1000 + (variant | 0) * 37 + kind.length * 13);
+    const put = (x, y, m) => { x |= 0; y |= 0; if (x >= 0 && y >= 0 && x < W && y < H) mat[y * W + x] = m; };
+    const rect = (x, y, w, h, m) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) put(x + i, y + j, m); };
+    const ellipse = (cx, cy, rx, ry, m) => {
+      for (let y = Math.floor(cy - ry); y <= cy + ry; y++)
+        for (let x = Math.floor(cx - rx); x <= cx + rx; x++) {
+          const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry;
+          if (dx * dx + dy * dy <= 1) put(x, y, m);
+        }
+    };
+    const tri = (x0, y0, x1, y1, x2, y2, m) => {
+      const minX = Math.floor(Math.min(x0, x1, x2)), maxX = Math.ceil(Math.max(x0, x1, x2));
+      const minY = Math.floor(Math.min(y0, y1, y2)), maxY = Math.ceil(Math.max(y0, y1, y2));
+      const s = (ax, ay, bx, by, cx, cy) => (ax - cx) * (by - cy) - (bx - cx) * (ay - cy);
+      for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) {
+        const px = x + 0.5, py = y + 0.5;
+        const d1 = s(px, py, x0, y0, x1, y1), d2 = s(px, py, x1, y1, x2, y2), d3 = s(px, py, x2, y2, x0, y0);
+        if (!((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0))) put(x, y, m);
+      }
+    };
+    const sh = spec.shape;
+    if (sh === 'box') {
+      rect(3, 10, W - 6, H - 10, 2);
+      tri(3, 10 + 0.5, 3 + 8, 2, W - 3, 2, 1);
+      rect(3 + 8, 2, W - 11, 8, 1);
+      rect(W - 9, 10, 6, H - 10, 3);
+      rect(3, H - 6, W - 6, 3, 3);
+    } else if (sh === 'cylinder') {
+      ellipse(W / 2, 8, W / 2 - 2, 7, 1);
+      rect(2, 8, W - 4, H - 8, 2);
+      ellipse(W / 2, H - 4, W / 2 - 2, 4, 3);
+      rect(W - 10, 9, 6, H - 9, 3);
+      rect(2, 20, W - 4, 3, 4);
+      rect(2, H - 16, W - 4, 3, 4);
+    } else if (sh === 'boulder') {
+      ellipse(W / 2, H * 0.62, W * 0.46, H * 0.38, 2);
+      ellipse(W * 0.42, H * 0.45, W * 0.28, H * 0.2, 1);
+      ellipse(W * 0.66, H * 0.7, W * 0.16, H * 0.13, 3);
+    } else if (sh === 'log') {
+      rect(3, 8, W - 6, H - 12, 2);
+      ellipse(8, H / 2 - 2, 7, (H - 12) / 2, 1);
+      ellipse(W - 8, H / 2 - 2, 7, (H - 12) / 2, 3);
+      rect(3, 8, W - 6, 3, 1);
+    } else if (sh === 'wall') {
+      for (let row = 0; row < 4; row++) {
+        const y = row * 10 + 4;
+        const off = (row & 1) * 6;
+        for (let col = -1; col < 6; col++) {
+          const x = col * 17 + off + 2;
+          if (R() < 0.14) continue;
+          rect(x, y, 15, 8, row === 0 ? 1 : row === 3 ? 3 : 2);
+        }
+      }
+    } else if (sh === 'spire') {
+      tri(W / 2, 2, 4, H - 4, W - 4, H - 4, 2);
+      tri(W / 2, 2, 4, H - 4, W / 2 + 2, H - 4, 1);
+      tri(W / 2 + 2, 6, W - 6, H - 8, W / 2 + 2, H - 4, 3);
+      tri(W / 2, 2, W / 2 + 1, 22, W / 2 - 1, 22, 4);
+    } else if (sh === 'plant') {
+      for (let s = 0; s < 4; s++) {
+        const bx = 6 + s * 12 + Math.floor(R() * 4);
+        const top = 8 + Math.floor(R() * 16);
+        rect(bx, top, 5, H - top - 4, 2);
+        rect(bx, top, 2, H - top - 4, 1);
+        for (let l = top + 4; l < H - 8; l += 10) {
+          tri(bx + 2, l, bx - 6, l + 3, bx + 1, l + 7, 4);
+          tri(bx + 4, l + 5, bx + 12, l + 8, bx + 4, l + 12, 4);
+        }
+      }
+    } else if (sh === 'lantern') {
+      rect(W / 2 - 4, 20, 8, H - 20, 3);
+      rect(W / 2 - 9, 10, 18, 12, 2);
+      rect(W / 2 - 5, 12, 10, 7, 4);
+      tri(W / 2 - 12, 10, W / 2, 1, W / 2 + 12, 10, 1);
+      rect(W / 2 - 7, H - 8, 14, 6, 1);
+    } else if (sh === 'hay') {
+      rect(2, 8, W - 4, H - 10, 2);
+      rect(2, 8, W - 4, 4, 1);
+      for (let i = 0; i < 40; i++) put(3 + R() * (W - 6), 9 + R() * (H - 12), 4);
+    } else if (sh === 'wreck') {
+      rect(4, 14, W - 8, H - 16, 2);
+      tri(4, 14, 22, 4, W - 10, 14, 1);
+      rect(W - 20, 18, 12, 8, 3);
+      for (let i = 0; i < 12; i++) rect(6 + R() * (W - 14), 16 + R() * (H - 20), 2, 2, 0);
+    }
+
+    /* colourise + dark outline ring + material noise */
+    const pal = spec.pal.map((h) => hexRgb(h));
+    const accent = hexRgb(spec.accent);
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    const img = g.createImageData(W, H);
+    const d = img.data;
+    const solid = (x, y) => x >= 0 && y >= 0 && x < W && y < H && mat[y * W + x] > 0;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      const m = mat[y * W + x];
+      if (!m) {
+        if (solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1)) {
+          d[i] = 6; d[i + 1] = 6; d[i + 2] = 10; d[i + 3] = 235;
+        }
+        continue;
+      }
+      const base = m === 4 ? accent : pal[m === 1 ? 2 : m === 3 ? 3 : 1] || pal[1];
+      const n = 0.86 + hash(x, y, variant | 0) * 0.28;
+      d[i] = clamp(base[0] * n, 0, 255);
+      d[i + 1] = clamp(base[1] * n, 0, 255);
+      d[i + 2] = clamp(base[2] * n, 0, 255);
+      d[i + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    /* the shadow it casts, baked into a second sprite */
+    const sc = document.createElement('canvas');
+    sc.width = W + 12; sc.height = Math.max(10, H * 0.34);
+    const sg = sc.getContext('2d');
+    const si = sg.createImageData(sc.width, sc.height);
+    for (let y = 0; y < sc.height; y++) for (let x = 0; x < sc.width; x++) {
+      const dx = (x - sc.width / 2) / (sc.width / 2), dy = (y - sc.height / 2) / (sc.height / 2);
+      const a = Math.max(0, 1 - (dx * dx + dy * dy)) * 90;
+      const i = (y * sc.width + x) * 4;
+      si.data[i] = 4; si.data[i + 1] = 5; si.data[i + 2] = 10; si.data[i + 3] = a;
+    }
+    sg.putImageData(si, 0, 0);
+    const rec = { art: cv, shadow: sc, w: W, h: H, spec };
+    propCache.set(key, rec);
+    return rec;
+  }
+
+  /* ---- the world's live layer ------------------------------------------- */
+  const PFXWorld = {
+    theme: 0,
+    traps: [],
+    props: [],
+    weatherReady: false,
+    setUniverse(u) {
+      u = clamp(u | 0, 0, 5);
+      this.theme = u;
+      this.traps.length = 0;
+      this.props.length = 0;
+      clearLive();
+      this.setupProps(u);
+      if (u === 4) this.setupLaserTraps();
+      this.requestWeather(u);
+    },
+    setupProps(u) {
+      const z = ZONES[gameState.currentZone];
+      if (!z) return;
+      const R = prng(4700 + gameState.currentZone * 97);
+      const avoid = [[WORLD / 2, WORLD / 2, 260]];
+      (z.arenas || []).forEach((a) => avoid.push([a[0], a[1], ARENA_R + 110]));
+      if (z.bossPos) avoid.push([z.bossPos[0], z.bossPos[1], 220]);
+      const kinds = u === 0 ? ['campfire', 'brazier', 'barrel']
+        : u === 1 ? ['brazier', 'campfire', 'urn']
+          : u === 2 ? ['campfire', 'lantern', 'spore']
+            : u === 3 ? ['barrel', 'campfire', 'spore']
+              : u === 4 ? ['brazier', 'barrel', 'canister']
+                : ['brazier', 'spore', 'void'];
+      let guard = 0;
+      while (this.props.length < 22 && guard++ < 500) {
+        const x = 220 + R() * (WORLD - 440), y = 220 + R() * (WORLD - 440);
+        if (avoid.some((a) => dist(x, y, a[0], a[1]) < a[2])) continue;
+        if (game.obstacles.some((o) => dist(x, y, o.x, o.y) < 120)) continue;
+        const kind = kinds[Math.floor(R() * kinds.length)];
+        const p = { x, y, kind, hp: kind === 'barrel' || kind === 'spore' ? 1 : 1e9, hitFlash: 0, t: R() * 3 };
+        this.props.push(p);
+        game.obstacles.push({ x, y, r: kind === 'campfire' ? 18 : kind === 'brazier' ? 14 : kind === 'barrel' ? 16 : 15, kind: 'pfx:' + kind, pfxProp: p, ext: 20, rot: 0, variant: R() });
+      }
+    },
+    setupLaserTraps() {
+      const R = prng(9100 + gameState.currentZone * 31);
+      for (let i = 0; i < 10; i++) {
+        this.traps.push({ x: 300 + R() * (WORLD - 600), y: 300 + R() * (WORLD - 600), r: 54, cd: 0, phase: R() * 4 });
+      }
+    },
+    requestWeather(u) {
+      const w = WEATHER[u];
+      if (!w) return;
+      this.weatherReady = false;
+      this.weatherUniverse = u;
+      const keys = w.fx.map((f) => f.key || (f.id + '#' + f.tag));
+      /* only one universe's weather lives in the cache at a time: two 320x180
+         loops are ~7 MB, six of them would be 40 MB of sky nobody is looking at */
+      Array.from(FXCache.clips.keys()).forEach((k) => {
+        if (k.indexOf('#') < 0 || keys.indexOf(k) >= 0) return;
+        const c = FXCache.clips.get(k);
+        if (!c || c.pinned) return;
+        state.bytes -= c.bytes;
+        state.frames -= c.n;
+        FXCache.clips.delete(k);
+      });
+      const jobs = w.fx.map((f, i) => FXCache.bake({
+        key: keys[i], id: f.id, kind: 'fx',
+        tint: f.tint || w.tint || null, noCrop: true, window: 1.8, fps: Math.min(CFG.weatherFps, 8),
+        scale: f.scale || 1, loop: true
+      }).catch(() => null));
+      Promise.all(jobs).then(() => { this.weatherReady = true; FXCache.trim(); });
+    },
+    /** props take damage from bullets; barrels and spore pods detonate */
+    hitProp(p, dmg, fromX, fromY) {
+      if (!p || p.hp <= 0) return;
+      p.hp -= dmg || 1;
+      p.hitFlash = 0.12;
+      spawn('impact.flash', p.x - 6, p.y - 14, { scale: 0.35, layer: 'air', life: 0.3 });
+      if (p.hp > 0) return;
+      if (p.kind === 'barrel') {
+        spawn('boom.barrel', p.x, p.y, { scale: 1, layer: 'air', life: 2.4 });
+        spawn('impact.crit', p.x, p.y - 10, { scale: 0.9, layer: 'air', life: 0.6 });
+        game.shake = Math.max(game.shake, 0.38);
+        const r = 130 * (game.shopBlast || 1);
+        for (let i = game.enemies.length - 1; i >= 0; i--) {
+          const e = game.enemies[i];
+          if (dist(e.x, e.y, p.x, p.y) < r) damageEnemy(e, 6, false, false, { explosion: true, element: 'fire', fromX: p.x, fromY: p.y });
+        }
+        const pl = game.player;
+        if (pl && dist(pl.x, pl.y, p.x, p.y) < r * 0.6) hurtPlayer(1, false, 'barrel');
+        Sound && Sound.explode && Sound.explode();
+      } else if (p.kind === 'spore') {
+        spawn('fx.spore', p.x, p.y, { scale: 0.8, layer: 'ground', life: 2.2 });
+        spawn('fx.toxic-puddle', p.x, p.y + 4, { scale: 0.6, layer: 'ground', life: 6 });
+        for (let i = game.enemies.length - 1; i >= 0; i--) {
+          const e = game.enemies[i];
+          if (dist(e.x, e.y, p.x, p.y) < 120) PFXStatus.apply(e, 'poisoned', 5);
+        }
+      } else {
+        spawn('boom.dirt', p.x, p.y, { scale: 0.4, layer: 'ground', life: 0.9 });
+      }
+      p.dead = true;
+      const oi = game.obstacles.findIndex((o) => o.pfxProp === p);
+      if (oi >= 0) game.obstacles.splice(oi, 1);
+    },
+    /** bullet vs prop sweep, once a frame */
+    update(dt) {
+      if (document.hidden) return;
+      const p = game.player;
+      /* traps */
+      for (let i = 0; i < this.traps.length; i++) {
+        const t = this.traps[i];
+        t.cd = Math.max(0, t.cd - dt);
+        if (!p || p.hp <= 0) continue;
+        if (t.cd <= 0 && dist(p.x, p.y, t.x, t.y) < t.r) {
+          t.cd = 1.1;
+          spawn('fx.zap', p.x, p.y, { scale: 0.8, layer: 'air', life: 0.4 });
+          hurtPlayer(0.5, false, 'laser-grid');
+        }
+      }
+      /* bullets sweep props */
+      for (let b = 0; b < game.bullets.length; b++) {
+        const bu = game.bullets[b];
+        for (let i = 0; i < this.props.length; i++) {
+          const pr = this.props[i];
+          if (pr.dead) continue;
+          if (dist(bu.x, bu.y, pr.x, pr.y - 10) < 26) {
+            this.hitProp(pr, 1, bu.x, bu.y);
+            if (bu.pierce > 0) bu.pierce--; else game.bullets.splice(b--, 1);
+            break;
+          }
+        }
+      }
+      for (let i = this.props.length - 1; i >= 0; i--) if (this.props[i].dead) this.props.splice(i, 1);
+    },
+    /** the ground under everything */
+    drawGround() {
+      const zoom = viewZoom();
+      const camX = game.cam.x, camY = game.cam.y;
+      const vw = W / zoom, vh = H / zoom;
+      const tile = groundTile(this.theme, false);
+      const detail = groundTile(this.theme, true);
+      const S = 128;
+      const x0 = Math.floor(camX / S) * S, y0 = Math.floor(camY / S) * S;
+      const x1 = Math.ceil((camX + vw) / S) * S, y1 = Math.ceil((camY + vh) / S) * S;
+      ctx.imageSmoothingEnabled = false;
+      for (let y = y0; y < y1; y += S) for (let x = x0; x < x1; x += S) {
+        ctx.drawImage(tile, x, y);
+      }
+      const D = 256;
+      for (let y = Math.floor(camY / D) * D; y < camY + vh; y += D) for (let x = Math.floor(camX / D) * D; x < camX + vw; x += D) {
+        ctx.drawImage(detail, x, y, D, D);
+      }
+    },
+    drawProps() {
+      const props = game.obstacles;
+      for (let i = 0; i < props.length; i++) {
+        const o = props[i];
+        const kind = o.pfxProp ? o.pfxProp.kind : (o.kind || 'crate');
+        if (o.kind === 'barrel' && !o.pfxProp) {
+          /* the zone's own smashable barrels become pixelfx barrels */
+          const spr = propSprite('barrel', Math.floor(o.variant * 8));
+          ctx.drawImage(spr.shadow, Math.round(o.x - spr.shadow.width / 2), Math.round(o.y - 4));
+          ctx.drawImage(spr.art, Math.round(o.x - spr.w / 2), Math.round(o.y - spr.h + 8));
+          continue;
+        }
+        if (!o.pfxProp) {
+          const spr = propSprite(PROP_ART[kind] ? kind : 'crate', Math.floor((o.variant || 0) * 8));
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(spr.shadow, Math.round(o.x - spr.shadow.width / 2), Math.round(o.y - 4));
+          ctx.drawImage(spr.art, Math.round(o.x - spr.w / 2), Math.round(o.y - spr.h + 8));
+          continue;
+        }
+        const p = o.pfxProp;
+        const t = game.time + p.t;
+        if (p.kind === 'campfire') {
+          drawClip('prop.campfire', p.x, p.y + 6, t, { scale: 1 });
+        } else if (p.kind === 'brazier') {
+          drawClip('prop.brazier', p.x, p.y + 4, t, { scale: 0.9 });
+        } else if (p.kind === 'spore') {
+          ctx.drawImage(propSprite('urn', 3).art, Math.round(p.x - 17), Math.round(p.y - 30));
+          drawClip('fx.spore', p.x, p.y + 2, 0, { scale: 0.6, alpha: 0.9 });
+        } else if (p.kind === 'lantern') {
+          ctx.drawImage(propSprite('stonelantern', 1).art, Math.round(p.x - 20), Math.round(p.y - 54));
+          drawClip('prop.candle', p.x, p.y - 40, t, { scale: 0.8 });
+        } else if (p.kind === 'urn') {
+          ctx.drawImage(propSprite('urn', 2).art, Math.round(p.x - 17), Math.round(p.y - 32));
+        } else if (p.kind === 'canister') {
+          ctx.drawImage(propSprite('canister', 4).art, Math.round(p.x - 17), Math.round(p.y - 42));
+        } else if (p.kind === 'void') {
+          ctx.drawImage(propSprite('voidshard', 5).art, Math.round(p.x - 19), Math.round(p.y - 50));
+          drawClip('fx.black-hole', p.x, p.y + 2, t, { scale: 0.3, alpha: 0.8 });
+        } else {
+          const spr = propSprite('barrel', 0);
+          ctx.drawImage(spr.shadow, Math.round(p.x - spr.shadow.width / 2), Math.round(p.y - 4));
+          ctx.drawImage(spr.art, Math.round(p.x - spr.w / 2), Math.round(p.y - spr.h + 8));
+        }
+      }
+    },
+    drawTraps() {
+      if (!this.traps.length) return;
+      for (let i = 0; i < this.traps.length; i++) {
+        const t = this.traps[i];
+        drawClip('prop.laser-grid', t.x, t.y + 10, game.time + t.phase, { scale: 1.05, alpha: 0.9 });
+      }
+    },
+    drawWeather() {
+      const w = WEATHER[this.theme];
+      if (!w) return;
+      for (let i = 0; i < w.fx.length; i++) {
+        const f = w.fx[i];
+        const key = f.key || (f.id + '#' + f.tag);
+        const clip = clips.get(key);
+        if (!clip) continue;
+        const t = game.time * 0.9 + i * 3.1;
+        if (f.tile) {
+          drawTiled(key, t, { scale: f.scale || 2.4, alpha: 0.85 });
+        } else {
+          const s = Math.max(W / clip.w, H / clip.h);
+          const x = clip.ox * s + (W - clip.w * s) / 2;
+          const y = clip.oy * s + (H - clip.h * s) / 2;
+          drawClip(key, x, y, t, { scale: s, alpha: i === 0 ? 0.92 : 0.7 });
+        }
+      }
+    }
+  };
+
+  /* ============================================== 10 · TEXT, PICKUPS, LEVEL
+     Floating combat text is a pixelfx UI module too: every roll and word is a
+     baked `ui/damage-number` / `ui/crit-number` / `ui/level-up` clip.
+     ====================================================================== */
+  const WORD_PAL = {
+    spark: INKS.spark, gold: INKS.gold, steel: INKS.steel, ice: INKS.ice,
+    toxic: INKS.toxic, violet: INKS.violet, blood: INKS.blood, arcane: INKS.arcane
+  };
+  const textList = [];
+
+  function textKeyFor(text, color, crit) {
+    const s = String(text);
+    if (crit) return 'crit:' + s;
+    if (/^\+\d+$/.test(s)) return 'heal:' + s.slice(1);
+    if (/^-?\d+$/.test(s)) return 'num:' + s.replace('-', '');
+    return 'w:' + s.toLowerCase().replace(/\s+/g, '_');
+  }
+
+  function addText(x, y, text, color, size, rise, duration) {
+    const key = textKeyFor(text, color, false);
+    if (!clips.has(key)) {
+      const isNum = /^-?\d+$/.test(String(text));
+      const isHeal = /^\+\d+$/.test(String(text));
+      FXCache.request(key, 'ui/damage-number', {
+        scale: 1,
+        opts: { text: String(text), palette: isHeal ? undefined : (isNum ? DMG_PAL : INKS[inkFor(color)] || INKS.steel) },
+        palette: isHeal ? HEAL_PAL : undefined
+      });
+    }
+    textList.push({
+      key, x, y, t: 0,
+      life: duration || 1.1,
+      rise: typeof rise === 'number' ? rise : 26,
+      scale: clamp((size || 15) / 15, 0.8, 2.2),
+      seed: Math.random() * TAU
+    });
+    if (textList.length > 80) textList.shift();
+  }
+
+  function addCrit(x, y, text, color) {
+    const key = 'crit:' + text;
+    if (!clips.has(key)) FXCache.request(key, 'ui/crit-number', { scale: 0.9, opts: { text: String(text), palette: undefined } });
+    textList.push({ key, x, y, t: 0, life: 1.5, rise: 46, scale: 1, seed: Math.random() * TAU });
+  }
+
+  function updateTexts(dt) {
+    for (let i = textList.length - 1; i >= 0; i--) {
+      const t = textList[i];
+      t.t += dt;
+      if (t.t >= t.life) textList.splice(i, 1);
+    }
+  }
+  function drawTexts() {
+    for (let i = 0; i < textList.length; i++) {
+      const t = textList[i];
+      const k = t.t / t.life;
+      const ease = 1 - (1 - k) * (1 - k);
+      const y = t.y - t.rise * ease;
+      const alpha = k < 0.72 ? 1 : 1 - (k - 0.72) / 0.28;
+      if (!drawClip(t.key, t.x, y, t.t, { scale: t.scale, alpha })) continue;
+    }
+  }
+
+  /* the level-up ceremony: one second of frozen time, a pillar of light and
+     the banner, then the world resumes and the class card is queued. */
+  const levelup = { freeze: 0, queued: false };
+  function triggerLevelUp() {
+    const p = game.player;
+    if (!p) return;
+    levelup.freeze = 1.0;
+    game.timeScale = 0;
+    spawn('ui.levelup', p.x, p.y - 54, { scale: 1.5, layer: 'air', life: 2.6 });
+    spawn('fx.holy-pillar', p.x, p.y - 4, { scale: 1.15, layer: 'air', life: 2.4 });
+    spawn('fx.magic-circle', p.x, p.y + 6, { scale: 0.9, layer: 'ground', life: 1.8 });
+    spawn('ink:gold', p.x, p.y - 30, { scale: 1.1, layer: 'air', life: 0.9 });
+    game.shake = Math.max(game.shake, 0.2);
+    Sound && Sound.classLevelUp && Sound.classLevelUp();
+  }
+  function updateLevelUp(rdt) {
+    if (levelup.freeze > 0) {
+      levelup.freeze -= rdt;
+      if (levelup.freeze <= 0) { levelup.freeze = 0; game.timeScale = 1; }
+    }
+  }
+
+  /* ---- ground shadows (rasterized once, blitted forever) ----------------- */
+  const shadowCache = new Map();
+  function shadowSprite(w) {
+    const key = w | 0;
+    if (shadowCache.has(key)) return shadowCache.get(key);
+    const h = Math.max(4, Math.round(w * 0.42));
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(2, key); cv.height = h;
+    const g = cv.getContext('2d');
+    const img = g.createImageData(cv.width, cv.height);
+    for (let y = 0; y < h; y++) for (let x = 0; x < cv.width; x++) {
+      const dx = (x - cv.width / 2) / (cv.width / 2), dy = (y - h / 2) / (h / 2);
+      const a = Math.max(0, 1 - (dx * dx + dy * dy)) * 120;
+      const i = (y * cv.width + x) * 4;
+      img.data[i] = 3; img.data[i + 1] = 4; img.data[i + 2] = 8; img.data[i + 3] = a;
+    }
+    g.putImageData(img, 0, 0);
+    shadowCache.set(key, cv);
+    return cv;
+  }
+  function drawShadow(x, y, w, z, alpha) {
+    const s = shadowSprite(Math.max(8, Math.round(w)));
+    const shrink = 1 - clamp((z || 0) / 220, 0, 0.55);
+    const dw = s.width * shrink, dh = s.height * shrink;
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = (alpha == null ? 1 : alpha) * shrink;
+    ctx.drawImage(s, Math.round(x - dw / 2), Math.round(y - dh / 2), Math.round(dw), Math.round(dh));
+    ctx.restore();
+  }
+
+  /* ---- pickups, gems, shards, chests ------------------------------------- */
+  function drawGemSprite(g, key, scale) {
+    const bob = Math.sin(game.time * 3 + (g.t || 0)) * 2;
+    drawShadow(g.x, g.y + 6, 16, 0, 0.5);
+    drawClip(key, g.x, g.y + bob, game.time + (g.t || 0), { scale: scale });
+  }
+  function drawChestSprite(c) {
+    drawShadow(c.x, c.y + 10, 46, 0, 0.6);
+    const t = c.opened ? 0.4 : 0;
+    drawClip('pick.chest', c.x, c.y + 16, t, { scale: 1 });
+    if (!c.opened) drawClip('pick.beam', c.x, c.y + 8, game.time + (c.t || 0), { scale: 0.55, alpha: 0.35 });
+    if (c.hitFlash > 0) drawClip('impact.flash', c.x, c.y, 0, { scale: 0.5 });
+  }
+
+  /* ---- the minimap: a pixelfx scanner sweep with sprite pips ------------- */
+  function minimapRect() {
+    const el = UI.minimap;
+    const w = el && el.clientWidth ? el.clientWidth : 148;
+    const h = el && el.clientHeight ? el.clientHeight : 148;
+    return { x: W - w - 18, y: 76, w: w, h: h };
+  }
+  function drawMinimapPfx() {
+    if (document.body.classList.contains('mobile-hud')) return;
+    const r = minimapRect();
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    const s = Math.max(r.w / 112, r.h / 78);
+    drawClip('ui.scanner', r.x + r.w / 2, r.y + r.h / 2, game.time, { scale: s });
+    const p = game.player;
+    if (p) {
+      const kx = r.w / WORLD, ky = r.h / WORLD;
+      const px = r.x + p.x * kx, py = r.y + p.y * ky;
+      drawClip('pick.gem', px, py, game.time, { scale: 0.22, alpha: 0.95 });
+      for (let i = 0; i < game.enemies.length; i += 4) {
+        const e = game.enemies[i];
+        drawClip('ink:blood', r.x + e.x * kx, r.y + e.y * ky, game.time + i, { scale: 0.13, alpha: 0.8 });
+      }
+      if (game.portal) {
+        const po = game.portal;
+        drawClip('fx.portal', r.x + po.x * kx, r.y + po.y * ky, game.time, { scale: 0.12, alpha: 0.9 });
+      }
+    }
+    ctx.restore();
+  }
+
+  /* ================================================ 11 · THE RENDER PASS
+     Every draw* the game's render() calls is replaced. The legacy versions are
+     kept only as an emergency fallback if the module load fails outright.
+     ====================================================================== */
+  const LEGACY = {};
+  const PFXRender = { installed: false, frames: 0 };
+  const BULLET_CLIP = {
+    pistol: 'proj.tracer', smg: 'proj.tracer', needle: 'proj.tracer', turret: 'proj.tracer',
+    sniper: 'proj.laser', railgun: 'proj.laser', laser: 'proj.laser', nova: 'proj.laser',
+    storm: 'proj.tracer', orb: 'proj.missile', familiar: 'proj.missile', drone: 'proj.tracer',
+    disc: 'proj.disc', rocket: 'proj.rocket', homing: 'proj.homing',
+    dagger: 'slash.sword', slash: 'slash.sword', axe: 'slash.cleave', sword: 'slash.sword',
+    grenade: 'proj.cannon', bomb: 'proj.cannon', cannon: 'proj.cannon'
+  };
+  const EBULLET_CLIP = {
+    arrow: 'proj.arrow', orb: 'proj.plasma', poison: 'proj.plasma', hex: 'proj.missile',
+    cannon: 'proj.cannon', laser: 'proj.laser', needle: 'proj.tracer', plasma: 'proj.plasma',
+    boss: 'proj.homing', wall: 'proj.cannon', bolt: 'proj.laser'
+  };
+
+  function bulletClip(b, enemy) {
+    const map = enemy ? EBULLET_CLIP : BULLET_CLIP;
+    const k = map[b.kind];
+    if (k) return k;
+    return (b.r || 4) > 9 ? 'proj.cannon' : (b.r || 4) > 5 ? 'proj.plasma' : 'proj.tracer';
+  }
+
+  /* the player's skeleton, in the act it is currently performing */
+  function pfxDrawPlayer() {
+    const p = game.player;
+    if (!p) return;
+    const dying = gameState.isDying;
+    const fade = dying ? clamp(1 - deathProgress() * 0.85, 0, 1) : 1;
+    const z = Z.z || 0;
+    drawShadow(p.x, p.y + 2, 34, z, 0.9 * fade);
+    /* dash after-images */
+    if (p.trail && p.trail.length) {
+      for (let i = 0; i < p.trail.length; i++) {
+        const tr = p.trail[i];
+        drawClip(moves.clip || ('act:' + p.classId + ':lmb'), tr.x, tr.y, 0.05,
+          { flip: (tr.dir || 1) < 0, alpha: 0.22 * (tr.life || 0.3) / 0.3 });
+      }
+    }
+    const flip = moves.busy > 0 ? moves.flip : playerFacing() < 0;
+    let t = moves.busy > 0 ? moves.t : 0.04 + Math.sin(game.time * 2.2) * 0.008;
+    if (dying) t = Math.min(moves.t, 0.2);
+    let key = moves.clip || ('act:' + p.classId + ':lmb');
+    if (!clips.has(key)) key = 'act:knight:lmb';
+    drawClip(key, p.x, p.y - z, t, { flip, alpha: fade });
+    drawStatuses(p, 1);
+    if (p.hitFlash > 0) drawClip('impact.flash', p.x, p.y - 18 - z, 0, { scale: 0.75, alpha: 0.9 });
+    if (p.invuln > 0 && !dying) drawClip('ui.energy-core', p.x, p.y - 20 - z, game.time, { scale: 0.42, alpha: 0.3 });
+    if (p.rageT > 0) drawClip('status.rage', p.x, p.y - z, game.time, { scale: 1.15, alpha: 0.85 });
+    if (p.shield > 0) drawClip('fx.force-field', p.x, p.y - 18 - z, game.time, { scale: 0.55, alpha: 0.5 });
+    if (dying && gameState.deathParticlesSpawned) {
+      drawClip('death.soul', p.x, p.y + 4, deathElapsed(), { scale: 1, alpha: 0.7 });
+    }
+  }
+
+  /* an enemy: a critter, its shadow, its ailments, its spawn portal */
+  function pfxDrawEnemy(e) {
+    if (!e) return;
+    const c = critterFor(e);
+    const key = e.critterKey;
+    const z = e.z || 0;
+    const s = e.critterScale || 1;
+    const telegraph = e.spawnTelegraph > 0;
+    if (telegraph) {
+      drawClip('spawn.portal', e.x, e.y, 1.6 - e.spawnTelegraph, { scale: 0.7 * s, alpha: 0.95 });
+      return;
+    }
+    drawShadow(e.x, e.y + 2, 26 * s, z, e.invis ? 0.4 : 0.8);
+    const invAlpha = e.invis && e.revealT <= 0 ? 0.22 : 1;
+    const flash = e.hitFlash > 0 ? 1 : 0;
+    if (e.underground) {
+      drawClip('ink:gold', e.x, e.y, game.time, { scale: 0.5, alpha: 0.35 });
+      return;
+    }
+    drawClip(key, e.x, e.y - z + Math.sin(game.time * 1.6 + e.t) * 0.8, game.time + e.t * 0.55,
+      { scale: s, alpha: invAlpha, flip: e.dirX < 0 });
+    drawStatuses(e, s);
+    if (flash) drawClip('impact.flash', e.x, e.y - 16 * s - z, 0.05, { scale: 0.4 * s, alpha: 0.9 });
+    if (e.shield > 0) drawClip('fx.force-field', e.x, e.y - 8 - z, game.time, { scale: 0.4 * s, alpha: 0.5 });
+    if (e.elite || e.eliteVariant) drawClip('ui.energy-core', e.x, e.y - 30 * s - z, game.time, { scale: 0.28, alpha: 0.4 });
+    if (e.aimTelegraph > 0) {
+      /* the fair-play tell: an exclamation over a body that is about to fire */
+      drawClip('ui.exclaim', e.x, e.y - 46 * s - z, 0.7 - e.aimTelegraph, { scale: 0.62 * s });
+    }
+    if (e.healthBar) { /* replaced below by the ring pip */ }
+    const ratio = clamp(e.hp / Math.max(0.001, e.maxHp), 0, 1);
+    if (ratio < 1) {
+      const w = 26 * s;
+      drawClip('ui.energy-core', e.x, e.y - 36 * s - z, 0, { scale: 0.16, alpha: 0.9 });
+      const hp = clips.get('ink:blood');
+      if (hp) {
+        const full = Math.max(2, Math.round(w));
+        const fill = Math.max(1, Math.round(full * ratio));
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        ctx.globalAlpha = 0.85;
+        const f = 4;
+        ctx.drawImage(hp.canvas, (f % hp.cols) * hp.w, Math.floor(f / hp.cols) * hp.h, hp.w, hp.h,
+          Math.round(e.x - full / 2), Math.round(e.y - 34 * s - z), full, 3);
+        ctx.restore();
+      }
+    }
+  }
+
+  function pfxDrawBoss() {
+    const b = game.boss;
+    if (!b) return;
+    const key = 'critter:' + (b.kit ? 'flying-skull' : 'slime') + ':' + (gameState.currentUniverse >= 3 ? 'void' : 'sand');
+    const s = 3.1 * (b.r ? b.r / 24 : 1);
+    drawShadow(b.x, b.y + 4, 90, b.z || 0, 0.9);
+    drawClip('shadow.eclipse', b.x, b.y - 10, game.time, { scale: 1.5, alpha: 0.4 });
+    drawClip(key, b.x, b.y - (b.z || 0), game.time, { scale: s, alpha: b.phaseInvulnT > 0 ? 0.5 : 1, flip: b.x > game.player.x });
+    if (b.hitFlash > 0) drawClip('impact.crit', b.x, b.y - 40, 0, { scale: 1.2, alpha: 0.8 });
+    drawStatuses(b, 1.6);
+    if (b.phase > 1) drawClip('ui.energy-core', b.x, b.y - 110, game.time, { scale: 0.7, alpha: 0.6 });
+  }
+
+  /* projectiles */
+  function pfxDrawBullets() {
+    for (let i = 0; i < game.bullets.length; i++) {
+      const b = game.bullets[i];
+      const key = bulletClip(b, false);
+      const clip = clips.get(key);
+      const scale = clip ? clamp((b.r || 4) / 12, 0.3, 1.4) * (clip.scale || 1) : 0.5;
+      const ang = Math.atan2(b.vy, b.vx);
+      drawClip(key, b.x, b.y, game.time + i * 0.13, { rot: ang, scale: scale, flip: false });
+    }
+  }
+  function pfxDrawEnemyBullets() {
+    for (let i = 0; i < game.enemyBullets.length; i++) {
+      const b = game.enemyBullets[i];
+      const key = bulletClip(b, true);
+      const clip = clips.get(key);
+      const scale = clip ? clamp((b.r || 5) / 13, 0.35, 1.5) * (clip.scale || 1) : 0.6;
+      const ang = Math.atan2(b.vy, b.vx);
+      drawClip(key, b.x, b.y, game.time + i * 0.17, { rot: ang, scale: scale });
+      if ((b.r || 5) > 8) drawClip('ink:blood', b.x, b.y, game.time, { scale: 0.35, alpha: 0.35 });
+    }
+  }
+
+  /* particles become the library's sparks, bursts and embers */
+  function pfxDrawParticles() {
+    const list = game.particles;
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i];
+      const k = clamp(p.life / p.maxLife, 0, 1);
+      if (p.ring) {
+        const rr = Math.max(8, p.r || 10);
+        drawClip('boom.small', p.x, p.y, k * 1.1, { scale: rr / 120, alpha: 0.8 * (1 - k) });
+        continue;
+      }
+      const ink = inkFor(p.color);
+      const key = 'ink:' + ink;
+      const age = p.life;
+      drawClip(key, p.x, p.y, age, { scale: clamp((p.size || 5) / 46, 0.18, 0.85), alpha: 1 - k * 0.85, rot: age * 2 + i });
+    }
+    drawLive('air');
+    drawTexts();
+  }
+
+  function pfxDrawGems() {
+    const list = game.gemsList;
+    for (let i = 0; i < list.length; i++) drawGemSprite(list[i], 'pick.gem', 0.72);
+  }
+  function pfxDrawShards() {
+    if (!game.shards) return;
+    for (let i = 0; i < game.shards.length; i++) {
+      const s = game.shards[i];
+      drawClip((s.value >= 5 ? 'pick.xp' : 'pick.shard'), s.x, s.y, game.time + s.t, { scale: 0.62 });
+    }
+  }
+  function pfxDrawPickups() {
+    for (let i = 0; i < game.pickups.length; i++) {
+      const k = game.pickups[i];
+      const key = k.kind === 'health' ? 'pick.heart' : 'pick.star';
+      drawClip(key, k.x, k.y, game.time + (k.t || 0), { scale: 0.8 });
+      drawClip('pick.beam', k.x, k.y + 6, game.time, { scale: 0.4, alpha: 0.3 });
+    }
+  }
+  function pfxDrawChests() {
+    for (let i = 0; i < game.chests.length; i++) drawChestSprite(game.chests[i]);
+  }
+  function pfxDrawHiddenSpots() {
+    for (let i = 0; i < game.hiddenSpots.length; i++) {
+      const h = game.hiddenSpots[i];
+      drawClip('pick.beam', h.x, h.y + 10, game.time + i, { scale: 0.5, alpha: 0.45 });
+    }
+  }
+
+  /* ground + zones */
+  function pfxDrawGround() {
+    PFXWorld.drawGround();
+    PFXWorld.drawTraps();
+    /* arena rune rings, boss ring, and the level portal */
+    for (let i = 0; i < game.arenas.length; i++) {
+      const a = game.arenas[i];
+      const s = (a.r * 2) / 136;
+      drawClip('fx.rune-circle', a.x, a.y, game.time + i, { scale: s, alpha: a.active ? 0.85 : 0.4 });
+      if (a.active) drawClip('boom.small', a.x, a.y, 0, { scale: s * 0.8, alpha: 0.15 });
+    }
+    if (game.bossZone) {
+      const bz = game.bossZone;
+      drawClip('fx.rune-circle', bz.x, bz.y, game.time, { scale: (bz.r * 2) / 136, alpha: 0.5 });
+    }
+    if (game.bossFight) {
+      const bf = game.bossFight;
+      drawClip('fx.force-field', bf.x, bf.y, game.time, { scale: (bf.r * 2) / 184, alpha: 0.4 });
+    }
+  }
+
+  /* props, breakables, hazards */
+  function pfxDrawObstacles() { PFXWorld.drawProps(); }
+  function pfxDrawBreakables() {
+    for (let i = 0; i < game.breakables.length; i++) {
+      const w = game.breakables[i];
+      if (w.broken) { drawWallRubblePfx(w); continue; }
+      const spr = propSprite('brokenwall', Math.floor((w.t || 0) * 3));
+      const long = Math.max(w.w, w.h);
+      const s = long / spr.w;
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.translate(Math.round(w.x), Math.round(w.y));
+      if (w.vertical) ctx.rotate(Math.PI / 2);
+      ctx.drawImage(spr.art, Math.round(-spr.w * s / 2), Math.round(-spr.h * s / 2), Math.round(spr.w * s), Math.round(spr.h * s));
+      ctx.restore();
+      if (w.hitFlash > 0) drawClip('impact.flash', w.x, w.y, 0, { scale: 0.8 });
+    }
+  }
+  function drawWallRubblePfx(w) {
+    const spr = propSprite('brokenwall', 2);
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = 0.55;
+    ctx.drawImage(spr.art, Math.round(w.x - spr.w / 2), Math.round(w.y + 4), spr.w, Math.round(spr.h * 0.35));
+    ctx.restore();
+  }
+  function pfxDrawSandPillars() {
+    if (!game.sandPillars) return;
+    for (let i = 0; i < game.sandPillars.length; i++) {
+      const s = game.sandPillars[i];
+      drawClip('fx.earth-spike', s.x, s.y + 6, game.time + (s.t || 0), { scale: 0.55, alpha: 0.85 });
+    }
+  }
+  function pfxDrawMines() {
+    if (!game.mines) return;
+    for (let i = 0; i < game.mines.length; i++) {
+      const m = game.mines[i];
+      const spr = propSprite('canister', 3);
+      ctx.drawImage(spr.art, Math.round(m.x - spr.w / 2), Math.round(m.y - spr.h + 6));
+      drawClip('impact.flash', m.x, m.y - 8, (game.time * 3 + i) % 0.5, { scale: 0.3, alpha: 0.7 });
+    }
+  }
+  function pfxDrawBossHazards() {
+    if (!game.bossHazards) return;
+    for (let i = 0; i < game.bossHazards.length; i++) {
+      const h = game.bossHazards[i];
+      const key = h.type === 'poison' ? 'fx.toxic-puddle' : h.type === 'fire' ? 'boom.small' : 'fx.emp';
+      const scale = clamp((h.r || 100) / 88, 0.4, 2.4);
+      drawClip(key, h.x, h.y, game.time + i, { scale: scale * (key === 'boom.small' ? 0.5 : 1), alpha: 0.55 });
+    }
+  }
+
+  /* the class kit: rifts, beams, turrets, bombs, discs, decoys */
+  function pfxDrawRift() {
+    const r = game.rift;
+    if (!r) return;
+    const s = clamp((r.r || 40) / 70, 0.3, 2.6);
+    drawClip('fx.black-hole', r.x, r.y, game.time, { scale: s, alpha: r.life < 0.6 ? r.life / 0.6 : 1 });
+  }
+  function pfxDrawBeams() {
+    const beams = game.beams || [];
+    for (let i = 0; i < beams.length; i++) {
+      const b = beams[i];
+      const dx = b.x2 - b.x1, dy = b.y2 - b.y1;
+      const len = Math.hypot(dx, dy);
+      const ang = Math.atan2(dy, dx);
+      const key = b.kind === 'sniper' || b.kind === 'railgun' ? 'proj.laser' : 'fx.arcane-beam';
+      const clip = clips.get(key);
+      if (!clip) continue;
+      const sx = Math.max(0.2, len / (clip.w - clip.ox));
+      const sy = clamp((b.width || 5) / Math.max(6, clip.h * 0.4), 0.12, 1.6);
+      const k = 1 - clamp((b.life || 0) / (b.maxLife || 0.2), 0, 1);
+      drawClip(key, b.x1, b.y1, (b.life || 0), { rot: ang, scale: sx, alpha: clamp(k * 1.4, 0.15, 1) });
+    }
+  }
+  function pfxDrawTurrets() {
+    if (!game.turrets) return;
+    for (let i = 0; i < game.turrets.length; i++) {
+      const t = game.turrets[i];
+      drawShadow(t.x, t.y + 4, 26, 0, 0.6);
+      drawClip('ui.energy-core', t.x, t.y + 2, game.time + i, { scale: 0.8 });
+      drawClip('fx.force-field', t.x, t.y, game.time, { scale: 0.3, alpha: 0.35 });
+      if (t.hp < t.maxHp) drawClip('impact.flash', t.x, t.y - 26, 0, { scale: 0.35, alpha: 0.6 });
+    }
+  }
+  function pfxDrawBombs() {
+    if (!game.bombs) return;
+    for (let i = 0; i < game.bombs.length; i++) {
+      const b = game.bombs[i];
+      const spr = propSprite('canister', 5);
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.translate(Math.round(b.x), Math.round(b.y));
+      ctx.rotate(b.spin || 0);
+      ctx.drawImage(spr.art, Math.round(-spr.w / 2), Math.round(-spr.h / 2));
+      ctx.restore();
+      drawClip('impact.flash', b.x, b.y - 6, (game.time * 4) % 0.5, { scale: 0.4, alpha: 0.8 });
+    }
+  }
+  function pfxDrawDiscs() {
+    if (!game.discs) return;
+    for (let i = 0; i < game.discs.length; i++) {
+      const d = game.discs[i];
+      drawClip('proj.disc', d.x, d.y, game.time + i * 0.2, { rot: d.spin || 0, scale: 0.8 });
+    }
+  }
+  function pfxDrawDecoy() {
+    const d = game.decoy;
+    if (!d) return;
+    drawClip('ui.hologram', d.x, d.y, game.time, { scale: 0.8, alpha: 0.75 });
+  }
+  function pfxDrawPetEntity() {
+    const pet = game.pet;
+    if (!pet) return;
+    const key = (typeof petIs === 'function' && petIs('cat')) ? 'critter:bird:base' : 'critter:wisp:base';
+    const kk = clips.has(key) ? key : 'critter:slime:base';
+    drawShadow(pet.x, pet.y + 4, 18, 0, 0.5);
+    drawClip(kk, pet.x, pet.y, game.time, { scale: 0.5, flip: pet.x > game.player.x });
+  }
+  function pfxDrawClassAbilities() {
+    drawLive('ground');
+    /* portals, healing zones, forced fields and anything else the kit leaves on the floor */
+    if (game.portal) {
+      drawClip('fx.portal', game.portal.x, game.portal.y, game.time, { scale: 1.1, alpha: 0.85 });
+    }
+    for (let i = 0; i < game.classFx.length; i++) {
+      const f = game.classFx[i];
+      if (f.kind === 'heal') drawClip('fx.heal', f.x, f.y, game.time, { scale: 0.8, alpha: 0.6 });
+      else if (f.kind === 'emp') drawClip('fx.emp', f.x, f.y, game.time, { scale: 1 });
+      else drawClip('ink:arcane', f.x, f.y, game.time, { scale: 0.5, alpha: 0.5 });
+    }
+  }
+  function pfxDrawPortal() {
+    const p = game.portal;
+    if (!p) return;
+    drawClip('fx.portal', p.x, p.y, game.time, { scale: 1.15 });
+    drawClip('fx.rune-circle', p.x, p.y + 8, game.time, { scale: 1.4, alpha: 0.6 });
+  }
+  function pfxDrawFootsteps() {
+    for (let i = 0; i < game.footsteps.length; i++) {
+      const f = game.footsteps[i];
+      const k = clamp(1 - f.life / f.maxLife, 0, 1);
+      if (k > 0.3) continue;
+      drawClip('ink:steel', f.x, f.y, f.life, { scale: 0.14, alpha: 0.35 * (1 - k) });
+    }
+  }
+  function pfxDrawThreatArcs() {
+    /* readable threat: an exclamation mark on the body that is telegraphing */
+    for (let i = 0; i < game.enemies.length; i++) {
+      const e = game.enemies[i];
+      if (!e || e.hp <= 0) continue;
+      if (e.aimTelegraph > 0 || e.brutePhase === 'charge' || e.fuseT > 0) {
+        drawClip('ui.exclaim', e.x, e.y - (e.r * 2.4) - (e.z || 0), 0.7, { scale: 0.6 });
+      }
+    }
+  }
+  function pfxDrawHitIndicator() {
+    const hi = game.hitIndicator;
+    if (!hi || hi.t <= 0) return;
+    drawClip('impact.crit', hi.x, hi.y, 0, { scale: 0.7, alpha: 0.85 });
+    drawClip('ui.exclaim', hi.x, hi.y - 60, 0.7, { scale: 0.8 });
+  }
+  function pfxDrawDeathImpactRing() {
+    if (!gameState.isDying) return;
+    const k = deathProgress();
+    drawClip('boom.small', game.player.x, game.player.y, k * 1.2, { scale: 2.4 * k, alpha: 0.8 });
+  }
+  function pfxDrawDeathParticles() {
+    const list = gameState.deathParticles || [];
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i];
+      drawClip('ink:blood', p.x, p.y, p.life || 0, { scale: 0.4, alpha: 0.8 });
+    }
+  }
+  function pfxDrawPetAlerts() {
+    if (!game.pet || !game.pet.alertT) return;
+    drawClip('ui.exclaim', game.pet.x, game.pet.y - 34, 0.7, { scale: 0.5 });
+  }
+
+  /* ---- navigation arrows, watchdog arrows, class auras -------------------
+     These used to be vector drawings; now every one of them is a baked
+     pixelfx sprite (the arrow IS projectiles/arrow) blitted with rotation. */
+  function pfxDrawObjectiveArrows() {
+    if (game.screen !== 'playing' || typeof navigationTargets !== 'function') return;
+    let targets;
+    try { targets = navigationTargets(); } catch (e) { return; }
+    if (!targets || !targets.length) return;
+    const t = targets[0];
+    const sx = toScreenX(t.x), sy = toScreenY(t.y);
+    const pulse = 0.5 + 0.5 * Math.sin(game.time * 4.2);
+    let pt;
+    try { pt = edgePointFor(sx, sy, 46, 74); } catch (e) { return; }
+    if (!pt) return;
+    const onScreen = sx > 44 && sx < W - 44 && sy > SKY_H + 34 && sy < H - 44;
+    const alpha = onScreen ? 0.3 : 0.7 + 0.3 * pulse;
+    const ang = Math.atan2(sy - pt.y, sx - pt.x);
+    drawClip('proj.arrow', pt.x, pt.y, 0, { scale: 1.45 + 0.12 * pulse, rot: ang, alpha: alpha, layer: 'screen' });
+    drawClip('pick.gem', sx, sy, game.time, { scale: 1.1, alpha: onScreen ? 0.55 : 0.9, layer: 'screen' });
+    if (!onScreen) drawClip('impact.flash', pt.x, pt.y, game.time, { scale: 0.7, alpha: 0.22 * pulse, layer: 'screen' });
+  }
+
+  function pfxDrawWatchdogArrows() {
+    if (game.screen !== 'playing' || !game.player || !Array.isArray(game.arenas)) return;
+    if (typeof liveArenaEnemies !== 'function' || typeof arenaQueueValue !== 'function') return;
+    const p = game.player;
+    const pulse = 0.5 + 0.5 * Math.sin(game.time * 7);
+    for (let i = 0; i < game.arenas.length; i++) {
+      const a = game.arenas[i];
+      if (!a || !a.active || a.cleared || arenaQueueValue(a) <= 0) continue;
+      let live;
+      try { live = liveArenaEnemies(i); } catch (e) { continue; }
+      if (!live || !live.length) continue;
+      const a_sx = toScreenX(a.x), a_sy = toScreenY(a.y);
+      const onScreen = a_sx > 40 && a_sx < W - 40 && a_sy > SKY_H + 30 && a_sy < H - 40;
+      if (onScreen) continue;                    /* the ring speaks for itself */
+      let pt;
+      try { pt = edgePointFor(a_sx, a_sy, 30, 52); } catch (e) { continue; }
+      if (!pt) continue;
+      drawClip('proj.arrow', pt.x, pt.y, i, {
+        scale: 1.1 + 0.12 * pulse, rot: Math.atan2(a_sy - pt.y, a_sx - pt.x), alpha: 0.55 + 0.3 * pulse, layer: 'screen'
+      });
+    }
+  }
+
+  function pfxDrawClassFx() {
+    const p = game.player;
+    if (!p) return;
+    /* Death Mark: a violet reticle holds the chosen body */
+    if (p.markT > 0 && p.markTarget) {
+      const m = p.markTarget;
+      drawClip('fx.rune-circle', m.x, m.y, game.time, { scale: 0.9, rot: game.time * 0.8, tint: '#c4b5fd', alpha: 0.95 });
+      drawClip('impact.crit', m.x, m.y, game.time, { scale: 0.5, alpha: 0.35 });
+    }
+    /* Rage: the berserker burns from the inside */
+    if (p.rageT > 0) {
+      drawClip('status.burning', p.x, p.y - 8, game.time, { scale: 1.25, tint: '#ff5a3c', alpha: 0.75 });
+      drawClip('fx.force-field', p.x, p.y, game.time * 1.4, { scale: 0.62, tint: '#ef4444', alpha: 0.3 });
+    }
+    /* cloak / vanish / phase: a thin distortion shell */
+    const shell = Math.max(p.ghillieT || 0, p.vanishT || 0, p.phaseTimer || 0);
+    if (shell > 0) drawClip('fx.force-field', p.x, p.y, game.time, { scale: 0.55, tint: '#93c5fd', alpha: 0.22 * Math.min(1, shell) });
+    if (p.invuln > 0.1) drawClip('fx.force-field', p.x, p.y, game.time * 2, { scale: 0.7, tint: '#fde68a', alpha: 0.18 });
+    if (p.overchargeT > 0 || (p.overclockT || 0) > 0) drawClip('status.electrified', p.x, p.y - 6, game.time, { scale: 1.05, alpha: 0.7 });
+  }
+
+
+  /* ---- screen-space: weather, flashes, crosshair, minimap ---------------- */
+  let auditActive = false;
+  function pfxPaintBackdrop() {
+    const cv = UI.canvas;
+    if (!cv || !ctx) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.setTransform(viewScaleX, 0, 0, viewScaleY, 0, 0);
+    /* the one global invariant of this renderer: nothing is ever interpolated */
+    ctx.imageSmoothingEnabled = false;
+    auditActive = !!state.auditOn;
+  }
+  function pfxDrawAmbient() {
+    /* weather sits above the world, under the HUD, in screen space */
+    PFXWorld.drawWeather();
+  }
+  function pfxDrawPostFx() {
+    /* damage flash: the library's impact frame stretched over the viewport */
+    if (game.flashTimer > 0) {
+      const k = clamp(game.flashTimer / 0.35, 0, 1);
+      const s = Math.max(W / 320, H / 180);
+      drawClip('fx.impact-frame', W / 2, H / 2, 0, { scale: s, alpha: 0.75 * k, rot: 0 });
+    }
+    if (gameState.isDying) {
+      drawClip('shadow.eclipse', W / 2, H / 2, game.time, { scale: Math.max(W / 160, H / 144) * 1.2, alpha: 0.5 });
+    } else if (game.boss && game.boss.hp > 0 && game.boss.phase > 1) {
+      drawClip('shadow.eclipse', W / 2, H / 2, game.time, { scale: Math.max(W / 160, H / 144), alpha: 0.12 });
+    }
+  }
+  function pfxDrawDeathVignette() {
+    if (!gameState.isDying) return;
+    drawClip('shadow.eclipse', W / 2, H / 2, game.time, { scale: Math.max(W / 160, H / 144) * 1.4, alpha: 0.35 + 0.25 * deathProgress() });
+  }
+  function pfxDrawTacticalCrosshair() {
+    if (game.screen !== 'playing' || isPaused) return;
+    const m = game.mouse;
+    const firing = game.mouse.down ? 0.75 : 0.5;
+    drawClip('ui.scanner', m.x, m.y, game.time, { scale: 0.34, alpha: firing });
+    drawClip('ink:steel', m.x, m.y, (game.time * 2) % 0.5, { scale: 0.22, alpha: 0.6 });
+    auditActive = false;
+  }
+  function pfxDrawTouchAimLaser() {
+    if (typeof touchAim === 'undefined' || !touchAim || !touchAim.active) return;
+    const p = game.player;
+    drawClip('proj.tracer', p.x, p.y, game.time, { rot: angleTo(p.x, p.y, touchAim.x, touchAim.y), scale: 0.3, alpha: 0.4 });
+  }
+  function pfxDrawMinimap() { drawMinimapPfx(); }
+  function pfxNoop() {}
+
+  const OVERRIDES = {
+    drawGround: pfxDrawGround,
+    drawArenaGround: pfxNoop, drawBossArena: pfxNoop, drawPortal: pfxDrawPortal,
+    drawObstacles: pfxDrawObstacles,
+    drawSandPillars: pfxDrawSandPillars, drawMines: pfxDrawMines,
+    drawBossHazards: pfxDrawBossHazards,
+    drawClassAbilities: pfxDrawClassAbilities, drawHiddenSpots: pfxDrawHiddenSpots,
+    drawFootsteps: pfxDrawFootsteps, drawGems: pfxDrawGems, drawShards: pfxDrawShards,
+    drawChests: pfxDrawChests, drawPickups: pfxDrawPickups, drawBreakables: pfxDrawBreakables,
+    drawRift: pfxDrawRift, drawEnemy: pfxDrawEnemy, drawBoss: pfxDrawBoss,
+    drawEnemyBullets: pfxDrawEnemyBullets, drawTurrets: pfxDrawTurrets, drawBombs: pfxDrawBombs,
+    drawBullets: pfxDrawBullets, drawDiscs: pfxDrawDiscs, drawBeams: pfxDrawBeams,
+    drawParticles: pfxDrawParticles, drawPetEntity: pfxDrawPetEntity, drawPlayer: pfxDrawPlayer,
+    drawThreatArcs: pfxDrawThreatArcs, drawHitIndicator: pfxDrawHitIndicator,
+    drawDeathImpactRing: pfxDrawDeathImpactRing, drawDeathParticles: pfxDrawDeathParticles,
+    drawDecoy: pfxDrawDecoy, drawClassFx: pfxDrawClassFx,
+    drawPetAlerts: pfxDrawPetAlerts, drawAmbient: pfxDrawAmbient, drawPostFx: pfxDrawPostFx,
+    drawObjectiveArrows: pfxDrawObjectiveArrows, drawArenaWatchdogArrows: pfxDrawWatchdogArrows,
+    drawMinimap: pfxDrawMinimap, drawDeathVignette: pfxDrawDeathVignette,
+    drawTouchAimLaser: pfxDrawTouchAimLaser, drawTacticalCrosshair: pfxDrawTacticalCrosshair,
+    drawWallRubble: pfxNoop, drawBreakableHitboxes: pfxNoop
+  };
+
+  function override(name, fn) {
+    const cur = globalThis[name];
+    if (typeof cur === 'function') {
+      if (!LEGACY[name]) LEGACY[name] = cur;
+      globalThis[name] = fn;
+      return true;
+    }
+    return false;
+  }
+
+  function install() {
+    Object.keys(OVERRIDES).forEach((k) => override(k, OVERRIDES[k]));
+    override('paintBackdrop', pfxPaintBackdrop);
+    override('addText', addText);
+    /* the class actions: wrap the real weapon calls so the pose plays on the
+       exact frame the shot leaves the barrel */
+    const fire = { swingSword: 'lmb', firePistols: 'lmb', fireSniper: 'lmb', fireMageOrbs: 'lmb', swingAxes: 'lmb', fireDaggers: 'lmb', fireDisc: 'lmb' };
+    Object.keys(fire).forEach((fn) => {
+      const orig = globalThis[fn];
+      if (typeof orig !== 'function') return;
+      LEGACY[fn] = orig;
+      globalThis[fn] = function () {
+        const r = orig.apply(this, arguments);
+        try { if (game.player && game.screen === 'playing') playMove(game.player.classId, fire[fn], false); } catch (e) { /* never break a shot */ }
+        return r;
+      };
+    });
+    ['castClassAbility', 'dash', 'throwBomb', 'novaBlast', 'startRage'].forEach((fn) => {
+      const orig = globalThis[fn];
+      if (typeof orig !== 'function') return;
+      LEGACY[fn] = orig;
+      globalThis[fn] = function () {
+        const r = orig.apply(this, arguments);
+        try { if (game.player && game.screen === 'playing') playMove(game.player.classId, 'alt', false); } catch (e) { /* ignore */ }
+        return r;
+      };
+    });
+    /* 2.5D input: space jumps, LMB in the air pounds the floor */
+    window.addEventListener('keydown', function (e) {
+      if (game.screen !== 'playing' || isPaused) return;
+      if (e.code === 'Space' || e.key === ' ') { e.preventDefault(); jump(); }
+      if (e.key === 'Shift' && !e.repeat) playMove(game.player ? game.player.classId : 'knight', 'alt', false);
+    });
+    window.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0 || game.screen !== 'playing' || isPaused) return;
+      if (!Z.ground) startGroundPound();
+    });
+    PFXRender.installed = true;
+    if (state.auditOn) installAudit();
+    return true;
+  }
+
+  /* --------------------------------------------------------------- audit
+     Counts every forbidden primitive issued to the game canvas while a world
+     frame is being drawn. Open the game with ?pfxaudit=1 and call PFX.audit(). */
+  const AUDIT_NAMES = ['fillRect', 'fill', 'stroke', 'arc', 'lineTo', 'fillText', 'strokeText',
+    'ellipse', 'roundRect', 'moveTo', 'beginPath', 'rect', 'putImageData'];
+
+  /* The primitive audit wraps the battlefield context itself (so it works in any
+     canvas implementation, including the offscreen paint targets) and counts
+     every forbidden call made while `auditActive` is on. `.audit()` reads it. */
+  function installAudit() {
+    if (state.auditHooked) return;
+    const target = (typeof ctx !== 'undefined' && ctx) ? ctx : null;
+    const P = (typeof CanvasRenderingContext2D !== 'undefined') ? CanvasRenderingContext2D.prototype : null;
+    const host = target || P;
+    if (!host) return;
+    state.auditHooked = true;
+    const isBattlefield = function (self) {
+      if (!target) return true;
+      if (self === target) return true;
+      try { return self && self.canvas === UI.canvas; } catch (e) { return false; }
+    };
+    AUDIT_NAMES.forEach((name) => {
+      const orig = host[name];
+      if (typeof orig !== 'function') return;
+      host[name] = function () {
+        if (auditActive && isBattlefield(this)) {
+          state.audit.forbidden++;
+          state.audit.calls[name] = (state.audit.calls[name] || 0) + 1;
+        }
+        return orig.apply(this, arguments);
+      };
+    });
+    if (P && host !== P) {
+      /* other canvases (offscreen bakes) are audited too, but only counted when
+         the render queue is the one doing the drawing */
+      AUDIT_NAMES.forEach((name) => {
+        const origP = P[name];
+        if (typeof origP !== 'function') return;
+      });
+    }
+  }
+
+  /* ================================================ 12 · BOOT / LOADING
+     A canvas above the DOM shows the bake progress; when every clip is in the
+     cache the pixel-dissolve transition uncovers the game.
+     ====================================================================== */
+  const bootState = {
+    cv: null, c: null, t0: 0, raf: 0, phase: 'idle', title: null, rune: null,
+    wipeT: -1, pct: -1, label: 'BOOT', ready: false
+  };
+
+  function bootCanvas() {
+    if (bootState.cv) return bootState.cv;
+    const cv = document.createElement('canvas');
+    cv.id = 'pfxBoot';
+    cv.setAttribute('aria-hidden', 'true');
+    cv.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;z-index:99999;background:#05060a;image-rendering:pixelated;pointer-events:none;';
+    document.body.appendChild(cv);
+    bootState.cv = cv;
+    bootState.c = cv.getContext('2d');
+    return cv;
+  }
+
+  function bootSize() {
+    const cv = bootState.cv;
+    const dpr = clamp(window.devicePixelRatio || 1, 1, 2);
+    const w = Math.max(1, Math.round((window.innerWidth || 1280) * dpr));
+    const h = Math.max(1, Math.round((window.innerHeight || 720) * dpr));
+    if (cv.width !== w) cv.width = w;
+    if (cv.height !== h) cv.height = h;
+  }
+
+  function paintBootWord(key, cx, cy, time, scale, alpha) {
+    const clip = clips.get(key);
+    if (!clip) return false;
+    const c = bootState.c;
+    const f = Math.max(0, Math.min(clip.n - 1, Math.floor(time * clip.fps)));
+    const sx = (f % clip.cols) * clip.w, sy = Math.floor(f / clip.cols) * clip.h;
+    c.save();
+    c.imageSmoothingEnabled = false;
+    if (alpha != null) c.globalAlpha = alpha;
+    c.drawImage(clip.canvas, sx, sy, clip.w, clip.h,
+      Math.round(cx - clip.ox * scale), Math.round(cy - clip.oy * scale), clip.w * scale, clip.h * scale);
+    c.restore();
+    return true;
+  }
+
+  function bootFrame() {
+    if (!bootState.cv) return;
+    const c = bootState.c;
+    const cv = bootState.cv;
+    const t = (now() - bootState.t0) / 1000;
+    bootSize();
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, cv.width, cv.height);
+    const dpr = cv.width / Math.max(1, window.innerWidth || cv.width);
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const sw = window.innerWidth || 1280, sh = window.innerHeight || 720;
+    const cx = sw / 2, cy = sh / 2;
+
+    /* the rune circle: the progress meter itself */
+    const rune = clips.get('boot.rune');
+    if (rune) {
+      const s = Math.min(sw, sh) / 150;
+      const clip = rune;
+      const f = Math.floor(t * clip.fps) % clip.n;
+      const sx = (f % clip.cols) * clip.w, sy = Math.floor(f / clip.cols) * clip.h;
+      const amount = Math.max(0.02, state.progress);
+      const sw2 = Math.max(1, Math.round(clip.w * amount));
+      c.save();
+      c.imageSmoothingEnabled = false;
+      c.globalAlpha = 0.22;
+      c.drawImage(clip.canvas, sx, sy, clip.w, clip.h, Math.round(cx - clip.ox * s), Math.round(cy - clip.oy * s), clip.w * s, clip.h * s);
+      c.globalAlpha = 0.95;
+      c.drawImage(clip.canvas, sx, sy, sw2, clip.h, Math.round(cx - clip.ox * s), Math.round(cy - clip.oy * s), sw2 * s, clip.h * s);
+      c.restore();
+    }
+    /* title + status: three fixed word clips, never a per-frame bake */
+    paintBootWord('boot.title', cx, cy - Math.min(sw, sh) * 0.16, 0.45, 2.2, 1);
+    if (bootState.labelKey) paintBootWord(bootState.labelKey, cx, cy + Math.min(sw, sh) * 0.24, 0.45, 1.5, 0.75);
+
+    /* the dissolve out */
+    if (bootState.wipeT >= 0) {
+      const clip = clips.get('wipe.dissolve');
+      if (clip) {
+        const s = Math.max(sw / 320, sh / 180);
+        const f = Math.min(clip.n - 1, Math.floor(bootState.wipeT * clip.fps));
+        const sx = (f % clip.cols) * clip.w, sy = Math.floor(f / clip.cols) * clip.h;
+        const alpha = clamp((clip.n / clip.fps - bootState.wipeT) / 0.5, 0, 1);
+        c.save();
+        c.imageSmoothingEnabled = false;
+        c.globalAlpha = alpha;
+        c.drawImage(clip.canvas, sx, sy, clip.w, clip.h, 0, 0, sw, sh);
+        c.restore();
+      }
+      bootState.wipeT += 1 / 60;
+      if (bootState.wipeT > 2.4) { removeBoot(); return; }
+    }
+    bootState.raf = requestAnimationFrame(bootFrame);
+  }
+
+  function removeBoot() {
+    if (bootState.raf) cancelAnimationFrame(bootState.raf);
+    bootState.raf = 0;
+    /* the background warm-up: the heavy, rarely-seen clips bake while the
+       player is already walking into the first zone */
+    startWarmup();
+    if (bootState.cv && bootState.cv.parentNode) bootState.cv.parentNode.removeChild(bootState.cv);
+    bootState.cv = null;
+    bootState.c = null;
+  }
+
+  /* post-boot warm-up: bake the lazy clips one at a time in idle frames */
+  const warmup = { queue: [], running: false, timer: 0 };
+  function startWarmup() {
+    if (warmup.running) return;
+    /* performances and combat beats first; the full-screen shatter wipe is a
+       transition, so it is left to bake the one time a run actually ends */
+    warmup.queue = MANIFEST.filter((d) => d.lazy && d.key.indexOf('wipe.') !== 0).map((d) => d.key);
+    warmup.running = true;
+    const step = () => {
+      /* stop before the cache is full: whatever is left bakes on demand */
+      if (!warmup.queue.length || state.bytes > CFG.cacheBudget * 0.95) { warmup.running = false; return; }
+      const key = warmup.queue.shift();
+      FXCache.warm(key).catch(() => null).then(() => {
+        state.bytes = Array.from(clips.values()).reduce((n, c) => n + c.bytes, 0);
+        FXCache.trim();
+        warmup.timer = setTimeout(step, 90);
+      });
+    };
+    warmup.timer = setTimeout(step, 700);
+  }
+
+  /* The loading screen speaks with exactly three baked words. Anything else
+     would mean baking a new text clip mid-boot, which is how a loading screen
+     eats its own memory budget. */
+  const BOOT_WORDS = { loading: 1, baking: 1, ready: 1 };
+  function setBootLabel(text) {
+    const word = String(text || 'baking').toLowerCase();
+    const key = 'word:' + (BOOT_WORDS[word] ? word : 'baking');
+    if (!BOOT_WORDS[word]) { bootState.labelKey = key; return; }
+    if (!clips.has(key)) {
+      FXCache.request(key, 'ui/damage-number', { scale: 1, window: 1.05, fps: 16, opts: { text: word.toUpperCase(), palette: INKS.gold } });
+    }
+    bootState.labelKey = key;
+  }
+  function setBootPct(p) { bootState.pct = p; }
+
+  async function start() {
+    bootCanvas();
+    bootState.t0 = now();
+    bootSize();
+    bootState.raf = requestAnimationFrame(bootFrame);
+    try {
+      await load();
+      setBootLabel('loading');
+      /* the loading furniture first: rune meter + title */
+      try {
+        bootState.runeClip = await FXCache.bake({ key: 'boot.rune', id: 'arcane/rune-circle', kind: 'fx', loop: true, window: 2.0, fps: 12, scale: 1 });
+      } catch (e) { /* the meter is optional */ }
+      try {
+        await FXCache.bake({ key: 'boot.title', id: 'ui/level-up', kind: 'fx', scale: 1, opts: { text: 'SURVIVE', palette: INKS.gold } });
+      } catch (e) { /* optional */ }
+      setBootLabel('baking');
+      setBootPct(0);
+      await FXCache.flushOnDemand(120);
+      /* the long bake */
+      await FXCache.bakeManifest(async (p, id) => {
+        state.progress = Math.min(0.999, p);
+        if ((state.frames & 7) === 0) {
+          await yieldFrame();
+          /* give the on-demand text/metre clips a slice each slice */
+          await FXCache.flushOnDemand(10);
+        }
+      });
+      state.progress = 1;
+      state.ready = true;
+      state.status = 'ready';
+      setBootPct(1);
+      setBootLabel('ready');
+      await FXCache.flushOnDemand(200);
+      install();
+      bootState.ready = true;
+      /* hold a beat so 100% is legible, then dissolve into the game */
+      await new Promise((r) => setTimeout(r, 260));
+      bootState.wipeT = 0;
+    } catch (e) {
+      state.status = 'failed';
+      state.errors.push('boot: ' + (e && e.message));
+      if (typeof console !== 'undefined') console.error('[PFX] boot failed', e, state.errors);
+      /* no silent black screen: hand the canvas back to the legacy renderer */
+      setTimeout(removeBoot, 1200);
+    }
+  }
+
+  /* ---------------------------------------------------------------- hooks */
+  function tick(sdt, rdt) {
+    if (!state.ready) return;
+    updateLevelUp(rdt);
+    updateMoves(sdt);
+    updateZ(sdt);
+    tickLive(sdt);
+    updateTexts(sdt);
+    PFXStatus.update(sdt);
+    PFXWorld.update(sdt);
+    for (let i = 0; i < game.enemies.length; i++) hoverUpdate(game.enemies[i], sdt);
+    FXCache.flushOnDemand(5);
+  }
+
+  function onEnemyHit(e, dmg, meta) {
+    if (!state.ready || !e) return;
+    try {
+      PFXStatus.onEnemyHit(e, dmg, meta);
+      const crit = meta && (meta.crit || meta.assassin);
+      if (crit) addCrit(e.x, e.y - (e.r || 12) * 2.2 - (e.z || 0), String(Math.round(dmg)));
+      else addText(e.x + rand(-4, 4), e.y - (e.r || 12) * 1.9 - (e.z || 0), String(Math.max(1, Math.round(dmg))), '#fff', 14, 30, 0.9);
+      spawn('impact.spark', e.x, e.y - (e.z || 0) - 8, { scale: clamp((e.r || 12) / 34, 0.35, 0.9), layer: 'air', life: 0.3 });
+    } catch (err) { state.errors.push('hit: ' + (err && err.message)); }
+  }
+  function onPlayerHit(amount, source) {
+    if (!state.ready || !game.player) return;
+    addText(game.player.x, game.player.y - 44, '-' + Math.max(1, Math.round(amount)), '#ef4444', 15, 34, 0.9);
+    spawn('impact.crit', game.player.x, game.player.y - 10, { scale: 0.8, layer: 'air', life: 0.5 });
+    game.flashTimer = Math.max(game.flashTimer || 0, 0.3);
+  }
+  function onZoneLoad() {
+    PFXWorld.setUniverse(gameState.currentUniverse);
+  }
+  function onLevelUp() { if (state.ready) triggerLevelUp(); }
+
+  /* the public surface */
+  return {
+    get ready() { return state.ready; },
+    get status() { return state.status; },
+    get stats() { return FXCache.stats(); },
+    boot: start,
+    CFG, INKS, MANIFEST, WEATHER, THEMES,
+    clips, drawClip, drawTiled, drawClipSlice, spawn, clearLive,
+    cache: FXCache,
+    world: PFXWorld,
+    status_: PFXStatus,
+    text: { addText, addCrit },
+    moves,
+    z: Z,
+    audit(reset) {
+      const snap = {
+        forbidden: state.audit.forbidden,
+        calls: Object.assign({}, state.audit.calls),
+        clips: clips.size,
+        source: state.source,
+        errors: state.errors.slice(0, 12)
+      };
+      if (reset) { state.audit.forbidden = 0; state.audit.calls = {}; }
+      return snap;
+    },
+    setAudit(on) { state.auditOn = !!on; auditActive = !!on; if (on) installAudit(); },
+    hooks: {
+      tick, onEnemyHit, onEnemySpawn: onEnemySpawn, onEnemyDeath: onEnemyDeath,
+      onPlayerHit, onZoneLoad, onLevelUp,
+      jump, groundPound: startGroundPound,
+      tryInstall: install
+    },
+    /* used by tooling */
+    _internals: { state, clips, bake: (d) => FXCache.bake(d), clipsForTest: MANIFEST }
+  };
+})();
+
+
 /* The SVG buttons use exactly the same casts and cooldown checks as the keys. */
 document.getElementById('abilities').addEventListener('click', (e) => {
   const button = e.target.closest('[data-ability]');
@@ -28256,6 +30886,9 @@ window.addEventListener('load', resize);
     document.fonts.ready.then(() => {}).catch(function () {});
   }
   showScreen('mainMenu');
+  /* the pixelfx engine loads every module, bakes its sprite sheets over the
+     loading screen and dissolves into the menu */
+  if (typeof PFX !== 'undefined') PFX.boot();
 })();
 </script>
 </body>

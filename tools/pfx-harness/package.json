@@ -1,0 +1,16 @@
+{
+  "name": "survive-pfx-harness",
+  "private": true,
+  "type": "module",
+  "description": "Headless jsdom harness for the pixelfx integration in index.html",
+  "scripts": {
+    "test": "node run.mjs",
+    "test:boot": "node run.mjs --boot",
+    "test:sweep": "node run.mjs --sweep",
+    "test:audit": "node run.mjs --audit",
+    "test:low": "PFX_LOW=1 node run.mjs --boot"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1"
+  }
+}
