@@ -5459,6 +5459,7 @@ function makePlayer() {
     vx: 0,              /* live velocity, eased in and out of */
     vy: 0,
     z: 0, vz: 0, animState: 'idle', animMove: null, animTime: 0, animLock: 0, attackAnimTimer: 0,
+    animationState: 'idle', currentMove: null, primaryAnimElapsed: 0, primaryAnimDuration: 0,
     pendingGroundPound: false, stompDelay: -1,
     angle: 0,
     fireTimer: 0,
@@ -5611,6 +5612,7 @@ function loadZone(zoneIndex, opts) {
     game.player.z = 0; game.player.vz = 0;
     game.player.pendingGroundPound = false; game.player.stompDelay = -1;
     game.player.animLock = 0; game.player.attackAnimTimer = 0; game.player.animMove = null; game.player.animState = 'idle'; game.player.gunRecoilTimer = 0;
+    game.player.animationState = 'idle'; game.player.currentMove = null; game.player.primaryAnimElapsed = 0; game.player.primaryAnimDuration = 0;
   }
   PixelFX.clear();
   if (pixelCharacters && game.player) {
@@ -6370,6 +6372,13 @@ function updateHeightPhysics(dt) {
   }
   p.gunRecoilTimer = Math.max(0, (p.gunRecoilTimer || 0) - dt);
   if (actorAnimator) actorAnimator.update(p, dt);
+  if (p.animationState === 'attack') {
+    p.primaryAnimElapsed = Math.min(p.primaryAnimDuration, (p.primaryAnimElapsed || 0) + dt);
+    if (p.primaryAnimElapsed >= p.primaryAnimDuration) {
+      p.currentMove = null;
+      p.animationState = p.z > 0 ? 'jump' : p.dashTimer > 0 || Math.hypot(p.vx || 0,p.vy || 0) > 0.01 ? 'run' : 'idle';
+    }
+  } else p.animationState = p.z > 0 ? 'jump' : p.dashTimer > 0 || Math.hypot(p.vx || 0,p.vy || 0) > 0.01 ? 'run' : 'idle';
 }
 function updatePlayer(dt) {
   const p = game.player;
@@ -7988,6 +7997,17 @@ function paintPixelClassCards() {
     }
   }
 }
+const PRIMARY_ANIMATION_MOVES = {
+  knight:'sword-combo', mage:'fireball-throw', gunslinger:'pistol-shots',
+  sniper:'arrow-shot', tech:'rocket-launcher', berserker:'ground-pound', shadow:'dagger-flurry'
+};
+function startPrimaryAnimation(p, duration) {
+  const move=PRIMARY_ANIMATION_MOVES[p.classId];
+  if (!move) return;
+  p.animationState='attack'; p.currentMove=move; p.primaryAnimElapsed=0;
+  p.primaryAnimDuration=Math.max(0.001,Number(duration)||0.001);
+  if (pixelCharacters) pixelCharacters.request(p.classId,'attack',pixelSkin(p),move,true);
+}
 function registerPrimaryAttack(p, cooldown) {
   if (!p) return 0;
   const cd = Number.isFinite(Number(cooldown)) ? Math.max(0, Number(cooldown)) : 0;
@@ -7997,6 +8017,7 @@ function registerPrimaryAttack(p, cooldown) {
   p.primaryReloadMax = reload;
   p.primaryCooldownMax = cd + reload;
   p.primaryCdMax = p.primaryCooldownMax;
+  startPrimaryAnimation(p, p.primaryCooldownMax);
   return p.primaryCooldownMax;
 }
 
@@ -8040,7 +8061,6 @@ function inSwordArc(px, py, aim, x, y, r, arc, reach) {
 
 function swingSword() {
   const p = game.player;
-  playMove(p, 'sword-combo');
   const arc = swordArc();
   const dir = p.swingSign > 0 ? 1 : -1;
   p.swingSign = -dir;
@@ -8164,7 +8184,6 @@ function triggerGunVisual(p) {
 function firePistols(charged) {
   const p = game.player;
   triggerGunVisual(p);
-  playMove(p, 'pistol-shots');
   PixelFX.spawn('projectiles/pistol-shot', p.x, p.y, { angle: p.angle, scale: 1.6 });
   p.recoilBloom = 8;
   const attack = skillAttackMeta('pistol');
@@ -8213,7 +8232,6 @@ function firePistols(charged) {
 function fireSniper(charged) {
   const p = game.player;
   triggerGunVisual(p);
-  playMove(p, 'rocket-launcher');
   PixelFX.spawn('projectiles/laser-bolt', p.x, p.y, { angle: p.angle, scale: 1.6 });
   p.recoilBloom = 8;
   const a = p.angle;
@@ -8281,7 +8299,6 @@ function fireSniper(charged) {
 
 function fireMageOrbs(charged) {
   const p = game.player;
-  playMove(p, 'fireball-throw');
   p.recoilBloom = 8;
   const attack = skillAttackMeta('orb');
   const n = mageOrbCount();   /* base 1 orb; +1 Orb Mastery; +1 Singularity */
@@ -8347,6 +8364,7 @@ function fireClassWeapon(dt) {
     const landingTime = 0.62;
     p.vz = (900 * landingTime * landingTime - p.z) / landingTime;
     playMove(p, 'ground-pound', true);
+    startPrimaryAnimation(p, landingTime);
     return;
   }
   if (p.pendingGroundPound) return;
@@ -8397,7 +8415,6 @@ const AXE_COOLDOWN = 0.5;
 
 function swingAxes() {
   const p = game.player;
-  playMove(p, 'earth-stomp');
   const dir = p.swingSign > 0 ? 1 : -1;
   const half = AXE_ARC / 2;
   p.swingSign = -dir;
@@ -8523,7 +8540,6 @@ function fireDaggers(charged) {
 function fireDisc(charged) {
   const p = game.player;
   triggerGunVisual(p);
-  playMove(p, 'rocket-launcher');
   PixelFX.spawn('projectiles/energy-disc', p.x, p.y, { angle: p.angle, scale: 1.6 });
   p.recoilBloom = 8;
   const a = p.angle;
@@ -22834,10 +22850,13 @@ function drawPlayer() {
   if (cls === 'mage') PixelFX.loop(ctx,'arcane/rune-circle',p.x,p.y,game.time,{scale:0.85});
   let staffTip = null;
   try {
-    const state = p.animMove && p.attackAnimTimer > 0 ? 'attack' :
-      p.animState === 'dash' ? 'run' : p.animState || 'idle';
+    const primaryAttack=p.animationState==='attack' && !!p.currentMove;
+    const state = primaryAttack ? 'attack' : p.animMove && p.attackAnimTimer > 0 ? 'attack' :
+      p.animState === 'dash' ? 'run' : p.animState || p.animationState || 'idle';
     if (pixelCharacters) pixelCharacters.draw(ctx, cls, state, spriteX, spriteY, p.angle, game.time,
-      pixelSkin(p), { player:true, scale:1.4, move:p.animMove, animTime:p.animTime,
+      pixelSkin(p), { player:true, scale:1.4, move:primaryAttack ? p.currentMove : p.animMove,
+        animTime:primaryAttack ? p.primaryAnimElapsed : p.animTime,
+        animDuration:primaryAttack ? p.primaryAnimDuration : undefined,
         onStaffTip(x,y) { staffTip={x,y}; } });
   } catch (_) {}
   if (cls === 'mage' && staffTip) {

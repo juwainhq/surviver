@@ -6,7 +6,7 @@ const chars=readFileSync(new URL('../js/pixel-characters.js',import.meta.url),'u
 function part(a,b){const i=html.indexOf(a),j=html.indexOf(b,i);assert.ok(i>=0&&j>i);return html.slice(i,j);}
 assert.doesNotMatch(part('function fireSniper(charged)', 'function fireMageOrbs'), /arrow-shot/);
 assert.doesNotMatch(part('function fireDisc(charged)', 'function updateDiscs'), /arrow-shot/);
-assert.doesNotMatch(chars.match(/const MOVES = \{[^\n]+/)[0], /(?:gunslinger|sniper|tech):'arrow-shot'/);
+assert.match(chars.match(/const MOVES = \{[^\n]+/)[0], /sniper:'arrow-shot'/);
 const calls=[], draws=[];
 const ctx={save(){},restore(){},beginPath(){},ellipse(){},fill(){},translate(){},rotate(){},scale(){},fillRect(){},moveTo(){},lineTo(){},closePath(){}};
 const PixelFX={spawn(...args){calls.push(['spawn',...args]);return true;},loop(...args){calls.push(['loop',...args]);return true;}};

@@ -1,5 +1,4 @@
-// Cached 16-bit character skins built from PixelFX's articulated rig. All
-// pixel writes and costume details are baked offscreen, never in the render loop.
+// Cached, palette-tinted PixelFX skeletal poses. Pixel writes happen only offscreen.
 import { posed, poseAt, skeleton, STAND } from '../vendor/pixelfx/src/core/index.js';
 const STYLES = {
   knight: ['#334155','#94a3b8','#f59e0b','#991b1b','knight'],
@@ -25,9 +24,9 @@ const PLAYER_STYLES = {
   gunslinger: ['#451a03', '#78350f', '#ef4444', '#78350f', 'gunslinger']
 };
 const PLAYER_OUTLINES = { knight:'#f59e0b', mage:'#06b6d4', sniper:'#10b981', gunslinger:'#ef4444' };
-const MOVES = {knight:'sword-combo',gunslinger:'pistol-shots',sniper:'pistol-shots',mage:'fireball-throw',berserker:'ground-pound',shadow:'sword-combo',tech:'pistol-shots',enemyKnight:'sword-combo',enemyArcher:'arrow-shot',enemyMage:'fireball-throw',enemyBrute:'ground-pound',enemyBomber:'ground-pound',boss:'sword-combo'};
-const DURATIONS = {'sword-combo':0.38,'dash-strike':0.4,'ground-pound':0.8,'earth-stomp':0.4,'fireball-throw':0.45,'meteor-call':0.6,'pistol-shots':0.3,'rocket-launcher':0.45,'arrow-shot':0.4};
-const SOURCE_DURATIONS = {'sword-combo':1.55,'dash-strike':1.8,'ground-pound':1.4,'earth-stomp':1.2,'fireball-throw':1.6,'meteor-call':2.3,'pistol-shots':1.2,'rocket-launcher':1.5,'arrow-shot':1.1};
+const MOVES = {knight:'sword-combo',gunslinger:'pistol-shots',sniper:'arrow-shot',mage:'fireball-throw',berserker:'ground-pound',shadow:'dagger-flurry',tech:'rocket-launcher',enemyKnight:'sword-combo',enemyArcher:'arrow-shot',enemyMage:'fireball-throw',enemyBrute:'ground-pound',enemyBomber:'ground-pound',boss:'sword-combo'};
+const DURATIONS = {'sword-combo':0.38,'dash-strike':0.4,'ground-pound':0.8,'earth-stomp':0.4,'fireball-throw':0.45,'meteor-call':0.6,'pistol-shots':0.3,'rocket-launcher':0.45,'arrow-shot':0.4,'dagger-flurry':0.4};
+const SOURCE_DURATIONS = {'sword-combo':1.55,'dash-strike':1.8,'ground-pound':1.4,'earth-stomp':1.2,'fireball-throw':1.6,'meteor-call':2.3,'pistol-shots':1.2,'rocket-launcher':1.5,'arrow-shot':1.1,'dagger-flurry':1.05};
 const NAMED_MOVES = Object.keys(DURATIONS);
 const later = cb => typeof requestIdleCallback === 'function' ? requestIdleCallback(cb,{timeout:200}) : setTimeout(cb,16);
 function rgb(hex) { const v=parseInt(String(hex).replace('#',''),16); return [(v>>16)&255,(v>>8)&255,v&255]; }
@@ -70,20 +69,34 @@ function details(g, spec, state, frame) {
 export class PixelCharacters {
   constructor(onReady) {
     this.cache=new Map();this.queue=[];this.working=false;this.moves={};this.onReady=onReady;
-    for(const name of NAMED_MOVES) { this.moves[name]=null; import('../vendor/pixelfx/src/fx/moves/'+name+'.js').then(m=>{this.moves[name]=m;}).catch(()=>{this.moves[name]=false;}); }
+    for(const name of NAMED_MOVES) {
+      this.moves[name]=null;
+      // Upstream has no moves/dagger-flurry; the melee module supplies its
+      // own complete act.poses and is the authored skeletal equivalent.
+      const path=name==='dagger-flurry' ? '../vendor/pixelfx/src/fx/melee/dagger-flurry.js' : '../vendor/pixelfx/src/fx/moves/'+name+'.js';
+      import(path).then(m=>{this.moves[name]=m;}).catch(()=>{this.moves[name]=false;});
+    }
     for(const style of Object.keys(STYLES)) this.prewarm(style);
   }
   key(style,state,skin,move,player) { return [style,state,skin ? [skin.navyDark,skin.navy,skin.navyLit,skin.visor].join(',') : '',move||'',player?'player':''].join('|'); }
-  prewarm(style,skin,player=false) { for(const state of ['idle','run','attack','jump']) this.request(style,state,skin,'',player); }
+  prewarm(style,skin,player=false) {
+    for(const state of ['idle','run','attack','jump']) this.request(style,state,skin,state==='attack' && player ? MOVES[style] : '',player);
+  }
   request(style,state,skin,move,player=false) {
     style=STYLES[style]?style:'knight';
     if(state!=='attack') move='';
     const key=this.key(style,state,skin,move,player), prior=this.cache.get(key);
-    if(prior) return prior.ready || (player && prior.length) ? prior : null;
+    if(prior) {
+      if (player && !prior.ready && prior.job) {
+        const at=this.queue.indexOf(prior.job);
+        if(at>0) { this.queue.splice(at,1); this.queue.unshift(prior.job); }
+      }
+      return prior.ready || (player && prior.length) ? prior : null;
+    }
     const frames=[], spec=[...(player && PLAYER_STYLES[style] ? PLAYER_STYLES[style] : STYLES[style])];
     if(skin && skin.navy && skin.navyLit) { spec[0]=skin.navyDark||skin.navy; spec[1]=skin.navyLit; spec[2]=skin.visor||spec[2]; spec[3]=skin.navy; }
     const job={key,style,state,player,move:move||MOVES[style],frames,spec,index:0,count:state==='idle'?4:state==='jump'?2:6};
-    this.cache.set(key,frames); if(player) this.queue.unshift(job); else this.queue.push(job); this.schedule();return null;
+    frames.job=job; this.cache.set(key,frames); if(player) this.queue.unshift(job); else this.queue.push(job); this.schedule();return null;
   }
   schedule() {
     if(this.working||!this.queue.length)return; this.working=true;
@@ -126,13 +139,13 @@ export class PixelCharacters {
           const k=(y*96+x)*4;image.data[k]=col[0];image.data[k+1]=col[1];image.data[k+2]=col[2];image.data[k+3]=v>>>24;
         }
         g.putImageData(image,0,0);
-        if (!job.player) details(g,job.spec,job.state,job.index);
         if (job.player && job.style === 'mage') {
           const hand=skeleton(rigPose).joints.handN;
           c.staffTip={x:hand[0],y:hand[1]-47};
         }
-        job.frames.push(c); if(++job.index<job.count)this.queue.push(job);
-        else {job.frames.ready=true;if(this.onReady) this.onReady(job.style,job.state);}
+        if (!job.player) details(g,job.spec,job.state,job.index);
+        job.frames.push(c); if(++job.index<job.count) { if(job.player) this.queue.unshift(job); else this.queue.push(job); }
+        else {job.frames.job=null;job.frames.ready=true;if(this.onReady) this.onReady(job.style,job.state);}
       } catch (_) { this.cache.delete(job.key); }
       this.schedule();
     });
@@ -142,8 +155,8 @@ export class PixelCharacters {
     let frames=this.request(style,state,skin,move,!!options.player);
     if(!frames) frames=this.request(style,'idle',skin,'',!!options.player);
     if(!frames)return false;
-    const duration=DURATIONS[move]||1;
-    const n=state==='attack'&&move?Math.min(frames.length-1,Math.floor((options.animTime||0)/duration*frames.length)):
+    const duration=options.animDuration || DURATIONS[move] || 1;
+    const n=state==='attack'&&move?Math.min(frames.length-1,Math.floor((options.animTime||0)/duration*6)):
       Math.floor((time||0)*(state==='run'?10:4))%frames.length;
     ctx.save();try {
       ctx.translate(x,y);ctx.scale(Math.cos(angle||0)<0?-1:1,1);ctx.imageSmoothingEnabled=false;
