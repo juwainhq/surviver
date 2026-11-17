@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+function part(a,b){const i=html.indexOf(a),j=html.indexOf(b,i);assert.ok(i>=0&&j>i);return html.slice(i,j);}
+assert.ok(!html.includes('generateEnemySprite'));
+const calls=[];
+const ctx={save(){},restore(){},translate(){},scale(){},set imageSmoothingEnabled(v){assert.equal(v,false);}};
+const game={time:2,player:{x:100,y:100},bullets:[],discs:[],enemyBullets:[]};
+const env={ctx,game,ENEMY_PLASMA_PALETTE:['#280812'],gameState:{currentUniverse:0},angleTo:()=>0,PixelFX:{loop(...args){calls.push(args);return true;}}};
+vm.createContext(env);
+vm.runInContext(part('const SLIME_PALETTES = [','function drawEnemy(e)'),env);
+vm.runInContext("drawPixelEnemy({type:'knight',x:12,y:30,r:10},null); drawPixelEnemy({type:'swarm',x:22,y:40,r:10},null); drawPixelEnemy({type:'wizard',x:22,y:40,r:10},null)",env);
+assert.deepEqual(calls.map(c=>c[1]),['critters/slime','critters/bat','critters/eyeball']);
+for(const c of calls) assert.equal(c[5].scale,1.5);
+calls.length=0;
+vm.runInContext(part('function drawBullets()', 'function drawBeams()'),env);
+vm.runInContext(part('function drawDiscs()', 'function drawClassFx()'),env);
+game.bullets=[{x:1,y:2,vx:1,vy:0,kind:'pistol'},{x:2,y:3,vx:0,vy:1,kind:'sniper'},{x:3,y:4,vx:-1,vy:0,kind:'orb'}];
+game.discs=[{x:4,y:5,vx:0,vy:-1}];
+vm.runInContext('drawBullets(); drawDiscs()',env);
+assert.deepEqual(calls.map(c=>c[1]),['projectiles/bullet-tracer','projectiles/laser-bolt','arcane/arcane-orb','projectiles/energy-disc']);
+assert.equal(calls[1][5].angle,Math.PI/2);assert.equal(calls[3][5].angle,-Math.PI/2);assert.ok(calls[2][5].offsetY<0);
+assert.match(part('function swingSword()', 'function updateSword(dt)'),/melee\/sword-slash/);
+assert.match(part('function swingAxes()', 'function updateAxes(dt)'),/melee\/hammer-smash/);
+assert.match(part('function fireDaggers(charged)', 'function fireDisc(charged)'),/melee\/dagger-flurry/);
+assert.match(part('function dash(alternateAttack', 'function dropTurret()'),/melee\/heavy-cleave/);
+console.log('PixelFX critter, projectile and melee dispatch checks passed');

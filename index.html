@@ -31,6 +31,10 @@
     display:none; /* shown only on touch devices */
   }
   #touchControls.show { display:block; }
+  #jumpBtn { position:absolute; right:max(150px, env(safe-area-inset-right));
+    bottom:calc(max(30px, env(safe-area-inset-bottom)) + 116px); width:62px; height:62px;
+    border-radius:50%; border:2px solid #94a3b8; color:#f1f5f9; background:rgba(15,23,42,.8);
+    font:700 12px sans-serif; pointer-events:auto; touch-action:none; z-index:9002; }
   #joyStick {
     position:absolute; bottom:safe-area-inset-bottom; left:safe-area-inset-left;
     width:120px; height:120px; margin:16px;
@@ -168,7 +172,7 @@
     position:absolute; inset:0; pointer-events:none;
     font-family:var(--font-stat);
   }
-  #topLeft{ position:absolute; top:16px; left:22px; display:flex; flex-direction:column; gap:7px; }
+  #topLeft{ position:absolute; top:16px; padding-top:env(safe-area-inset-top, 8px); left:22px; display:flex; flex-direction:column; gap:7px; }
   #orbs{ display:flex; gap:7px; align-items:center; }
   .orb{
     width:13px; height:13px; border-radius:50%;
@@ -193,7 +197,7 @@
   }
 
   #objective{
-    position:absolute; top:18px; left:50%; transform:translateX(-50%);
+    position:absolute; top:16px; padding-top:env(safe-area-inset-top, 8px); left:50%; transform:translateX(-50%);
     font-family:var(--font-head); font-style:italic; font-size:17px;
     color:#f3d494; letter-spacing:.4px; white-space:nowrap; text-align:center;
   }
@@ -2208,7 +2212,7 @@ html,body{ background:var(--bg); color:var(--text); }
 #objective{ color:var(--text); font-style:italic; text-shadow:0 2px 12px #000; }   /* italic parchment */
 #topRight{                             /* wooden plaque, top-right */
   background:linear-gradient(180deg, rgba(18,20,29,.93), rgba(26,18,8,.93));
-  border:1px solid var(--border); border-radius:2px; padding:7px 14px; gap:16px;
+  border:1px solid var(--border); border-radius:2px; padding:7px 14px; padding-top:env(safe-area-inset-top, 8px); top:16px; gap:16px;
   box-shadow:inset 0 1px 0 rgba(226,232,240,.15), inset 0 -2px 6px rgba(0,0,0,.5), 0 4px 14px rgba(0,0,0,.5);
 }
 #topRight .stat{ color:var(--text); font-variant-numeric:tabular-nums; }
@@ -3151,7 +3155,7 @@ body.touch-mode #btnPlantTurret.show{ display:flex; }
 body.touch-mode #mobilePauseBtn{ top:max(14px, env(safe-area-inset-top)); right:max(14px, env(safe-area-inset-right)); }
 body.touch-mode #mobilePauseBtn.show{ display:flex; }
 #mobilePauseBtn:active{ background:rgba(255,255,255,.14); }
-body.touch-mode #topRight{ right:var(--pause-clearance, 72px) !important; top:14px; }
+body.touch-mode #topRight{ right:var(--pause-clearance, 72px) !important; }
 
 /* ---- portrait rotate prompt (dismissible; camera also zooms to 0.78x) ---- */
 #rotatePrompt{
@@ -3428,7 +3432,8 @@ body.touch-mode #skillTooltipUnlock{ display:block; }
   </div><!-- /#uiLayer -->
 
   <!-- Physical-pixel twin sticks live outside the scaled HUD layer. -->
-  <div id="touchControls" aria-hidden="true">
+  <div id="touchControls">
+    <button id="jumpBtn" type="button" aria-label="Jump">JUMP</button>
     <div id="moveTouchZone" class="touch-zone move-zone">
       <div id="joyStick" class="joystick-base"><div id="joyDot" class="joystick-knob"></div></div>
     </div>
@@ -3651,7 +3656,7 @@ body.touch-mode #skillTooltipUnlock{ display:block; }
           <div class="cstat"><span class="lbl">Damage</span><span class="cbar"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
           <div class="cstat"><span class="lbl">Range</span><span class="cbar"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
         </div>
-        <div class="cq">Q · Rage</div>
+        <div class="cq">Q · Earth Stomp</div>
         <div class="cpassive">Passive · 3 health orbs · one back every 5 kills</div>
       </div>
       <div class="class-card locked" id="cardShadow" data-class="shadow" role="button" tabindex="0">
@@ -3831,9 +3836,32 @@ body.touch-mode #skillTooltipUnlock{ display:block; }
 
 <script>
 'use strict';
+// The game remains fully playable while PixelFX loads or if modules are blocked
+// (including file://). Every hook returns false until a cached sprite is ready.
+const PixelFX = { manager: null, palettes: null,
+  spawn(...args) { try { return this.manager ? this.manager.spawn(...args) : false; } catch (_) { return false; } },
+  loop(...args) { try { return this.manager ? this.manager.drawLoop(...args) : false; } catch (_) { return false; } },
+  update(dt) { try { if (this.manager) this.manager.update(dt); } catch (_) {} },
+  draw(ctx) { try { if (this.manager) this.manager.draw(ctx); } catch (_) {} },
+  clear() { if (this.manager) this.manager.clear(); },
+  era(i) { return this.palettes ? this.palettes[i] || this.palettes[0] : null; }
+};
+let actorAnimator = null;
+let pixelCharacters = null;
+import('./js/pixel-characters.js').then(mod => {
+  pixelCharacters = new mod.PixelCharacters((style, state) => {
+    if (state === 'idle' && typeof currentScreen !== 'undefined' && currentScreen === 'classSelect') paintPixelClassCards();
+  });
+  if (typeof currentScreen !== 'undefined' && currentScreen === 'classSelect') paintPixelClassCards();
+}).catch(() => {});
+import('./js/actor-animator.js').then(mod => { actorAnimator = new mod.ActorAnimator(); }).catch(() => {});
+import('./js/pixel-fx-manager.js').then(mod => {
+  PixelFX.palettes = mod.ERA_PALETTES;
+  PixelFX.manager = new mod.PixelFXManager();
+}).catch(() => {});
 /* =============================================================================
    SURVIVE — Commander Rael
-   A self-contained top-down shooter. No external assets except Google Fonts.
+   A top-down shooter with locally vendored PixelFX and optional Google Fonts.
    ============================================================================= */
 
 /* ------------------------------ constants --------------------------------- */
@@ -5430,6 +5458,8 @@ function makePlayer() {
     speed: cls.speed,
     vx: 0,              /* live velocity, eased in and out of */
     vy: 0,
+    z: 0, vz: 0, animState: 'idle', animMove: null, animTime: 0, animLock: 0, attackAnimTimer: 0,
+    pendingGroundPound: false, stompDelay: -1,
     angle: 0,
     fireTimer: 0,
     recoilBloom: 0,
@@ -5463,7 +5493,7 @@ function makePlayer() {
     dashDir: { x: 1, y: 0 },
     shield: 0,          /* only granted by the Temporal Shield upgrade */
     arc: false,
-    magnet: 26,
+    magnet: 130,
     walk: 0,
     moving: false,
     footAcc: 0,
@@ -5577,6 +5607,17 @@ function loadZone(zoneIndex, opts) {
   game.stalkerWarned = false;
   game.hordeTimer = 2.5;
   game.particles.length = 0;
+  if (game.player) {
+    game.player.z = 0; game.player.vz = 0;
+    game.player.pendingGroundPound = false; game.player.stompDelay = -1;
+    game.player.animLock = 0; game.player.attackAnimTimer = 0; game.player.animMove = null; game.player.animState = 'idle'; game.player.gunRecoilTimer = 0;
+  }
+  PixelFX.clear();
+  if (pixelCharacters && game.player) {
+    pixelCharacters.prewarm(game.player.classId, pixelSkin(game.player), true);
+    for (const style of ['enemyKnight','enemyArcher','enemyMage','enemyBrute','enemyBomber','boss'])
+      pixelCharacters.prewarm(style, enemyEraSkin(gameState.currentUniverse));
+  }
   game.footsteps.length = 0;
   game.texts.length = 0;
   game.boss = null;
@@ -6029,7 +6070,7 @@ UI.canvas.addEventListener('pointerdown', (e) => {
       deployTurretAt(Math.round(game.mouse.x / viewZoom() + game.cam.x),
                      Math.round((game.mouse.y - SKY_H) / viewZoom() + game.cam.y));
     } else {
-      dash();
+      dash(true);
     }
   }
 });
@@ -6041,10 +6082,13 @@ window.addEventListener('pointerup', (e) => {
 window.addEventListener('blur', () => { game.mouse.down = false; game.keys = Object.create(null); });
 
 window.addEventListener('keydown', (e) => {
+  if (e.key === 'Alt' && !e.repeat && game.screen === 'playing' && game.player && game.player.classId === 'knight') {
+    e.preventDefault(); dash(true); return;
+  }
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   game.keys[k] = true;
   if (game.screen !== 'playing') return;
-  if (k === ' ') { e.preventDefault(); }
+  if (k === ' ') { e.preventDefault(); if (!e.repeat) jumpPlayer(); }
   if (k === 'q') castClassAbility();                       /* class ability: always on */
   if (k === 'e') castAbilitySlot('e');
   if (k === 'f') castAbilitySlot('f');
@@ -6053,7 +6097,14 @@ window.addEventListener('keydown', (e) => {
   if (k === '1') useConsumableSlot(0);
   if (k === '2') useConsumableSlot(1);
   if (k === '3') useConsumableSlot(2);
-  if (k === 'Shift') castAbilitySlot('shift');
+  if (k === 'Shift') {
+    if (game.player && game.player.classId === 'knight' && !hasAbility('shift')) dash();
+    else castAbilitySlot('shift');
+  }
+});
+const jumpButton = document.getElementById('jumpBtn');
+if (jumpButton) jumpButton.addEventListener('pointerdown', e => {
+  e.preventDefault(); e.stopPropagation(); jumpPlayer();
 });
 window.addEventListener('keyup', (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
@@ -6191,31 +6242,35 @@ function tickRiftStalkers(dt) {
    never be stranded behind a results screen. */
 function spawnXpShards(x, y, totalXp, kind) {
   if (!game.shards) game.shards = [];
-  let parts = kind === 'boss' ? 5 : kind === 'elite' ? 3 : 1;
-  parts = Math.max(1, Math.min(parts, totalXp));
-  const base = Math.floor(totalXp / parts);
-  let rem = totalXp - base * parts;
-  for (let i = 0; i < parts; i++) {
-    const v = base + (rem-- > 0 ? 1 : 0);
-    if (v <= 0) continue;
-    const a = rand(0, Math.PI * 2);
-    const sp = rand(40, 130);
-    game.shards.push({
-      x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-      value: v, kind, t: rand(0, 6), life: 0, pulled: kind === 'boss', magnetized: kind === 'boss', pullSpeed: 260
-    });
+  if (totalXp <= 0) return;
+  const nearby = game.shards.find(s => Math.hypot(s.x - x, s.y - y) <= 90);
+  if (nearby) {
+    nearby.value += totalXp;
+    if (kind === 'boss') { nearby.pulled = true; nearby.magnetized = true; nearby.kind = 'boss'; }
+    return;
   }
-  while (game.shards.length > 140) {
-    const old = game.shards.shift();
-    const last = game.shards[game.shards.length - 1];
-    if (last && old) last.value += old.value;
-  }
+  game.shards.push({ x, y, vx: 0, vy: 0, value: totalXp, kind,
+    t: rand(0, 6), life: 0, pulled: kind === 'boss', magnetized: kind === 'boss', pullSpeed: 260 });
 }
+
 function updateShards(dt) {
   if (!game.shards || !game.shards.length) return;
   const p = game.player;
   if (!p) return;
-  const magnetRadius = (p.magnet || 110) + 60;
+  const magnetRadius = p.magnet || 130;
+  // Coalesce even shards that drift into range after they were spawned.
+  for (let i = 0; i < game.shards.length; i++) {
+    const target = game.shards[i];
+    for (let j = game.shards.length - 1; j > i; j--) {
+      const other = game.shards[j];
+      if (Math.hypot(target.x - other.x, target.y - other.y) > 90) continue;
+      target.value += other.value;
+      target.pulled = target.pulled || other.pulled;
+      target.magnetized = target.magnetized || other.magnetized;
+      if (other.kind === 'boss') target.kind = 'boss';
+      game.shards.splice(j, 1);
+    }
+  }
   for (let i = game.shards.length - 1; i >= 0; i--) {
     const s = game.shards[i];
     s.t += dt;
@@ -6249,37 +6304,73 @@ function updateShards(dt) {
     if (collected) {
       game.shards.splice(i, 1);
       awardClassXP(s.value, s.kind);
-      if (s.value >= 5) addText(p.x, p.y - 42, '+' + s.value + ' XP', '#38bdf8', 13, 34, 0.7);
       for (let k = 0; k < 3; k++) spawnParticle(s.x, s.y, rand(-40, 40), rand(-60, -10), 0.35, 3, '#38bdf8', 1.5);
     }
   }
 }
 
 function drawShards() {
-  if (!game.shards) return;
-  for (let i = 0; i < game.shards.length; i++) {
-    const s = game.shards[i];
-    const bob = Math.sin(s.t * 4) * 2.2;
-    const big = s.value >= 5;
-    const R = big ? 8 : 5.5;
-    ctx.save();
-    ctx.translate(s.x, s.y + bob);
-    ctx.rotate(Math.sin(s.t * 2.2) * 0.35);
-    ctx.fillStyle = '#38bdf8';
-    ctx.shadowColor = '#0284c7';
-    ctx.shadowBlur = big ? 16 : 10;
-    ctx.beginPath();
-    ctx.moveTo(0, -R); ctx.lineTo(R * 0.62, 0); ctx.lineTo(0, R); ctx.lineTo(-R * 0.62, 0);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#e0f2fe';
-    ctx.beginPath();
-    ctx.moveTo(0, -R * 0.55); ctx.lineTo(R * 0.34, 0); ctx.lineTo(0, R * 0.55); ctx.lineTo(-R * 0.34, 0);
-    ctx.closePath(); ctx.fill();
-    ctx.restore();
-  }
-  ctx.shadowBlur = 0;
+  for (const shard of game.shards || [])
+    PixelFX.loop(ctx,'pickups/xp-orb',shard.x,shard.y,shard.t,{scale:0.55});
 }
 
+function jumpPlayer() {
+  const p = game.player;
+  if (!p || game.screen !== 'playing' || isPaused || gameState.isDying || p.z > 0 || p.vz > 0) return false;
+  p.vz = 600;
+  return true;
+}
+function heightsOverlap(a, b) {
+  const az = Math.max(0, Number(a && a.z) || 0), bz = Math.max(0, Number(b && b.z) || 0);
+  const ah = Number(a && a.hitHeight) || 28, bh = Number(b && b.hitHeight) || 28;
+  return az < bz + bh && bz < az + ah;
+}
+function integrateHeight(body, dt) {
+  if (!body || !(dt > 0)) return false;
+  body.z = Math.max(0, Number(body.z) || 0);
+  body.vz = Number(body.vz) || 0;
+  const airborne = body.z > 0 || body.vz > 0;
+  if (!airborne) { body.z = 0; body.vz = 0; return false; }
+  body.z += body.vz * dt - 900 * dt * dt;
+  body.vz -= 1800 * dt;
+  if (body.z <= 0 && body.vz <= 0) { body.z = 0; body.vz = 0; return true; }
+  body.z = Math.max(0, body.z);
+  return false;
+}
+function playMove(p, name, force) {
+  if (actorAnimator) actorAnimator.play(p, name, !!force);
+}
+function groundPoundImpact(p) {
+  PixelFX.spawn('impacts/ground-slam', p.x, p.y, {scale: 1.6});
+  const dmg = buffedDamage(p.damage * 3);
+  const ground = { z: 0, hitHeight: 28 };
+  for (const e of game.enemies.slice()) {
+    if (!heightsOverlap(e, ground) || dist(p.x, p.y, e.x, e.y) > 150 + e.r) continue;
+    damageEnemy(e, dmg, true, false, { kind: 'ground-pound', ability: true, fromX: p.x, fromY: p.y });
+    if (game.enemies.indexOf(e) >= 0) knockEnemy(e, p.x, p.y, 460);
+  }
+  if (game.boss && !game.boss.entering && heightsOverlap(game.boss, ground) &&
+      dist(p.x, p.y, game.boss.x, game.boss.y) <= 150 + game.boss.r) damageBoss(dmg * 0.7);
+  Sound.bash();
+}
+function updateHeightPhysics(dt) {
+  const p = game.player;
+  if (!p || !(dt > 0)) return;
+  const landed = integrateHeight(p, dt);
+  for (const e of game.enemies) integrateHeight(e, dt);
+  if (game.boss) integrateHeight(game.boss, dt);
+  if (p.pendingGroundPound && landed) {
+    p.pendingGroundPound = false; groundPoundImpact(p);
+  }
+  if (p.stompDelay >= 0) {
+    p.stompDelay = Math.max(0, p.stompDelay - dt);
+    if (p.stompDelay === 0 && p.z === 0 && p.vz === 0) {
+      p.stompDelay = -1; groundPoundImpact(p);
+    }
+  }
+  p.gunRecoilTimer = Math.max(0, (p.gunRecoilTimer || 0) - dt);
+  if (actorAnimator) actorAnimator.update(p, dt);
+}
 function updatePlayer(dt) {
   const p = game.player;
   if (gameState.isDying) {
@@ -6456,16 +6547,7 @@ function updatePlayer(dt) {
     }
   }
 
-  /* --- footstep trail: one print every ~26px travelled --- */
-  if (p.dashTimer <= 0 && p.moving) {
-    p.footAcc += Math.max(p.speed * 0.35, Math.hypot(p.vx, p.vy)) * dt;
-    if (p.footAcc >= 26) {
-      p.footAcc = 0;
-      dropFootprint(p);
-    }
-  } else if (!p.moving) {
-    p.footAcc = 20;   /* first step lands immediately when you set off */
-  }
+
 
   if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
   if (p.invincibleTimer > 0) p.invincibleTimer = Math.max(0, p.invincibleTimer - dt);
@@ -6618,7 +6700,7 @@ const CLASSES = [
     bulletSpeed: 900,
     zoom: 0.94,
     colour: '#ff6b3d',
-    q: { id: 'rage', name: 'Rage', label: 'RAGE', glyph: '⚒\uFE0E', cd: 22, colour: '#ff7a45' },
+    q: { id: 'rage', name: 'Earth Stomp', label: 'STOMP', glyph: '⚒\uFE0E', cd: 22, colour: '#ff7a45' },
     passive: 'Heals an orb every 5 kills',
     shop: 300,
     locked: true
@@ -7207,7 +7289,8 @@ function queueClassLevelUp(record, gained, source, saved, skillPointsGained) {
   Sound.classLevelUp();
   if (game.player) {
     const p = game.player;
-    game.particles.push({ ring: true, x: p.x, y: p.y, r: 10, maxR: 150, life: 0, maxLife: 0.65, color: '#ffdf9b' });
+    PixelFX.spawn('ui/level-up',p.x,p.y,{scale:1.4});
+    PixelFX.spawn('holy/halo',p.x,p.y,{scale:1.05});
   }
 }
 
@@ -7890,6 +7973,21 @@ function paintClassIcon(el, id) {
   el.innerHTML = classIconSVG(id);
 }
 
+function paintPixelClassCards() {
+  if (!pixelCharacters) return;
+  for (let i = 0; i < UI.classIcons.length; i++) {
+    const host = UI.classIcons[i], cls = CLASSES[i];
+    if (!host || !cls) continue;
+    let cv = host.querySelector('canvas');
+    if (!cv) { cv = document.createElement('canvas'); cv.width = cv.height = 96;
+      cv.style.cssText = 'width:80px;height:80px;image-rendering:pixelated;'; }
+    const g = cv.getContext('2d'); if (!g) continue;
+    g.clearRect(0, 0, 96, 96);
+    if (pixelCharacters.draw(g, cls.id, 'idle', 48, 78, 0, 0, null, {scale:1.5})) {
+      if (cv.parentNode !== host) { host.textContent = ''; host.appendChild(cv); }
+    }
+  }
+}
 function registerPrimaryAttack(p, cooldown) {
   if (!p) return 0;
   const cd = Number.isFinite(Number(cooldown)) ? Math.max(0, Number(cooldown)) : 0;
@@ -7942,6 +8040,7 @@ function inSwordArc(px, py, aim, x, y, r, arc, reach) {
 
 function swingSword() {
   const p = game.player;
+  playMove(p, 'sword-combo');
   const arc = swordArc();
   const dir = p.swingSign > 0 ? 1 : -1;
   p.swingSign = -dir;
@@ -7988,7 +8087,8 @@ function swingSword() {
 
   game.swings.push({
     x: p.x, y: p.y, a0: p.swingFrom, a1: p.swingTo,
-    life: 0, maxLife: SWORD_SWING_TIME, tier: swordTier()
+    life: 0, maxLife: SWORD_SWING_TIME, tier: swordTier(),
+    pixelFX: PixelFX.spawn('melee/sword-slash', p.x, p.y, { angle: p.angle, scale: 1.6 })
   });
 
   Sound.swordSwing(swordTier());
@@ -8049,8 +8149,23 @@ function nearestTarget(x, y, maxRange) {
   return best;
 }
 
+// Purely visual: neither the recoil offset nor the flash affects shot physics.
+function triggerGunVisual(p) {
+  const angle = Number(p.angle) || 0;
+  p.gunRecoilTimer = 0.14; p.gunRecoilAngle = angle;
+  // Sprites face horizontally; these are the authored muzzle offsets in the 96px rig.
+  const side = Math.cos(angle) < 0 ? -1 : 1;
+  const muzzleX = p.x - Math.cos(angle) * 4 + side * (p.classId === 'sniper' ? 26 : 20) * 1.4;
+  const muzzleY = p.y - (p.z || 0) - Math.sin(angle) * 4 - 26 * 1.4;
+  // hit-spark's authored origin is 20px below its flare; compensate after scaling.
+  p.gunFlashFallback = !PixelFX.spawn('impacts/hit-spark', muzzleX, muzzleY + 20 * 96 / 136 * 1.5,
+    { angle: 0, scale: 1.5 });
+}
 function firePistols(charged) {
   const p = game.player;
+  triggerGunVisual(p);
+  playMove(p, 'pistol-shots');
+  PixelFX.spawn('projectiles/pistol-shot', p.x, p.y, { angle: p.angle, scale: 1.6 });
   p.recoilBloom = 8;
   const attack = skillAttackMeta('pistol');
   const pistolCount = 1 + (firstUpgradeOwned() ? 1 : 0);   /* 1 pistol at base, the second comes with the first skill-tree upgrade */
@@ -8097,6 +8212,9 @@ function firePistols(charged) {
    touches, with a single chip of damage for a boss */
 function fireSniper(charged) {
   const p = game.player;
+  triggerGunVisual(p);
+  playMove(p, 'rocket-launcher');
+  PixelFX.spawn('projectiles/laser-bolt', p.x, p.y, { angle: p.angle, scale: 1.6 });
   p.recoilBloom = 8;
   const a = p.angle;
   const meta = skillAttackMeta('sniper');
@@ -8124,7 +8242,7 @@ function fireSniper(charged) {
   const x2 = p.x + Math.cos(a) * range;
   const y2 = p.y + Math.sin(a) * range;
   /* the beam is drawn crossing the full screen, even though the damage scan stops at range */
-  game.beams.push({ kind: 'sniper', x1, y1, x2: p.x + Math.cos(a) * 5200, y2: p.y + Math.sin(a) * 5200, life: 0, maxLife: 0.2, width: charged ? 11 : 7, colour: '#fde68a', core: '#ffffff' });
+  game.beams.push({ kind: 'player-sniper', x1, y1, x2: p.x + Math.cos(a) * 5200, y2: p.y + Math.sin(a) * 5200, life: 0, maxLife: 0.2, width: charged ? 11 : 7, colour: '#fde68a', core: '#ffffff' });
   const pad = charged ? 16 : 11;
   let landX = p.x + Math.cos(a) * 700, landY = p.y + Math.sin(a) * 700, landed = false;
   let oneShot = !!meta.oneShot;
@@ -8163,6 +8281,7 @@ function fireSniper(charged) {
 
 function fireMageOrbs(charged) {
   const p = game.player;
+  playMove(p, 'fireball-throw');
   p.recoilBloom = 8;
   const attack = skillAttackMeta('orb');
   const n = mageOrbCount();   /* base 1 orb; +1 Orb Mastery; +1 Singularity */
@@ -8221,6 +8340,16 @@ function syncOrbBadge() {
 function fireClassWeapon(dt) {
   if (gameState.isDying) return;
   const p = game.player;
+  if (p.classId === 'berserker' && (p.z > 0 || p.vz > 0) && (attackHeld() || isTouchAiming()) && !p.pendingGroundPound) {
+    p.pendingGroundPound = true;
+    // The upstream ground-pound pose lands at 0.62s. Solve the ballistic
+    // trajectory to land on that same frame, without teleporting the player.
+    const landingTime = 0.62;
+    p.vz = (900 * landingTime * landingTime - p.z) / landingTime;
+    playMove(p, 'ground-pound', true);
+    return;
+  }
+  if (p.pendingGroundPound) return;
   if (p.reloadT > 0) { p.reloadT = Math.max(0, p.reloadT - dt); return; }
   if (p.fireTimer > 0) p.fireTimer -= dt;
   const charged = game.overchargeTimer > 0;
@@ -8268,6 +8397,7 @@ const AXE_COOLDOWN = 0.5;
 
 function swingAxes() {
   const p = game.player;
+  playMove(p, 'earth-stomp');
   const dir = p.swingSign > 0 ? 1 : -1;
   const half = AXE_ARC / 2;
   p.swingSign = -dir;
@@ -8309,7 +8439,8 @@ function swingAxes() {
 
   game.swings.push({
     kind: 'axe', x: p.x, y: p.y, a0: p.swingFrom, a1: p.swingTo,
-    life: 0, maxLife: AXE_SWING_TIME, tier: 0
+    life: 0, maxLife: AXE_SWING_TIME, tier: 0,
+    pixelFX: PixelFX.spawn('melee/hammer-smash', p.x, p.y, { angle: p.angle, scale: 1.6 })
   });
 
   Sound.swordSwing(1);
@@ -8353,6 +8484,7 @@ function updateAxes(dt) {
    ------------------------------------------------------------------------- */
 function fireDaggers(charged) {
   const p = game.player;
+  PixelFX.spawn('melee/dagger-flurry', p.x, p.y, { angle: p.angle, scale: 1.6 });
   p.recoilBloom = 8;
   const attack = skillAttackMeta('dagger');
   const n = currentSkill('multishot') ? 3 : 2;
@@ -8390,6 +8522,9 @@ function fireDaggers(charged) {
    ------------------------------------------------------------------------- */
 function fireDisc(charged) {
   const p = game.player;
+  triggerGunVisual(p);
+  playMove(p, 'rocket-launcher');
+  PixelFX.spawn('projectiles/energy-disc', p.x, p.y, { angle: p.angle, scale: 1.6 });
   p.recoilBloom = 8;
   const a = p.angle;
   if (!game.discs) game.discs = [];
@@ -8501,45 +8636,6 @@ function updateDiscs(dt) {
 
 /* the orange ribbon a pair of axes leaves behind */
 
-function drawAxeSwoosh() {
-  const R = AXE_RANGE * 0.84;
-  for (let i = 0; i < game.swings.length; i++) {
-    const sw = game.swings[i];
-    if (sw.kind !== 'axe') continue;
-    const k = sw.life / sw.maxLife;
-    const fade = Math.min(1, (1 - k) * 2.2);
-    if (fade <= 0.01) continue;
-    const reveal = 1 - Math.pow(1 - k, 2.2);
-    const head = sw.a0 + (sw.a1 - sw.a0) * reveal;
-    if (Math.abs(head - sw.a0) < 0.01) continue;
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    /* dark red trail */
-    ctx.globalAlpha = fade * 0.5;
-    ctx.strokeStyle = '#7f1d1d';
-    ctx.lineWidth = 12;
-    ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head), Math.max(sw.a0, head)); ctx.stroke();
-    ctx.globalAlpha = fade * 0.65;
-    ctx.strokeStyle = '#dc2626';
-    ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head), Math.max(sw.a0, head)); ctx.stroke();
-    ctx.globalAlpha = fade * 0.85;
-    ctx.strokeStyle = '#f87171';
-    ctx.lineWidth = 2.4;
-    ctx.beginPath(); ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head), Math.max(sw.a0, head)); ctx.stroke();
-    /* motion-blur echoes behind the swing */
-    for (let e = 1; e <= 2; e++) {
-      const back = (head - sw.a0) * 0.18 * e;
-      ctx.globalAlpha = fade * (0.22 / e);
-      ctx.strokeStyle = '#b91c1c';
-      ctx.lineWidth = 8 - e * 2.4;
-      ctx.beginPath(); ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head - back), Math.max(sw.a0, head - back)); ctx.stroke();
-    }
-    ctx.restore();
-  }
-}
-
 function updateBeams(dt) {
   for (let i = game.beams.length - 1; i >= 0; i--) {
     const b = game.beams[i];
@@ -8569,13 +8665,14 @@ function castClassAbility() {
   if (game.qCd > 0 || game.screen !== 'playing' || gameState.isDying) return;
   game.qCd = qCdMax();
   const cls = getClass();
-  if (cls.q.id === 'bash') shieldBash();
+  if (cls.id === 'berserker') { playMove(game.player, 'earth-stomp', true); game.player.stompDelay = 0.06; }
+  else if (cls.q.id === 'bash') shieldBash();
   else if (cls.q.id === 'storm') bulletStorm();
   else if (cls.q.id === 'railgun') railgun();
   else if (cls.q.id === 'rage') startRage();
   else if (cls.q.id === 'mark') castDeathMark();
   else if (cls.q.id === 'overload') systemOverload();
-  else temporalRift();
+  else { playMove(game.player, 'meteor-call'); temporalRift(); }
 }
 
 /* ---- berserker: six seconds of Rage --------------------------------------- */
@@ -8630,6 +8727,7 @@ function castDeathMark() {
     game.qCd = 0;               /* nothing to mark: give the charge back */
     return;
   }
+  PixelFX.spawn('shadow/hex-sigil', target.x, target.y, { scale: 1.6 });
   p.markTarget = target;
   p.markT = MARK_TIME + (currentSkill('marked_for_death') ? 4 : 0);
   Sound.ability();
@@ -8665,6 +8763,7 @@ function deployTurretAt(x, y) {
 
 function systemOverload() {
   const p = game.player;
+  PixelFX.spawn('lightning/tesla-coil', p.x, p.y, { angle: p.angle, scale: 1.6 });
   const live = game.turrets.slice();
   const boom = 8 + p.damage * 2;
   for (let i = 0; i < live.length; i++) {
@@ -8690,6 +8789,7 @@ function systemOverload() {
 /* ---- knight: charge forward and hurl everything nearby away ---- */
 function shieldBash() {
   const p = game.player;
+  PixelFX.spawn('impacts/ground-slam', p.x, p.y, { angle: p.angle, scale: 1.6 });
   const mv = moveVector();
   const dir = (mv.x || mv.y) ? mv : { x: Math.cos(p.angle), y: Math.sin(p.angle) };
   p.bashDir = dir;
@@ -8901,6 +9001,8 @@ function temporalRift() {
   tx = clamp(tx, 80, WORLD - 80);
   ty = clamp(ty, 80, WORLD - 80);
   const riftLife = 5 * (currentSkill('chrono_efficiency') ? 1.25 : 1);
+  PixelFX.spawn('arcane/rune-circle', tx, ty, { scale: 1.6 });
+  PixelFX.spawn('arcane/time-stop', tx, ty, { scale: 1.6 });
   game.rift = { x: tx, y: ty, life: riftLife, maxLife: riftLife, r: 0, spin: 0, tick: 0 };
   Sound.rift();
   game.shake = Math.max(game.shake, 0.4);
@@ -9033,11 +9135,15 @@ function dashCooldown() {
   return Math.max(1, 5 * cdScale() - (petIs('fox') ? 2 : 0));
 }
 
-function dash() {
+function dash(alternateAttack = false) {
   if (abilitiesLocked()) return;
   if (!hasAbility('dash')) return;
   const p = game.player;
   if (p.dashCd > 0) return;
+  if (p.classId === 'knight') {
+    playMove(p, 'dash-strike');
+    if (alternateAttack) PixelFX.spawn('melee/heavy-cleave', p.x, p.y, { angle:p.angle, scale:1.6 });
+  }
   const mv = moveVector();
   const dir = (mv.x || mv.y) ? mv : { x: Math.cos(p.angle), y: Math.sin(p.angle) };
   p.dashDir = dir;
@@ -9437,6 +9543,7 @@ function hurtPlayer(amount, raw, source) {
   if (game.screen !== 'playing') return;
   if (gameState.isDying) return;
   if (game.arenaGrace > 0) return;      /* arena entry window: fully invincible */
+  if (!raw && !heightsOverlap(p, source)) return;
   /* raw damage is poison and other damage-over-time: it ignores wards and
      i-frames, because the tick already happened inside his blood */
   if (!raw) {
@@ -9628,7 +9735,7 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
   const hp = tutorialBasic ? 1.5 : Math.round(def.hp * diff.hp * lvlHp * (eliteVariant ? 2.5 : 1) * 10) / 10;
   const e = {
     type: safeType,
-    x: safeX, y: safeY,
+    x: safeX, y: safeY, z: 0, vz: 0,
     r: def.r * (eliteVariant ? 1.3 : 1),
     hp,
     maxHp: hp,
@@ -9700,6 +9807,8 @@ function spawnEnemy(type, x, y, arenaIndex, opts) {
   if (safeType === 'scavengerbot') { e.stolen = 0; }
   if (safeType === 'voidleech') { e.attached = false; e.attachT = 0; e.drainTick = 0; e.attachCd = 0; }
   if (safeType === 'echo') { e.echoAbilityCd = rand(2.5, 4.5); e.echoAbilityIndex = 0; e.echoStormT = 0; e.echoChargeT = 0; e.echoBuffT = 0; }
+  // Capture the final scaled spawn health as the bar denominator.
+  e.maxHp = e.hp;
   game.enemies.push(e);
   petWarnSpawn(safeX, safeY);
   return e;
@@ -9727,7 +9836,7 @@ const WAVE_BREATHER = 1.2;
    warns of close/off-screen threats, stealth enemies stay partially visible,
    and every hit shows a directional hit indicator.
    --------------------------------------------------------------------------- */
-const SPAWN_TELEGRAPH_TIME = 1.0;   /* seconds every enemy telegraphs before danger */
+const SPAWN_TELEGRAPH_TIME = 0.8;   /* seconds every enemy telegraphs before danger */
 const MIN_SPAWN_DIST = 260;         /* never spawn closer than this to the player */
 const MAX_SPAWN_DIST = 420;         /* never spawn further than this (stays on screen) */
 const FORWARD_ARC_BIAS = 0.75;      /* share of a wave batch that spawns ahead of the player */
@@ -11204,8 +11313,7 @@ function updateEnemies(dt) {
       }
     } else if (e.type === 'archer') {
       e.zig += dt * 3.4;
-      const want = 250;
-      const radial = d > want + 60 ? 1 : (d < want - 70 ? -1 : 0);
+      const radial = d > 240 ? 1 : (d < 180 ? -1 : 0);
       const perp = ang + Math.PI / 2;
       wantX = Math.cos(ang) * radial + Math.cos(perp) * Math.sin(e.zig) * 0.85;
       wantY = Math.sin(ang) * radial + Math.sin(perp) * Math.sin(e.zig) * 0.85;
@@ -11277,24 +11385,19 @@ function updateEnemies(dt) {
     e.throttle = approach(e.throttle, clamp(wantLen, 0, 1), dt * 5.5);
     const attackRecoverySpeed = e.attackCooldown > 0 ? ENEMY_ATTACK_RECOVERY_SPEED_MULT : 1;
     const stride = e.speed * e.throttle * (e.slowT > 0 ? 0.45 : 1) * attackRecoverySpeed;
-    e.x += Math.cos(e.heading) * stride * dt;
-    e.y += Math.sin(e.heading) * stride * dt;
+    let stepX = Math.cos(e.heading) * stride * dt;
+    let stepY = Math.sin(e.heading) * stride * dt;
+    // Steering inertia and higher-universe AI must not carry archers inward.
+    if (e.type === 'archer' && canSee && !lure && d <= 240 && d > 0.001) {
+      const nx = (p.x - e.x) / d, ny = (p.y - e.y) / d;
+      const inward = stepX * nx + stepY * ny;
+      if (inward > 0) { stepX -= nx * inward; stepY -= ny * inward; }
+    }
+    e.x += stepX;
+    e.y += stepY;
     updateEnemyKnockback(e, dt);
 
     collideObstacles(e);
-
-    /* keep enemies from stacking on each other */
-    for (let j = i - 1; j >= 0; j--) {
-      const o = game.enemies[j];
-      const min = e.r + o.r;
-      const dx = e.x - o.x, dy = e.y - o.y;
-      const dd = Math.hypot(dx, dy);
-      if (dd > 0.001 && dd < min) {
-        const push = (min - dd) / 2;
-        e.x += (dx / dd) * push; e.y += (dy / dd) * push;
-        o.x -= (dx / dd) * push; o.y -= (dy / dd) * push;
-      }
-    }
 
     /* contact damage, plus whatever status the body carries */
     const stealthy = e.invis === 1 || e.underground === true ||
@@ -11318,7 +11421,7 @@ function updateEnemies(dt) {
       e.uncloakWarnT = Math.max(0, e.uncloakWarnT - dt);
       mayDamage = e.uncloakWarnT <= 0;
     }
-    if (canSee && !e.harmless && d < e.r + p.r + 2 && e.contactCd <= 0 && !(e.attackCooldown > 0) && !(e.materializeT > 0) && mayDamage) {
+    if (canSee && !e.harmless && heightsOverlap(p, e) && d < e.r + p.r + 2 && e.contactCd <= 0 && !(e.attackCooldown > 0) && !(e.materializeT > 0) && mayDamage) {
       const cdef = ENEMY_DEFS[e.type] || ENEMY_DEFS.knight;
       e.contactCd = cdef.contact ? 0.9 : 0.4;
       if (cdef.contact) hurtPlayer(enemyContactDamage(e, cdef), false, e);
@@ -11335,6 +11438,42 @@ function updateEnemies(dt) {
     }
   }
   game.currentShooter = null;
+}
+
+// Resolve after all movement, including frozen, spawning and knocked-back enemies.
+// Repeated pair passes reduce crowd overlap; the final player pass is hard even
+// during invulnerability. Coincident centres get a deterministic direction.
+function separateEnemies() {
+  const p = game.player;
+  if (!p) return;
+  const enemies = game.enemies.filter(e => e && !e.dead);
+  function separatePlayer(e, i) {
+    let dx = e.x - p.x, dy = e.y - p.y;
+    let d = Math.hypot(dx, dy);
+    const min = (p.r || 0) + (e.r || 0);
+    if (d >= min) return;
+    if (d < 0.0001) { const a = i * 2.399963; dx = Math.cos(a); dy = Math.sin(a); d = 1; }
+    e.x = p.x + dx / d * min;
+    e.y = p.y + dy / d * min;
+  }
+  for (let pass = 0; pass < 6; pass++) {
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      separatePlayer(e, i);
+      for (let j = i + 1; j < enemies.length; j++) {
+        const o = enemies[j];
+        let dx = o.x - e.x, dy = o.y - e.y, d = Math.hypot(dx, dy);
+        const min = Math.max(24, (e.r || 0) + (o.r || 0));
+        if (d >= min) continue;
+        if (d < 0.0001) { const a = (i + j + 1) * 2.399963; dx = Math.cos(a); dy = Math.sin(a); d = 0; }
+        const nx = d ? dx / d : dx, ny = d ? dy / d : dy;
+        const push = (min - d) / 2;
+        e.x -= nx * push; e.y -= ny * push;
+        o.x += nx * push; o.y += ny * push;
+      }
+    }
+  }
+  enemies.forEach(separatePlayer);
 }
 
 /* swept test so fast bolts can never tunnel through (or skip) a target */
@@ -11427,6 +11566,7 @@ function updateBullets(dt) {
     }
     else if (hitKind === 'boss') { damageBoss(b.dmg * odm(), b.skillMeta || { kind: b.kind }); if (b.skillMeta && b.skillMeta.oneShot) b.skillMeta.oneShot = false; hit = true; }
     else if (hitKind === 'break') {
+      PixelFX.spawn('impacts/hit-spark',b.x,b.y,{angle:Math.atan2(b.vy,b.vx),scale:0.8});
       damageBreakableObject(hitObj, hitBreakKind, b.kind || 'bullet', b.x, b.y);
       hit = true;
       if (b.pierce > 0) {
@@ -11500,6 +11640,7 @@ function fireEnemyBullet(x, y, angle, speed, kind, r, dmg) {
     vy: Math.sin(angle) * speed,
     r: r || 5,
     kind: kind || 'arrow',
+    pixelTint: shooter && ['mutant','voidleech','scorpion'].includes(shooter.type) ? 'toxic' : 'crimson',
     dmg: enemyProjectileDamage(dmg, kind, shooter),
     life: kind === 'wall' ? 2.6 : 6,
     homing: 0,
@@ -11570,6 +11711,7 @@ function updateEnemyBullets(dt) {
       continue;
     }
     if (solidWallAt(b.x, b.y, b.r)) {
+      PixelFX.spawn('impacts/hit-spark',b.x,b.y,{angle:Math.atan2(b.vy,b.vx),scale:0.8});
       for (let k = 0; k < 3; k++) {
         const a = rand(0, TAU);
         spawnParticle(b.x, b.y, Math.cos(a) * rand(30, 90), Math.sin(a) * rand(30, 90), 0.2, 4, '#9aa1a9', 3);
@@ -11590,9 +11732,10 @@ function updateEnemyBullets(dt) {
       }
     }
     if (hitTurret) { burstHexBullet(b); splitEnemyOrb(b); game.enemyBullets.splice(i, 1); continue; }
-    if (p.phaseTimer <= 0 && dist2(b.x, b.y, p.x, p.y) <= (b.r + p.r) * (b.r + p.r)) {
+    if (p.phaseTimer <= 0 && heightsOverlap(p, b) && dist2(b.x, b.y, p.x, p.y) <= (b.r + p.r) * (b.r + p.r)) {
+      PixelFX.spawn('impacts/hit-spark',b.x,b.y,{angle:Math.atan2(b.vy,b.vx),scale:0.8});
       if (b.kind === 'hex') burstHexBullet(b);
-      else hurtPlayer(b.dmg || 1);
+      else hurtPlayer(b.dmg || 1, false, b);
       splitEnemyOrb(b);
       game.enemyBullets.splice(i, 1);
     }
@@ -11616,6 +11759,7 @@ function nearestEnemyTo(x, y, range, skip) {
 function explodeVolatileBomber(e) {
   if (!e || e.exploded) return;
   e.exploded = true;
+  PixelFX.spawn('explosions/barrel-explosion', e.x, e.y, { scale: 1.6 });
   const R = 120;
   Sound.bombBoom();
   game.shake = Math.max(game.shake, 0.45);
@@ -11700,6 +11844,8 @@ function damageEnemy(e, dmg, silent, noChain, meta) {
     critFlash(e.x, e.y);
   }
   e.hp -= dmg;
+  PixelFX.spawn(meta.sniperInstant || meta.kind === 'sniper' || meta.crit ? 'impacts/critical-hit' : meta.kind === 'axe' ? 'impacts/blunt-hit' : 'impacts/hit-spark',
+    e.x, e.y, { angle: game.player ? game.player.angle : 0, scale: 1.6 });
   e.hitFlash = 0.05;
   const isWeaponHit = !!(meta.weapon || meta.projectile);
   if (!meta.selfDestruct && !meta.noKnockback && (isWeaponHit || meta.explosion || !silent)) {
@@ -11710,11 +11856,12 @@ function damageEnemy(e, dmg, silent, noChain, meta) {
   }
   if (e.hp > 0) return;
   e.dead = true;
+  const pixelDeath = PixelFX.spawn(e.type === 'ghost' ? 'spawn-and-death/poof' : 'spawn-and-death/shatter-death', e.x, e.y, { scale: 1.6 });
   const idx = game.enemies.indexOf(e);
   if (idx >= 0) game.enemies.splice(idx, 1);
 
   const def = ENEMY_DEFS[e.type] || ENEMY_DEFS.knight;
-  /* 10 points x the gem multiplier, plus the floating +10 above the body */
+  /* Award score and leave XP for collection. */
   awardKill(e);
   onSkillKill(e, e.lastHitMeta);
   game.kills += 1;
@@ -11722,10 +11869,10 @@ function damageEnemy(e, dmg, silent, noChain, meta) {
   petOnKill();
 
   if (!silent) Sound.enemyDeath();
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; !pixelDeath && i < 4; i++) {
     const a = rand(0, TAU);
-    spawnParticle(e.x, e.y, Math.cos(a) * rand(50, 220), Math.sin(a) * rand(50, 220),
-      rand(0.25, 0.5), rand(4, 9), def.color, 3);
+    spawnParticle(e.x, e.y, Math.cos(a) * rand(25, 65), Math.sin(a) * rand(25, 65),
+      0.25, rand(2, 4), def.color, 3);
   }
 
   /* Chain Lightning: the killing blow arcs to the nearest survivor, half power */
@@ -11807,6 +11954,7 @@ function spawnBoss(opts) {
   game.boss = {
     x: o.fromX !== undefined ? o.fromX : z.bossPos[0],
     y: o.fromY !== undefined ? o.fromY : z.bossPos[1],
+    z: 0, vz: 0,
     r: def.r,
     hp: bossHpForCurrentZone(),
     maxHp: bossHpForCurrentZone(),
@@ -12327,6 +12475,7 @@ function damageBoss(dmg, meta) {
   /* anti-melt: a single hit can never remove more than 12% of boss max HP */
   dmg = Math.min(dmg, 0.12 * b.maxHp);
   b.hp -= dmg;
+  PixelFX.spawn(meta.crit ? 'impacts/critical-hit' : 'impacts/hit-spark',b.x,b.y,{angle:game.player ? game.player.angle : 0,scale:1.6});
   b.hitFlash = 0.1;
   Sound.bossHit();
   addScore(4);   /* chip damage on a boss */
@@ -12338,6 +12487,7 @@ function killBoss() {
   const b = game.boss;
   if (!b || b.dead) return;
   b.dead = true;
+  PixelFX.spawn('spawn-and-death/shatter-death',b.x,b.y,{scale:2});
   awardKill(b);
   onSkillKill(b, b.lastHitMeta);
   const bx = b.x, by = b.y;
@@ -13000,6 +13150,16 @@ function castAbilitySlot(slot) {
   Sound.ensure();
   const result = cast();
   if (result === false) return;
+  if (slot === 'shift' && game.player && game.player.classId === 'knight') playMove(game.player, 'dash-strike');
+  const effect = {
+    knight_whirlwind: 'melee/spin-slash', knight_charge: 'impacts/ground-slam',
+    knight_bladestorm: 'melee/heavy-cleave', knight_warcry: 'holy/divine-shield',
+    mage_burst: 'arcane/time-stop', mage_blink: 'arcane/blink-in',
+    berserker_slam: 'melee/hammer-smash', berserker_juggernaut: 'holy/divine-shield',
+    shadow_vanish: 'shadow/hex-sigil', shadow_execute: 'shadow/hex-sigil',
+    tech_emp: 'sci-fi/emp-blast', tech_drones: 'lightning/tesla-coil', tech_overload: 'lightning/tesla-coil'
+  }[def.id];
+  if (effect && game.player) PixelFX.spawn(effect, game.player.x, game.player.y, { angle: game.player.angle, scale: 1.6 });
   setAbilityCooldown(slot, skillCooldownSeconds(slot, def.cd * cdScale()));
   syncAbilityHud();
 }
@@ -14288,8 +14448,7 @@ function addScore(points) {
 
 /* THE payout for an enemy death — the one place a kill becomes score.
    Every enemy dies inside damageEnemy (it is the only code that removes a body
-   from game.enemies), so every death lands here: the score, the +10 that pops
-   above the corpse and fades over 0.8 seconds, and the save that keeps it. */
+   from game.enemies), so every death lands here: score, XP and persistence. */
 function awardKill(e) {
   const xp = e && e.isBoss ? CLASS_XP_VALUES.boss : e && e.elite ? CLASS_XP_VALUES.elite : CLASS_XP_VALUES.regular;
   const xpKind = e && e.isBoss ? 'boss' : e && e.elite ? 'elite' : 'regular';
@@ -14304,7 +14463,6 @@ function awardKill(e) {
   }
   gs.score += 10 * gs.mult;
   updateHUD();
-  if (e) addText(e.x, e.y - (e.r || 14) - 8, '+10', '#ffe9a8', 17, 40, 0.8);
   saveGame('kill');
   return 10 * gs.mult;
 }
@@ -14955,6 +15113,7 @@ function shopMagazineMult() { return 1 + 0.15 * shopLevel('magazine'); }
 
 /* The gold flash a critical hit leaves behind */
 function critFlash(x, y) {
+  PixelFX.spawn('impacts/critical-hit', x, y, { scale: 1.6 });
   addText(x, y - 26, 'CRIT', '#ffd54a');
   game.particles.push({ ring: true, x: x, y: y, r: 4, maxR: 40, life: 0, maxLife: 0.24, color: '#ffd54a' });
   for (let i = 0; i < 9; i++) {
@@ -15306,96 +15465,15 @@ function setCosPreview(id) {
 
 /* one frame of the stage */
 function drawCosPreviewFrame(t) {
-  const cv = UI.cpCanvas;
-  if (!cv) return;
-  const pc = cv.getContext('2d');
-  if (!pc) return;
-  /* the stage is fluid: match the buffer to the box so nothing is stretched */
-  const box = (cv.getBoundingClientRect && cv.getBoundingClientRect()) || null;
-  const cw = Math.max(220, Math.round((box && box.width) || 300));
-  const chh = Math.max(200, Math.round((box && box.height) || 290));
-  if (cv.width !== cw || cv.height !== chh) { cv.width = cw; cv.height = chh; }
-  const w = cv.width;
-  const h = cv.height;
-  pc.clearRect(0, 0, w, h);
-
-  /* the dark box: a floor, a soft pool of light and a horizon line */
-  const floor = pc.createRadialGradient(w / 2, h * 0.78, 8, w / 2, h * 0.78, w * 0.62);
-  floor.addColorStop(0, 'rgba(56,64,86,0.55)');
-  floor.addColorStop(0.55, 'rgba(18,22,34,0.35)');
-  floor.addColorStop(1, 'rgba(3,4,9,0)');
-  pc.fillStyle = floor;
-  pc.fillRect(0, 0, w, h);
-
-  const skin = cosmeticById(cosPreviewId) || Shop.cosmeticSkin();
-  if (!skin) return;
-  const sx = skin.alpha || 1;
-
-  /* the trooper, idle: feet on the floor, a slow breath, facing the pointer */
-  const realPlayer = game.player;
-  const realTime = game.time;
-  const fake = {
-    x: 0, y: 0, r: 16, angle: -0.30,
-    hp: 5, maxHp: 5, moving: false, walk: 0, moveAng: Math.PI / 2,
-    dashTimer: 0, dashDir: { x: 1, y: 0 }, invuln: 0, invincibleTimer: 0, shield: 0,
-    swingT: 0, swingFrom: 0, swingTo: 0, trail: [],
-    classId: realPlayer ? realPlayer.classId : 'knight',
-    cosmetic: skin.id, cosmeticAlpha: sx
-  };
-  const bob = Math.sin(t * 2.2) * 1.8;
-  const dir = 1;
-  previewSkinId = skin.id;
-
-  try {
-    game.player = fake;
-    game.time = t;
-    withRenderTarget(pc, function () {
-      /* the pool of light under him */
-      ctx.save();
-      const R = 30 + 2.5 * Math.sin(t * 1.5);
-      const halo = ctx.createRadialGradient(w / 2, h * 0.7, R * 0.3, w / 2, h * 0.7, R * 1.6);
-      halo.addColorStop(0, hexToRgba(skin.glow, 0.22));
-      halo.addColorStop(1, hexToRgba(skin.glow, 0));
-      ctx.fillStyle = halo;
-      ctx.beginPath();
-      ctx.ellipse(w / 2, h * 0.7, R * 1.6, R * 0.7, 0, 0, TAU);
-      ctx.fill();
-      ctx.restore();
-
-      ctx.save();
-      /* centred slightly left and drawn at 85% of the old stage scale, so
-         longswords, the Neon Samurai katana line and the sniper musket keep
-         clear of the right edge of the 300x290 stage. */
-      ctx.translate(w * 0.44, h * 0.58);
-      const scale = Math.min(w / 300, h / 290) * 2.7 * 0.85;
-      ctx.scale(scale, scale);
-      /* a subtle dark radial pedestal shadow under his boots */
-      const pedestal = ctx.createRadialGradient(0, SOLDIER.feet + 1, 2, 0, SOLDIER.feet + 1, 25);
-      pedestal.addColorStop(0, 'rgba(0,0,0,0.62)');
-      pedestal.addColorStop(0.58, 'rgba(0,0,0,0.34)');
-      pedestal.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = pedestal;
-      ctx.beginPath();
-      ctx.ellipse(0, SOLDIER.feet + 1, 25, 7.4, 0, 0, TAU);
-      ctx.fill();
-
-      drawSoldierAura(fake, soldierGlow(fake));
-      const g = soldierGlow(fake);
-      drawCosmeticFlourish(fake, g, bob, dir, 'back');
-      drawRaelBody(fake, bob, null, 1);
-      const weapon = getClass().weapon;
-      if (weapon === 'blade') drawKnightSword(fake, bob);
-      else if (weapon === 'axes') drawBerserkerAxes(fake, bob);
-      else drawRaelWeapon(fake, bob, null);
-      drawCosmeticFlourish(fake, g, bob, dir, 'front');
-      drawPreviewPet(ctx, t);
-      ctx.restore();
-    });
-  } finally {
-    game.player = realPlayer;
-    game.time = realTime;
-    previewSkinId = null;
-  }
+  const cv=UI.cpCanvas;if (!cv) return;const pc=cv.getContext('2d');if(!pc)return;
+  const box=cv.getBoundingClientRect(),w=Math.max(220,Math.round(box.width||300)),h=Math.max(200,Math.round(box.height||290));
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}
+  pc.clearRect(0,0,w,h);pc.fillStyle='#10141f';pc.fillRect(0,0,w,h);
+  const skin=cosmeticById(cosPreviewId)||Shop.cosmeticSkin();
+  const palette=skin&&skin.armor?Object.assign({visor:skin.visor},skin.armor):null;
+  const cls=game.player?game.player.classId:(getClass().id||'knight');
+  const ok=pixelCharacters&&pixelCharacters.draw(pc,cls,'idle',w*0.5,h*0.76,0,t,palette,{scale:3.4});
+  if(!ok){pc.fillStyle='#475569';pc.fillRect(w*0.5-14,h*0.76-75,28,65);}
 }
 
 function cosPreviewTick() {
@@ -15984,77 +16062,11 @@ function updatePet(dt) {
 }
 
 function drawPetEntity() {
-  const pet = game.pet;
-  if (!pet || !game.player) return;
-  const p = game.player;
-  const kind = (petById(pet.id) || {}).art || 'cat';
-  const bob = Math.sin(pet.t * 2.6) * 2.2;
-  const y = pet.y - 14 + bob;
-
-  ctx.save();
-  /* a soft shadow on the ground under it */
-  ctx.fillStyle = 'rgba(0,0,0,0.34)';
-  ctx.beginPath();
-  ctx.ellipse(pet.x, pet.y + 9, 9, 3.4, 0, 0, TAU);
-  ctx.fill();
-
-  if (pet.id === 'golem' && pet.crumble > 0) {
-    /* crumbled: a heap of stones that pulls itself back together */
-    const k = clamp(1 - pet.crumble / 1.3, 0, 1);
-    ctx.globalAlpha = 0.5 + 0.5 * k;
-    for (let i = 0; i < 6; i++) {
-      const a = i * 1.05 + pet.t;
-      const d = (1 - k) * 12;
-      ctx.fillStyle = i % 2 ? '#64748b' : '#475569';
-      ctx.beginPath();
-      ctx.ellipse(pet.x + Math.cos(a) * d, pet.y + 4 + Math.sin(a * 1.3) * d * 0.6,
-        3.1, 2.4, a, 0, TAU);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    ctx.restore();
-    return;
-  }
-
-  /* its own little lamp so the colour reads against any floor */
-  const tint = (petById(pet.id) || {}).tint || '#c4b5fd';
-  const glow = ctx.createRadialGradient(pet.x, y, 2, pet.x, y, 20);
-  glow.addColorStop(0, hexToRgba(tint, 0.2));
-  glow.addColorStop(1, hexToRgba(tint, 0));
-  ctx.fillStyle = glow;
-  ctx.beginPath(); ctx.arc(pet.x, y, 20, 0, TAU); ctx.fill();
-
-  /* the ghost's own flare when something spawns out of sight */
-  if (pet.id === 'ghost' && pet.alert > 0) {
-    const f = 0.5 + 0.5 * Math.sin(pet.t * 26);
-    ctx.globalAlpha = 0.35 + 0.4 * f;
-    ctx.strokeStyle = '#f8fafc';
-    ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.arc(pet.x, y, 17 + f * 4, 0, TAU); ctx.stroke();
-    ctx.globalAlpha = 1;
-  }
-
-  ctx.save();
-  ctx.translate(pet.x, y);
-  drawPetArt(ctx, kind, 24, pet.t);
-  ctx.restore();
-  ctx.restore();
-
-  /* a faint tether back to Rael so the pair reads as one unit */
-  if (dist(pet.x, pet.y, p.x, p.y) > 40) {
-    ctx.save();
-    ctx.globalAlpha = 0.1;
-    ctx.strokeStyle = tint;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(pet.x, y);
-    ctx.lineTo(p.x, p.y - 12);
-    ctx.stroke();
-    ctx.restore();
-  }
+  const pet=game.pet;if(!pet||!game.player)return;
+  const type=pet.id==='ghost'?'ghost':pet.id==='fox'?'bat':'slime';
+  PixelFX.loop(ctx,'critters/'+type,pet.x,pet.y,pet.t,{scale:0.8});
 }
 
-/* the ghost's edge marker, drawn after the camera transform is gone */
 function drawPetAlerts() {
   const pet = game.pet;
   if (!pet || pet.id !== 'ghost' || pet.alert <= 0) return;
@@ -16772,6 +16784,7 @@ function drawClassCards() {
   for (let i = 0; i < UI.classIcons.length; i++) {
     paintClassIcon(UI.classIcons[i], CLASSES[i].id);
   }
+  paintPixelClassCards();
   paintClassIcon(UI.badgeIcon, getClass().id);
   syncClassCardLocks();
   for (let i = 0; i < UI.classCards.length; i++) {
@@ -20927,208 +20940,82 @@ const ENEMY_ART = {
   voidleech: artVoidLeech, echo: artEcho, role: artRoleEnemy
 };
 
-function drawEnemy(e) {
-  const r = e.r;
-  const flash = e.hitFlash > 0 ? '#ffffff' : null;
-  const box = CHAR[e.type] || { w: r * 2.4, h: r * 2.9 };
-  const t = game.time;
-
-  /* FAIRNESS: spawn telegraph. While the ground portal counts down, draw a
-     pulsing red rift ring at the spawn point and fade the silhouette in from
-     0.2→1.0 opacity (scaled 0.5→1.0). The enemy is harmless the whole time. */
-  let telegraphAlpha = 1;
-  if (e.spawnTelegraph > 0) {
-    const k = 1 - clamp(e.spawnTelegraph / SPAWN_TELEGRAPH_TIME, 0, 1);
-    telegraphAlpha = 0.2 + 0.8 * k;
-    const pulse = 0.5 + 0.5 * Math.sin(t * 10);
-    ctx.save();
-    ctx.translate(e.x, e.y);
-    ctx.strokeStyle = 'rgba(239,68,68,' + (0.5 + 0.5 * k).toFixed(3) + ')';
-    ctx.lineWidth = 3;
-    ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 10 + 14 * k;
-    ctx.beginPath(); ctx.arc(0, 0, 26 + 34 * k + pulse * 3, 0, TAU); ctx.stroke();
-    ctx.fillStyle = 'rgba(239,68,68,' + (0.12 + 0.18 * k).toFixed(3) + ')';
-    ctx.beginPath(); ctx.arc(0, 0, 18 + 26 * k, 0, TAU); ctx.fill();
-    ctx.restore();
-    ctx.globalAlpha = telegraphAlpha;
-  }
-
-  /* FAIRNESS: uncloak warning. While a stealth enemy is finishing its 0.6s
-     reveal, draw a red pulse ring around it and force it fully visible so the
-     player always sees the threat before it can deal contact damage. */
-  let warnAlpha = 1;
-  if (e.uncloakWarnT > 0) {
-    const k = 1 - clamp(e.uncloakWarnT / UNCLOAK_WARN_TIME, 0, 1);
-    const pulse = 0.5 + 0.5 * Math.sin(t * 14);
-    ctx.save();
-    ctx.translate(e.x, e.y);
-    ctx.strokeStyle = 'rgba(239,68,68,' + (0.55 + 0.45 * k).toFixed(3) + ')';
-    ctx.lineWidth = 2.5;
-    ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 8 + 12 * k;
-    ctx.beginPath(); ctx.arc(0, 0, 22 + 16 * k + pulse * 3, 0, TAU); ctx.stroke();
-    ctx.fillStyle = 'rgba(239,68,68,' + (0.1 + 0.15 * k).toFixed(3) + ')';
-    ctx.beginPath(); ctx.arc(0, 0, 14 + 12 * k, 0, TAU); ctx.fill();
-    ctx.restore();
-    warnAlpha = 1;
-  }
-
-  /* FAIRNESS: aim-line telegraph. While a ranged enemy is pausing 0.45s before
-     firing, draw a faint red line from the enemy toward its aim so the player
-     can see the incoming shot before it happens. */
-  if (e.aimTelegraph > 0) {
-    const k = 1 - clamp(e.aimTelegraph / RANGED_AIM_TIME, 0, 1);
-    const a = Number.isFinite(Number(e.aimAngle)) ? Number(e.aimAngle) : 0;
-    ctx.save();
-    ctx.translate(e.x, e.y);
-    ctx.rotate(a);
-    ctx.strokeStyle = 'rgba(239,68,68,' + (0.25 + 0.35 * k).toFixed(3) + ')';
-    ctx.lineWidth = 2;
-    ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 6;
-    ctx.setLineDash([10, 10]);
-    ctx.lineDashOffset = -game.time * 40;
-    ctx.beginPath(); ctx.moveTo(e.r + 6, 0); ctx.lineTo(420, 0); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-  }
-
-  /* Elite Ghosts are never 100% invisible — 45% minimum. */
-  if (e.eliteVariant && e.type === 'ghost' && e.invis > 0 && e.revealT <= 0) {
-    ctx.globalAlpha = INVIS_MIN_ALPHA;
-  }
-
-  /* Buried Sand Shades only show a ripple / telegraph on the sand. */
-  if (e.type === 'sandshade' && e.underground) {
-    ctx.save();
-    if (e.phase === 'telegraph') {
-      const k = 1 - clamp(e.stateT / 0.55, 0, 1);
-      ctx.strokeStyle = 'rgba(245,212,150,' + (0.35 + 0.5 * k).toFixed(2) + ')';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.arc(e.x, e.y, 18 + k * 46, 0, TAU); ctx.stroke();
-      ctx.fillStyle = 'rgba(216,176,106,0.25)';
-      ctx.beginPath(); ctx.arc(e.x, e.y, 16 + k * 30, 0, TAU); ctx.fill();
-    } else {
-      ctx.strokeStyle = 'rgba(216,176,106,0.35)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.ellipse(e.x, e.y, 12 + Math.sin(t * 5) * 2, 5, 0, 0, TAU); ctx.stroke();
-    }
-    ctx.restore();
-    ctx.globalAlpha = 1;
-    return;
-  }
-
-  /* a grounded shadow under the feet, so nothing floats without a contact point */
-  ctx.save();
-  const shadowAlpha = e.materializeT > 0 ? 0.34 * clamp(1 - e.materializeT / 0.35, 0, 1) : 0.34;
-  ctx.fillStyle = 'rgba(0,0,0,' + shadowAlpha.toFixed(3) + ')';
-  ctx.beginPath();
-  ctx.ellipse(e.x, e.y + box.h * 0.36, r * 0.95, r * 0.36, 0, 0, TAU);
-  ctx.fill();
-  ctx.restore();
-
-  if (e.type === 'sniper' && e.aimT > 0) {
-    const k = 1 - clamp(e.aimT / 0.6, 0, 1);
-    ctx.save();
-    ctx.strokeStyle = 'rgba(239,68,68,' + (0.32 + 0.58 * k).toFixed(3) + ')';
-    ctx.lineWidth = 1.4;
-    ctx.shadowColor = 'rgba(239,68,68,0.85)';
-    ctx.shadowBlur = 7;
-    ctx.beginPath();
-    ctx.moveTo(e.x, e.y);
-    ctx.lineTo(e.x + Math.cos(e.aimA) * 620, e.y + Math.sin(e.aimA) * 620);
-    ctx.stroke();
-    ctx.restore();
-  }
-  if (e.type === 'bomber' && e.fuseT > 0) {
-    const k = 1 - clamp(e.fuseT / 0.5, 0, 1);
-    ctx.save();
-    ctx.fillStyle = 'rgba(249,115,22,' + (0.08 + 0.16 * k).toFixed(3) + ')';
-    ctx.beginPath(); ctx.arc(e.x, e.y, 120, 0, TAU); ctx.fill();
-    ctx.strokeStyle = 'rgba(253,186,116,' + (0.35 + 0.55 * k).toFixed(3) + ')';
-    ctx.lineWidth = 2.4;
-    ctx.shadowColor = '#f97316'; ctx.shadowBlur = 12;
-    ctx.beginPath(); ctx.arc(e.x, e.y, 120 - k * 18, 0, TAU); ctx.stroke();
-    ctx.restore();
-  }
-  if (e.type === 'brute' && e.brutePhase === 'windup') {
-    ctx.save();
-    ctx.translate(e.x, e.y);
-    ctx.rotate(e.chargeA);
-    ctx.fillStyle = 'rgba(239,68,68,0.15)';
-    ctx.fillRect(0, -e.r, 560, e.r * 2);
-    ctx.strokeStyle = 'rgba(248,113,113,0.75)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([14, 10]);
-    ctx.strokeRect(0, -e.r, 560, e.r * 2);
-    ctx.setLineDash([]);
-    ctx.restore();
-  }
-  if (e.type === 'goblin') {
-    const pulse = 0.5 + 0.5 * Math.sin(game.time * 6);
-    ctx.save();
-    ctx.strokeStyle = 'rgba(250,204,21,' + (0.45 + 0.4 * pulse).toFixed(3) + ')';
-    ctx.lineWidth = 2;
-    ctx.shadowColor = '#facc15'; ctx.shadowBlur = 13;
-    ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 8 + pulse * 3, 0, TAU); ctx.stroke();
-    ctx.restore();
-  }
-
-  /* Elite variants carry a red outline glow and a crown marker. */
-  if (e.eliteVariant) {
-    ctx.save();
-    ctx.shadowColor = '#ef4444';
-    ctx.shadowBlur = 18;
-    ctx.strokeStyle = 'rgba(248,113,113,0.9)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.ellipse(e.x, e.y - box.h * 0.1, r * 1.15, box.h * 0.62, 0, 0, TAU);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  if (e.art && ENEMY_ART[e.art]) ENEMY_ART[e.art](e, flash);
-  else if (e.type === 'knight') drawEnemyKnight(e, flash);
-  else if (e.type === 'archer') drawEnemyArcher(e, flash);
-  else if (e.type === 'wizard') drawEnemyWizard(e, flash);
-  else drawEnemyGhost(e, flash);
-
-  if (e.eliteVariant) {
-    ctx.save();
-    ctx.fillStyle = '#f87171';
-    ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 10;
-    const cy = e.y - box.h * 0.78;
-    ctx.beginPath();
-    ctx.moveTo(e.x, cy - 6); ctx.lineTo(e.x + 5, cy); ctx.lineTo(e.x, cy + 6); ctx.lineTo(e.x - 5, cy);
-    ctx.closePath(); ctx.fill();
-    ctx.restore();
-  }
-
-  /* Elite Knight shield: a separate bar that must break before HP. */
-  if (e.maxShield > 0) {
-    const w = Math.max(24, r * 1.5);
-    const sy = e.y - box.h * 0.62 - 8;
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.fillRect(e.x - w / 2, sy, w, 4);
-    ctx.fillStyle = '#7dd3fc';
-    ctx.fillRect(e.x - w / 2, sy, w * clamp(e.shield / e.maxShield, 0, 1), 4);
-  }
-
-  if (e.hp < e.maxHp) {
-    const w = Math.max(24, r * 1.55);
-    const hy = e.y - box.h * 0.62 - 3;
-    ctx.save();
-    ctx.fillStyle = 'rgba(2,6,23,0.68)';
-    ctx.fillRect(e.x - w / 2, hy, w, 5);
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(e.x - w / 2 + 1, hy + 1, Math.max(0, (w - 2) * clamp(e.hp / e.maxHp, 0, 1)), 3);
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-    ctx.lineWidth = 0.8;
-    ctx.strokeRect(e.x - w / 2, hy, w, 5);
-    ctx.restore();
-  }
-
-  ctx.globalAlpha = 1;   /* always restore: nothing after an enemy may inherit alpha */
+function pixelSkin(p) {
+  const skin = p && p.cosmetic ? cosmeticById(p.cosmetic) : null;
+  return skin && skin.armor ? Object.assign({ visor: skin.visor }, skin.armor) : null;
 }
-
+function drawPixelFallback(x, y, scale, tint) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale); ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#090d16'; ctx.fillRect(-8,-35,16,31);
+  ctx.fillStyle = tint || '#64748b'; ctx.fillRect(-6,-33,12,14); ctx.fillRect(-7,-19,14,14);
+  ctx.fillStyle = '#ef4444'; ctx.fillRect(1,-29,5,2);
+  ctx.fillStyle = '#090d16'; ctx.fillRect(-7,-5,5,5); ctx.fillRect(2,-5,5,5); ctx.restore();
+}
+const PIXEL_ENEMY_ERAS = [
+  {navyDark:'#1a2029',navy:'#334155',navyLit:'#8291a3',visor:'#ef4444'},
+  {navyDark:'#302012',navy:'#70512c',navyLit:'#c7a466',visor:'#fbbf24'},
+  {navyDark:'#26141c',navy:'#573040',navyLit:'#a25b70',visor:'#fb7185'},
+  {navyDark:'#1c281b',navy:'#405438',navyLit:'#82936a',visor:'#a3e635'},
+  {navyDark:'#101f30',navy:'#31516a',navyLit:'#7aaabd',visor:'#22d3ee'},
+  {navyDark:'#20142f',navy:'#49315f',navyLit:'#9371ac',visor:'#c084fc'}
+];
+function enemyEraSkin(index) { return PIXEL_ENEMY_ERAS[index] || PIXEL_ENEMY_ERAS[0]; }
+const SLIME_PALETTES = [
+  ['#061412','#0b2f1c','#16532a','#228b32','#48c852','#a6f06a','#f0ffd2'],
+  ['#20080b','#401016','#681522','#922034','#c83542','#ed7774','#ffe0cb']
+];
+function enemyPixelStyle(e) {
+  const type=e.type || '';
+  if (e.elite || e.eliteVariant || ['ghost','voidwraith','timewraith','shade','echo','sandshade','wraith','ninja'].includes(type))
+    return ['titan','brute','oni','mech'].includes(type) ? 'flying-skull' : 'ghost';
+  if (['swarm','minion','scorpion','goblin'].includes(type) || e.role === 'swarm') return 'bat';
+  if (['archer','sniper','wizard','summoner','mummy','raider','anubis','trapper','drone','aliendrone','scavengerbot'].includes(type) || e.role === 'ranged') return 'eyeball';
+  if (['titan','brute','oni','mech'].includes(type)) return 'flying-skull';
+  return 'slime';
+}
+function drawPixelEnemy(e, flash) {
+  const critter=enemyPixelStyle(e);
+  const facing=angleTo(e.x,e.y,game.player.x,game.player.y);
+  ctx.save(); ctx.translate(e.x,e.y); ctx.scale(Math.cos(facing)<0?-1:1,1);
+  ctx.imageSmoothingEnabled=false;
+  const palette=critter==='slime' ? SLIME_PALETTES[gameState.currentUniverse % 2] : critter==='eyeball' ? ENEMY_PLASMA_PALETTE : null;
+  PixelFX.loop(ctx,'critters/'+critter,0,0,game.time+(e.t || 0)*0.1,{scale:e.elite||e.eliteVariant?2:1.5,palette});
+  ctx.restore();
+}
+function drawEnemy(e) {
+  ctx.save();
+  if (e.spawnTelegraph > 0) {
+    const k=1-clamp(e.spawnTelegraph/SPAWN_TELEGRAPH_TIME,0,1);
+    PixelFX.loop(ctx,'spawn-and-death/spawn-portal',e.x,e.y,game.time,{progress:k,scale:1.6,palette:PixelFX.era(gameState.currentUniverse)});
+    ctx.globalAlpha=0.2+0.8*k;
+  }
+  if (e.uncloakWarnT > 0 || (e.type==='bomber' && e.fuseT>0) || (e.type==='brute' && e.brutePhase==='windup'))
+    PixelFX.loop(ctx,'arcane/rune-circle',e.x,e.y,game.time,{scale:e.type==='bomber'?2.1:1});
+  if ((e.aimTelegraph>0 && e.aimTelegraph<=0.35) || (e.type==='sniper' && e.aimT>0 && e.aimT<=0.35)) {
+    const a=e.type==='sniper' ? e.aimA : e.aimAngle;
+    PixelFX.loop(ctx,'projectiles/laser-bolt',e.x,e.y,game.time,{angle:Number(a)||0,scale:1});
+  }
+  if (e.eliteVariant && e.type==='ghost' && e.invis>0 && e.revealT<=0) ctx.globalAlpha=INVIS_MIN_ALPHA;
+  if (e.type==='sandshade' && e.underground) {
+    PixelFX.loop(ctx,'arcane/rune-circle',e.x,e.y,game.time,{scale:0.7});
+  } else drawPixelEnemy(e,e.hitFlash>0?'#ffffff':null);
+  ctx.restore();
+  drawEnemyHealthUI(e);
+}
+// Health/shield bars are UI, not part of an enemy sprite.
+function drawEnemyHealthUI(e) {
+  const r=e.r, box=CHAR[e.type] || {h:r*2.9};
+  if (e.maxShield>0) {
+    const w=Math.max(24,r*1.5),y=e.y-box.h*0.62-8;
+    ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(e.x-w/2,y,w,4);
+    ctx.fillStyle='#7dd3fc';ctx.fillRect(e.x-w/2,y,w*clamp(e.shield/e.maxShield,0,1),4);
+  }
+  if (e.hp>0 && e.hp<e.maxHp) {
+    const w=Math.max(24,r*1.55),y=e.y-box.h*0.62-3;
+    ctx.fillStyle='rgba(2,6,23,0.68)';ctx.fillRect(e.x-w/2,y,w,5);
+    ctx.fillStyle='#ef4444';ctx.fillRect(e.x-w/2+1,y+1,clamp(e.hp/e.maxHp,0,1)*(w-2),3);
+  }
+}
 
 /* ============================================================================
    THE CHAMPIONS OF THE OTHER UNIVERSES
@@ -21250,22 +21137,7 @@ function updateMines(dt) {
 }
 
 function drawMines() {
-  const t = game.time;
-  for (let i = 0; i < game.mines.length; i++) {
-    const m = game.mines[i];
-    const blink = Math.sin(t * 12) > 0 ? 1 : 0.35;
-    ctx.save();
-    ctx.translate(m.x, m.y);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.beginPath(); ctx.ellipse(0, 3, 15, 6, 0, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#3f3f46';
-    ctx.beginPath(); ctx.arc(0, 0, 12 * m.arm, 0, TAU); ctx.fill();
-    ctx.strokeStyle = '#a1a1aa'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(0, 0, 12 * m.arm, 0, TAU); ctx.stroke();
-    ctx.fillStyle = 'rgba(239,68,68,' + blink.toFixed(2) + ')';
-    ctx.beginPath(); ctx.arc(0, 0, 4 * m.arm, 0, TAU); ctx.fill();
-    ctx.restore();
-  }
+  for(const mine of game.mines) PixelFX.loop(ctx,'sci-fi/energy-core',mine.x,mine.y,game.time,{scale:Math.max(0.1,0.5*mine.arm)});
 }
 
 /* the phase banner, shared by every kit that has stages */
@@ -22102,30 +21974,11 @@ function updateBossHazards(dt) {
   }
 }
 function drawBossHazards() {
-  for (let i = 0; i < game.bossHazards.length; i++) {
-    const h = game.bossHazards[i];
-    const alpha = Math.min(1, h.t / Math.max(0.001, h.maxT) * 2);
-    ctx.save();
-    ctx.globalAlpha = 0.22 * alpha;
-    ctx.fillStyle = h.type === 'hex' ? '#0f766e' : '#22c55e';
-    ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, TAU); ctx.fill();
-    ctx.globalAlpha = 0.55 * alpha;
-    ctx.strokeStyle = h.type === 'hex' ? '#5eead4' : '#86efac'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, TAU); ctx.stroke();
-    if (h.type === 'hex') {
-      ctx.lineWidth = 1.4;
-      for (let k = 0; k < 6; k++) {
-        const a = (k / 6) * TAU + 0.35;
-        ctx.beginPath(); ctx.moveTo(h.x, h.y);
-        ctx.lineTo(h.x + Math.cos(a) * h.r, h.y + Math.sin(a) * h.r); ctx.stroke();
-      }
-      ctx.beginPath(); ctx.arc(h.x, h.y, h.r * 0.55, 0, TAU); ctx.stroke();
-      ctx.beginPath(); ctx.arc(h.x, h.y, h.r * 0.28, 0, TAU); ctx.stroke();
-    }
-    ctx.restore();
+  for(const hazard of game.bossHazards) {
+    ctx.save();ctx.translate(hazard.x,hazard.y);ctx.scale(1,1/0.3);
+    PixelFX.loop(ctx,'arcane/rune-circle',0,0,game.time,{scale:hazard.r/(46*96/136)});ctx.restore();
   }
 }
-
 
 /* ---- Universe 1 bespoke boss kits -------------------------------------- */
 const MEDIEVAL_BOSS_PAL = {
@@ -22267,225 +22120,13 @@ function updateBossKit(b, dt) {
 }
 
 function drawBoss() {
-  const b = game.boss;
-  if (!b) return;
-  const zone = gameState.currentZone;
-  const t = game.time;
-  const flash = b.hitFlash > 0;
-  const r = b.r;
-  const face = angleTo(b.x, b.y, game.player.x, game.player.y);
-
-  ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,0.42)';
-  ctx.beginPath();
-  ctx.ellipse(b.x, b.y + r * 0.72, r * 1.1, r * 0.42, 0, 0, TAU);
-  ctx.fill();
-
-  const aura = ctx.createRadialGradient(b.x, b.y, r * 0.4, b.x, b.y, r * 2.5);
-  aura.addColorStop(0, hexToRgba(b.color, 0.2));
-  aura.addColorStop(1, hexToRgba(b.color, 0));
-  ctx.fillStyle = aura;
-  ctx.beginPath(); ctx.arc(b.x, b.y, r * 2.5, 0, TAU); ctx.fill();
-
-  ctx.translate(b.x, b.y);
-
-  /* the universe champions draw themselves, still inside the shared shadow */
-  if (b.kit && BOSS_KITS[b.kit]) {
-    BOSS_KITS[b.kit].draw(b, flash);
-    ctx.restore();
-    return;
-  }
-
-  /* zone 0 rides an armoured giant, zone 1 a robed one; the other three keep
-     their own bespoke rigs below */
-  if (zone === 0) {
-    drawArmouredGiant(b, BOSS_PAL.black, flash ? '#ffffff' : null);
-  } else if (zone === 1) {
-    drawRobedGiant(b, ROBE_PAL.witch, flash ? '#ffffff' : null);
-  } else if (zone === 2) {
-    /* ---- Siege Commander on horseback ---- */
-    ctx.rotate(face);
-    /* horse body */
-    ctx.fillStyle = flash ? '#fff' : '#2b3444';
-    ctx.beginPath();
-    ctx.ellipse(0, r * 0.2, r * 1.2, r * 0.56, 0, 0, TAU);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(10,14,20,0.9)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    /* legs */
-    const gallop = Math.sin(t * 6) * 4;
-    ctx.fillStyle = flash ? '#fff' : '#1b2230';
-    for (let i = 0; i < 4; i++) {
-      const lx = -r * 0.15 + (i < 2 ? -r * 0.55 : r * 0.5);
-      const sway = (i % 2 ? 1 : -1) * gallop;
-      ctx.fillRect(lx, r * 0.55, 6, r * 0.5 + sway * 0.4);
-    }
-    /* neck + head */
-    ctx.fillStyle = flash ? '#fff' : '#323c4d';
-    ctx.beginPath();
-    ctx.ellipse(r * 0.95, -r * 0.12, r * 0.42, r * 0.3, -0.3, 0, TAU);
-    ctx.fill();
-    ctx.fillStyle = flash ? '#fff' : '#26303f';
-    ctx.beginPath(); ctx.ellipse(r * 1.25, r * 0.02, r * 0.24, r * 0.18, -0.2, 0, TAU); ctx.fill();
-    /* tail */
-    ctx.strokeStyle = '#151b26';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(-r * 1.1, r * 0.1);
-    ctx.quadraticCurveTo(-r * 1.5, r * 0.3 + gallop * 0.6, -r * 1.62, r * 0.7);
-    ctx.stroke();
-    /* rider */
-    ctx.fillStyle = flash ? '#fff' : '#4a5568';
-    roundRect(ctx, -r * 0.34, -r * 0.95, r * 0.78, r * 0.62, 6);
-    ctx.fill();
-    ctx.strokeStyle = '#e2e8f0';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    /* plume + helm */
-    ctx.fillStyle = flash ? '#fff' : '#cbd5e1';
-    ctx.beginPath(); ctx.arc(r * 0.12, -r * 0.95, r * 0.26, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#ef4444';
-    ctx.beginPath();
-    ctx.moveTo(r * 0.05, -r * 1.15);
-    ctx.quadraticCurveTo(-r * 0.2, -r * 1.6, -r * 0.55, -r * 1.32);
-    ctx.quadraticCurveTo(-r * 0.2, -r * 1.24, -r * 0.05, -r * 1.05);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(r * 0.14, -r * 1.03, r * 0.26, r * 0.16);
-    /* lance */
-    ctx.strokeStyle = 'rgba(8,10,14,0.9)';
-    ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.moveTo(r * 0.2, -r * 0.4); ctx.lineTo(r * 1.9, -r * 0.55); ctx.stroke();
-    ctx.strokeStyle = flash ? '#fff' : '#cbd5e1';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(r * 0.2, -r * 0.4); ctx.lineTo(r * 1.95, -r * 0.56); ctx.stroke();
-    ctx.fillStyle = '#e2e8f0';
-    ctx.beginPath();
-    ctx.moveTo(r * 1.95, -r * 0.56);
-    ctx.lineTo(r * 1.72, -r * 0.68);
-    ctx.lineTo(r * 1.72, -r * 0.44);
-    ctx.closePath(); ctx.fill();
-  } else if (zone === 3) {
-    /* ---- Archon the Sorcerer ---- */
-    const float = Math.sin(t * 1.8) * r * 0.07;
-    ctx.translate(0, float);
-    /* orbiting halo */
-    ctx.save();
-    ctx.rotate(t * 0.7);
-    ctx.strokeStyle = hexToRgba(b.color, 0.85);
-    ctx.lineWidth = 2.4;
-    ctx.beginPath(); ctx.ellipse(0, 0, r * 1.45, r * 0.6, 0, 0, TAU); ctx.stroke();
-    ctx.restore();
-    /* robe */
-    const rg = ctx.createLinearGradient(0, -r, 0, r);
-    rg.addColorStop(0, flash ? '#ffffff' : '#5b21b6');
-    rg.addColorStop(1, flash ? '#ffffff' : '#1e1b4b');
-    ctx.fillStyle = flash ? '#ffffff' : rg;
-    ctx.beginPath();
-    ctx.moveTo(r * 0.3, -r * 0.55);
-    ctx.quadraticCurveTo(r * 0.95, r * 0.4, r * 0.4, r * 1.15);
-    ctx.quadraticCurveTo(0, r * 1.32, -r * 0.4, r * 1.15);
-    ctx.quadraticCurveTo(-r * 0.95, r * 0.4, -r * 0.3, -r * 0.55);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = hexToRgba(b.color, 0.8);
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    /* hood + mask */
-    ctx.fillStyle = flash ? '#fff' : '#312e81';
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.42, -r * 0.5);
-    ctx.quadraticCurveTo(0, -r * 1.3, r * 0.42, -r * 0.5);
-    ctx.quadraticCurveTo(0, -r * 0.22, -r * 0.42, -r * 0.5);
-    ctx.fill();
-    ctx.fillStyle = '#0b0614';
-    ctx.beginPath(); ctx.ellipse(0, -r * 0.45, r * 0.26, r * 0.2, 0, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#e9d5ff';
-    ctx.shadowColor = '#a855f7';
-    ctx.shadowBlur = 14;
-    ctx.beginPath(); ctx.arc(-r * 0.1, -r * 0.46, 2.4, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(r * 0.1, -r * 0.46, 2.4, 0, TAU); ctx.fill();
-    ctx.shadowBlur = 0;
-    /* hands holding orbs */
-    for (const sx of [-1, 1]) {
-      const hx = sx * r * 0.78;
-      const hy = r * 0.25 + Math.sin(t * 2 + sx) * 3;
-      const og = ctx.createRadialGradient(hx, hy, 1, hx, hy, r * 0.42);
-      og.addColorStop(0, 'rgba(245,208,254,0.95)');
-      og.addColorStop(0.45, 'rgba(168,85,247,0.7)');
-      og.addColorStop(1, 'rgba(168,85,247,0)');
-      ctx.fillStyle = og;
-      ctx.beginPath(); ctx.arc(hx, hy, r * 0.42, 0, TAU); ctx.fill();
-    }
-  } else {
-    /* ---- The Time Tyrant ---- */
-    const pulse = 1 + Math.sin(t * 2) * 0.02;
-    ctx.save();
-    ctx.rotate(t * 0.5);
-    ctx.strokeStyle = hexToRgba(b.color, 0.5);
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(0, 0, r * 1.32, 0, 1.6); ctx.stroke();
-    ctx.beginPath(); ctx.arc(0, 0, r * 1.32, Math.PI, Math.PI + 1.6); ctx.stroke();
-    ctx.restore();
-
-    ctx.scale(pulse, pulse);
-    /* armour */
-    const ag = ctx.createLinearGradient(-r, -r, r, r);
-    ag.addColorStop(0, '#0a1220');
-    ag.addColorStop(0.5, '#122036');
-    ag.addColorStop(1, '#0a1220');
-    ctx.fillStyle = flash ? '#ffffff' : ag;
-    roundRect(ctx, -r * 0.78, -r * 0.78, r * 1.56, r * 1.6, 12);
-    ctx.fill();
-    ctx.strokeStyle = b.color;
-    ctx.lineWidth = 2.6;
-    ctx.stroke();
-    /* shoulder spikes */
-    ctx.fillStyle = flash ? '#fff' : '#1c2f4a';
-    for (const sy of [-1, 1]) {
-      ctx.beginPath();
-      ctx.moveTo(-r * 0.7, sy * r * 0.55);
-      ctx.lineTo(-r * 1.25, sy * r * 1.05);
-      ctx.lineTo(-r * 0.35, sy * r * 0.85);
-      ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = hexToRgba(b.color, 0.7);
-      ctx.lineWidth = 1.6;
-      ctx.stroke();
-    }
-    /* core */
-    const cg = ctx.createRadialGradient(0, 0, 1, 0, 0, r * 0.5);
-    cg.addColorStop(0, 'rgba(236,254,255,1)');
-    cg.addColorStop(0.35, hexToRgba(b.color, 0.9));
-    cg.addColorStop(1, hexToRgba(b.color, 0));
-    ctx.fillStyle = cg;
-    ctx.beginPath(); ctx.arc(0, 0, r * 0.5, 0, TAU); ctx.fill();
-    /* crown */
-    ctx.fillStyle = flash ? '#fff' : '#dbeafe';
-    for (let i = -2; i <= 2; i++) {
-      ctx.beginPath();
-      ctx.moveTo(i * r * 0.24 - 5, -r * 0.78);
-      ctx.lineTo(i * r * 0.24, -r * 1.42);
-      ctx.lineTo(i * r * 0.24 + 5, -r * 0.78);
-      ctx.closePath(); ctx.fill();
-    }
-    /* eye band */
-    ctx.fillStyle = hexToRgba(b.color, 0.9);
-    ctx.shadowColor = b.color;
-    ctx.shadowBlur = 18;
-    ctx.fillRect(-r * 0.36, -r * 0.34, r * 0.72, r * 0.12);
-    ctx.shadowBlur = 0;
-  }
-
-  ctx.restore();
+  const b=game.boss;if (!b) return;
+  ctx.save();ctx.translate(b.x,b.y-(b.z||0));
+  const facing=angleTo(b.x,b.y,game.player.x,game.player.y);
+  ctx.scale(Math.cos(facing)<0?-1:1,1);ctx.imageSmoothingEnabled=false;
+  PixelFX.loop(ctx,'critters/flying-skull',0,0,game.time,{scale:2});ctx.restore();
+  if (b.phase>=2) PixelFX.loop(ctx,'arcane/rune-circle',b.x,b.y,game.time,{scale:1.5});
 }
-/* ------------------------------ the player --------------------------------- */
-/* A futuristic trooper drawn at 40 x 44 px: dark navy torso, silver shoulder
-   pads, a dark grey helmet with a bright cyan visor, blocky legs and boots with
-   thruster flames. The sprite mirrors to face the cursor, the weapon pivots on
-   the shoulder so it always points at it, and a slow aura ring pulses underfoot.
-   With one orb left every glow turns a flickering red. */
-const SOLDIER = { w: 40, h: 52, scale: 1, feet: 23 };   /* 40x52 time-traveller in patched armor */
 
 function hexTriplet(hex) {
   const h = String(hex).replace('#', '');
@@ -22563,30 +22204,10 @@ function soldierGlow(p) {
 
 /* ---- the pulsing aura ring on the ground beneath the feet ---- */
 function drawSoldierAura(p, g) {
-  const pulse = 0.5 + 0.5 * Math.sin(game.time * 1.5);   /* slow, ~4s cycle */
-  const R = 30 + pulse * 5;
   ctx.save();
-  ctx.globalAlpha = (0.32 + 0.34 * pulse) * g.flick;
-  ctx.translate(p.x, p.y + SOLDIER.feet - 3);
-  ctx.scale(1, 0.42);
-
-  const fill = ctx.createRadialGradient(0, 0, R * 0.3, 0, 0, R);
-  fill.addColorStop(0, 'rgba(' + g.rgb + ',0.02)');
-  fill.addColorStop(0.7, 'rgba(' + g.rgb + ',0.16)');
-  fill.addColorStop(1, 'rgba(' + g.rgb + ',0)');
-  ctx.fillStyle = fill;
-  ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill();
-
-  ctx.shadowColor = g.glow;
-  ctx.shadowBlur = 18;
-  ctx.strokeStyle = 'rgba(' + g.rgb + ',0.8)';
-  ctx.lineWidth = 2.6;
-  ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.stroke();
-
-  ctx.globalAlpha *= 0.62;
-  ctx.shadowBlur = 8;
-  ctx.lineWidth = 1.3;
-  ctx.beginPath(); ctx.arc(0, 0, R * 0.74, 0, TAU); ctx.stroke();
+  ctx.strokeStyle = 'rgba(' + g.rgb + ',0.25)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(p.x, p.y + SOLDIER.feet - 3, 30, 0, TAU); ctx.stroke();
   ctx.restore();
 }
 
@@ -23091,95 +22712,6 @@ function drawKnightSword(p, bob) {
   ctx.restore();
 }
 
-function drawSwordSwoosh() {
-  const R = SWORD_RANGE * 0.86;
-
-  for (let i = 0; i < game.swings.length; i++) {
-    const sw = game.swings[i];
-    if (sw.kind === 'axe') continue;         /* the axes paint their own ribbon */
-    const k = sw.life / sw.maxLife;
-    const fade = Math.min(1, (1 - k) * 1.9);
-    if (fade <= 0.01) continue;
-
-    const reveal = easeOutQuad(k);
-    const head = sw.a0 + (sw.a1 - sw.a0) * reveal;
-    const span = head - sw.a0;
-    if (Math.abs(span) < 0.01) continue;
-
-    const def = SWORD_TIERS[sw.tier] || SWORD_TIERS[0];
-    const steps = 18;
-    const thickness = (t) => 2 + 27 * Math.pow(t, 1.4);    /* tail -> head */
-
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = fade;
-
-    /* --- the bright silver crescent body --- */
-    ctx.beginPath();
-    for (let j = 0; j <= steps; j++) {
-      const t = j / steps;
-      const a = sw.a0 + span * t;
-      const ro = R + thickness(t) * 0.5;
-      const px = sw.x + Math.cos(a) * ro;
-      const py = sw.y + Math.sin(a) * ro;
-      if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    for (let j = steps; j >= 0; j--) {
-      const t = j / steps;
-      const a = sw.a0 + span * t;
-      const ri = R - thickness(t) * 0.5;
-      ctx.lineTo(sw.x + Math.cos(a) * ri, sw.y + Math.sin(a) * ri);
-    }
-    ctx.closePath();
-
-    const grad = ctx.createRadialGradient(sw.x, sw.y, Math.max(1, R - 18), sw.x, sw.y, R + 20);
-    grad.addColorStop(0, 'rgba(150,180,215,0)');
-    grad.addColorStop(0.32, 'rgba(214,232,255,0.72)');
-    grad.addColorStop(0.5, 'rgba(255,255,255,1)');
-    grad.addColorStop(0.68, 'rgba(226,240,255,0.62)');
-    grad.addColorStop(1, 'rgba(150,185,225,0)');
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    /* bloom around the cut */
-    ctx.save();
-    ctx.globalAlpha = fade * 0.55;
-    ctx.shadowColor = def.glow || '#dbe9ff';
-    ctx.shadowBlur = 22;
-    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head), Math.max(sw.a0, head));
-    ctx.stroke();
-    ctx.restore();
-
-    /* motion blur: silver echo arcs trailing behind the blade head */
-    for (let e = 1; e <= 3; e++) {
-      const back = span * 0.16 * e;
-      ctx.globalAlpha = fade * (0.20 / e);
-      ctx.strokeStyle = '#eaf3ff';
-      ctx.lineWidth = 7 - e * 1.6;
-      ctx.shadowColor = 'rgba(255,255,255,0.9)';
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head - back), Math.max(sw.a0, head - back));
-      ctx.stroke();
-    }
-    ctx.shadowBlur = 0;
-
-    /* tier bloom */
-    if (def.glow) {
-      ctx.globalAlpha = fade * 0.42;
-      ctx.strokeStyle = def.glow;
-      ctx.lineWidth = 26;
-      ctx.beginPath();
-      ctx.arc(sw.x, sw.y, R, Math.min(sw.a0, head), Math.max(sw.a0, head));
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-}
-
 function drawDecoy() {
   const d = game.decoy;
   if (!d) return;
@@ -23285,222 +22817,35 @@ function drawDroppedDeathWeapon(p, dir, bob) {
   ctx.restore();
 }
 
+function drawPlayerGroundShadow(p) {
+  PixelFX.loop(ctx,'fx/ground-shadow',p.x,p.y,game.time,{scale:1.1});
+}
 function drawPlayer() {
   const p = game.player;
   if (!p) return;
-  const iframeT = Math.max(p.invuln || 0, p.invincibleTimer || 0);
-  const blink = iframeT > 0 && Math.floor(game.time * 12) % 2 === 0 && p.dashTimer <= 0;
-
-  /* facing: the whole sprite mirrors toward the cursor */
-  const dir = Math.cos(p.angle) >= 0 ? 1 : -1;
-  const g = soldierGlow(p);
-  const dying = gameState.isDying;
-  const deathTime = dying ? deathElapsed() : 0;
-  const collapse = dying ? deathPhaseK(0.25, 1.6) : 0;
-  if (dying) {
-    const flickerPhase = Math.sin(deathTime * 29) + Math.sin(deathTime * 17);
-    g.flick = deathTime < 0.25 ? 1 : clamp((flickerPhase > -0.5 ? 0.72 : 0.16) * (1 - collapse * 0.72), 0.05, 1);
-  }
-
-  /* very subtle bob while walking (plus a breath when standing still) */
-  const dashing = p.dashTimer > 0;
-  /* idle animation: a very subtle 2px bob on a 1.5s cycle */
-  let bob = dashing ? 0
-    : p.moving ? Math.sin(p.walk) * 1.15
-      : Math.sin(game.time * (TAU / 1.5)) * 2;
-  if (dying) bob += collapse * 7;
-
-  /* ground shadow + aura ring */
-  ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,0.42)';
-  ctx.beginPath();
-  ctx.ellipse(p.x, p.y + SOLDIER.feet, 18, 6.4, 0, 0, TAU);
-  ctx.fill();
-  ctx.restore();
-  drawSoldierAura(p, g);
-
-  /* arena entry: an amber ward that pulses while the 1.5s grace window runs */
-  if (game.arenaGrace > 0) {
-    const t = game.arenaGrace;
-    const pulse = 0.55 + 0.45 * Math.sin(game.time * 18);
-    const grow = clamp(1 - t / ARENA_GRACE, 0, 1);
-    ctx.save();
-    ctx.globalAlpha = 0.35 + 0.4 * pulse;
-    ctx.strokeStyle = '#f5c842';
-    ctx.lineWidth = 2.2;
-    ctx.shadowColor = '#d4a017';
-    ctx.shadowBlur = 16;
-    ctx.setLineDash([12, 8]);
-    ctx.lineDashOffset = -game.time * 60;
-    ctx.beginPath();
-    ctx.ellipse(p.x, p.y + 6, p.r + 20 + grow * 8, (p.r + 20 + grow * 8) * 0.62, 0, 0, TAU);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.globalAlpha = 0.12 + 0.16 * pulse;
-    ctx.fillStyle = '#f5c842';
-    ctx.beginPath();
-    ctx.ellipse(p.x, p.y + 6, p.r + 20 + grow * 8, (p.r + 20 + grow * 8) * 0.62, 0, 0, TAU);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  if (p.shield > 0) {
-    ctx.save();
-    const pulse = 0.5 + 0.2 * Math.sin(game.time * 4);
-    ctx.strokeStyle = 'rgba(250,204,21,' + pulse.toFixed(2) + ')';
-    ctx.lineWidth = 2;
-    ctx.shadowColor = '#facc15';
-    ctx.shadowBlur = 16;
-    ctx.beginPath(); ctx.arc(p.x, p.y + 4, p.r + 22, 0, TAU); ctx.stroke();
-    ctx.globalAlpha = 0.18;
-    ctx.fillStyle = '#fde68a';
-    ctx.beginPath(); ctx.arc(p.x, p.y + 4, p.r + 22, 0, TAU); ctx.fill();
-    ctx.restore();
-  }
-
-  if (game.stormTimer > 0) {
-    /* eight-barrel storm aura: a spinning spoke ring while the volley runs */
-    ctx.save();
-    ctx.translate(p.x, p.y + 2);
-    ctx.rotate(game.time * 1.7);
-    const pulse = 0.45 + 0.3 * Math.sin(game.time * 15);
-    ctx.globalAlpha = pulse;
-    ctx.strokeStyle = 'rgba(245,200,66,0.9)';
-    ctx.lineWidth = 2.4;
-    ctx.lineCap = 'round';
-    ctx.shadowColor = '#d4a017';
-    ctx.shadowBlur = 10;
-    for (let i = 0; i < 8; i++) {
-      const a = i / 8 * TAU;
-      ctx.beginPath();
-      ctx.moveTo(Math.cos(a) * 26, Math.sin(a) * 26);
-      ctx.lineTo(Math.cos(a) * 44, Math.sin(a) * 44);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = pulse * 0.5;
-    ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.arc(0, 0, 34, 0, TAU); ctx.stroke();
-    ctx.restore();
-  }
-
-  /* Damage Shard: a red battle halo for as long as the shard burns */
-  if (game.damageBuffT > 0) {
-    const k = 0.55 + 0.45 * Math.sin(game.time * 10);
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255,80,80,' + (0.4 + 0.3 * k).toFixed(3) + ')';
-    ctx.lineWidth = 2.6;
-    ctx.shadowColor = 'rgba(255,70,70,0.95)';
-    ctx.shadowBlur = 18;
-    ctx.setLineDash([9, 6]);
-    ctx.lineDashOffset = game.time * 46;
-    ctx.beginPath(); ctx.arc(p.x, p.y + 4, p.r + 26, 0, TAU); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.globalAlpha = 0.16 + 0.12 * k;
-    ctx.fillStyle = '#ff5555';
-    ctx.beginPath(); ctx.arc(p.x, p.y + 4, p.r + 26, 0, TAU); ctx.fill();
-    ctx.restore();
-  }
-
-  if (game.overchargeTimer > 0) {
-    const k = 0.55 + 0.45 * Math.sin(game.time * 12);
-    ctx.save();
-    ctx.strokeStyle = 'rgba(248,113,113,' + (0.45 + 0.3 * k).toFixed(3) + ')';
-    ctx.lineWidth = 2.4;
-    ctx.shadowColor = 'rgba(248,113,113,0.9)';
-    ctx.shadowBlur = 16;
-    ctx.setLineDash([10, 7]);
-    ctx.lineDashOffset = -game.time * 40;
-    ctx.beginPath(); ctx.arc(p.x, p.y + 4, p.r + 28, 0, TAU); ctx.stroke();
-    ctx.restore();
-  }
-
-  /* ---- dash trail: amber afterimages of the trooper ---- */
-  if (p.trail && p.trail.length) {
-    for (let i = 0; i < p.trail.length; i++) {
-      const t = p.trail[i];
-      const a = Math.max(0, t.life / 0.3);
-      ctx.save();
-      ctx.globalAlpha = a * 0.30;
-      ctx.translate(t.x, t.y);
-      ctx.scale(t.dir, 1);
-      ctx.fillStyle = g.trail || g.glow;
-      roundRect(ctx, -10, -22, 20, 44, 8);
-      ctx.fill();
-      ctx.globalAlpha = a * 0.5;
-      ctx.fillStyle = g.wisp || '#f5c842';
-      roundRect(ctx, -7, -17.6, 14, 5, 2.3);
-      ctx.fill();
-      ctx.restore();
-    }
-    ctx.globalAlpha = 1;
-  }
-  if (dashing) {
-    ctx.save();
-    ctx.globalAlpha = 0.28;
-    ctx.strokeStyle = g.trail || g.glow;
-    ctx.lineWidth = 7;
-    ctx.lineCap = 'round';
-    ctx.shadowColor = hexToRgba(g.trail || g.glow, 0.8);
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    ctx.moveTo(p.x - p.dashDir.x * 46, p.y - p.dashDir.y * 46);
-    ctx.lineTo(p.x - p.dashDir.x * 10, p.y - p.dashDir.y * 10);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  ctx.save();
-  if (blink && !dying) ctx.globalAlpha = 0.42;
-  {
-    /* the body squashes through edge-on when the aim flips side to side */
-    const sx = charTurn(p, dir);
-    const drawBody = function () {
-      drawRaelBody(p, bob, null, sx);
-    };
-    /* arm + weapon, pivoting at the shoulder so it always aims at the cursor */
-    const bladeClass = getClass().weapon === 'blade';
-    const drawGun = function () {
-      ctx.save();
-      drawRaelWeapon(p, bob, null);
-      ctx.restore();
-    };
-    /* aiming up? the weapon passes behind the soldier instead of through him */
-    const behind = !bladeClass && Math.sin(p.angle) < -0.15;
-    const heldWeapon = !dying || deathTime < 0.25;
-    if (behind && heldWeapon) drawGun();
-    drawCosmeticFlourish(p, g, bob, dir, 'back');
-    if (dying) {
-      ctx.save();
-      ctx.translate(p.x, p.y + SOLDIER.feet);
-      ctx.rotate(dir * collapse * 0.5);
-      ctx.scale(1, 1 - collapse * 0.07);
-      ctx.translate(-p.x, -(p.y + SOLDIER.feet));
-      drawBody();
-      ctx.restore();
-    } else {
-      drawBody();
-    }
-    drawCosmeticFlourish(p, g, bob, dir, 'front');
-    drawThrusters(p, g, bob, dir);
-    if (g.flames) drawBootFlames(p, bob, dir, g);
-    if (!behind && heldWeapon) drawGun();
-    if (dying) drawDroppedDeathWeapon(p, dir, bob);
-
-    /* ---- took a hit: flash red ---- */
-    if (p.hitFlash > 0) {
-      drawRaelFlash(p, bob, Math.min(1, p.hitFlash / 0.22) * 0.6, sx);
-    }
-  }
-  ctx.restore();
-
-  const weaponKind = getClass().weapon;
-  const heldMelee = !dying || deathTime < 0.25;
-  if (weaponKind === 'blade') {
-    if (heldMelee) drawKnightSword(p, bob);
-    drawSwordSwoosh();
-  } else if (weaponKind === 'axes') {
-    if (heldMelee) drawBerserkerAxes(p, bob);
-    drawAxeSwoosh();
+  drawPlayerGroundShadow(p);
+  const cls = p.classId || gameState.currentClass;
+  const gunClass = cls === 'gunslinger' || cls === 'sniper' || cls === 'tech';
+  const recoil = gunClass ? 4 * Math.min(1, Math.max(0, (p.gunRecoilTimer || 0) / 0.14)) : 0;
+  const aim = Number(p.gunRecoilAngle) || 0;
+  const spriteX = p.x - Math.cos(aim) * recoil;
+  const spriteY = p.y - (p.z || 0) - Math.sin(aim) * recoil;
+  // The rune sits on the ground even while the character is jumping.
+  if (cls === 'mage') PixelFX.loop(ctx,'arcane/rune-circle',p.x,p.y,game.time,{scale:0.85});
+  let staffTip = null;
+  try {
+    const state = p.animMove && p.attackAnimTimer > 0 ? 'attack' :
+      p.animState === 'dash' ? 'run' : p.animState || 'idle';
+    if (pixelCharacters) pixelCharacters.draw(ctx, cls, state, spriteX, spriteY, p.angle, game.time,
+      pixelSkin(p), { player:true, scale:1.4, move:p.animMove, animTime:p.animTime,
+        onStaffTip(x,y) { staffTip={x,y}; } });
+  } catch (_) {}
+  if (cls === 'mage' && staffTip) {
+    // Arcane orb's authored center is 52 native pixels above its origin.
+    PixelFX.loop(ctx,'arcane/arcane-orb',staffTip.x,staffTip.y,game.time,
+      {scale:0.18,offsetY:-52*96/136});
+  } else if (cls === 'knight') {
+    PixelFX.loop(ctx,'holy/halo',spriteX,spriteY,game.time,{scale:1.05});
   }
 }
 
@@ -23577,280 +22922,63 @@ function drawWorldBoundary(camX, camY, viewportW, viewportH) {
   ctx.restore();
 }
 
-function drawGround() {
-  const z = ZONES[gameState.currentZone];
-  const tileSize = GROUND_TILE_SIZE;
-  const camX = Number.isFinite(Number(game.cam.x)) ? Number(game.cam.x) : 0;
-  const camY = Number.isFinite(Number(game.cam.y)) ? Number(game.cam.y) : 0;
-  const viewportW = viewW();
-  const viewportH = viewH();
-
-  const startTileX = Math.floor(camX / tileSize) - 1;
-  const startTileY = Math.floor(camY / tileSize) - 1;
-  const endTileX = Math.ceil((camX + viewportW) / tileSize) + 1;
-  const endTileY = Math.ceil((camY + viewportH) / tileSize) + 1;
-
-  ctx.fillStyle = groundPatternFor(gameState.currentZone);
-  for (let tileY = startTileY; tileY <= endTileY; tileY++) {
-    for (let tileX = startTileX; tileX <= endTileX; tileX++) {
-      ctx.fillRect(tileX * tileSize, tileY * tileSize, tileSize, tileSize);
-    }
+// A deterministic, seamless 64px stone texture, anchored to world coordinates.
+const floorNoiseCanvas = document.createElement('canvas');
+floorNoiseCanvas.width = floorNoiseCanvas.height = 64;
+const floorNoiseCtx = floorNoiseCanvas.getContext('2d');
+let floorNoisePattern = null;
+if (floorNoiseCtx) {
+  floorNoiseCtx.imageSmoothingEnabled = false;
+  floorNoiseCtx.fillStyle = '#1a1c23'; floorNoiseCtx.fillRect(0,0,64,64);
+  let seed=0x16b17;
+  const next=()=>{ seed=(Math.imul(seed,1664525)+1013904223)>>>0; return seed; };
+  const shades=['#22252d','#11131a','#2a2d36'];
+  for(let i=0;i<110;i++) {
+    const size=(next() >>> 16) & 1 ? 2 : 4;
+    const x=(next()>>>16)%64, y=(next()>>>16)%64;
+    floorNoiseCtx.fillStyle=shades[(next()>>>16)%shades.length];
+    // Wrap blocks at both tile edges rather than clipping the texture.
+    for(const dx of [0,-64]) for(const dy of [0,-64]) floorNoiseCtx.fillRect(x+dx,y+dy,size,size);
   }
-
-  /* subtle zone tint over the same bleeding floor area */
-  ctx.fillStyle = hexToRgba(z.accent, 0.03);
-  ctx.fillRect(
-    startTileX * tileSize,
-    startTileY * tileSize,
-    (endTileX - startTileX + 1) * tileSize,
-    (endTileY - startTileY + 1) * tileSize
-  );
-
-  /* large atmosphere decals on top of the tiles, then the playable border */
-  drawFloorArt();
-  drawWorldBoundary(camX, camY, viewportW, viewportH);
+}
+function drawGround() {
+  const x=Number(game.cam.x)||0, y=Number(game.cam.y)||0;
+  ctx.save(); ctx.imageSmoothingEnabled=false;
+  if (!floorNoisePattern && floorNoiseCtx) floorNoisePattern=ctx.createPattern(floorNoiseCanvas,'repeat');
+  ctx.fillStyle=floorNoisePattern || '#1a1c23';
+  // The caller already applies -camX/-camY, so the pattern stays fixed in world space.
+  ctx.fillRect(Math.floor(x)-64,Math.floor(y)-64,viewW()+128,viewH()+128);
+  ctx.restore(); drawWorldBoundary(x,y,viewW(),viewH());
 }
 
 function drawArenaGround() {
-  for (let i = 0; i < game.arenas.length; i++) {
-    const a = game.arenas[i];
-    if (!a) continue;
-    a.r = arenaRadiusValue(a);
-    const active = a.active;
-    const cleared = a.cleared;
-    const color = cleared ? '#34d399' : (active ? '#f87171' : '#fbbf24');
-    const pulse = active ? (1 + Math.sin(game.time * 4) * 0.02) : (1 + Math.sin(game.time * 1.6 + i) * 0.015);
-
-    const g = ctx.createRadialGradient(a.x, a.y, a.r * 0.15, a.x, a.y, a.r);
-    g.addColorStop(0, hexToRgba(color, cleared ? 0.05 : 0.13));
-    g.addColorStop(0.72, hexToRgba(color, cleared ? 0.03 : 0.07));
-    g.addColorStop(1, hexToRgba(color, 0));
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, TAU); ctx.fill();
-
-    ctx.save();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = hexToRgba(color, cleared ? 0.5 : 0.9);
-    ctx.shadowColor = color;
-    ctx.shadowBlur = cleared ? 8 : 18;
-    ctx.beginPath(); ctx.arc(a.x, a.y, a.r * pulse, 0, TAU); ctx.stroke();
-
-    ctx.lineWidth = 2;
-    ctx.setLineDash([14, 12]);
-    ctx.strokeStyle = hexToRgba(color, cleared ? 0.35 : 0.7);
-    ctx.beginPath();
-    ctx.arc(a.x, a.y, a.r * 0.72 * pulse, game.time * 0.5 + i, game.time * 0.5 + i + TAU);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-
-    /* center sigil */
-    ctx.save();
-    ctx.translate(a.x, a.y);
-    ctx.rotate(game.time * 0.4);
-    ctx.strokeStyle = hexToRgba(color, 0.65);
-    ctx.lineWidth = 2;
-    for (let k = 0; k < 3; k++) {
-      ctx.beginPath();
-      ctx.arc(0, 0, 26, (k / 3) * TAU, (k / 3) * TAU + 1.1);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    if (active && !cleared) {
-      const label = arenaWaveProgressText(a, i);
-      const labelY = a.y - a.r * pulse - 18;
-      ctx.save();
-      ctx.font = '700 13px Rajdhani, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const measured = ctx.measureText ? (ctx.measureText(label) || {}) : {};
-      const labelW = Math.max(120, (Number(measured.width) || label.length * 7) + 22);
-      const labelH = 24;
-      ctx.fillStyle = 'rgba(9,10,15,0.84)';
-      ctx.strokeStyle = 'rgba(248,113,113,0.92)';
-      ctx.lineWidth = 1;
-      ctx.fillRect(a.x - labelW / 2, labelY - labelH / 2, labelW, labelH);
-      ctx.strokeRect(a.x - labelW / 2, labelY - labelH / 2, labelW, labelH);
-      ctx.fillStyle = '#fecdd3';
-      ctx.shadowColor = 'rgba(0,0,0,0.9)';
-      ctx.shadowBlur = 4;
-      ctx.fillText(label, a.x, labelY + 0.5);
-      ctx.restore();
-    }
-
-    if (cleared) {
-      ctx.fillStyle = 'rgba(52,211,153,0.9)';
-      ctx.font = '600 13px Rajdhani, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('CLEARED', a.x, a.y + 5);
+  for (let i=0;i<game.arenas.length;i++) {
+    const a=game.arenas[i];if (!a) continue;
+    a.r=arenaRadiusValue(a);
+    ctx.save();ctx.translate(a.x,a.y);ctx.scale(1,1/0.3);
+    PixelFX.loop(ctx,'arcane/rune-circle',0,0,game.time+i*0.2,{scale:a.r/(46*96/136)});ctx.restore();
+    if (a.active && !a.cleared) {
+      ctx.save();ctx.font='700 13px Rajdhani, sans-serif';ctx.textAlign='center';
+      ctx.fillStyle='#fecdd3';ctx.fillText(arenaWaveProgressText(a,i),a.x,a.y-a.r-18);ctx.restore();
     }
   }
 }
 
 /* ------------------------------ boss arena ring ---------------------------- */
 function drawBossArena() {
-  const t = game.time;
-
-  /* ---- armed ring: a red summoning circle marks where the fight happens --- */
-  const bz = game.bossZone;
-  if (bz) {
-    const pulse = 0.5 + 0.5 * Math.sin(t * 2.4);
-    ctx.save();
-    /* dark red pool so it reads as "the boss zone" from a distance */
-    const pool = ctx.createRadialGradient(bz.x, bz.y, bz.r * 0.12, bz.x, bz.y, bz.r);
-    pool.addColorStop(0, 'rgba(220,38,38,' + (0.05 + 0.05 * pulse).toFixed(3) + ')');
-    pool.addColorStop(0.72, 'rgba(160,20,20,0.05)');
-    pool.addColorStop(1, 'rgba(200,30,30,0)');
-    ctx.fillStyle = pool;
-    ctx.beginPath(); ctx.arc(bz.x, bz.y, bz.r, 0, TAU); ctx.fill();
-
-    ctx.strokeStyle = 'rgba(255,70,70,' + (0.55 + 0.3 * pulse).toFixed(3) + ')';
-    ctx.lineWidth = 3;
-    ctx.shadowColor = 'rgba(255,40,40,0.9)';
-    ctx.shadowBlur = 22;
-    ctx.beginPath(); ctx.arc(bz.x, bz.y, bz.r, 0, TAU); ctx.stroke();
-
-    ctx.lineWidth = 2;
-    ctx.setLineDash([18, 16]);
-    ctx.lineDashOffset = -t * 26;
-    ctx.strokeStyle = 'rgba(255,120,120,0.7)';
-    ctx.beginPath(); ctx.arc(bz.x, bz.y, bz.r * 0.82, 0, TAU); ctx.stroke();
-    ctx.setLineDash([]);
-
-    /* rotating inner sigil */
-    ctx.save();
-    ctx.translate(bz.x, bz.y);
-    ctx.rotate(t * 0.5);
-    ctx.strokeStyle = 'rgba(255,90,90,0.55)';
-    ctx.lineWidth = 2;
-    for (let k = 0; k < 3; k++) {
-      ctx.beginPath();
-      ctx.arc(0, 0, bz.r * 0.46, (k / 3) * TAU, (k / 3) * TAU + 1.25);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    /* central boss-zone beacon: a 60px pulsing red marker at the exact
-       world position (the render camera transform places it on screen) */
-    const beacon = ctx.createRadialGradient(bz.x, bz.y, 4, bz.x, bz.y, 60);
-    beacon.addColorStop(0, 'rgba(255,225,225,' + (0.55 + 0.25 * pulse).toFixed(3) + ')');
-    beacon.addColorStop(0.45, 'rgba(239,68,68,' + (0.34 + 0.2 * pulse).toFixed(3) + ')');
-    beacon.addColorStop(1, 'rgba(185,28,28,0)');
-    ctx.fillStyle = beacon;
-    ctx.shadowColor = 'rgba(255,40,40,0.95)';
-    ctx.shadowBlur = 26;
-    ctx.beginPath(); ctx.arc(bz.x, bz.y, 60, 0, TAU); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,120,120,' + (0.65 + 0.3 * pulse).toFixed(3) + ')';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(bz.x, bz.y, 60, 0, TAU); ctx.stroke();
-
-    ctx.fillStyle = 'rgba(255,190,190,' + (0.6 + 0.35 * pulse).toFixed(3) + ')';
-    ctx.font = '700 15px Cinzel, serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('BOSS ARENA', bz.x, bz.y - bz.r - 20);
-    ctx.restore();
+  const fight=game.bossFight, arena=fight && (fight.active || fight.fade>0) ? fight : game.bossZone;
+  if (arena) {
+    ctx.save();ctx.translate(arena.x,arena.y);ctx.scale(1,1/0.3);
+    PixelFX.loop(ctx,'arcane/rune-circle',0,0,game.time,{scale:arena.r/(46*96/136)});ctx.restore();
   }
-
-  /* ---- locked arena: a burning red boundary the player cannot cross ------- */
-  const f = game.bossFight;
-  if (!f) return;
-  const fade = f.active ? 1 : clamp(f.fade, 0, 1);
-  if (fade <= 0.001) return;
-
-  const pulse = 0.5 + 0.5 * Math.sin(t * 3.1);
-  ctx.save();
-
-  const pool = ctx.createRadialGradient(f.x, f.y, f.r * 0.2, f.x, f.y, f.r);
-  pool.addColorStop(0, 'rgba(120,10,10,0.10)');
-  pool.addColorStop(0.75, 'rgba(180,20,20,0.10)');
-  pool.addColorStop(1, 'rgba(255,60,60,0.16)');
-  ctx.globalAlpha = fade;
-  ctx.fillStyle = pool;
-  ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, TAU); ctx.fill();
-
-  /* the wall of light itself */
-  ctx.shadowColor = 'rgba(255,40,40,1)';
-  ctx.shadowBlur = 30;
-  ctx.strokeStyle = 'rgba(255,64,64,' + (0.75 + 0.25 * pulse).toFixed(3) + ')';
-  ctx.lineWidth = 6 + pulse * 3;
-  ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, TAU); ctx.stroke();
-
-  ctx.shadowBlur = 14;
-  ctx.strokeStyle = 'rgba(255,180,180,' + (0.5 + 0.3 * pulse).toFixed(3) + ')';
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(f.x, f.y, f.r - 7, 0, TAU); ctx.stroke();
-
-  /* inward-facing warning ticks */
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = 'rgba(255,90,90,0.55)';
-  ctx.lineWidth = 2;
-  for (let i = 0; i < 48; i++) {
-    const a = (i / 48) * TAU + t * 0.12;
-    const r0 = f.r - 16 - pulse * 5;
-    const r1 = f.r - 4;
-    ctx.beginPath();
-    ctx.moveTo(f.x + Math.cos(a) * r0, f.y + Math.sin(a) * r0);
-    ctx.lineTo(f.x + Math.cos(a) * r1, f.y + Math.sin(a) * r1);
-    ctx.stroke();
-  }
-  ctx.restore();
 }
 
 function drawPortal() {
-  const p = game.portal;
-  if (!p) return;
-  const t = p.t;
-  const openK = p.open === undefined ? 1 : clamp(p.open, 0, 1);
-  const eased = 1 - Math.pow(1 - openK, 3);
-  const R = p.r * eased;
-  if (R < 1) return;
-
-  /* the flare while it is still opening */
-  if (openK < 1) {
-    ctx.save();
-    ctx.globalAlpha = 1 - openK;
-    const flare = ctx.createRadialGradient(p.x, p.y, 2, p.x, p.y, 240);
-    flare.addColorStop(0, 'rgba(224,242,254,0.9)');
-    flare.addColorStop(0.4, 'rgba(56,189,248,0.45)');
-    flare.addColorStop(1, 'rgba(56,189,248,0)');
-    ctx.fillStyle = flare;
-    ctx.beginPath(); ctx.arc(p.x, p.y, 240, 0, TAU); ctx.fill();
-    ctx.strokeStyle = 'rgba(224,242,254,0.9)';
-    ctx.lineWidth = 3 + 6 * (1 - openK);
-    ctx.beginPath(); ctx.arc(p.x, p.y, 40 + 200 * eased, 0, TAU); ctx.stroke();
-    ctx.restore();
-  }
-
-  const g = ctx.createRadialGradient(p.x, p.y, 6, p.x, p.y, R * 1.9);
-  g.addColorStop(0, 'rgba(224,242,254,0.85)');
-  g.addColorStop(0.3, 'rgba(56,189,248,0.45)');
-  g.addColorStop(0.65, 'rgba(139,92,246,0.22)');
-  g.addColorStop(1, 'rgba(56,189,248,0)');
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.arc(p.x, p.y, R * 1.9, 0, TAU); ctx.fill();
-
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  for (let i = 0; i < 3; i++) {
-    ctx.rotate(t * (0.8 + i * 0.5) * (i % 2 ? -1 : 1));
-    ctx.strokeStyle = i === 0 ? '#ffffff' : (i === 1 ? '#38bdf8' : '#a78bfa');
-    ctx.lineWidth = 3 - i * 0.6;
-    ctx.beginPath();
-    for (let k = 0; k < 3; k++) {
-      const a0 = (k / 3) * TAU;
-      ctx.arc(0, 0, R * (0.55 + i * 0.16), a0, a0 + 1.2);
-    }
-    ctx.stroke();
-  }
-  ctx.restore();
-
-  if (openK >= 0.999) {
-    ctx.fillStyle = 'rgba(224,242,254,0.9)';
-    ctx.font = '600 14px Rajdhani, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('ENTER', p.x, p.y - R - 16);
-  }
+  const portal=game.portal;if(!portal)return;
+  const open=portal.open===undefined?1:clamp(portal.open,0,1);
+  if(open<=0)return;
+  PixelFX.loop(ctx,'arcane/portal',portal.x,portal.y,portal.t,{scale:Math.max(0.05,portal.r*open/(17*96/152))});
+  if(open>=0.999) {ctx.save();ctx.fillStyle='#e0f2fe';ctx.font='600 14px Rajdhani, sans-serif';ctx.textAlign='center';ctx.fillText('ENTER',portal.x,portal.y-portal.r-16);ctx.restore();}
 }
 
 /* ------------------------------- prop art ---------------------------------- */
@@ -24860,161 +23988,47 @@ function drawShadowDagger(b) {
 }
 
 function drawDiscs() {
-  if (!game.discs || !game.discs.length) return;
-  for (let i = 0; i < game.discs.length; i++) {
-    const d = game.discs[i];
-    /* amber glow-trail ghosts behind the spinning disc */
-    for (let gI = 1; gI <= 3; gI++) {
-      ctx.save();
-      ctx.globalAlpha = 0.16 / gI;
-      ctx.strokeStyle = '#d4a017';
-      ctx.lineWidth = 2.4;
-      ctx.shadowColor = '#f5c842';
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      ctx.arc(d.x - d.vx * 0.014 * gI, d.y - d.vy * 0.014 * gI, 12, 0, TAU);
-      ctx.stroke();
-      ctx.restore();
-    }
-    drawEnergyDisc(d.x, d.y, 12, d.spin);
+  for (const d of game.discs || []) {
+    const angle=Math.atan2(d.vy || 0,d.vx || 0);
+    PixelFX.loop(ctx,'projectiles/energy-disc',d.x,d.y,game.time,{angle,scale:1.5});
   }
-  ctx.shadowBlur = 0;
 }
 
 function drawClassFx() {
-  const p = game.player;
-  if (!p) return;
-  /* Death Mark: a violet reticle holds the chosen body */
-  if (p.markT > 0 && p.markTarget) {
-    const m = p.markTarget;
-    const pulse = 1 + 0.08 * Math.sin(game.time * 8);
-    ctx.save();
-    ctx.translate(m.x, m.y);
-    ctx.rotate(game.time * 1.4);
-    ctx.strokeStyle = 'rgba(196,181,253,0.95)';
-    ctx.lineWidth = 2.2;
-    ctx.shadowColor = '#a78bfa';
-    ctx.shadowBlur = 14;
-    ctx.beginPath();
-    for (let i = 0; i < 4; i++) {
-      const a0 = (i / 4) * TAU;
-      ctx.moveTo(Math.cos(a0) * (m.r + 9) * pulse, Math.sin(a0) * (m.r + 9) * pulse);
-      ctx.arc(0, 0, (m.r + 9) * pulse, a0, a0 + 0.7);
-    }
-    ctx.stroke();
-    ctx.restore();
-    ctx.shadowBlur = 0;
-  }
-  /* Rage: a hot red halo that never quite settles */
-  if (p.rageT > 0) {
-    const k = 0.45 + 0.25 * Math.sin(game.time * 12);
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    const g = ctx.createRadialGradient(p.x, p.y, 4, p.x, p.y, 46);
-    g.addColorStop(0, 'rgba(255,120,80,' + (0.55 * k + 0.2).toFixed(3) + ')');
-    g.addColorStop(1, 'rgba(255,60,20,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(p.x, p.y, 46, 0, TAU); ctx.fill();
-    ctx.restore();
-  }
+  const p=game.player;if(!p)return;
+  if(p.markT>0 && p.markTarget) PixelFX.loop(ctx,'shadow/hex-sigil',p.markTarget.x,p.markTarget.y,game.time,{scale:0.8});
+  if(p.rageT>0) PixelFX.loop(ctx,'holy/divine-shield',p.x,p.y-(p.z||0),game.time,{scale:0.8});
 }
 
 function drawBullets() {
-  for (let i = 0; i < game.bullets.length; i++) {
-    const b = game.bullets[i];
-    if (b.kind === 'orb') { drawTimeOrb(b); continue; }
-    if (b.kind === 'dagger') { drawShadowDagger(b); continue; }
-    const a = Math.atan2(b.vy, b.vx);
-    const nova = b.kind === 'nova';
-    const turret = b.kind === 'turret';
-    const storm = b.kind === 'storm';
-    const len = b.r * (storm ? 4.6 : 2.2);
-    const hh = b.r * (storm ? 0.4 : 0.52);
-    ctx.save();
-    ctx.translate(b.x, b.y);
-    ctx.rotate(a);
-    ctx.fillStyle = nova ? '#ffffff' : (turret ? '#fde68a' : (storm ? '#e0fbff' : '#eaf8ff'));
-    ctx.shadowColor = nova ? '#a5f3fc' : (turret ? '#f59e0b' : '#38bdf8');
-    ctx.shadowBlur = nova ? 26 : 16;
-    roundRect(ctx, -len / 2, -hh, len, hh * 2, 3);
-    ctx.fill();
-    ctx.fillStyle = nova ? '#a5f3fc' : (turret ? '#fbbf24' : (storm ? '#a5f3fc' : '#8fe8ff'));
-    roundRect(ctx, -len * 0.28, -hh * 0.46, len * 0.56, hh * 0.92, 2);
-    ctx.fill();
-    ctx.restore();
+  for (const b of game.bullets) {
+    const angle=Math.atan2(b.vy || 0,b.vx || 0);
+    const effect=b.kind==='orb' ? 'arcane/arcane-orb' :
+      b.kind==='sniper' ? 'projectiles/laser-bolt' :
+      b.kind==='dagger' ? 'melee/dagger-flurry' : 'projectiles/bullet-tracer';
+    // The orb is authored above its ground origin; center before rotation.
+    const options={angle,scale:b.kind==='orb' ? 0.55 : 1.0};
+    if (b.kind==='orb') options.offsetY=-52*96/136;
+    PixelFX.loop(ctx,effect,b.x,b.y,game.time,options);
   }
-  ctx.shadowBlur = 0;
-}
-
-/* a slow violet orb with a spinning halo — the chrono mage's homing shot */
-
-/* the chrono mage's homing shot: a small golden clockface circle */
-
-/* the chrono mage's homing shot: a small glowing 8px amber circle */
-function drawTimeOrb(b) {
-  ctx.save();
-  /* short amber streak tail */
-  const tail = ctx.createLinearGradient(b.x - b.vx * 0.06, b.y - b.vy * 0.06, b.x, b.y);
-  tail.addColorStop(0, 'rgba(212,160,23,0)');
-  tail.addColorStop(1, 'rgba(212,160,23,0.55)');
-  ctx.strokeStyle = tail;
-  ctx.lineWidth = 5;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(b.x - b.vx * 0.06, b.y - b.vy * 0.06);
-  ctx.lineTo(b.x, b.y);
-  ctx.stroke();
-  /* soft amber glow */
-  const R = 13 + 1.5 * Math.sin(game.time * 9 + (b.spin || 0));
-  const g = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, R);
-  g.addColorStop(0, 'rgba(255,240,190,0.95)');
-  g.addColorStop(0.45, 'rgba(245,200,66,0.85)');
-  g.addColorStop(1, 'rgba(212,160,23,0)');
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, TAU); ctx.fill();
-  /* the 8px amber circle itself */
-  ctx.shadowColor = '#f5c842';
-  ctx.shadowBlur = 12;
-  const c = ctx.createRadialGradient(b.x - 2, b.y - 2, 0.5, b.x, b.y, 8);
-  c.addColorStop(0, '#fff6d8');
-  c.addColorStop(0.6, '#f5c842');
-  c.addColorStop(1, '#d4a017');
-  ctx.fillStyle = c;
-  ctx.beginPath(); ctx.arc(b.x, b.y, 8, 0, TAU); ctx.fill();
-  ctx.restore();
 }
 
 function drawBeams() {
-  for (let i = 0; i < game.beams.length; i++) {
-    const b = game.beams[i];
-    const k = 1 - b.life / b.maxLife;
-    const w = b.width * (0.55 + 0.45 * k);
-    ctx.save();
-    ctx.globalAlpha = Math.max(0, k);
-    ctx.lineCap = 'round';
-    ctx.shadowColor = b.colour;
-    ctx.shadowBlur = 26;
-    ctx.strokeStyle = b.colour;
-    ctx.lineWidth = w;
-    ctx.beginPath();
-    ctx.moveTo(b.x1, b.y1);
-    ctx.lineTo(b.x2, b.y2);
-    ctx.stroke();
-    ctx.strokeStyle = b.core;
-    ctx.lineWidth = Math.max(1.6, w * 0.3);
-    ctx.shadowBlur = 12;
-    ctx.beginPath();
-    ctx.moveTo(b.x1, b.y1);
-    ctx.lineTo(b.x2, b.y2);
-    ctx.stroke();
-    /* muzzle bloom */
-    const g = ctx.createRadialGradient(b.x1, b.y1, 2, b.x1, b.y1, w * 2.2);
-    g.addColorStop(0, 'rgba(255,255,255,0.95)');
-    g.addColorStop(0.5, b.colour);
-    g.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(b.x1, b.y1, w * 2.2, 0, TAU); ctx.fill();
-    ctx.restore();
+  for(const beam of game.beams) {
+    const dx=beam.x2-beam.x1,dy=beam.y2-beam.y1, length=Math.hypot(dx,dy);
+    const angle=Math.atan2(dy,dx);
+    if(beam.kind==='player-sniper') {
+      const distance=800*Math.min(1,beam.life/beam.maxLife);
+      PixelFX.loop(ctx,'projectiles/laser-bolt',beam.x1+Math.cos(angle)*distance,beam.y1+Math.sin(angle)*distance,game.time,{angle,scale:1.5});
+      continue;
+    }
+    // Tile a capped number of cached PixelFX bolts over the visible beam.
+    const steps=Math.min(45,Math.max(1,Math.ceil(length/80)));
+    for(let i=0;i<=steps;i++) {
+      const x=beam.x1+dx*i/steps,y=beam.y1+dy*i/steps;
+      if(x<game.cam.x-100||x>game.cam.x+viewW()+100||y<game.cam.y-100||y>game.cam.y+viewH()+100)continue;
+      PixelFX.loop(ctx,'projectiles/laser-bolt',x,y,game.time,{angle,scale:1});
+    }
   }
 }
 
@@ -25089,387 +24103,70 @@ function drawRift() {
 
 
 function drawClassAbilities() {
-  for (let i = 0; i < game.playerMines.length; i++) {
-    const m = game.playerMines[i];
-    ctx.save();
-    ctx.translate(m.x, m.y);
-    ctx.fillStyle = '#3f3f46';
-    ctx.beginPath(); ctx.arc(0, 0, 10 * m.arm, 0, TAU); ctx.fill();
-    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(0, 0, 10 * m.arm, 0, TAU); ctx.stroke();
-    ctx.fillStyle = Math.sin(game.time * 12) > 0 ? '#f87171' : '#7f1d1d';
-    ctx.beginPath(); ctx.arc(0, 0, 3, 0, TAU); ctx.fill();
-    ctx.restore();
-  }
-  for (let i = 0; i < game.classFx.length; i++) {
-    const fx = game.classFx[i];
-    const alpha = Math.min(1, fx.t / Math.max(0.001, fx.maxT) * 2);
-    if (fx.type === 'smoke' || fx.type === 'poison') {
-      ctx.save();
-      ctx.globalAlpha = 0.18 * alpha;
-      ctx.fillStyle = fx.type === 'smoke' ? '#cbd5e1' : '#86efac';
-      ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.r, 0, TAU); ctx.fill();
-      ctx.restore();
-    } else if (fx.type === 'familiar') {
-      ctx.save();
-      ctx.fillStyle = '#c4b5fd'; ctx.shadowColor = '#a78bfa'; ctx.shadowBlur = 12;
-      ctx.beginPath(); ctx.arc(fx.x, fx.y, 8, 0, TAU); ctx.fill();
-      ctx.restore();
-    } else if (fx.type === 'drone') {
-      ctx.save();
-      ctx.translate(fx.x, fx.y);
-      ctx.fillStyle = '#6ee7b7'; ctx.shadowColor = '#34d399'; ctx.shadowBlur = 8;
-      ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(6, 5); ctx.lineTo(-6, 5); ctx.closePath(); ctx.fill();
-      ctx.restore();
-    }
+  for(const mine of game.playerMines) PixelFX.loop(ctx,'sci-fi/energy-core',mine.x,mine.y,game.time,{scale:Math.max(0.1,0.45*mine.arm)});
+  for(const fx of game.classFx) {
+    const effect=fx.type==='familiar'?'critters/wisp':fx.type==='drone'?'critters/eyeball':'arcane/rune-circle';
+    PixelFX.loop(ctx,effect,fx.x,fx.y,game.time,{scale:fx.type==='smoke'||fx.type==='poison'?Math.max(0.2,fx.r/(46*96/136)):0.6});
   }
 }
 
 /* ------------------------------ turrets ------------------------------------ */
 function drawTurrets() {
-  for (let i = 0; i < game.turrets.length; i++) {
-    const t = game.turrets[i];
-    const ttl = t.life / t.maxLife;
-    const pulse = 0.6 + 0.4 * Math.sin(game.time * 8);
-
-    /* footprint glow + range hint */
-    ctx.save();
-    ctx.globalAlpha = 0.5;
-    ctx.fillStyle = 'rgba(251,191,36,0.16)';
-    ctx.beginPath(); ctx.ellipse(t.x, t.y + 12, 24, 9, 0, 0, TAU); ctx.fill();
-    ctx.restore();
-
-    /* legs */
-    ctx.save();
-    ctx.strokeStyle = '#475569';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    for (let k = 0; k < 3; k++) {
-      const a = -Math.PI / 2 + k * (TAU / 3) + 0.4;
-      ctx.beginPath();
-      ctx.moveTo(t.x, t.y + 2);
-      ctx.lineTo(t.x + Math.cos(a) * 15, t.y + 8 + Math.sin(a) * 9);
-      ctx.stroke();
+  for(const turret of game.turrets) {
+    PixelFX.loop(ctx,'sci-fi/energy-core',turret.x,turret.y,game.time,{scale:0.8});
+    if(turret.maxHp && turret.hp<turret.maxHp) {
+      ctx.save();ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(turret.x-16,turret.y-26,32,4);
+      ctx.fillStyle='#6ee7b7';ctx.fillRect(turret.x-16,turret.y-26,32*clamp(turret.hp/turret.maxHp,0,1),4);ctx.restore();
     }
-    ctx.restore();
-
-    /* base */
-    ctx.fillStyle = '#1f2937';
-    roundRect(ctx, t.x - 11, t.y - 8, 22, 18, 5);
-    ctx.fill();
-    ctx.strokeStyle = '#64748b';
-    ctx.lineWidth = 1.4;
-    ctx.stroke();
-
-    /* head */
-    ctx.save();
-    ctx.translate(t.x, t.y - 2);
-    ctx.rotate(t.angle);
-    ctx.fillStyle = '#334155';
-    roundRect(ctx, -7, -7, 15, 14, 4);
-    ctx.fill();
-    ctx.strokeStyle = '#94a3b8';
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-    /* barrel */
-    ctx.fillStyle = '#94a3b8';
-    roundRect(ctx, 7, -2.4, 16, 4.8, 2);
-    ctx.fill();
-    ctx.fillStyle = '#fbbf24';
-    ctx.shadowColor = '#f59e0b';
-    ctx.shadowBlur = 12;
-    ctx.fillRect(20, -1.8, 3.4, 3.6);
-    ctx.restore();
-
-    /* core light */
-    ctx.save();
-    ctx.shadowColor = '#fbbf24';
-    ctx.shadowBlur = 18;
-    ctx.fillStyle = 'rgba(253,230,138,' + (0.55 + 0.35 * pulse).toFixed(3) + ')';
-    ctx.beginPath(); ctx.arc(t.x, t.y - 2, 3.6, 0, TAU); ctx.fill();
-    ctx.restore();
-
-    /* turret health (Reinforced Frame) */
-    if (t.maxHp && t.hp < t.maxHp) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(0,0,0,0.55)';
-      ctx.fillRect(t.x - 16, t.y - 26, 32, 4);
-      ctx.fillStyle = '#6ee7b7';
-      ctx.fillRect(t.x - 16, t.y - 26, 32 * clamp(t.hp / t.maxHp, 0, 1), 4);
-      ctx.restore();
-    }
-
-    /* remaining life arc */
-    ctx.save();
-    ctx.strokeStyle = 'rgba(251,191,36,0.85)';
-    ctx.lineWidth = 2.2;
-    ctx.beginPath();
-    ctx.arc(t.x, t.y + 2, 22, -Math.PI / 2, -Math.PI / 2 + TAU * ttl);
-    ctx.stroke();
-    ctx.restore();
   }
 }
 
 /* ------------------------------ time bombs --------------------------------- */
 function drawBombs() {
-  for (let i = 0; i < game.bombs.length; i++) {
-    const b = game.bombs[i];
-    const urgent = b.landed ? clamp(1 - b.t / 2, 0, 1) : 0;
-    const blink = 0.5 + 0.5 * Math.sin(game.time * (10 + urgent * 40));
-
-    /* danger ring on the ground once it is stuck */
-    if (b.landed) {
-      ctx.save();
-      ctx.globalAlpha = 0.22 + 0.2 * blink;
-      ctx.fillStyle = 'rgba(251,146,60,0.5)';
-      ctx.beginPath(); ctx.ellipse(b.x, b.y + 8, 150, 55, 0, 0, TAU); ctx.fill();
-      ctx.globalAlpha = 0.5 + 0.4 * blink;
-      ctx.strokeStyle = '#fb923c';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([12, 10]);
-      ctx.lineDashOffset = -game.time * 30;
-      ctx.beginPath(); ctx.ellipse(b.x, b.y + 8, 150, 55, 0, 0, TAU); ctx.stroke();
-      ctx.restore();
+  for(const bomb of game.bombs) {
+    if(bomb.landed) {
+      ctx.save();ctx.translate(bomb.x,bomb.y);ctx.scale(1,1/0.3);
+      PixelFX.loop(ctx,'arcane/rune-circle',0,0,game.time,{scale:150/(46*96/136)});ctx.restore();
     }
-
-    /* body */
-    ctx.save();
-    ctx.shadowColor = '#fb923c';
-    ctx.shadowBlur = 12 + 10 * blink;
-    ctx.fillStyle = '#1c1917';
-    ctx.beginPath(); ctx.arc(b.x, b.y - 4, 9, 0, TAU); ctx.fill();
-    ctx.strokeStyle = '#57534e';
-    ctx.lineWidth = 1.6;
-    ctx.stroke();
-    /* core light */
-    ctx.fillStyle = 'rgba(253,186,116,' + (0.55 + 0.45 * blink).toFixed(3) + ')';
-    ctx.beginPath(); ctx.arc(b.x, b.y - 4, 3.4, 0, TAU); ctx.fill();
-    /* spinning fuse band */
-    ctx.strokeStyle = 'rgba(251,146,60,0.9)';
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    ctx.arc(b.x, b.y - 4, 11.5, b.spin, b.spin + 2.2);
-    ctx.stroke();
-    ctx.restore();
+    PixelFX.loop(ctx,'sci-fi/energy-core',bomb.x,bomb.y,game.time,{scale:0.5});
   }
 }
 
+const ENEMY_PLASMA_PALETTE = ['#280812','#5b1020','#a31b2c','#ec3044','#ff7962','#ffc7a2','#fff4df','#ffffff'];
 function drawEnemyBullets() {
-  for (let i = 0; i < game.enemyBullets.length; i++) {
-    const b = game.enemyBullets[i];
-    if (b.kind === 'arrow') {
-      const a = Math.atan2(b.vy, b.vx);
-      ctx.save();
-      ctx.translate(b.x, b.y);
-      ctx.rotate(a);
-      ctx.fillStyle = '#fbbf24';
-      ctx.fillRect(-9, -1.6, 18, 3.2);
-      ctx.fillStyle = '#fde68a';
-      ctx.beginPath();
-      ctx.moveTo(9, 0); ctx.lineTo(3, -4); ctx.lineTo(3, 4);
-      ctx.closePath(); ctx.fill();
-      ctx.restore();
-    } else if (b.kind === 'orb') {
-      const g = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, b.r * 2.4);
-      g.addColorStop(0, 'rgba(233,213,255,0.95)');
-      g.addColorStop(0.45, 'rgba(168,85,247,0.65)');
-      g.addColorStop(1, 'rgba(168,85,247,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2.4, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#f5e8ff';
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.5, 0, TAU); ctx.fill();
-    } else if (b.kind === 'cannon') {
-      const g = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, b.r * 2);
-      g.addColorStop(0, 'rgba(253,230,138,0.9)');
-      g.addColorStop(0.5, 'rgba(245,158,11,0.55)');
-      g.addColorStop(1, 'rgba(245,158,11,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#1f2937';
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
-      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
-    } else if (b.kind === 'poison') {
-      const g = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, b.r * 2.2);
-      g.addColorStop(0, 'rgba(220,252,231,0.9)');
-      g.addColorStop(0.5, 'rgba(34,197,94,0.6)');
-      g.addColorStop(1, 'rgba(34,197,94,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2.2, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#bbf7d0';
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.55, 0, TAU); ctx.fill();
-    } else if (b.kind === 'wall') {
-      ctx.save();
-      ctx.translate(b.x, b.y);
-      ctx.rotate(b.spin);
-      ctx.globalAlpha = clamp(b.life, 0, 1) * 0.95;
-      ctx.fillStyle = 'rgba(168,85,247,0.35)';
-      ctx.fillRect(-b.r, -b.r, b.r * 2, b.r * 2);
-      ctx.strokeStyle = '#d8b4fe';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(-b.r, -b.r, b.r * 2, b.r * 2);
-      ctx.restore();
-      ctx.globalAlpha = 1;
-    } else if (b.kind === 'spear') {
-      const a = Math.atan2(b.vy, b.vx);
-      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(a);
-      ctx.fillStyle = '#a16207'; ctx.fillRect(-16, -1.4, 22, 2.8);
-      ctx.fillStyle = '#fbbf24';
-      ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(6, -4); ctx.lineTo(6, 4); ctx.closePath(); ctx.fill();
-      ctx.restore();
-    } else if (b.kind === 'shuriken') {
-      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.spin * 6);
-      ctx.fillStyle = '#cbd5e1';
-      for (let k = 0; k < 4; k++) {
-        ctx.rotate(Math.PI / 2);
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(7, -2.4); ctx.lineTo(9, 0); ctx.closePath(); ctx.fill();
-      }
-      ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(0, 0, 1.6, 0, TAU); ctx.fill();
-      ctx.restore();
-    } else if (b.kind === 'pellet') {
-      ctx.fillStyle = '#fb923c'; ctx.shadowColor = '#f97316'; ctx.shadowBlur = 8;
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.8, 0, TAU); ctx.fill();
-      ctx.shadowBlur = 0;
-    } else if (b.kind === 'laser') {
-      const a = Math.atan2(b.vy, b.vx);
-      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(a);
-      ctx.fillStyle = 'rgba(248,113,113,0.35)'; ctx.fillRect(-18, -3, 26, 6);
-      ctx.fillStyle = '#fca5a5'; ctx.fillRect(-14, -1.4, 22, 2.8);
-      ctx.fillStyle = '#fff'; ctx.fillRect(-6, -0.8, 8, 1.6);
-      ctx.restore();
-    } else if (b.kind === 'plasma') {
-      const g = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, b.r * 2.6);
-      g.addColorStop(0, 'rgba(224,242,254,0.95)');
-      g.addColorStop(0.45, 'rgba(56,189,248,0.7)');
-      g.addColorStop(1, 'rgba(56,189,248,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2.6, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#f0f9ff'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.5, 0, TAU); ctx.fill();
-    } else if (b.kind === 'rocket') {
-      const a = Math.atan2(b.vy, b.vx);
-      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(a);
-      ctx.fillStyle = '#e2e8f0'; ctx.fillRect(-8, -3, 14, 6);
-      ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.moveTo(6, -3); ctx.lineTo(11, 0); ctx.lineTo(6, 3); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#fb923c';
-      ctx.beginPath(); ctx.ellipse(-9, 0, 5 + Math.sin(b.life * 40) * 1.5, 2.4, 0, 0, TAU); ctx.fill();
-      ctx.restore();
-    } else if (b.kind === 'acid') {
-      ctx.fillStyle = 'rgba(74,222,128,0.3)';
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 1.9, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#4ade80'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.9, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#dcfce7'; ctx.beginPath(); ctx.arc(b.x - 1, b.y - 1, b.r * 0.35, 0, TAU); ctx.fill();
-    } else if (b.kind === 'hex') {
-      const g = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, b.r * 2.5);
-      g.addColorStop(0, 'rgba(204,251,241,0.95)');
-      g.addColorStop(0.42, 'rgba(45,212,191,0.72)');
-      g.addColorStop(1, 'rgba(20,184,166,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2.5, 0, TAU); ctx.fill();
-      ctx.save();
-      ctx.translate(b.x, b.y);
-      ctx.rotate(b.spin * 4);
-      ctx.strokeStyle = '#99f6e4'; ctx.lineWidth = 1.4;
-      for (let k = 0; k < 4; k++) {
-        const a = (k / 4) * TAU;
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * b.r, Math.sin(a) * b.r); ctx.stroke();
-      }
-      ctx.beginPath(); ctx.arc(0, 0, b.r * 0.55, 0, TAU); ctx.stroke();
-      ctx.restore();
-      ctx.fillStyle = '#f0fdfa';
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.34, 0, TAU); ctx.fill();
-    } else {
-      /* shock: min 7px glowing crimson core, amber outer halo, motion tail */
-      const core = Math.max(7, b.r);
-      const tail = Math.atan2(b.vy, b.vx);
-      ctx.save();
-      ctx.translate(b.x, b.y);
-      ctx.rotate(tail);
-      /* motion tail */
-      ctx.fillStyle = 'rgba(239,68,68,0.35)';
-      ctx.beginPath(); ctx.moveTo(-core - 8, -2); ctx.lineTo(-core, 0); ctx.lineTo(-core - 8, 2); ctx.closePath(); ctx.fill();
-      /* amber outer halo */
-      ctx.fillStyle = 'rgba(245,158,11,0.32)';
-      ctx.beginPath(); ctx.arc(0, 0, core + 7, 0, TAU); ctx.fill();
-      /* glowing crimson core */
-      ctx.fillStyle = '#fca5a5';
-      ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 12;
-      ctx.beginPath(); ctx.arc(0, 0, core, 0, TAU); ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.restore();
-    }
+  for (const b of game.enemyBullets) {
+    // Upstream missile animates its own flight. Compensate for its authored
+    // path so the glowing head stays on the actual physics/collision point.
+    const phase=0.3+(((game.time+(b.spin || 0))%0.45)+0.45)%0.45;
+    const progress=phase/1.9, t=Math.floor(progress*20)*1.9/20;
+    const u=clamp((t-0.2)/0.62,0,1), ratio=96/208;
+    const ox=(112*(1-Math.cos(Math.PI*u))/2+Math.sin(Math.PI*u)*6)*ratio;
+    const oy=(-26+Math.sin(u*TAU*1.5)*9*Math.sin(u*Math.PI))*ratio;
+    PixelFX.loop(ctx,'projectiles/magic-missile',b.x,b.y,game.time,{
+      angle:Math.atan2(b.vy || 0,b.vx || 0),scale:1.5,palette:ENEMY_PLASMA_PALETTE,
+      progress,offsetX:ox,offsetY:oy
+    });
   }
 }
 
 function drawGems() {
-  for (let i = 0; i < game.gemsList.length; i++) {
-    const g = game.gemsList[i];
-    const pulse = 1 + Math.sin(g.t * 5) * 0.12;
-    ctx.save();
-    ctx.translate(g.x, g.y);
-    ctx.scale(pulse, pulse);
-    ctx.fillStyle = '#a855f7';
-    ctx.shadowColor = '#a855f7';
-    ctx.shadowBlur = 16;
-    ctx.beginPath();
-    ctx.moveTo(0, -9); ctx.lineTo(6, 0); ctx.lineTo(0, 9); ctx.lineTo(-6, 0);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#e9d5ff';
-    ctx.beginPath();
-    ctx.moveTo(0, -5); ctx.lineTo(3, 0); ctx.lineTo(0, 5); ctx.lineTo(-3, 0);
-    ctx.closePath(); ctx.fill();
-    ctx.restore();
-  }
-  ctx.shadowBlur = 0;
+  for (const gem of game.gemsList) PixelFX.loop(ctx,'pickups/gem-spin',gem.x,gem.y,gem.t,{scale:0.5});
 }
 
 function drawParticles() {
-  for (let i = 0; i < game.particles.length; i++) {
-    const p = game.particles[i];
-    const a = clamp(1 - p.life / p.maxLife, 0, 1);
-    if (p.ring) {
-      ctx.save();
-      ctx.globalAlpha = a * 0.75;
-      ctx.strokeStyle = p.color;
-      ctx.lineWidth = 3 + 4 * a;
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.stroke();
-      ctx.restore();
-      continue;
-    }
-    if (p.shard) {
-      const ang = Math.atan2(p.vy, p.vx);
-      const len = p.size * (0.35 + a * 0.75);
-      ctx.save();
-      ctx.globalAlpha = a * 0.92;
-      ctx.translate(p.x, p.y);
-      ctx.rotate(ang);
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.moveTo(len * 1.8, 0);
-      ctx.lineTo(0, len * 0.5);
-      ctx.lineTo(-len * 1.2, 0);
-      ctx.lineTo(0, -len * 0.5);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-      continue;
-    }
-    ctx.globalAlpha = a;
-    ctx.fillStyle = p.color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size * (0.4 + a * 0.7), 0, TAU);
-    ctx.fill();
+  // Limit cosmetic particles to keep large swarms affordable; text stays UI.
+  const start=Math.max(0,game.particles.length-64);
+  for(let i=start;i<game.particles.length;i++) {
+    const particle=game.particles[i];
+    const progress=clamp(particle.life/Math.max(0.001,particle.maxLife),0,0.999);
+    PixelFX.loop(ctx,particle.ring?'impacts/ground-slam':'impacts/hit-spark',particle.x,particle.y,game.time,
+      {progress,scale:particle.ring?0.9:0.3});
   }
-  ctx.globalAlpha = 1;
-
-  for (let i = 0; i < game.texts.length; i++) {
-    const t = game.texts[i];
-    const a = clamp(1 - t.life / t.maxLife, 0, 1);
-    ctx.globalAlpha = a;
-    ctx.fillStyle = t.color;
-    ctx.font = '700 ' + (t.size || 15) + 'px Rajdhani, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(t.text, t.x, t.y);
+  for(const text of game.texts) {
+    ctx.save();ctx.globalAlpha=clamp(1-text.life/text.maxLife,0,1);ctx.fillStyle=text.color;
+    ctx.font='700 '+(text.size||15)+'px Rajdhani, sans-serif';ctx.textAlign='center';
+    ctx.fillText(text.text,text.x,text.y);ctx.restore();
   }
-  ctx.globalAlpha = 1;
 }
 
 /* ------------------------------ ambient weather ---------------------------- */
@@ -25765,8 +24462,7 @@ function drawMinimap() {
   mmCtx.fillStyle = 'rgba(4,7,12,0.92)';
   mmCtx.fillRect(0, 0, size, size);
 
-  /* explored fog of war */
-  mmCtx.drawImage(mmFog, 0, 0);
+  /* Keep navigation markers, but do not paint the accumulated exploration trail. */
 
   /* world border */
   mmCtx.strokeStyle = 'rgba(232,200,116,0.35)';
@@ -25990,6 +24686,7 @@ function explodeBarrel(o, source) {
   if (o.broken) return;
   o.broken = true;
   o.hp = 0;
+  PixelFX.spawn('explosions/barrel-explosion', o.x, o.y, { scale: 1.6 });
   Sound.barrelPop();
   game.shake = Math.max(game.shake, 0.22);
   addScore(25);
@@ -26369,199 +25066,17 @@ function drawBreakables() {
 }
 
 function drawChests() {
-  const t = game.time;
-  for (let i = 0; i < game.chests.length; i++) {
-    const c = game.chests[i];
-    const bob = Math.sin(t * 2 + c.t) * 1.2;
-    ctx.save();
-    ctx.translate(c.x, c.y + bob);
-
-    ctx.fillStyle = 'rgba(0,0,0,0.40)';
-    ctx.beginPath();
-    ctx.ellipse(0, 17 - bob, 23, 8, 0, 0, TAU);
-    ctx.fill();
-
-    if (!c.opened) {
-      const glow = ctx.createRadialGradient(0, 0, 4, 0, 0, 56);
-      glow.addColorStop(0, 'rgba(255,205,110,' + (0.16 + 0.07 * Math.sin(t * 2.6 + c.t)).toFixed(3) + ')');
-      glow.addColorStop(1, 'rgba(255,190,90,0)');
-      ctx.fillStyle = glow;
-      ctx.beginPath(); ctx.arc(0, 0, 56, 0, TAU); ctx.fill();
-
-      /* body */
-      const bg = ctx.createLinearGradient(0, -4, 0, 18);
-      bg.addColorStop(0, '#f0c264');
-      bg.addColorStop(0.6, '#b8871f');
-      bg.addColorStop(1, '#6d4410');
-      ctx.fillStyle = bg;
-      roundRect(ctx, -19, -4, 38, 20, 3);
-      ctx.fill();
-      ctx.strokeStyle = '#3a2405';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      /* lid */
-      const lg = ctx.createLinearGradient(0, -19, 0, -2);
-      lg.addColorStop(0, '#ffe6a1');
-      lg.addColorStop(1, '#c08a2a');
-      ctx.fillStyle = lg;
-      roundRect(ctx, -21, -18, 42, 16, 5);
-      ctx.fill();
-      ctx.strokeStyle = '#3a2405';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      /* iron bands */
-      ctx.fillStyle = 'rgba(58,36,5,0.85)';
-      ctx.fillRect(-13, -18, 4.5, 34);
-      ctx.fillRect(8.5, -18, 4.5, 34);
-
-      /* lock */
-      ctx.fillStyle = '#4b2f08';
-      roundRect(ctx, -6, -8, 12, 13, 2);
-      ctx.fill();
-      ctx.fillStyle = '#ffd772';
-      ctx.beginPath(); ctx.arc(0, -3, 2.6, 0, TAU); ctx.fill();
-      ctx.fillRect(-1.2, -3, 2.4, 5);
-
-      /* sparkle */
-      const sp = 0.5 + 0.5 * Math.sin(t * 3.4 + c.t * 2);
-      ctx.globalAlpha = 0.30 + 0.45 * sp;
-      ctx.fillStyle = '#fff6d8';
-      ctx.beginPath();
-      ctx.moveTo(17, -26); ctx.lineTo(20, -20); ctx.lineTo(17, -14); ctx.lineTo(14, -20);
-      ctx.closePath(); ctx.fill();
-      ctx.globalAlpha = 1;
-    } else {
-      /* opened chest: dark interior, lid thrown back */
-      ctx.fillStyle = 'rgba(40,24,4,0.95)';
-      roundRect(ctx, -19, -2, 38, 18, 3);
-      ctx.fill();
-      ctx.strokeStyle = '#3a2405';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(255,214,122,0.25)';
-      roundRect(ctx, -16.5, 0, 33, 13, 2);
-      ctx.fill();
-
-      ctx.save();
-      ctx.translate(0, -3);
-      ctx.rotate(-1.15);
-      const lg2 = ctx.createLinearGradient(0, -18, 0, 0);
-      lg2.addColorStop(0, '#b08a3a');
-      lg2.addColorStop(1, '#6d4d12');
-      ctx.fillStyle = lg2;
-      roundRect(ctx, -19, -15, 38, 14, 5);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(48,30,4,0.9)';
-      ctx.lineWidth = 1.8;
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    if (c.hitFlash > 0) {
-      ctx.globalAlpha = c.hitFlash / 0.2 * 0.6;
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath(); ctx.arc(0, 0, 34, 0, TAU); ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-    ctx.restore();
-  }
+  for(const chest of game.chests) PixelFX.loop(ctx,'pickups/chest-open',chest.x,chest.y,game.time,
+    {scale:0.9,progress:chest.opened?0.65:0});
 }
 
 function drawPickups() {
-  const t = game.time;
-  for (let i = 0; i < game.pickups.length; i++) {
-    const k = game.pickups[i];
-    const bob = Math.sin(t * 4 + k.t) * 3;
-    ctx.save();
-    ctx.translate(k.x, k.y + bob);
-
-    if (k.kind === 'chip') {
-      /* little gold upgrade chip card */
-      const glow = ctx.createRadialGradient(0, 0, 3, 0, 0, 34);
-      glow.addColorStop(0, 'rgba(255,214,122,0.45)');
-      glow.addColorStop(1, 'rgba(255,214,122,0)');
-      ctx.fillStyle = glow;
-      ctx.beginPath(); ctx.arc(0, 0, 34, 0, TAU); ctx.fill();
-
-      ctx.fillStyle = 'rgba(14,17,26,0.96)';
-      roundRect(ctx, -13, -17, 26, 34, 3);
-      ctx.fill();
-      ctx.strokeStyle = '#e8c874';
-      ctx.lineWidth = 1.6;
-      ctx.stroke();
-
-      ctx.fillStyle = '#ffe6ae';
-      ctx.font = '700 15px Cinzel, serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('⟡', 0, 6);
-
-      ctx.fillStyle = 'rgba(232,200,116,0.65)';
-      ctx.fillRect(-8, -11, 16, 2);
-      ctx.fillRect(-8, 11, 10, 2);
-    } else {
-      /* health orb */
-      const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, 32);
-      glow.addColorStop(0, 'rgba(125,211,252,0.55)');
-      glow.addColorStop(1, 'rgba(125,211,252,0)');
-      ctx.fillStyle = glow;
-      ctx.beginPath(); ctx.arc(0, 0, 32, 0, TAU); ctx.fill();
-
-      const og = ctx.createRadialGradient(-3, -4, 1, 0, 0, 13);
-      og.addColorStop(0, '#f2fdff');
-      og.addColorStop(0.55, '#4cc9ff');
-      og.addColorStop(1, '#1258a0');
-      ctx.fillStyle = og;
-      ctx.beginPath(); ctx.arc(0, 0, 12, 0, TAU); ctx.fill();
-      ctx.strokeStyle = 'rgba(224,242,254,0.85)';
-      ctx.lineWidth = 1.4;
-      ctx.stroke();
-
-      ctx.fillStyle = '#eaf7ff';
-      ctx.fillRect(-3.4, -1.2, 6.8, 2.4);
-      ctx.fillRect(-1.2, -3.4, 2.4, 6.8);
-    }
-    ctx.restore();
-  }
+  for (const item of game.pickups) PixelFX.loop(ctx,item.kind==='chip'?'pickups/power-star':'pickups/heart-pickup',
+    item.x,item.y,game.time+(item.t||0),{scale:0.65});
 }
 
 function drawHiddenSpots() {
-  const t = game.time;
-  for (let i = 0; i < game.hiddenSpots.length; i++) {
-    const h = game.hiddenSpots[i];
-    const grow = clamp(h.t / 0.5, 0, 1);
-    ctx.save();
-    ctx.translate(h.x, h.y);
-
-    const g = ctx.createRadialGradient(0, 0, 4, 0, 0, 62);
-    g.addColorStop(0, 'rgba(253,230,138,' + (0.16 + 0.05 * Math.sin(t * 2 + i)).toFixed(3) + ')');
-    g.addColorStop(1, 'rgba(253,230,138,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(0, 0, 62 * grow, 0, TAU); ctx.fill();
-
-    ctx.strokeStyle = 'rgba(253,230,138,0.35)';
-    ctx.lineWidth = 1.6;
-    ctx.setLineDash([7, 8]);
-    ctx.beginPath(); ctx.arc(0, 0, 34 * grow, 0, TAU); ctx.stroke();
-    ctx.setLineDash([]);
-
-    /* a small pile of gems left exposed by the broken wall */
-    for (let k = 0; k < 4; k++) {
-      const a = (k / 4) * TAU + 0.6;
-      const px = Math.cos(a) * 15;
-      const py = Math.sin(a) * 9 + 3;
-      ctx.fillStyle = '#34d399';
-      ctx.beginPath();
-      ctx.moveTo(px, py - 6); ctx.lineTo(px + 4, py); ctx.lineTo(px, py + 6); ctx.lineTo(px - 4, py);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(209,250,229,0.8)';
-      ctx.beginPath();
-      ctx.moveTo(px, py - 3); ctx.lineTo(px + 2, py); ctx.lineTo(px, py + 3); ctx.lineTo(px - 2, py);
-      ctx.closePath(); ctx.fill();
-    }
-    ctx.restore();
-  }
+  for(const spot of game.hiddenSpots) PixelFX.loop(ctx,'pickups/gem-spin',spot.x,spot.y,game.time,{scale:0.7});
 }
 
 /* =============================================================================
@@ -26656,16 +25171,7 @@ function drawArrowHead(x, y, ang, scale, alpha) {
   ctx.rotate(ang);
   ctx.scale(scale, scale);
 
-  /* soft halo so it reads over any floor */
-  const halo = ctx.createRadialGradient(0, 0, 2, 0, 0, 40);
-  halo.addColorStop(0, 'rgba(255,214,138,' + (0.30 * alpha) + ')');
-  halo.addColorStop(1, 'rgba(255,190,90,0)');
-  ctx.fillStyle = halo;
-  ctx.beginPath(); ctx.arc(0, 0, 40, 0, TAU); ctx.fill();
-
   ctx.globalAlpha = alpha;
-  ctx.shadowColor = 'rgba(255,205,110,0.95)';
-  ctx.shadowBlur = 18;
 
   /* chevron arrow pointing along +x */
   const g = ctx.createLinearGradient(-16, 0, 18, 0);
@@ -26699,7 +25205,6 @@ function drawObjectiveArrows() {
 
   const p = game.player;
   const pulse = 0.5 + 0.5 * Math.sin(game.time * 4.2);
-  const pulseSlow = 0.5 + 0.5 * Math.sin(game.time * 2.1);
 
   const t = targets[0];
   const sx = toScreenX(t.x);
@@ -26712,18 +25217,6 @@ function drawObjectiveArrows() {
   const scale = visible ? 0.76 : (0.92 + 0.16 * pulse);
 
   drawArrowHead(pt.x, pt.y, pt.ang, scale, alpha);
-
-  /* pulsing gold ring behind the arrow */
-  if (!visible) {
-    ctx.save();
-    ctx.globalAlpha = 0.5 * (0.5 + 0.5 * pulseSlow);
-    ctx.strokeStyle = '#ffe0a3';
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    ctx.arc(pt.x, pt.y, 27 + pulse * 4, 0, TAU);
-    ctx.stroke();
-    ctx.restore();
-  }
 
   /* distance readout under the arrow */
   if (!visible && p) {
@@ -27033,33 +25526,21 @@ function drawCrosshair() {
 function drawThreatArcs() {
   const p = game.player;
   if (!p) return;
-  const t = game.time;
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  for (let i = 0; i < game.enemies.length; i++) {
-    const e = game.enemies[i];
+  let nearest = null, best = 90;
+  for (const e of game.enemies) {
     if (!e || e.dead || e.harmless) continue;
-    const d = dist(e.x, e.y, p.x, p.y);
-    const onScreen = enemyOnScreen(e);
-    if (!(d < THREAT_CLOSE_DIST || (d < 700 && !onScreen))) continue;
-    const a = Math.atan2(e.y - p.y, e.x - p.x);
-    const close = d < THREAT_BRIGHT_DIST;
-    const speed = close ? 14 : 7;
-    const bright = close ? 1 : 0.5;
-    const pulse = 0.5 + 0.5 * Math.sin(t * speed);
-    const alpha = (0.2 + 0.5 * pulse) * bright;
-    const arcLen = close ? 1.0 : 0.6;
-    ctx.save();
-    ctx.rotate(a);
-    ctx.strokeStyle = 'rgba(239,68,68,' + alpha.toFixed(3) + ')';
-    ctx.lineWidth = close ? 3 : 2;
-    ctx.shadowColor = '#ef4444';
-    ctx.shadowBlur = close ? 12 : 0;
-    ctx.beginPath();
-    ctx.arc(0, 0, THREAT_RING_RADIUS, -arcLen, arcLen);
-    ctx.stroke();
-    ctx.restore();
+    const dx = e.x - p.x, dy = e.y - p.y;
+    const d = Math.hypot(dx, dy);
+    if (d < best && dx * Math.cos(p.angle) + dy * Math.sin(p.angle) < 0) {
+      nearest = e; best = d;
+    }
   }
+  if (!nearest) return;
+  const angle = Math.atan2(nearest.y - p.y, nearest.x - p.x);
+  ctx.save();
+  ctx.translate(p.x, p.y); ctx.rotate(angle);
+  ctx.fillStyle = 'rgba(239,68,68,0.35)';
+  ctx.beginPath(); ctx.moveTo(42, 0); ctx.lineTo(34, -4); ctx.lineTo(34, 4); ctx.closePath(); ctx.fill();
   ctx.restore();
 }
 
@@ -27130,6 +25611,14 @@ function render() {
 
   drawGround();
   drawArenaGround();
+  if (game.floorArt && game.floorArt.torches) {
+    for (const torch of game.floorArt.torches) {
+      if (torch.x < game.cam.x - 100 || torch.x > game.cam.x + viewW() + 100 ||
+          torch.y < game.cam.y - 100 || torch.y > game.cam.y + viewH() + 100) continue;
+      PixelFX.loop(ctx, 'fire/brazier', torch.x, torch.y, game.time + torch.ph,
+        { scale: 0.8, palette: PixelFX.era(gameState.currentUniverse) });
+    }
+  }
   drawBossArena();
   drawPortal();
   drawObstacles();
@@ -27138,14 +25627,19 @@ function render() {
   drawBossHazards();
   drawClassAbilities();
   drawHiddenSpots();
-  drawFootsteps();
   drawGems();
   drawShards();
   drawChests();
   drawPickups();
   drawBreakables();
   drawRift();
-  for (let i = 0; i < game.enemies.length; i++) drawEnemy(game.enemies[i]);
+  for (let i = 0; i < game.enemies.length; i++) {
+    const e = game.enemies[i];
+    if (e.z > 0) {
+      PixelFX.loop(ctx,'fx/ground-shadow',e.x,e.y,game.time,{scale:Math.max(0.6,e.r/16)});
+      ctx.save(); ctx.translate(0, -e.z); drawEnemy(e); ctx.restore();
+    } else drawEnemy(e);
+  }
   drawBoss();
   drawEnemyBullets();
   drawTurrets();
@@ -27154,10 +25648,10 @@ function render() {
   drawDiscs();
   drawBeams();
   drawParticles();
+  PixelFX.draw(ctx);
   drawPetEntity();
   drawPlayer();
   drawThreatArcs();
-  drawHitIndicator();
   drawDeathImpactRing();
   drawDeathParticles();
   drawDecoy();
@@ -27169,10 +25663,8 @@ function render() {
   ctx.restore();
 
   drawPetAlerts();
-  drawAmbient();
   drawPostFx();
   drawObjectiveArrows();
-  drawArenaWatchdogArrows();
   drawMinimap();
   drawDeathVignette();
   drawTouchAimLaser();
@@ -27246,6 +25738,7 @@ function update(dt) {
   }
 
   updateHud();
+  updateHeightPhysics(sdt);
   updatePlayer(classBuff('eagleEye') > 0 ? dt : sdt);
   updateShards(sdt);
   tickRiftStalkers(sdt);
@@ -27255,6 +25748,7 @@ function update(dt) {
   updateClassKit(sdt);
   updateCamera(sdt);
   updateEnemies(sdt);
+  PixelFX.update(sdt);
   updateTurrets(sdt);
   updateBombs(sdt);
   updateRift(sdt);
@@ -27269,8 +25763,8 @@ function update(dt) {
   updateBossFight(sdt);
   updateBoss(sdt);
   updateBossHazards(sdt);
+  separateEnemies();
   updatePortal(sdt);
-  updateFootsteps(sdt);
   updateParticles(sdt);
   updateFog();
   updateHud();
