@@ -28462,7 +28462,8 @@ const PFX = (function () {
     bytes: 0,
     bakeMs: 0,
     strict: true,
-    audit: { canvas: 0, forbidden: 0, calls: {} }
+    audit: { canvas: 0, forbidden: 0, calls: {}, sanctioned: 0, sanctionedCalls: {} },
+    auditExempt: false
   };
 
   /* --------------------------------------------------------------- palettes */
@@ -28499,14 +28500,29 @@ const PFX = (function () {
     k: '#0e0c14', A: '#e4e6ec', B: '#b6b9c3', C: '#868995', D: '#5c5e6a',
     E: '#6e707c', F: '#4b4d58', G: '#34353f', J: '#2a2b33', m: '#f53cd1'
   };
+  /* The class palettes are a straight remap of the stock 2x actor ramp
+     (DUMMY_PAL in pixelfx/core/actor.js), keyed k A B C D E F G J m, dark to
+     light, with `m` the ember/accent pixel. A is the brightest highlight, J the
+     deepest shadow — so a class reads as ONE colour, not as a grey skeleton. */
   const CLASS_BODY = {
-    knight:    { k: '#070a10', A: '#e6eef7', B: '#bcc8d6', C: '#8d9aab', D: '#65717f', E: '#7b8794', F: '#4b5563', G: '#333b46', J: '#20262e', m: '#d7b25a' },
+    /* Vanguard Knight: dark steel #334155, cold highlight, gold ember */
+    knight:    { k: '#05080c', A: '#8fa0b5', B: '#64748b', C: '#4a596b', D: '#3d4a5a', E: '#334155', F: '#2a3644', G: '#212b37', J: '#161d26', m: '#f0c761' },
+    /* Chrono Mage: astral indigo #312e81 with cyan #06b6d4 highlights */
+    mage:      { k: '#07061a', A: '#e0f2fe', B: '#22d3ee', C: '#0891b2', D: '#3730a3', E: '#312e81', F: '#241f5e', G: '#1b1745', J: '#100e2b', m: '#a5f3fc' },
+    /* Gunslinger: worn leather + brass */
     gunslinger:{ k: '#120a06', A: '#f3dcc0', B: '#d6b58c', C: '#b08962', D: '#8a6444', E: '#97724f', F: '#6b4a33', G: '#4a3224', J: '#2f2018', m: '#e2a83c' },
+    /* Sniper: olive ghillie */
     sniper:    { k: '#080c06', A: '#e6ecd6', B: '#c2cd9f', C: '#9aa979', D: '#77875c', E: '#87966d', F: '#57683f', G: '#3d4b2c', J: '#252f1c', m: '#9fd84a' },
-    mage:      { k: '#0a0714', A: '#dcdcff', B: '#a8a4ee', C: '#7f78d8', D: '#5650b8', E: '#665ec8', F: '#3b348c', G: '#2a2468', J: '#191544', m: '#66e6ff' },
+    /* Berserker: scorched crimson */
     berserker: { k: '#100604', A: '#ffdccf', B: '#f2a48f', C: '#d46c53', D: '#a8422f', E: '#bd5a44', F: '#7d2a1e', G: '#571d16', J: '#350f0c', m: '#ff7043' },
+    /* Shadow: void violet */
     shadow:    { k: '#08060e', A: '#d9cff2', B: '#ab9ad2', C: '#7f6caa', D: '#56467f', E: '#67578a', F: '#3a2f5e', G: '#241c41', J: '#141026', m: '#e879f9' },
+    /* Tech: chrome + teal */
     tech:      { k: '#050f12', A: '#ddfbff', B: '#a8e9f4', C: '#74c6d9', D: '#4798ac', E: '#5babbe', F: '#2f6f80', G: '#1e4b57', J: '#123038', m: '#22d3ee' }
+  };
+  /* what each class holds in its idle stance (only rig weapons exist) */
+  const CLASS_WEAPON = {
+    knight: 'sword', berserker: 'greatsword', shadow: 'dagger', sniper: 'spear'
   };
   /* which skeleton the player's class animates, and what its actions are */
   const CLASS_ACTIONS = {
@@ -28558,6 +28574,10 @@ const PFX = (function () {
   Object.keys(CLASS_ACTIONS).forEach((cls) => {
     const a = CLASS_ACTIONS[cls];
     add('act:' + cls + ':lmb', a.lmb, { kind: 'act', body: CLASS_BODY[cls], palette: a.ramp, scale: 1 });
+    /* the stances the class lives in: an upright idle and a run cycle, both
+       looping, both carrying the class palette (see POSE_ACTS) */
+    add('act:' + cls + ':idle', 'pfx/idle', { kind: 'act', body: CLASS_BODY[cls], palette: a.ramp, window: 2.4, fps: 12, tint: null });
+    add('act:' + cls + ':run', 'pfx/run', { kind: 'act', body: CLASS_BODY[cls], palette: a.ramp, window: 0.5, fps: 18, tint: null });
     /* the secondary performance warms in the background after the dissolve */
     if (a.alt && a.alt !== a.lmb) add('act:' + cls + ':alt', a.alt, { kind: 'act', body: CLASS_BODY[cls], palette: a.ramp, scale: 1, window: 0.9, lazy: true });
   });
@@ -28678,7 +28698,7 @@ const PFX = (function () {
     add('word:' + w.toLowerCase(), 'ui/damage-number', { scale: 1, fps: 16, window: 1.05, opts: { text: w, palette: INKS.steel } });
   });
 
-  const MANIFEST_IDS = Array.from(new Set(MANIFEST.map((d) => d.id)));
+  const MANIFEST_IDS = Array.from(new Set(MANIFEST.map((d) => d.id))).filter((id) => id.indexOf('pfx/') !== 0);
 
   /* ------------------------------------------------------------------ utils */
   const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -28686,13 +28706,17 @@ const PFX = (function () {
     if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => r());
     else setTimeout(r, 0);
   });
+  /* '#rrggbb' -> [r, g, b]. This used to decode the hex as BGR, which meant the
+     class palette remap never matched a single pixel (the actor stayed stock
+     white/grey) and every generated prop and floor tile had its red and blue
+     channels swapped. */
   function hexRgb(h) {
     if (typeof h !== 'string') return null;
     const s = h.replace('#', '');
     const v = s.length === 3 ? s.split('').map((c) => c + c).join('') : s;
     const n = parseInt(v.slice(0, 6), 16);
     if (!Number.isFinite(n)) return null;
-    return [n & 255, (n >> 8) & 255, (n >> 16) & 255];
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
   }
   function packRgb(rgb) { return (rgb[0] | (rgb[1] << 8) | (rgb[2] << 16)) >>> 0; }
 
@@ -28923,7 +28947,10 @@ const PFX = (function () {
   }
 
   async function bakeClip(def, core) {
-    const mod = state.effects[def.id];
+    /* stance clips (act:<class>:idle / :run) are synthesised, not fetched, so
+       they have no module id on the CDN — the class comes from the clip key */
+    const synthetic = def.id.indexOf('pfx/') === 0;
+    const mod = synthetic ? moduleFor(def.id, (def.key || '').split(':')[1] || 'knight') : state.effects[def.id];
     if (!mod) throw new Error('no such effect: ' + def.id);
     const meta = Object.assign({ size: [64, 64], origin: [32, 32], duration: 1, fps: 30 }, mod.meta || {});
     const timing = clipFrames(def, meta);
@@ -29320,7 +29347,10 @@ const PFX = (function () {
 
   const moves = {
     clip: '', t: 0, busy: 0, kind: 'lmb', flip: false, idleT: 0,
-    queue: null, alt: false
+    queue: null, alt: false,
+    /* locomotion: measured from the player's own frame-to-frame displacement,
+       so the stance machine never depends on a field another system may rename */
+    speed: 0, locoT: 0, prevX: null, prevY: null
   };
 
   function playerFacing() {
@@ -29360,8 +29390,18 @@ const PFX = (function () {
     }
     moves.t += dt;
     const clip = clips.get(moves.clip);
-    if (clip && !clip.loop && moves.t > clip.n / clip.fps + 0.15) { moves.clip = ''; moves.t = 0; }
-    if (!moves.clip) { moves.clip = 'act:' + game.player.classId + ':lmb'; moves.t = 0; }
+    if ((clip && !clip.loop && moves.t > clip.n / clip.fps + 0.15) || !clip) { moves.clip = ''; moves.t = 0; }
+    /* locomotion state: no clip means the stance machine owns the body (idle
+       or run), so an attack can never be left standing in its lunge */
+    const p = game.player;
+    if (p) {
+      if (moves.prevX == null) { moves.prevX = p.x; moves.prevY = p.y; }
+      const dx = p.x - moves.prevX, dy = p.y - moves.prevY;
+      moves.prevX = p.x; moves.prevY = p.y;
+      const speed = dt > 0 ? Math.sqrt(dx * dx + dy * dy) / dt : 0;
+      moves.speed = moves.speed == null ? speed : moves.speed + (speed - moves.speed) * Math.min(1, dt * 12);
+    }
+    moves.locoT += dt;
   }
 
   function jump() {
@@ -29422,29 +29462,43 @@ const PFX = (function () {
      plus a skin, a scale and a hover height, so a wave reads as a bestiary and
      never as clones of one sprite.
      ====================================================================== */
+  /* ONE critter per enemy, chosen by the role the enemy plays, not by its
+     universe: a shooter is an eyeball, a body is a slime, a hoverer is a bat,
+     a phased spirit is a ghost. Decided once per enemy (critterFor caches it),
+     so a single enemy can never be drawn as two creatures. */
   const CRITTER_BY_TYPE = {
-    /* rushers */
-    knight: 'frog', archer: 'eyeball', wizard: 'flying-skull', ghost: 'ghost', stalker: 'frog',
-    swarm: 'frog', minion: 'slime', vanguard: 'slime', sniper: 'eyeball', bomber: 'slime',
-    summoner: 'flying-skull', brute: 'slime', trapper: 'eyeball', goblin: 'frog',
-    /* egypt */
-    anubis: 'frog', mummy: 'ghost', scorpion: 'frog', sandshade: 'ghost',
-    /* japan */
-    samurai: 'frog', ninja: 'ghost', oni: 'slime', ronin: 'frog',
-    /* wasteland */
-    raider: 'frog', mutant: 'slime', drone: 'bat', scavengerbot: 'bat',
-    /* space */
-    aliendrone: 'eyeball', voidwraith: 'ghost', mech: 'slime', voidleech: 'eyeball',
-    /* void */
-    shade: 'ghost', timewraith: 'flying-skull', titan: 'slime', echo: 'flying-skull'
+    /* legacy bestiary */
+    knight: 'slime', archer: 'eyeball', wizard: 'eyeball', ghost: 'ghost', stalker: 'slime',
+    /* role field on ENEMY_DEFS */
+    swarm: 'slime', minion: 'slime', vanguard: 'slime', sniper: 'eyeball', bomber: 'slime',
+    summoner: 'eyeball', brute: 'slime', trapper: 'eyeball', goblin: 'slime',
+    /* egypt · japan · wasteland · space · void */
+    anubis: 'slime', mummy: 'ghost', scorpion: 'slime', sandshade: 'ghost',
+    samurai: 'slime', ninja: 'ghost', oni: 'slime', ronin: 'slime',
+    raider: 'slime', mutant: 'slime', drone: 'bat', scavengerbot: 'eyeball',
+    aliendrone: 'eyeball', voidwraith: 'ghost', mech: 'slime', voidleech: 'slime',
+    shade: 'ghost', timewraith: 'ghost', echo: 'ghost', titan: 'slime', voidspawn: 'slime'
   };
+  /** role → critter for a type that is not in the table */
+  function critterOfRole(def) {
+    if (def.role === 'ranged' || def.fire) return 'eyeball';
+    if (def.fly) return 'bat';
+    return 'slime';
+  }
+
   const HOVER = { bat: 26, eyeball: 18, ghost: 14, 'flying-skull': 24, slime: 0, frog: 0 };
 
   function critterFor(e) {
-    if (e.critter) return e.critter;
+    /* ONE critter per enemy, decided once and then only ever re-derived — the
+       type is never re-rolled, so an enemy can not turn into a second creature
+       half way through its life (which is what a stack of two critters was) */
+    if (e.critter) {
+      if (!e.critterKey) e.critterKey = 'critter:' + e.critter + ':' + (e.critterSkin || 'base');
+      if (!e.critterScale) e.critterScale = 1;
+      return e.critter;
+    }
     const def = ENEMY_DEFS[e.type] || {};
-    let c = CRITTER_BY_TYPE[e.type];
-    if (!c) c = def.fly ? 'bat' : def.elite ? 'slime' : e.special ? 'ghost' : 'frog';
+    const c = CRITTER_BY_TYPE[e.type] || critterOfRole(def);
     e.critter = c;
     e.critterSkin = (gameState.currentUniverse === 1 || currentUniverseIsSand()) ? 'sand'
       : gameState.currentUniverse >= 3 ? 'void' : 'base';
@@ -29463,8 +29517,10 @@ const PFX = (function () {
 
   function onEnemySpawn(e) {
     critterFor(e);
-    spawn('spawn.portal', e.x, e.y, { scale: 0.72 * (e.critterScale || 1), layer: 'ground', life: 1.6 });
-    spawn('ink:violet', e.x, e.y, { scale: 0.5, layer: 'ground', life: 0.45 });
+    /* the portal is drawn once, by pfxDrawEnemy, and crossfades into the body.
+       It used to be spawned here as an fx instance ON TOP of that — two big
+       violet vortexes on the same coordinates, which read as extra creatures. */
+    spawn('ink:violet', e.x, e.y, { scale: 0.34, layer: 'ground', life: 0.4 });
   }
 
   function onEnemyDeath(e) {
@@ -29501,6 +29557,73 @@ const PFX = (function () {
   function statusesOf(e) {
     if (!e.statuses) e.statuses = { burning: 0, frozen: 0, poisoned: 0, stunned: 0, electrified: 0, arcane: 0 };
     return e.statuses;
+  }
+
+  /* ---- stances: the idle and run performances ---------------------------
+     pixelfx ships move kits (sword-combo, pistol-shots, …) but no locomotion
+     acts, so the two stances the player spends almost the whole game in are
+     built here from the core pose vocabulary: a looping breath and a four-key
+     run cycle. They bake through exactly the same skeleton and the same class
+     palette as a move kit, which is what keeps the character upright instead
+     of frozen in the first frame of an attack.
+
+     READY (core/poses.js) is the stance every act starts from. It is copied
+     here verbatim because these modules are defined before the core import
+     resolves; stanceFor mixes the live READY in first, then the delta below. */
+  const READY_POSE = { crouch: 3, fx: 11, fy: -21, bx: 9, by: -21, ffx: 7, fbx: -7 };
+  const STANCE_META = {
+    size: [160, 160], origin: [80, 128], loop: true, fps: 30, duration: 2.4,
+    options: { seed: 3 }
+  };
+  const IDLE_MOD = {
+    meta: Object.assign({}, STANCE_META, { name: 'Idle', duration: 2.4 }),
+    act: {
+      /* a breath: the hips settle a pixel, the head nods, the shoulders rise */
+      poses: [
+        [0.0, {}],
+        [0.6, { crouch: 4, fy: -20, by: -20, hy: 0.4 }],
+        [1.2, { crouch: 3, fy: -21, by: -21, hx: 1 }],
+        [1.8, { crouch: 4, fy: -20, by: -20, hy: 0.4 }],
+        [2.4, {}]
+      ]
+    },
+    draw() {}, drawBack() {}
+  };
+  const RUN_MOD = {
+    meta: Object.assign({}, STANCE_META, { name: 'Run', duration: 0.5 }),
+    act: {
+      /* A stride, not a lunge: the feet stay inside the leg's reach (READY is
+         7 px apart, an arm or a leg reaches ~16 px from the hip) so the solver
+         never has to sink the hips to satisfy both of them. Contact, near foot
+         up, pass, far foot up. */
+      poses: [
+        [0.0, { lean: 0.1, ffx: 7, ffy: 0, fbx: -7, fby: 0, fx: 11, fy: -21, bx: 9, by: -21 }],
+        [0.125, { lean: 0.12, ffx: 8, ffy: -3, fbx: -4, fby: 0, fx: 13, fy: -22, bx: 8, by: -20 }],
+        [0.25, { lean: 0.1, ffx: 5, ffy: -1, fbx: -6, fby: -2, fx: 12, fy: -21, bx: 9, by: -21 }],
+        [0.375, { lean: 0.12, ffx: 3, ffy: 0, fbx: -8, fby: -3, fx: 10, fy: -20, bx: 11, by: -22 }],
+        [0.5, { lean: 0.1, ffx: 7, ffy: 0, fbx: -7, fby: 0, fx: 11, fy: -21, bx: 9, by: -21 }]
+      ]
+    },
+    draw() {}, drawBack() {}
+  };
+  /* a class weapon rides in the near hand so the idle silhouette matches the
+     class and cannot pop when the first attack starts */
+  function stanceFor(cls, which) {
+    const base = which === 'run' ? RUN_MOD : IDLE_MOD;
+    const ready = (state.core && state.core.READY) || READY_POSE;
+    const weapon = CLASS_WEAPON[cls];
+    const poses = base.act.poses.map(([t, p]) => {
+      const pose = Object.assign({}, ready, p);
+      if (weapon) Object.assign(pose, { weapon, sa: 1.15 });
+      return [t, pose];
+    });
+    return { meta: base.meta, act: { poses }, draw: base.draw, drawBack: base.drawBack };
+  }
+  /* Module for a clip id, including the two synthetic stances. */
+  function moduleFor(id, cls) {
+    if (id === 'pfx/idle') return stanceFor(cls, 'idle');
+    if (id === 'pfx/run') return stanceFor(cls, 'run');
+    return state.effects[id] || null;
   }
 
   const PFXStatus = {
@@ -29663,17 +29786,29 @@ const PFX = (function () {
     return [Math.max(0, Math.min(255, c[0] * k)) | 0, Math.max(0, Math.min(255, c[1] * k)) | 0, Math.max(0, Math.min(255, c[2] * k)) | 0];
   };
 
+  /* the one floor palette (round 3): base slate with a lighter and a darker
+     speck, nothing else */
+  const FLOOR = { base: '#16181d', light: '#1d2027', dark: '#0f1115' };
+
   const THEMES = [
-    { name: 'village', base: '#1b2a1c', alt: '#243524', line: '#12200f', speck: '#3a4a2e', seam: '#4a5a34', stone: '#3a4038' },
-    { name: 'desert', base: '#4a3a1c', alt: '#584626', line: '#33270f', speck: '#6e5a30', seam: '#8a7040', stone: '#6a5630' },
-    { name: 'dojo', base: '#1c2a24', alt: '#233228', line: '#101c14', speck: '#3a4a3a', seam: '#5a6a4a', stone: '#3a443a' },
-    { name: 'wasteland', base: '#242018', alt: '#2c2820', line: '#14120e', speck: '#4a422e', seam: '#6a5a34', stone: '#3a3630' },
-    { name: 'spaceship', base: '#141c26', alt: '#1a2430', line: '#0a1018', speck: '#2c3a4a', seam: '#2a6a8a', stone: '#26303c' },
-    { name: 'void', base: '#120c1a', alt: '#1a1024', line: '#080510', speck: '#3a2050', seam: '#6a2c8a', stone: '#241834' }
+    /* every universe stands on the same slate (FLOOR.base/light/dark); what
+       changes between them is the props, the light and the weather, not the
+       ground colour — a tinted floor is what turned the village green */
+    { name: 'village', base: FLOOR.base, alt: FLOOR.light, line: FLOOR.dark, speck: FLOOR.light, seam: '#252932', stone: '#3a4038' },
+    { name: 'desert', base: FLOOR.base, alt: FLOOR.light, line: FLOOR.dark, speck: FLOOR.light, seam: '#252932', stone: '#6a5630' },
+    { name: 'dojo', base: FLOOR.base, alt: FLOOR.light, line: FLOOR.dark, speck: FLOOR.light, seam: '#252932', stone: '#3a443a' },
+    { name: 'wasteland', base: FLOOR.base, alt: FLOOR.light, line: FLOOR.dark, speck: FLOOR.light, seam: '#252932', stone: '#3a3630' },
+    { name: 'spaceship', base: FLOOR.base, alt: FLOOR.light, line: FLOOR.dark, speck: FLOOR.light, seam: '#2a6a8a', stone: '#26303c' },
+    { name: 'void', base: FLOOR.base, alt: FLOOR.light, line: FLOOR.dark, speck: FLOOR.light, seam: '#6a2c8a', stone: '#241834' }
   ];
 
-  /* ---- ground: one seamless 128 px tile per universe --------------------- */
+  /* ---- ground: one seamless 128 px tile per universe ---------------------
+     Flat slate, scattered 2x2 pixels, and nothing else: no per-pixel grain, no
+     flagstone courses, no green. The old tile jittered every single pixel by
+     +-7 and drew a 32x16 brick grid, which read as mud at 1:1 and as noise at
+     1.5x — two colours of 2x2 speck is all the texture the floor needs. */
   const groundCache = new Map();
+  const FLOOR_DENSITY = { light: 0.13, dark: 0.11 };
   function groundTile(themeIndex, detail) {
     const key = themeIndex + (detail ? 'd' : '');
     if (groundCache.has(key)) return groundCache.get(key);
@@ -29682,33 +29817,52 @@ const PFX = (function () {
     const cv = document.createElement('canvas');
     cv.width = S; cv.height = S;
     const g = cv.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    if (!detail) {
+      const base = rgba(th.base);
+      const light = rgba(th.alt);
+      const dark = rgba(th.line);
+      const img = g.createImageData(S, S);
+      const d = img.data;
+      for (let i = 0; i < S * S; i++) {
+        d[i * 4] = base[0]; d[i * 4 + 1] = base[1]; d[i * 4 + 2] = base[2]; d[i * 4 + 3] = 255;
+      }
+      for (let cy = 0; cy < S / 2; cy++) {
+        for (let cx = 0; cx < S / 2; cx++) {
+          const r = hash(cx, cy, themeIndex * 31 + 5);
+          let c = null;
+          if (r < FLOOR_DENSITY.dark) c = dark;
+          else if (r > 1 - FLOOR_DENSITY.light) c = light;
+          if (!c) continue;
+          /* one 2x2 block, written straight into the buffer so it stays crisp */
+          for (let py = 0; py < 2; py++) {
+            for (let px = 0; px < 2; px++) {
+              const i = ((cy * 2 + py) * S + (cx * 2 + px)) * 4;
+              d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 255;
+            }
+          }
+        }
+      }
+      g.putImageData(img, 0, 0);
+      groundCache.set(key, cv);
+      return cv;
+    }
+    /* detail layer: a light dusting of the same three colours, and only that */
     const img = g.createImageData(S, S);
     const d = img.data;
-    const base = rgba(th.base), alt = rgba(th.alt), line = rgba(th.line), speck = rgba(th.speck), seam = rgba(th.seam);
-    for (let y = 0; y < S; y++) {
-      for (let x = 0; x < S; x++) {
-        const i = (y * S + x) * 4;
-        const n = hash(x >> 2, y >> 2, themeIndex) * 0.55 + hash(x, y, themeIndex + 9) * 0.45;
-        let c = n > 0.62 ? alt : base;
-        /* flagstone courses */
-        const course = Math.floor(y / 16);
-        const off = (course & 1) * 16;
-        if ((x + off) % 32 === 0 || y % 16 === 0) c = line;
-        if (detail) {
-          /* detail layer: only sparse marks, transparent elsewhere */
-          let a = 0;
-          const r = hash(x, y, themeIndex + 41);
-          if (r > 0.982) { c = speck; a = 210; }
-          else if (r > 0.972) { c = seam; a = 150; }
-          else if (r > 0.965 && (x % 5 === 0 || y % 5 === 0)) { c = line; a = 120; }
-          d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = a;
-          continue;
+    const light = rgba(th.alt), dark = rgba(th.line);
+    for (let cy = 0; cy < S / 2; cy++) {
+      for (let cx = 0; cx < S / 2; cx++) {
+        const r = hash(cx, cy, themeIndex * 17 + 71);
+        if (r < 0.035 || r > 0.975) {
+          const c = r < 0.035 ? dark : light;
+          for (let py = 0; py < 2; py++) {
+            for (let px = 0; px < 2; px++) {
+              const i = ((cy * 2 + py) * S + (cx * 2 + px)) * 4;
+              d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 150;
+            }
+          }
         }
-        const j = (hash(x, y, themeIndex + 3) - 0.5) * 14;
-        d[i] = clamp(c[0] + j, 0, 255);
-        d[i + 1] = clamp(c[1] + j, 0, 255);
-        d[i + 2] = clamp(c[2] + j, 0, 255);
-        d[i + 3] = 255;
       }
     }
     g.putImageData(img, 0, 0);
@@ -30028,22 +30182,50 @@ const PFX = (function () {
     },
     /** the ground under everything */
     drawGround() {
-      const zoom = viewZoom();
-      const camX = game.cam.x, camY = game.cam.y;
-      const vw = W / zoom, vh = H / zoom;
+      /* The camera transform puts one world pixel on viewScale*zoom *device*
+         pixels, which is 0.8 on a 1280-wide viewport at dpr 1: a 128 px tile
+         then covers 102.4 device px, and nearest sampling at a fractional
+         scale drops a row at every tile edge — that is what drew the faint
+         horizontal banding over the floor. So the floor is blitted in device
+         space with every tile edge rounded to a whole pixel: the tiles butt
+         edge to edge, no seams, no shimmer, at any zoom the host picks. */
       const tile = groundTile(this.theme, false);
       const detail = groundTile(this.theme, true);
-      const S = 128;
-      const x0 = Math.floor(camX / S) * S, y0 = Math.floor(camY / S) * S;
-      const x1 = Math.ceil((camX + vw) / S) * S, y1 = Math.ceil((camY + vh) / S) * S;
+      const cv = ctx.canvas;
+      const cw = cv ? cv.width : W, ch = cv ? cv.height : H;
+      const m = (ctx.getTransform && ctx.getTransform()) || { a: viewScaleX, d: viewScaleY, e: 0, f: 0 };
+      const kx = m.a, ky = m.d;
+      if (!(kx > 0.01) || !(ky > 0.01)) return;
+      const wl = -m.e / kx, wr = (cw - m.e) / kx;
+      const wt = -m.f / ky, wb = (ch - m.f) / ky;
+      const S = 128, D = 256;
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.imageSmoothingEnabled = false;
-      for (let y = y0; y < y1; y += S) for (let x = x0; x < x1; x += S) {
-        ctx.drawImage(tile, x, y);
+      for (let x = Math.floor(wl / S) * S; x < wr; x += S) {
+        const dx0 = Math.round(kx * x + m.e);
+        const dx1 = Math.round(kx * (x + S) + m.e);
+        if (dx1 <= 0 || dx0 >= cw) continue;
+        for (let y = Math.floor(wt / S) * S; y < wb; y += S) {
+          const dy0 = Math.round(ky * y + m.f);
+          const dy1 = Math.round(ky * (y + S) + m.f);
+          if (dy1 <= 0 || dy0 >= ch) continue;
+          ctx.drawImage(tile, dx0, dy0, dx1 - dx0, dy1 - dy0);
+        }
       }
-      const D = 256;
-      for (let y = Math.floor(camY / D) * D; y < camY + vh; y += D) for (let x = Math.floor(camX / D) * D; x < camX + vw; x += D) {
-        ctx.drawImage(detail, x, y, D, D);
+      /* the detail layer, same rule, four times the span */
+      for (let x = Math.floor(wl / D) * D; x < wr; x += D) {
+        const dx0 = Math.round(kx * x + m.e);
+        const dx1 = Math.round(kx * (x + D) + m.e);
+        if (dx1 <= 0 || dx0 >= cw) continue;
+        for (let y = Math.floor(wt / D) * D; y < wb; y += D) {
+          const dy0 = Math.round(ky * y + m.f);
+          const dy1 = Math.round(ky * (y + D) + m.f);
+          if (dy1 <= 0 || dy0 >= ch) continue;
+          ctx.drawImage(detail, dx0, dy0, dx1 - dx0, dy1 - dy0);
+        }
       }
+      ctx.restore();
     },
     drawProps() {
       const props = game.obstacles;
@@ -30308,6 +30490,16 @@ const PFX = (function () {
   }
 
   /* the player's skeleton, in the act it is currently performing */
+  /** the clip for a class stance, degrading to the knight stance and finally to
+      the class move clip if a bake was skipped (low-spec) */
+  function stanceKey(p, which) {
+    const k = 'act:' + p.classId + ':' + which;
+    if (clips.has(k)) return k;
+    const d = 'act:knight:' + which;
+    if (clips.has(d)) return d;
+    return 'act:' + p.classId + ':lmb';
+  }
+
   function pfxDrawPlayer() {
     const p = game.player;
     if (!p) return;
@@ -30321,15 +30513,30 @@ const PFX = (function () {
     if (p.trail && p.trail.length) {
       for (let i = 0; i < p.trail.length; i++) {
         const tr = p.trail[i];
-        drawClip(moves.clip || ('act:' + p.classId + ':lmb'), tr.x, tr.y, 0.05,
+        drawClip(stanceKey(p, 'run'), tr.x, tr.y, 0.05,
           { flip: (tr.dir || 1) < 0, alpha: 0.22 * (tr.life || 0.3) / 0.3, scale: CS });
       }
     }
-    const flip = moves.busy > 0 ? moves.flip : playerFacing() < 0;
-    let t = moves.busy > 0 ? moves.t : 0.04 + Math.sin(game.time * 2.2) * 0.008;
-    if (dying) t = Math.min(moves.t, 0.2);
-    let key = moves.clip || ('act:' + p.classId + ':lmb');
-    if (!clips.has(key)) key = 'act:knight:lmb';
+    /* ---- stance machine -------------------------------------------------
+       The body is upright by default: a looping idle while standing, a looped
+       run cycle while moving, and an attack clip ONLY while a move is busy.
+       Before this, an empty clip fell through to `act:<class>:lmb`, so the
+       character stood frozen in the sword raise for the whole game. */
+    const flip = moves.busy > 0 && moves.clip ? moves.flip : playerFacing() < 0;
+    let key, t;
+    if (dying) {
+      key = stanceKey(p, 'idle');
+      t = Math.min(moves.t, 0.2);
+    } else if (moves.clip && (moves.busy > 0 || clips.has(moves.clip))) {
+      /* a move is playing (or its last frame is still fading out) */
+      key = moves.clip;
+      t = moves.t;
+    } else {
+      const running = (moves.speed || 0) > 16;
+      key = stanceKey(p, running ? 'run' : 'idle');
+      t = running ? moves.locoT % 0.5 : moves.locoT % 2.4;
+    }
+    if (!clips.has(key)) key = stanceKey(p, 'idle');
     drawClip(key, p.x, p.y - z, t, { flip, alpha: fade, scale: CS });
     drawStatuses(p, CS);
     if (p.hitFlash > 0) drawClip('impact.flash', p.x, p.y - 18 * CS - z, 0, { scale: 0.75 * CS, alpha: 0.9 });
@@ -30341,41 +30548,93 @@ const PFX = (function () {
     }
   }
 
-  /* an enemy: a critter, its shadow, its ailments, its spawn portal */
+  /* ---- one creature per enemy -------------------------------------------
+     An enemy is ONE pixelfx critter (critterFor picks a single kit and caches
+     it on the entity) plus at most one decor clip per ailment. What used to
+     read as "two critters stacked" was bodies sharing pixels: several enemies
+     at the same coordinates paint into the same 30 px and merge into one mass.
+     So bodies are pushed apart for DRAWING only — a few pixels, eased, capped —
+     and the spawn portal crossfades into the body instead of being replaced by
+     it on a single frame. Simulation, hitboxes and damage never move. */
+  const CROWD_R = 26;      /* px of overlap that triggers a nudge */
+  const CROWD_MAX = 9;     /* the most a sprite may be displaced */
+  const crowd = new WeakMap();
+  let crowdAt = -1;
+  function crowdResolve() {
+    if (game.time - crowdAt < 0.09) return;
+    crowdAt = game.time;
+    const list = game.enemies || [];
+    const n = list.length;
+    for (let i = 0; i < n; i++) {
+      const a = list[i];
+      if (!a || a.dead) continue;
+      let tx = 0, ty = 0;
+      for (let j = 0; j < n; j++) {
+        if (j === i) continue;
+        const b = list[j];
+        if (!b || b.dead) continue;
+        let dx = a.x - b.x, dy = (a.y - b.y) * 1.7;
+        let d2 = dx * dx + dy * dy;
+        if (d2 > CROWD_R * CROWD_R) continue;
+        if (d2 < 1e-4) {
+          /* exact ties get a deterministic direction, so a stack fans out */
+          const ang = i * 2.399963 + j * 0.7;
+          dx = Math.cos(ang); dy = Math.sin(ang); d2 = 1;
+        }
+        const d = Math.sqrt(d2);
+        const push = (CROWD_R - d) / CROWD_R;
+        tx += (dx / d) * push;
+        ty += (dy / d) * push * 0.6;
+      }
+      const len = Math.sqrt(tx * tx + ty * ty);
+      if (len > 1) { tx /= len; ty /= len; }
+      const prev = crowd.get(a) || { x: 0, y: 0 };
+      crowd.set(a, {
+        x: prev.x + (tx * CROWD_MAX - prev.x) * 0.4,
+        y: prev.y + (ty * CROWD_MAX * 0.7 - prev.y) * 0.4
+      });
+    }
+  }
+
   function pfxDrawEnemy(e) {
     if (!e) return;
-    const c = critterFor(e);
+    crowdResolve();
+    const off = crowd.get(e);
+    const x = Math.round(e.x + (off ? off.x : 0));
+    const y = Math.round(e.y + (off ? off.y : 0));
+    critterFor(e);
     const key = e.critterKey;
     const z = e.z || 0;
     /* every critter gets the same global 1.5x as the player */
     const s = (e.critterScale || 1) * (CFG.charScale || 1);
-    const telegraph = e.spawnTelegraph > 0;
-    if (telegraph) {
-      drawClip('spawn.portal', e.x, e.y, 1.6 - e.spawnTelegraph, { scale: 0.7 * s, alpha: 0.95 });
-      return;
+    let bodyIn = 1;
+    if (e.spawnTelegraph > 0) {
+      /* portal holds, then dissolves into the body over the last 0.3 s */
+      const k = clamp(e.spawnTelegraph / 0.3, 0, 1);
+      drawClip('spawn.portal', x, y, 1.6 - e.spawnTelegraph, { scale: 0.7 * s, alpha: 0.95 * k });
+      if (k >= 1) return;
+      bodyIn = 1 - k;
     }
-    drawShadow(e.x, e.y + 2, 26 * s, z, e.invis ? 0.4 : 0.8);
-    const invAlpha = e.invis && e.revealT <= 0 ? 0.22 : 1;
-    const flash = e.hitFlash > 0 ? 1 : 0;
+    const invAlpha = (e.invis && e.revealT <= 0 ? 0.22 : 1) * bodyIn;
     if (e.underground) {
-      drawClip('ink:gold', e.x, e.y, game.time, { scale: 0.5, alpha: 0.35 });
+      drawClip('ink:gold', x, y, game.time, { scale: 0.5, alpha: 0.35 });
       return;
     }
-    drawClip(key, e.x, e.y - z + Math.sin(game.time * 1.6 + e.t) * 0.8, game.time + e.t * 0.55,
+    drawShadow(x, y + 2, 26 * s, z, (e.invis ? 0.4 : 0.8) * bodyIn);
+    drawClip(key, x, y - z + Math.sin(game.time * 1.6 + e.t) * 0.8, game.time + e.t * 0.55,
       { scale: s, alpha: invAlpha, flip: e.dirX < 0 });
     drawStatuses(e, s);
-    if (flash) drawClip('impact.flash', e.x, e.y - 16 * s - z, 0.05, { scale: 0.4 * s, alpha: 0.9 });
-    if (e.shield > 0) drawClip('fx.force-field', e.x, e.y - 8 - z, game.time, { scale: 0.4 * s, alpha: 0.5 });
-    if (e.elite || e.eliteVariant) drawClip('ui.energy-core', e.x, e.y - 30 * s - z, game.time, { scale: 0.28, alpha: 0.4 });
+    if (e.hitFlash > 0) drawClip('impact.flash', x, y - 16 * s - z, 0.05, { scale: 0.4 * s, alpha: 0.9 });
+    if (e.shield > 0) drawClip('fx.force-field', x, y - 8 - z, game.time, { scale: 0.4 * s, alpha: 0.5 });
+    if (e.elite || e.eliteVariant) drawClip('ui.energy-core', x, y - 30 * s - z, game.time, { scale: 0.28, alpha: 0.4 });
     if (e.aimTelegraph > 0) {
       /* the fair-play tell: an exclamation over a body that is about to fire */
-      drawClip('ui.exclaim', e.x, e.y - 46 * s - z, 0.7 - e.aimTelegraph, { scale: 0.62 * s });
+      drawClip('ui.exclaim', x, y - 46 * s - z, 0.7 - e.aimTelegraph, { scale: 0.62 * s });
     }
-    if (e.healthBar) { /* replaced below by the ring pip */ }
     const ratio = clamp(e.hp / Math.max(0.001, e.maxHp), 0, 1);
     if (ratio < 1) {
       const w = 26 * s;
-      drawClip('ui.energy-core', e.x, e.y - 36 * s - z, 0, { scale: 0.16, alpha: 0.9 });
+      drawClip('ui.energy-core', x, y - 36 * s - z, 0, { scale: 0.16, alpha: 0.9 });
       const hp = clips.get('ink:blood');
       if (hp) {
         const full = Math.max(2, Math.round(w));
@@ -30385,7 +30644,7 @@ const PFX = (function () {
         ctx.globalAlpha = 0.85;
         const f = 4;
         ctx.drawImage(hp.canvas, (f % hp.cols) * hp.w, Math.floor(f / hp.cols) * hp.h, hp.w, hp.h,
-          Math.round(e.x - full / 2), Math.round(e.y - 34 * s - z), full, 3);
+          Math.round(x - full / 2), Math.round(y - 34 * s - z), full, 3);
         ctx.restore();
       }
     }
@@ -30781,13 +31040,35 @@ const PFX = (function () {
     if (!gameState.isDying) return;
     drawClip('shadow.eclipse', W / 2, H / 2, game.time, { scale: Math.max(W / 160, H / 144) * 1.4, alpha: 0.35 + 0.25 * deathProgress() });
   }
+  /* The aiming reticle is the ONE sanctioned use of primitives in this
+     renderer: a reticle has to land on the exact cursor pixel, and no sprite
+     can promise that. 2 px arms, a 6 px hollow centre, a 2x2 red pip dead in
+     the middle. Everything else on the battlefield still comes out of pixelfx,
+     and the audit counts this block under `sanctioned`, never `forbidden`. */
   function pfxDrawTacticalCrosshair() {
     if (game.screen !== 'playing' || isPaused) return;
     const m = game.mouse;
-    const firing = game.mouse.down ? 0.75 : 0.5;
-    drawClip('ui.scanner', m.x, m.y, game.time, { scale: 0.34, alpha: firing });
-    drawClip('ink:steel', m.x, m.y, (game.time * 2) % 0.5, { scale: 0.22, alpha: 0.6 });
-    auditActive = false;
+    let mx = m.x, my = m.y;
+    if (typeof touchAim !== 'undefined' && touchAim && touchAim.active) { mx = touchAim.x; my = touchAim.y; }
+    const cx = Math.round(mx), cy = Math.round(my);
+    if (!Number.isFinite(cx) || !Number.isFinite(cy)) return;
+    const GAP = 3;   /* half of the 6 px hole in the middle */
+    const ARM = 7;   /* arm length beyond the hole */
+    ctx.save();
+    ctx.setTransform(viewScaleX, 0, 0, viewScaleY, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+    state.auditExempt = true;
+    ctx.fillStyle = m.down ? '#ffe08a' : '#ffffff';
+    ctx.fillRect(cx - GAP - ARM, cy - 1, ARM, 2);   /* left  */
+    ctx.fillRect(cx + GAP, cy - 1, ARM, 2);         /* right */
+    ctx.fillRect(cx - 1, cy - GAP - ARM, 2, ARM);   /* up    */
+    ctx.fillRect(cx - 1, cy + GAP, 2, ARM);         /* down  */
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(cx - 1, cy - 1, 2, 2);             /* the pip */
+    state.auditExempt = false;
+    ctx.restore();
   }
   function pfxDrawTouchAimLaser() {
     if (typeof touchAim === 'undefined' || !touchAim || !touchAim.active) return;
@@ -30898,8 +31179,14 @@ const PFX = (function () {
       if (typeof orig !== 'function') return;
       host[name] = function () {
         if (auditActive && isBattlefield(this)) {
-          state.audit.forbidden++;
-          state.audit.calls[name] = (state.audit.calls[name] || 0) + 1;
+          if (state.auditExempt) {
+            /* the sanctioned block (crosshair) reports separately */
+            state.audit.sanctioned++;
+            state.audit.sanctionedCalls[name] = (state.audit.sanctionedCalls[name] || 0) + 1;
+          } else {
+            state.audit.forbidden++;
+            state.audit.calls[name] = (state.audit.calls[name] || 0) + 1;
+          }
         }
         return orig.apply(this, arguments);
       };
@@ -31160,11 +31447,13 @@ const PFX = (function () {
       const snap = {
         forbidden: state.audit.forbidden,
         calls: Object.assign({}, state.audit.calls),
+        sanctioned: state.audit.sanctioned,
+        sanctionedCalls: Object.assign({}, state.audit.sanctionedCalls),
         clips: clips.size,
         source: state.source,
         errors: state.errors.slice(0, 12)
       };
-      if (reset) { state.audit.forbidden = 0; state.audit.calls = {}; }
+      if (reset) { state.audit.forbidden = 0; state.audit.calls = {}; state.audit.sanctioned = 0; state.audit.sanctionedCalls = {}; }
       return snap;
     },
     setAudit(on) { state.auditOn = !!on; auditActive = !!on; if (on) installAudit(); },

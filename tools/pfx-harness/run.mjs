@@ -23,6 +23,10 @@ const ROOT = path.resolve(HERE, '../..');
 const HTML = path.join(ROOT, 'index.html');
 const SRC = path.join(ROOT, 'vendor/pixelfx/src');
 const ARGS = process.argv.slice(2);
+/* the audit and the sweep are only meaningful on an installed renderer, so
+   either one implies the boot pass (running `--audit` alone used to measure the
+   host's legacy renderer and report hundreds of thousands of primitives) */
+if ((ARGS.includes('--audit') || ARGS.includes('--sweep')) && !ARGS.includes('--boot')) ARGS.push('--boot');
 const want = (f) => (!ARGS.length || ARGS.includes(f));
 
 const { JSDOM } = await import('jsdom');
@@ -174,6 +178,7 @@ if (want('--audit')) {
   const snap = PFX.audit(false);
   delete c.drawImage;
   say(`audit: ${snap.forbidden} forbidden primitive calls over 300 frames (${snap.calls ? JSON.stringify(snap.calls) : '{}'})`);
+  say(`audit: ${snap.sanctioned} sanctioned calls (the crosshair block) ${JSON.stringify(snap.sanctionedCalls || {})}`);
   say(`audit: ${(drawCalls / 300).toFixed(0)} drawImage/frame at ${win.eval('game.enemies.length')} enemies`);
   if (snap.forbidden) errors.push('forbidden primitives on the battlefield canvas: ' + JSON.stringify(snap.calls));
 }

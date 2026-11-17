@@ -372,6 +372,148 @@ That is a **≈ 94–96 % reduction in weather ink** on the battlefield. Tiles a
 
 `tools/pfx-harness/run.mjs` after the pass: boot OK, 6 universes, 7 classes × 12 actions, boss, level-up, death — **ALL CHECKS PASSED**, `0 forbidden primitive calls over 300 frames`, 339 `drawImage`/frame, weather fade reaches 1.0 and draws 32–50 blits per frame.
 
+## 11c · Round three: palette, stance, one creature per enemy, slate floor
+
+Four visual regressions were reported against 11b. Each had a single, findable
+cause; the fixes are structural rather than cosmetic, and every one is verified
+from rendered pixels (see the harness below).
+
+### A · The class palette never reached a single pixel
+
+`hexRgb()` in the engine utilities decoded `'#rrggbb'` as **BGR**:
+
+```js
+return [n & 255, (n >> 8) & 255, (n >> 16) & 255];   // blue first
+```
+
+`bodyPaletteMap()` builds its lookup with `packRgb(hexRgb(DUMMY[k]))`, and
+`applyTint()` matches raw frame pixels against those keys. Packed BGR keys never
+matched the RGB pixels in a frame, so **no** class colour was ever substituted
+and the player was drawn with the stock `HERO2` ramp — white/grey bones with a
+white blade. The same bug was quietly swapping red and blue in every generated
+prop and floor tile.
+
+The fix is one line, and it is load-bearing for three separate systems:
+
+```js
+return [(n >> 16) & 255, (n >> 8) & 255, n & 255];   // r, g, b
+```
+
+The palettes were then re-tuned to the requested classes: **Vanguard Knight**
+`#334155` steel (`A #8fa0b5 … J #161d26`, gold ember `m #f0c761`) and **Chrono
+Mage** indigo `#312e81` with cyan `#06b6d4` highlights (`A #e0f2fe, B #22d3ee,
+C #0891b2, E #312e81`).
+
+### B · The player was frozen in an attack frame
+
+Two causes, both removed:
+
+1. `updateMoves()` finished every clip by *rearming the attack*:
+   `if (!moves.clip) moves.clip = 'act:' + classId + ':lmb'`. The body was in the
+   first frame of the sword combo from the first second of the run.
+2. pixelfx has **no locomotion acts** — `src/fx/moves/*` is twelve one-shot
+   weapons. An idle had to be authored.
+
+`IDLE_MOD` and `RUN_MOD` (engine, `POSE_ACTS`) are two synthetic acts built from
+the core pose vocabulary: the idle is `READY` plus a 2.4 s breath (hips, hands
+and head drift 1 px), the run is a 0.5 s four-key stride — contact, near foot up,
+pass, far foot up — with the feet kept inside the leg's ~16 px reach so the
+solver never sinks the hips. Both are baked through the **same** `createAct`
+path, skeleton and class palette as a move kit, clipped as `act:<class>:idle`
+and `act:<class>:run`, so they cost one sheet each (14 clips, +2.2 MB).
+
+Draw-time selection (`pfxDrawPlayer`) is now a small state machine: a busy move
+wins, otherwise `moves.speed > 16` picks the run, otherwise the idle. `speed` is
+measured from the player's own frame-to-frame displacement inside `updateMoves`,
+so the stance never depends on a host field that might be renamed.
+
+### C · One creature per enemy
+
+The critter kits were never the problem — a connected-component pass over the
+composited frames shows slime, ghost and flying-skull are one body, eyeball two
+(body + its wart), frog/bat a body plus 5–7 px accents. The stacking was in the
+draw path, and it had three sources:
+
+* **Role drift.** `CRITTER_BY_TYPE` sent rushers to `frog`, so a melee crowd and
+  a ranged cluster could look like the same animal. The table is now role-based
+  — a shooter is an **eyeball**, a body is a **slime**, a hoverer is a **bat**, a
+  phased spirit is a **ghost** — with `critterOfRole()` as the fallback for a
+  type that is not listed.
+* **First-frame recompute.** `critterFor()` returned early once `e.critter` was
+  set, so an entity whose key had been cleared drew nothing coherent. It now
+  re-derives `critterKey`/`critterScale` from the cached type and never re-rolls
+  the type itself.
+* **Two portals per spawn.** `onEnemySpawn()` spawned a `spawn.portal` fx
+  instance *and* `pfxDrawEnemy()` drew the telegraph portal at the same
+  coordinates — two large violet vortexes per enemy, which is exactly what a
+  "second critter" looked like. The fx instance is gone; the drawn portal now
+  holds, then **crossfades** into the body over its last 0.3 s.
+
+Overlapping bodies are also resolved at draw time (`crowdResolve()`): enemies
+within 26 px are pushed apart up to 9 px, eased at 0.09 s intervals. This is a
+*render* offset only — simulation, hitboxes and damage never move.
+
+### D · The floor is slate, not mud
+
+`THEMES[0]` was `#1b2a1c` village green, and the tile generator jittered **every
+pixel** by ±7 around a 32×16 brick grid, which reads as mud at 1:1 and as noise
+under the 1.5× cast. Both are replaced by the specified palette:
+
+```js
+const FLOOR = { base: '#16181d', light: '#1d2027', dark: '#0f1115' };
+```
+
+The tile is now a flat base with scattered **2×2** blocks of the light and dark
+speck (13 % / 11 % over a 64×64 cell grid, hashed per universe so it never
+repeats visibly), seeded straight into the `ImageData` buffer so the blocks stay
+crisp. No grain, no courses, no green. All six universes share the palette —
+their identity lives in props, light and weather, which is where it belongs.
+
+One more thing surfaced while measuring: the floor showed faint horizontal
+banding. The camera transform puts one world pixel on `viewScale × zoom` device
+pixels — 0.8 on a 1280-wide viewport — so a 128 px tile covered 102.4 device px
+and nearest sampling dropped a row at every tile edge. `PFXWorld.drawGround()`
+now blits in **device space**, rounding each tile edge to a whole pixel and
+butting neighbours edge to edge, so there is no seam or shimmer at any zoom the
+host picks.
+
+### E · The crosshair is the one sanctioned primitive
+
+The reticle has to land on the exact cursor pixel, which no sprite can promise,
+so `pfxDrawTacticalCrosshair()` draws with `ctx.fillRect` — explicitly allowed
+for this one block:
+
+* **2 px** white arms, **6 px hollow centre**, **7 px** arm length, and a **2×2**
+  `#ef4444` pip dead centre; arms warm to `#ffe08a` while the trigger is down.
+* It sits in the base `viewScale` transform (not the camera transform), snaps to
+  whole device pixels, forces `globalAlpha = 1` and `source-over`, and uses
+  `touchAim` when the twin-stick aim is active.
+
+The audit was split accordingly: `state.auditExempt` is raised only around those
+five `fillRect` calls, and `PFX.audit()` now returns `sanctioned` /
+`sanctionedCalls` next to `forbidden` / `calls`. The measured result on the
+300-frame audit is **0 forbidden / 1500 sanctioned** — exactly 5 per frame, the
+crosshair — with every other battlefield pixel still arriving through
+`drawImage`.
+
+### Verified from pixels this time
+
+`@napi-rs/canvas` behind jsdom gives the harness a real rasteriser, so the pass
+was checked by rendering frames, not by reading the code:
+
+* `player_knight_idle` — upright stance, slate-steel armour, gold crossguard,
+  sword point-down at the side; no lunge, no white bones.
+* `player_mage_idle` — indigo body with cyan highlights.
+* `run_strip` — six consecutive frames of the stride, feet alternating.
+* `crosshair` — 8× crop: white arms, hollow centre, red pip.
+* `enemies_row` — `vanguard` → slimes, `sniper` → eyeballs, one creature each,
+  bodies separated, no portals.
+* `floor` — flat `#16181d` with 2×2 `#1d2027` / `#0f1115` speckle, no banding.
+
+Harness after the pass: boot OK, 163 clips, 144.4 MB, six universes, seven
+classes × twelve actions, boss, level-up, death — **ALL CHECKS PASSED**, `0
+forbidden primitive calls over 300 frames`, 353 `drawImage`/frame at 12 enemies.
+
 ## 12 · Known limits / next steps
 
 1. **Visual QA.** Open it on a static server with a network connection (jsDelivr path) and again with `?pfxlow=1`. Watch for: clip origins on the rotated projectiles, the boss scale, and weather tint strength.
