@@ -6,7 +6,7 @@
 <title>SURVIVE — Commander Rael</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root{
     --gold:#cbd5e1;
@@ -3333,6 +3333,161 @@ body.touch-mode #skillTooltipUnlock{ display:block; }
   #skillTooltipUnlock{ display:block; }
 }
 </style>
+<style id="pfx-retro-ui">
+/* ============================================================================
+   PIXELFX · 16-BIT UI SKIN
+   The battlefield is 16-bit art now, so the interface is too: a blocky pixel
+   face, chunky square slots, flat fills (#1a1c23) and hard 2px borders
+   (#475569). No gradients, no glow, no pill radii.
+   ========================================================================== */
+:root{
+  --font-pixel:'Press Start 2P','Courier New',monospace;
+  /* every rule in this build is written against these two variables, so the
+     whole interface — menus, cards, shop, HUD — re-fonts from here */
+  --font-head:var(--font-pixel);
+  --font-stat:var(--font-pixel);
+  --px-bg:#1a1c23;
+  --px-bg-dark:#0b0d12;
+  --px-border:#475569;
+  --px-border-hi:#64748b;
+  --px-ink:#e2e8f0;
+  --px-dim:#94a3b8;
+}
+html, body, body *{
+  font-family:var(--font-pixel) !important;
+  letter-spacing:0 !important;
+  text-shadow:none !important;
+  -webkit-font-smoothing:none;
+}
+/* ---- panels: solid slab + hard edge ------------------------------------- */
+#topLeft, #topRight, #objective, #classBadge, #bossBar{
+  background:var(--px-bg) !important;
+  border:2px solid var(--px-border) !important;
+  border-radius:0 !important;
+  box-shadow:4px 4px 0 rgba(0,0,0,.55) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+#topLeft{ top:12px !important; left:12px !important; padding:8px 10px !important; gap:7px !important; }
+#topRight{ top:12px !important; right:12px !important; padding:8px 12px !important; gap:14px !important; align-items:center !important; }
+#objective{
+  top:12px !important; padding:7px 12px !important;
+  font-style:normal !important; font-size:9px !important; line-height:14px !important;
+  color:var(--px-ink) !important; white-space:nowrap;
+}
+#classBadge{
+  left:12px !important; bottom:12px !important;
+  padding:7px 10px !important; gap:8px !important; width:auto !important; min-width:190px;
+}
+#bossBar{ padding:8px 10px !important; }
+
+/* ---- zone line ---------------------------------------------------------- */
+#zoneLine{ gap:7px !important; align-items:center !important; }
+#zoneBadge{
+  font-size:7px !important; line-height:10px !important; color:var(--px-dim) !important;
+  background:var(--px-bg-dark) !important; border:2px solid var(--px-border) !important;
+  padding:3px 4px !important; opacity:1 !important; text-transform:uppercase;
+}
+#zoneName{ font-size:11px !important; line-height:16px !important; color:var(--px-ink) !important; font-weight:400 !important; }
+
+/* ---- right-hand read-outs (score, gems, run timer) ---------------------- */
+#topRight .stat{ font-size:10px !important; gap:6px !important; font-weight:400 !important; color:var(--px-ink) !important; }
+#topRight .stat svg{ width:12px !important; height:12px !important; }
+#topRight .stat.time{ color:#fde68a !important; font-variant-numeric:normal !important; }
+#topRight .stat.time span{ min-width:0 !important; }
+#topRight .stat .mult{ font-size:7px !important; color:#6ee7b7 !important; color:var(--px-dim); }
+
+/* ---- class badge + XP bar ---------------------------------------------- */
+#className{ font-size:8px !important; line-height:12px !important; color:var(--px-ink) !important; font-weight:400 !important; }
+#hudClassLevel{ font-size:8px !important; color:#fde68a !important; }
+#classXpTrack{
+  height:12px !important; background:var(--px-bg-dark) !important;
+  border:2px solid var(--px-border) !important; border-radius:0 !important;
+  box-shadow:none !important; padding:0 !important; overflow:hidden;
+}
+#classXpFill{
+  background:#4ade80 !important; border-radius:0 !important;
+  box-shadow:none !important; background-image:none !important;
+}
+#classXpCaption{ font-size:6px !important; line-height:9px !important; color:var(--px-dim) !important; }
+#hudSkillPoints{ color:#fde68a !important; }
+
+/* ---- ability bar: chunky square slots ---------------------------------- */
+#abilities{
+  background:none !important; border:0 !important; border-radius:0 !important;
+  box-shadow:none !important; padding:0 !important; gap:6px !important;
+}
+.ability .ab-btn{
+  border-radius:0 !important;
+  background:var(--px-bg) !important;
+  border:2px solid var(--px-bg-dark) !important;
+  box-shadow:inset 0 0 0 2px var(--px-border), 4px 4px 0 rgba(0,0,0,.55) !important;
+  filter:none !important;
+}
+.ability.unlocked .ab-btn{ box-shadow:inset 0 0 0 2px var(--px-border-hi), 4px 4px 0 rgba(0,0,0,.55) !important; }
+.ability.locked .ab-btn{
+  background:#15171d !important;
+  box-shadow:inset 0 0 0 2px #333a47, 4px 4px 0 rgba(0,0,0,.45) !important;
+}
+.ability.unlocked .ab-btn:hover{ box-shadow:inset 0 0 0 2px #cbd5e1, 4px 4px 0 rgba(0,0,0,.55) !important; }
+.ability .ab-btn svg{ width:52% !important; height:52% !important; }
+.ability .ab-sweep{ border-radius:0 !important; }
+.ability .key{
+  font-family:var(--font-pixel) !important;
+  font-size:6px !important; line-height:10px !important;
+  color:var(--px-dim) !important; font-weight:400 !important;
+  margin-top:4px !important;
+}
+
+/* ---- boss bar ---------------------------------------------------------- */
+#bossName{ font-size:10px !important; line-height:14px !important; color:#fecaca !important; }
+#bossPhase{ font-size:7px !important; color:#fca5a5 !important; }
+#bossTrack{
+  background:var(--px-bg-dark) !important; border:2px solid var(--px-border) !important;
+  border-radius:0 !important; height:14px !important; box-shadow:none !important; overflow:hidden;
+}
+#bossFill{ background:#ef4444 !important; border-radius:0 !important; box-shadow:none !important; background-image:none !important; }
+#bossTrack .shine{ display:none !important; }
+#bossTrack::after{ display:none !important; }
+
+/* ---- minimap, banner, level-up, buttons -------------------------------- */
+#minimap{
+  border:2px solid var(--px-border) !important; border-radius:0 !important;
+  background:var(--px-bg-dark) !important; box-shadow:4px 4px 0 rgba(0,0,0,.55) !important;
+}
+#banner{ font-size:16px !important; line-height:24px !important; color:var(--px-ink) !important; }
+.level-up-eyebrow{ font-size:8px !important; }
+.level-up-number{ font-size:26px !important; }
+#levelUpReward{ font-size:8px !important; line-height:14px !important; }
+button, .btn, #btnLevelUpTree{
+  border-radius:0 !important;
+  border:2px solid var(--px-border) !important;
+  background:var(--px-bg) !important;
+  box-shadow:3px 3px 0 rgba(0,0,0,.55) !important;
+  color:var(--px-ink) !important;
+  font-family:var(--font-pixel) !important;
+  font-size:9px !important;
+}
+button:hover, .btn:hover, #btnLevelUpTree:hover{
+  background:#252833 !important; box-shadow:1px 1px 0 rgba(0,0,0,.55) !important;
+}
+/* the pixel face is roughly twice as wide as the display face it replaces, so
+   the biggest display type gets capped instead of overflowing its card */
+#pauseTitle{ font-size:clamp(18px,3vw,30px) !important; line-height:1.5 !important; letter-spacing:0 !important; }
+#skillTreePoints{ font-size:22px !important; line-height:1.3 !important; }
+h1, h2, .screen-title, .card-title{ line-height:1.5 !important; }
+/* long-form copy never gets the blocky face at full width: keep it legible */
+.screen p, .screen li, .card p, .pause-confirm-card p, .help, .desc, .au-desc{
+  font-size:9px !important; line-height:18px !important;
+}
+/* the pause / result / shop cards are the same slab language */
+.pause-card, .shop-card, .result-card, #pauseMenu, #shop, .screen-card{
+  border-radius:0 !important;
+  border:2px solid var(--px-border) !important;
+  background:var(--px-bg) !important;
+}
+</style>
+
 </head>
 <body>
 <div id="gameCanvas" class="screen game-screen">
@@ -28284,6 +28439,7 @@ const PFX = (function () {
     loopFps: 10,        /* ambient loops                                    */
     weatherFps: 10,     /* screen weather: 10 fps is weather, not gameplay  */
     window: 1.4,        /* seconds of a one-shot we bake                    */
+    charScale: 1.5,     /* global 1.5x for the player skeleton + all critters */
     maxFrames: 64,
     cacheBudget: 132 * 1024 * 1024,
     atlasW: 2048,
@@ -28362,20 +28518,33 @@ const PFX = (function () {
     shadow:    { lmb: 'moves/dash-strike',     alt: 'moves/dash-strike',      element: 'poison', ramp: INKS.toxic },
     tech:      { lmb: 'moves/pistol-shots',    alt: 'moves/rocket-launcher',  element: 'electric', ramp: INKS.arcane }
   };
-  /* every universe's weather + nature pair (spec §5) */
+  /* every universe's weather + nature pair (spec §5)
+
+     Weather is BACKGROUND AIR, not a foreground effect. Three global knobs keep
+     it there: particles are drawn at 40% of the old full-screen stretch, the
+     overlay never goes above 25% alpha, and the bake throws away three of every
+     four particles (see thinField). */
+  const WEATHER_TUNE = {
+    scale: 0.4,          /* particle size vs the old one-field-stretched look  */
+    alpha: 0.25,         /* hard ceiling for every weather overlay            */
+    density: 0.25,       /* fraction of particles that survive the bake        */
+    wash: 0.22,          /* static full-frame backdrop alpha, before the overlay */
+    fadeIn: 1.6,         /* seconds to ramp in after a zone load               */
+    fps: 8
+  };
   const WEATHER = {
     0: { name: 'Rain over the village', tint: null,
-         fx: [{ id: 'weather/rain', tag: 'u0a' }, { id: 'weather/falling-leaves', tag: 'u0b', scale: 1 }] },
+         fx: [{ id: 'weather/rain', tag: 'u0a' }, { id: 'weather/falling-leaves', tag: 'u0b', scale: 0.8 }] },
     1: { name: 'Sand fog under god-rays', tint: [1.0, 0.8, 0.52],
-         fx: [{ id: 'weather/fog', tag: 'u1a', tint: [1.0, 0.78, 0.48] }, { id: 'weather/god-rays', tag: 'u1b', tint: [1.0, 0.86, 0.55] }] },
+         fx: [{ id: 'weather/fog', tag: 'u1a', tint: [1.0, 0.78, 0.48], density: 1 }, { id: 'weather/god-rays', tag: 'u1b', tint: [1.0, 0.86, 0.55], density: 1 }] },
     2: { name: 'Cherry blossoms on the leaf storm', tint: null,
-         fx: [{ id: 'weather/cherry-blossoms', tag: 'u2a' }, { id: 'nature/leaf-storm', tag: 'u2b', scale: 1.6, tile: true }] },
+         fx: [{ id: 'weather/cherry-blossoms', tag: 'u2a' }, { id: 'nature/leaf-storm', tag: 'u2b', scale: 1.2 }] },
     3: { name: 'Acid cloud and storm', tint: [0.72, 1.0, 0.6],
          fx: [{ id: 'nature/poison-cloud', tag: 'u3a', tint: [0.75, 1.0, 0.55] }, { id: 'weather/storm', tag: 'u3b' }] },
     4: { name: 'Shooting stars over laser grids', tint: null,
          fx: [{ id: 'weather/shooting-stars', tag: 'u4a' }, { id: 'weather/fireflies', tag: 'u4b', tint: [0.55, 0.95, 1.0] }] },
     5: { name: 'Eclipse under the aurora', tint: null,
-         fx: [{ id: 'shadow/eclipse', tag: 'u5a', scale: 2.4 }, { id: 'weather/aurora', tag: 'u5b' }] }
+         fx: [{ id: 'shadow/eclipse', tag: 'u5a', scale: 1.5, density: 1 }, { id: 'weather/aurora', tag: 'u5b' }] }
   };
 
   /* --------------------------------------------------------------- manifest
@@ -28636,6 +28805,123 @@ const PFX = (function () {
     return map;
   }
 
+  /* ---- weather sparsification -------------------------------------------
+     The weather kits are full-frame skyscapes: they paint a wash over every
+     pixel and then draw particles on top. Drawn at full strength that wash
+     veils the battlefield, and every particle is huge. Two one-time passes fix
+     that at bake time, on the sprite sheet itself:
+
+       1. STATIC PASS — a pixel whose alpha barely changes across the loop is
+          backdrop, not weather. Its alpha is cut to `wash` (22%).
+       2. PARTICLE PASS — per frame, blobs of moving pixels are labelled with a
+          seeded union-find and whole blobs are dropped until `keep` of the
+          particle ink survives. Particles are never punched into holes.
+
+     Frames are analysed as a sheet so both passes stay one pass over memory. */
+  function thinFrame(data, w, h, mask, keep, seed) {
+    if (!(keep > 0)) return 0;
+    const n = w * h;
+    const label = new Int32Array(n);
+    const sizes = [0];
+    const stack = [];
+    const on = (i) => data[i * 4 + 3] > 8 && (!mask || mask[i]);
+    let count = 0;
+    for (let i = 0; i < n; i++) {
+      if (label[i] || !on(i)) continue;
+      count++;
+      let size = 0;
+      stack.length = 0;
+      stack.push(i);
+      label[i] = count;
+      while (stack.length) {
+        const p = stack.pop();
+        size++;
+        const x = p % w, y = (p / w) | 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          const ny = y + dy;
+          if (ny < 0 || ny >= h) continue;
+          for (let dx = -1; dx <= 1; dx++) {
+            if (!dx && !dy) continue;
+            const nx = x + dx;
+            if (nx < 0 || nx >= w) continue;
+            const q = ny * w + nx;
+            if (label[q] || !on(q)) continue;
+            label[q] = count;
+            stack.push(q);
+          }
+        }
+      }
+      sizes.push(size);
+    }
+    if (!count) return 0;
+    let ink = 0;
+    for (let id = 1; id <= count; id++) ink += sizes[id];
+    if (keep >= 1) return ink;
+    const target = ink * keep;
+    const order = new Array(count);
+    for (let i = 0; i < count; i++) order[i] = i + 1;
+    let s = (seed >>> 0) || 1;
+    for (let i = order.length - 1; i > 0; i--) {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      const j = s % (i + 1);
+      const tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+    }
+    const keepId = new Uint8Array(count + 1);
+    let kept = 0;
+    for (let i = 0; i < order.length; i++) {
+      const id = order[i], size = sizes[id];
+      if (kept + size > target) continue;
+      keepId[id] = 1;
+      kept += size;
+    }
+    for (let i = 0; i < n; i++) {
+      const l = label[i];
+      if (l && !keepId[l]) data[i * 4 + 3] = 0;
+    }
+    return kept;
+  }
+
+  /** Analyse a baked weather sheet: cut the static wash, thin the particles. */
+  function sparsifySheet(sctx, w, h, count, keep, wash, seed) {
+    if (!sctx || count < 2) return false;
+    let img;
+    try { img = sctx.getImageData(0, 0, w, h * count); } catch (e) { return false; }
+    const d = img.data;
+    const px = w * h;
+    const lo = new Uint8Array(px).fill(255);
+    const hi = new Uint8Array(px);
+    let ink = 0;
+    for (let f = 0; f < count; f++) {
+      const off = f * px * 4;
+      for (let i = 0; i < px; i++) {
+        const a = d[off + i * 4 + 3];
+        if (a < lo[i]) lo[i] = a;
+        if (a > hi[i]) hi[i] = a;
+        if (a > 8) ink++;
+      }
+    }
+    /* a canvas that handed back nothing (headless stub, read failure) is left
+       exactly as it was rather than silently blanked */
+    if (!ink) return false;
+    const fg = new Uint8Array(px);
+    for (let i = 0; i < px; i++) fg[i] = (hi[i] - lo[i]) > 24 ? 1 : 0;
+    const frame = new Uint8ClampedArray(px * 4);
+    for (let f = 0; f < count; f++) {
+      const off = f * px * 4;
+      frame.set(d.subarray(off, off + px * 4));
+      if (keep < 1) thinFrame(frame, w, h, fg, keep, seed + f * 7919);
+      for (let i = 0; i < px; i++) {
+        const p = i * 4 + 3;
+        const a = frame[p];
+        if (!a) { d[off + p] = 0; continue; }
+        if (!fg[i]) d[off + p] = Math.round(a * wash);     /* static backdrop */
+        else d[off + p] = a;                                /* particle        */
+      }
+    }
+    sctx.putImageData(img, 0, 0);
+    return true;
+  }
+
   async function bakeClip(def, core) {
     const mod = state.effects[def.id];
     if (!mod) throw new Error('no such effect: ' + def.id);
@@ -28698,6 +28984,11 @@ const PFX = (function () {
       advanced = true;
     }
     if (box.x1 < 0) { box.x0 = 0; box.y0 = 0; box.x1 = 0; box.y1 = 0; }
+    /* weather: cut the full-frame wash and keep a quarter of the particles */
+    if (def.wash != null || def.sparse != null) {
+      sparsifySheet(sctx, w, h, timing.n, def.sparse == null ? 1 : def.sparse,
+        def.wash == null ? 1 : def.wash, (def.seed || 7) * 2654435761 + 13);
+    }
     /* full-frame clips (weather/transitions) keep their canvas so they can be
        pinned edge to edge without losing the screen-space anchor */
     if (def.noCrop) { box.x0 = 0; box.y0 = 0; box.x1 = w - 1; box.y1 = h - 1; }
@@ -28887,15 +29178,35 @@ const PFX = (function () {
     const ox = (o && o.ox) || 0, oy = (o && o.oy) || 0;
     const cols = Math.ceil(W / w) + 1, rows = Math.ceil(H / h) + 1;
     const c = ctx;
-    let f = Math.floor((time || 0) * clip.fps);
-    if (clip.loop) f = ((f % clip.n) + clip.n) % clip.n;
-    else f = Math.max(0, Math.min(clip.n - 1, f));
-    const sx = (f % clip.cols) * clip.w, sy = Math.floor(f / clip.cols) * clip.h;
+    const vary = !!(o && o.vary);          /* hide the repeat on small tiles */
+    const n = clip.n;
+    const c1 = clip.cols;
     c.save();
     c.imageSmoothingEnabled = false;
     if (o && o.alpha != null) c.globalAlpha = Math.max(0, Math.min(1, o.alpha));
     for (let ry = 0; ry < rows; ry++) {
       for (let rx = 0; rx < cols; rx++) {
+        let f = Math.floor((time || 0) * clip.fps);
+        if (vary) {
+          /* per-tile time offset, flip and jitter: a 0.4x field repeats ~2.5
+             times across the viewport, so the seams get broken deliberately */
+          const hsh = ((rx * 73856093) ^ (ry * 19349663)) >>> 0;
+          f += (hsh % 11) - 5;
+          const jx = ((hsh >> 3) % 7) - 3, jy = ((hsh >> 7) % 7) - 3;
+          if (clip.loop) f = ((f % n) + n) % n;
+          else f = Math.max(0, Math.min(n - 1, f));
+          const sx0 = (f % c1) * clip.w, sy0 = Math.floor(f / c1) * clip.h;
+          c.save();
+          c.translate(Math.round(ox + rx * w) + jx, Math.round(oy + ry * h) + jy);
+          if (hsh & 1) { c.translate(w, 0); c.scale(-1, 1); }
+          if (hsh & 2) { c.translate(0, h); c.scale(1, -1); }
+          c.drawImage(clip.canvas, sx0, sy0, clip.w, clip.h, 0, 0, w, h);
+          c.restore();
+          continue;
+        }
+        if (clip.loop) f = ((f % n) + n) % n;
+        else f = Math.max(0, Math.min(n - 1, f));
+        const sx = (f % c1) * clip.w, sy = Math.floor(f / c1) * clip.h;
         c.drawImage(clip.canvas, sx, sy, clip.w, clip.h, Math.round(ox + rx * w), Math.round(oy + ry * h), w, h);
       }
     }
@@ -29620,6 +29931,7 @@ const PFX = (function () {
       if (!w) return;
       this.weatherReady = false;
       this.weatherUniverse = u;
+      this.weatherFade = 0;
       const keys = w.fx.map((f) => f.key || (f.id + '#' + f.tag));
       /* only one universe's weather lives in the cache at a time: two 320x180
          loops are ~7 MB, six of them would be 40 MB of sky nobody is looking at */
@@ -29633,8 +29945,16 @@ const PFX = (function () {
       });
       const jobs = w.fx.map((f, i) => FXCache.bake({
         key: keys[i], id: f.id, kind: 'fx',
-        tint: f.tint || w.tint || null, noCrop: true, window: 1.8, fps: Math.min(CFG.weatherFps, 8),
-        scale: f.scale || 1, loop: true
+        tint: f.tint || w.tint || null, noCrop: true,
+        window: 1.8, fps: WEATHER_TUNE.fps,
+        scale: 1, loop: true,
+        /* particle thinning + static-wash cut, both at bake time */
+        sparse: f.density != null ? f.density : WEATHER_TUNE.density,
+        /* field effects (fog, god-rays, eclipse) keep more of their wash: they
+           are atmosphere rather than droplets */
+        wash: f.density != null ? 0.6 : WEATHER_TUNE.wash,
+        seed: 11 + i * 7 + u * 31,
+        opts: f.id === 'weather/rain' ? { density: WEATHER_TUNE.density } : null
       }).catch(() => null));
       Promise.all(jobs).then(() => { this.weatherReady = true; FXCache.trim(); });
     },
@@ -29658,7 +29978,7 @@ const PFX = (function () {
         if (pl && dist(pl.x, pl.y, p.x, p.y) < r * 0.6) hurtPlayer(1, false, 'barrel');
         Sound && Sound.explode && Sound.explode();
       } else if (p.kind === 'spore') {
-        spawn('fx.spore', p.x, p.y, { scale: 0.8, layer: 'ground', life: 2.2 });
+        spawn('fx.spore', p.x, p.y - 6, { scale: 0.42, layer: 'air', life: 1.4 });
         spawn('fx.toxic-puddle', p.x, p.y + 4, { scale: 0.6, layer: 'ground', life: 6 });
         for (let i = game.enemies.length - 1; i >= 0; i--) {
           const e = game.enemies[i];
@@ -29673,6 +29993,11 @@ const PFX = (function () {
     },
     /** bullet vs prop sweep, once a frame */
     update(dt) {
+      /* weather ramps in over ~1.6 s so a zone never pops (it is cosmetic, so
+         it keeps fading even while the tab is backgrounded) */
+      if (this.weatherFade < 1) {
+        this.weatherFade = Math.min(1, (this.weatherFade || 0) + dt / WEATHER_TUNE.fadeIn);
+      }
       if (document.hidden) return;
       const p = game.player;
       /* traps */
@@ -29747,7 +30072,8 @@ const PFX = (function () {
           drawClip('prop.brazier', p.x, p.y + 4, t, { scale: 0.9 });
         } else if (p.kind === 'spore') {
           ctx.drawImage(propSprite('urn', 3).art, Math.round(p.x - 17), Math.round(p.y - 30));
-          drawClip('fx.spore', p.x, p.y + 2, 0, { scale: 0.6, alpha: 0.9 });
+          /* a thin wisp only: the pod itself must never read as a smoke cloud */
+          drawClip('fx.spore', p.x, p.y - 12, t * 0.6, { scale: 0.2, alpha: 0.3 });
         } else if (p.kind === 'lantern') {
           ctx.drawImage(propSprite('stonelantern', 1).art, Math.round(p.x - 20), Math.round(p.y - 54));
           drawClip('prop.candle', p.x, p.y - 40, t, { scale: 0.8 });
@@ -29775,20 +30101,20 @@ const PFX = (function () {
     drawWeather() {
       const w = WEATHER[this.theme];
       if (!w) return;
+      const fade = this.weatherFade == null ? 1 : this.weatherFade;
+      if (fade <= 0.001) return;
+      /* Environmental air, not a foreground effect: every layer is tiled at 40%
+         of the old per-particle size, hard-capped at 25% alpha, and baked with
+         three of every four particles deleted. */
       for (let i = 0; i < w.fx.length; i++) {
         const f = w.fx[i];
         const key = f.key || (f.id + '#' + f.tag);
         const clip = clips.get(key);
         if (!clip) continue;
-        const t = game.time * 0.9 + i * 3.1;
-        if (f.tile) {
-          drawTiled(key, t, { scale: f.scale || 2.4, alpha: 0.85 });
-        } else {
-          const s = Math.max(W / clip.w, H / clip.h);
-          const x = clip.ox * s + (W - clip.w * s) / 2;
-          const y = clip.oy * s + (H - clip.h * s) / 2;
-          drawClip(key, x, y, t, { scale: s, alpha: i === 0 ? 0.92 : 0.7 });
-        }
+        const base = (W / clip.w) * WEATHER_TUNE.scale * (f.scale || 1);
+        const t = game.time * 0.6 + i * 3.1;
+        const alpha = WEATHER_TUNE.alpha * fade * (i === 0 ? 1 : 0.8);
+        drawTiled(key, t, { scale: base, alpha: alpha, vary: true });
       }
     }
   };
@@ -29988,13 +30314,15 @@ const PFX = (function () {
     const dying = gameState.isDying;
     const fade = dying ? clamp(1 - deathProgress() * 0.85, 0, 1) : 1;
     const z = Z.z || 0;
-    drawShadow(p.x, p.y + 2, 34, z, 0.9 * fade);
+    /* the cast is drawn 1.5x so the pixel detail survives against the floor */
+    const CS = CFG.charScale || 1;
+    drawShadow(p.x, p.y + 2, 34 * CS, z, 0.9 * fade);
     /* dash after-images */
     if (p.trail && p.trail.length) {
       for (let i = 0; i < p.trail.length; i++) {
         const tr = p.trail[i];
         drawClip(moves.clip || ('act:' + p.classId + ':lmb'), tr.x, tr.y, 0.05,
-          { flip: (tr.dir || 1) < 0, alpha: 0.22 * (tr.life || 0.3) / 0.3 });
+          { flip: (tr.dir || 1) < 0, alpha: 0.22 * (tr.life || 0.3) / 0.3, scale: CS });
       }
     }
     const flip = moves.busy > 0 ? moves.flip : playerFacing() < 0;
@@ -30002,14 +30330,14 @@ const PFX = (function () {
     if (dying) t = Math.min(moves.t, 0.2);
     let key = moves.clip || ('act:' + p.classId + ':lmb');
     if (!clips.has(key)) key = 'act:knight:lmb';
-    drawClip(key, p.x, p.y - z, t, { flip, alpha: fade });
-    drawStatuses(p, 1);
-    if (p.hitFlash > 0) drawClip('impact.flash', p.x, p.y - 18 - z, 0, { scale: 0.75, alpha: 0.9 });
-    if (p.invuln > 0 && !dying) drawClip('ui.energy-core', p.x, p.y - 20 - z, game.time, { scale: 0.42, alpha: 0.3 });
-    if (p.rageT > 0) drawClip('status.rage', p.x, p.y - z, game.time, { scale: 1.15, alpha: 0.85 });
-    if (p.shield > 0) drawClip('fx.force-field', p.x, p.y - 18 - z, game.time, { scale: 0.55, alpha: 0.5 });
+    drawClip(key, p.x, p.y - z, t, { flip, alpha: fade, scale: CS });
+    drawStatuses(p, CS);
+    if (p.hitFlash > 0) drawClip('impact.flash', p.x, p.y - 18 * CS - z, 0, { scale: 0.75 * CS, alpha: 0.9 });
+    if (p.invuln > 0 && !dying) drawClip('ui.energy-core', p.x, p.y - 20 * CS - z, game.time, { scale: 0.42 * CS, alpha: 0.3 });
+    if (p.rageT > 0) drawClip('status.rage', p.x, p.y - z, game.time, { scale: 1.15 * CS, alpha: 0.85 });
+    if (p.shield > 0) drawClip('fx.force-field', p.x, p.y - 18 * CS - z, game.time, { scale: 0.55 * CS, alpha: 0.5 });
     if (dying && gameState.deathParticlesSpawned) {
-      drawClip('death.soul', p.x, p.y + 4, deathElapsed(), { scale: 1, alpha: 0.7 });
+      drawClip('death.soul', p.x, p.y + 4, deathElapsed(), { scale: CS, alpha: 0.7 });
     }
   }
 
@@ -30019,7 +30347,8 @@ const PFX = (function () {
     const c = critterFor(e);
     const key = e.critterKey;
     const z = e.z || 0;
-    const s = e.critterScale || 1;
+    /* every critter gets the same global 1.5x as the player */
+    const s = (e.critterScale || 1) * (CFG.charScale || 1);
     const telegraph = e.spawnTelegraph > 0;
     if (telegraph) {
       drawClip('spawn.portal', e.x, e.y, 1.6 - e.spawnTelegraph, { scale: 0.7 * s, alpha: 0.95 });
@@ -30066,12 +30395,15 @@ const PFX = (function () {
     const b = game.boss;
     if (!b) return;
     const key = 'critter:' + (b.kit ? 'flying-skull' : 'slime') + ':' + (gameState.currentUniverse >= 3 ? 'void' : 'sand');
-    const s = 3.1 * (b.r ? b.r / 24 : 1);
-    drawShadow(b.x, b.y + 4, 90, b.z || 0, 0.9);
+    /* bosses already fill a third of the viewport, so they take half the scale
+       bump: 1.25x instead of 1.5x, still readable, still fightable */
+    const CS = 1 + ((CFG.charScale || 1) - 1) * 0.5;
+    const s = 3.1 * CS * (b.r ? b.r / 24 : 1);
+    drawShadow(b.x, b.y + 4, 90 * CS, b.z || 0, 0.9);
     drawClip('shadow.eclipse', b.x, b.y - 10, game.time, { scale: 1.5, alpha: 0.4 });
     drawClip(key, b.x, b.y - (b.z || 0), game.time, { scale: s, alpha: b.phaseInvulnT > 0 ? 0.5 : 1, flip: b.x > game.player.x });
-    if (b.hitFlash > 0) drawClip('impact.crit', b.x, b.y - 40, 0, { scale: 1.2, alpha: 0.8 });
-    drawStatuses(b, 1.6);
+    if (b.hitFlash > 0) drawClip('impact.crit', b.x, b.y - 40 * CS, 0, { scale: 1.2, alpha: 0.8 });
+    drawStatuses(b, 1.6 * CS);
     if (b.phase > 1) drawClip('ui.energy-core', b.x, b.y - 110, game.time, { scale: 0.7, alpha: 0.6 });
   }
 
@@ -30424,6 +30756,8 @@ const PFX = (function () {
     ctx.setTransform(viewScaleX, 0, 0, viewScaleY, 0, 0);
     /* the one global invariant of this renderer: nothing is ever interpolated */
     ctx.imageSmoothingEnabled = false;
+    /* and the one face: every canvas text call uses the 16-bit pixel font */
+    ctx.font = '10px "Press Start 2P", "Courier New", monospace';
     auditActive = !!state.auditOn;
   }
   function pfxDrawAmbient() {
@@ -30841,7 +31175,7 @@ const PFX = (function () {
       tryInstall: install
     },
     /* used by tooling */
-    _internals: { state, clips, bake: (d) => FXCache.bake(d), clipsForTest: MANIFEST }
+    _internals: { state, clips, bake: (d) => FXCache.bake(d), thinFrame, sparsifySheet, clipsForTest: MANIFEST }
   };
 })();
 

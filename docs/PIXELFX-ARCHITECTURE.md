@@ -316,6 +316,62 @@ Also verified in isolation:
 
 ---
 
+## 11b · Visual tuning pass (env clutter, retro UI, cast scale)
+
+Three art-direction fixes landed after the first integration (see §12 for what still needs eyes).
+
+### A · Environmental effects are background air now
+
+The weather kits are full-frame *skyscapes*: they paint a wash over every pixel and then draw particles on top. Stretched to the viewport that read as a giant, veiling foreground effect. Four knobs, all in `WEATHER_TUNE` in the engine block:
+
+| knob | value | what it does |
+| --- | --- | --- |
+| `scale` | `0.4` | every layer is tiled at 40 % of the old per-particle size (particles are 2.5× smaller on screen, the sky still covers) |
+| `alpha` | `0.25` | hard ceiling on the weather overlay alpha, and it fades in over 1.6 s per zone |
+| `density` | `0.25` | three of every four particles are deleted **at bake time** |
+| `wash` | `0.22` | the static full-frame backdrop is cut to 22 % alpha (0.6 for field effects: fog, god-rays, eclipse) |
+
+All four live in `WEATHER_TUNE` next to the `WEATHER` table, so the whole environmental look is four numbers.
+
+Two one-time passes do the work on the baked sheet (`sparsifySheet`):
+
+1. **static pass** — a pixel whose alpha barely changes across the loop is backdrop, not weather → alpha × `wash`;
+2. **particle pass** — per frame, blobs of *moving* pixels are labelled with a seeded union-find and whole blobs are dropped until 25 % of the particle ink survives. Particles are deleted whole, never punched into holes, so leaves stay leaf-shaped.
+
+Measured with the vendored compositor over 8 frames of each kit (`alpha-ink` = alpha-weighted coverage, i.e. what the eye actually sees):
+
+| kit | alpha-ink before | after | screen after × 0.25 overlay |
+| --- | --- | --- | --- |
+| `weather/rain` | 46.6 % | 10.5 % | **2.6 %** |
+| `weather/falling-leaves` | 40.5 % | 9.2 % | 2.3 % |
+| `weather/snow` | 42.2 % | 9.4 % | 2.4 % |
+| `weather/fog` | 14.9 % | 2.9 % | 0.7 % |
+| `weather/cherry-blossoms` | 38.2 % | 8.6 % | 2.2 % |
+| `nature/poison-cloud` | 3.6 % | 0.3 % | 0.1 % |
+| `weather/storm` | 64.6 % | 13.7 % | 3.4 % |
+| `weather/god-rays` | 53.7 % | 11.9 % | 3.0 % |
+
+That is a **≈ 94–96 % reduction in weather ink** on the battlefield. Tiles are drawn with per-tile flip / time-offset / jitter (`drawTiled`'s `vary` flag) so a 0.4× field does not show its 2.5× repeat. Weather costs 32–50 `drawImage` calls per frame.
+
+**Spore pods** are no longer smoke machines: the idle wisp is `scale 0.2 / alpha 0.3` (was `0.6 / 0.9`), the pod itself is the only solid element, and the detonation burst is `0.42` in the air over 1.4 s instead of `0.8` on the ground over 2.2 s.
+
+### B · 16-bit interface
+
+* **Type.** `Press Start 2P` is loaded from Google Fonts next to Cinzel/Rajdhani, and `--font-head` / `--font-stat` are re-pointed at `--font-pixel`. Because every rule in this build is written against those two variables, the *entire* interface — menus, cards, shop, HUD — re-fonts from two lines. `html, body, body *` gets the face with zero letter-spacing and no text-shadow, the canvas gets `ctx.font = '10px "Press Start 2P", …'` every frame, and the oversized display type is capped (`#pauseTitle`, `#skillTreePoints`) so the wider face cannot overflow its card.
+* **Ability bar.** The pill-shaped bar and the 50 % radius slots are gone: `#abilities` is an unframed row and each slot is a chunky square — `background #1a1c23`, a `#475569` **2px inner** border (`inset box-shadow`), a 2px `#0b0d12` outer edge and a 4 px hard drop shadow. Cooling sweep squared off too.
+* **Top HUD.** `#topLeft`, `#topRight`, `#objective`, `#classBadge` and `#bossBar` are solid `#1a1c23` slabs with 2px `#475569` borders, square corners and a hard offset shadow — no gradients, no translucency, no blur. The XP track and boss track are flat `#0b0d12` wells with a solid `#4ade80` / `#ef4444` fill, their `.shine` and gradient overlays removed. Zone badge is a bordered chip, zone name/timer/score are 6–11 px pixel type.
+* The HP crests (already angular dark-iron SVG shields) are untouched — they were never modern-looking.
+
+### C · The cast is 1.5× larger
+
+`CFG.charScale = 1.5` multiplies the player skeleton, every critter, their shadows, status overlays and pips (`pfxDrawPlayer`, `pfxDrawEnemy`), so the pixel detail survives against the 128 px floor tiles. Bosses take **half** the bump (1.25×) deliberately: they already fill a third of the viewport at `3.1 × r/24`, and a 1.5× boss would be screen-filling.
+
+**Hitboxes are unchanged** — the host's collision radii are gameplay data, not art, and rescaling them would change difficulty and arena pacing. The cast now reads larger than its collision shape; if that feels unfair, the correct fix is to scale `e.r` / `player.r` and the spawn spacing together, not to shrink the art back.
+
+### Verified
+
+`tools/pfx-harness/run.mjs` after the pass: boot OK, 6 universes, 7 classes × 12 actions, boss, level-up, death — **ALL CHECKS PASSED**, `0 forbidden primitive calls over 300 frames`, 339 `drawImage`/frame, weather fade reaches 1.0 and draws 32–50 blits per frame.
+
 ## 12 · Known limits / next steps
 
 1. **Visual QA.** Open it on a static server with a network connection (jsDelivr path) and again with `?pfxlow=1`. Watch for: clip origins on the rotated projectiles, the boss scale, and weather tint strength.
