@@ -514,6 +514,116 @@ Harness after the pass: boot OK, 163 clips, 144.4 MB, six universes, seven
 classes × twelve actions, boss, level-up, death — **ALL CHECKS PASSED**, `0
 forbidden primitive calls over 300 frames`, 353 `drawImage`/frame at 12 enemies.
 
+## 11d · Round four: combat input, weather ceiling, seamless floor
+
+### A · Abilities and attacks: what was actually wrong
+
+The listeners were wired; three separate things were swallowing the input, and
+one thing was hiding it:
+
+1. **The cast gate.** `hasAbility(slot)` read `gameState.unlockedAbilities`,
+   which `syncAbilityUnlocks()` fills from `bossesDefeatedCount()`. On a fresh
+   run that is zero, so **E, SHIFT, F and R returned before doing anything** —
+   four of the five combat keys were dead until the second boss. They are now
+   live from the first frame: `hasAbility()` answers true for any slot the class
+   defines, and the unlock ceremony still runs (it just is not a gate).
+2. **`pointerdown` was the only trigger path.** Touch emulation, a pen, or an
+   overlay that eats the pointer all leave `game.mouse.down` false, and the
+   primary attack reads exactly that flag. A `mousedown` listener now sets the
+   same flag (and `onPointerMove` with it, so the aim follows), `pointercancel`
+   clears it, and a stuck trigger can no longer outlive a lost pointer.
+3. **Keys were matched on `e.key` only.** A non-US layout or an IME can change
+   it. `e.code` (`KeyQ`, `KeyE`, `KeyF`, `KeyR`, `ShiftLeft/Right`) is accepted
+   alongside it.
+4. **The HUD lied.** `syncAbilityHud()` repaints the cooldown ring, and the
+   keyboard path never called it — pressing Q burned the cooldown while the
+   button still read "ready", which is exactly how an ability that *is* on
+   cooldown feels broken. Every cast path now repaints: the engine wraps
+   `castAbilitySlot`, so keyboard, HUD button, gamepad and touch all get it.
+
+### B · Every cast sets the animation state
+
+`PLAYER.animationState` reports `{ clip, move, kind, t, busy }` — the baked clip
+key, the pixelfx move id behind it, and whether it is `lmb`, `dash`, `ability`
+or `locomotion`. Verified by driving the real DOM events:
+
+| input | clip | move | kind |
+|---|---|---|---|
+| LMB (mage) | `act:mage:lmb` | `moves/fireball-throw` | `lmb` |
+| LMB (knight) | `act:knight:lmb` | `moves/sword-combo` | `lmb` |
+| Q | `act:<cls>:alt` | class secondary | `ability` |
+| SHIFT | `act:<cls>:dash` | `moves/dash-strike` | `dash` |
+| E / F / R | `act:<cls>:alt` | class secondary | `ability` |
+
+Two details make it *visible* rather than theoretical. Cast poses are
+**forced** (`playMove(..., true)`): queueing an ability behind a swing that is
+already playing is what made a cast look like nothing happened. And a dash is
+now a **first-class clip** (`act:<class>:dash`, seven sheets, baked up front)
+instead of borrowing the secondary performance, so Shift shows the same
+dash-strike for every class — with `arcane/blink-in` spawned on the teleport
+classes (`mage_blink`, `shadow_vanish`, `tech_jet`, and the charge abilities) as
+the burst that says the dash landed.
+
+Measured with `node /tmp/combat.mjs mage` driving real `mousedown`/`KeyE`
+events: LMB → `moves/fireball-throw`, Q → `moves/lightning-call` + Q cooldown
+burned, E/F/R → their slot cooldowns start (`#abilities .cooling` 1→4) and the
+`--cooldown-angle` on each button counts down, SHIFT → `moves/dash-strike` with
+`kind: dash`. `PLAYER.abilityState` exposes the same numbers for debugging.
+
+### C · Weather is a whisper now
+
+Round 3 had already cut the field once (0.4 scale, 0.25 alpha, one particle in
+four). That was still a screen full of dark rain and brown leaf chips. The
+ceiling is now flat and low:
+
+| knob | round 3 | round 4 |
+|---|---|---|
+| `WEATHER_TUNE.density` (particles kept at bake) | 0.25 | **0.05** (one in twenty, −80 %) |
+| `WEATHER_TUNE.alpha` (overlay ceiling) | 0.25 | **0.15** |
+| `WEATHER_TUNE.wash` (static backdrop) | 0.22 | **0.08** |
+| field kits (fog, god-rays, eclipse) | density 1, wash 0.6 | **density 0.35, wash 0.22** |
+| falling leaves | 0.25 | **0.015** |
+
+`explosions/dirt-explosion` is no longer baked at all: breaking a prop dropped
+fistfuls of brown mud that read as clutter. It is an `impact.spark` puff now,
+and the clip is gone from the manifest.
+
+### D · The floor cannot tear any more
+
+The banding from round 3 had a second cause beyond the fractional scale: a tile
+edge that lands between two device pixels leaves a **1 device px hole**, and the
+backdrop behind the floor is `#090a0f` — so at a 1.5–2× CSS zoom those holes
+read as thick black lines across the screen, moving with the camera.
+
+`PFXWorld.drawGround()` now composes the floor in device space in three passes,
+none of which can leave a hole:
+
+1. **Underlay** — the base tile stretched over the whole canvas plus 2 px of
+   bleed, so an uncovered pixel can never be the backdrop colour;
+2. **Tiles** — each edge rounded to a whole device pixel, neighbours sharing the
+   same rounded edge (no gap, no overlap) and drawn +1 px so the seam is
+   covered, extended a full tile past the viewport;
+3. **Detail** — the same rule at four times the span.
+
+Still `drawImage` only, so the primitive audit is unaffected: **0 forbidden**
+over 300 frames, 305 `drawImage`/frame, 1500 sanctioned (the crosshair).
+
+Verified by hunting for tears directly: 18 frames of sub-pixel camera panning at
+three viewport/DPR configurations, scanning every row and column for runs of
+backdrop-coloured pixels.
+
+| viewport | DPR | canvas | worst row | worst column |
+|---|---|---|---|---|
+| 1024×768 | 1 | 1024×768 | 3.9 % | 3.0 % |
+| 1440×900 | 2 | 2880×1800 | 3.8 % | 3.5 % |
+| 1920×1080 | 1 | 1920×1080 | 3.8 % | 3.9 % |
+| 900×600 | 1.5 | 1350×900 | 3.9 % | 3.3 % |
+
+(The residual few percent is the `#0f1115` speck in the tile itself — a torn row
+would be ~100 %.) Boot after the pass: **163 clips, 119.3 MB** — 25 MB lighter
+than round 3, because the weather sheets are four-fifths empty and the dirt clip
+is gone.
+
 ## 12 · Known limits / next steps
 
 1. **Visual QA.** Open it on a static server with a network connection (jsDelivr path) and again with `?pfxlow=1`. Watch for: clip origins on the rotated projectiles, the boss scale, and weather tint strength.

@@ -6193,6 +6193,17 @@ UI.canvas.addEventListener('pointerdown', (e) => {
   }
 });
 UI.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+/* PIXELFX: the trigger also answers a plain mousedown. Pointer events are the
+   primary path, but a browser in touch-emulation, a pen, or an overlay that
+   ate the pointerdown all leave the trigger dead — and the trigger is the whole
+   primary attack. Setting the same flag twice is harmless. */
+window.addEventListener('pointercancel', () => { game.mouse.down = false; });
+UI.canvas.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return;
+  onPointerMove(e);
+  game.mouse.down = true;
+  if (game.screen === 'playing') { try { Sound.ensure(); } catch (err) { /* mute is fine */ } }
+});
 window.addEventListener('pointerup', (e) => {
   if (e.pointerType === 'touch') return; /* touchend releases the touch trigger */
   if (e.button === 0) game.mouse.down = false;
@@ -6204,15 +6215,18 @@ window.addEventListener('keydown', (e) => {
   game.keys[k] = true;
   if (game.screen !== 'playing') return;
   if (k === ' ') { e.preventDefault(); }
-  if (k === 'q') castClassAbility();                       /* class ability: always on */
-  if (k === 'e') castAbilitySlot('e');
-  if (k === 'f') castAbilitySlot('f');
-  if (k === 'r') castAbilitySlot('r');
+  /* PIXELFX: keys also answer by physical code, so a non-US layout or an IME
+     cannot swallow Q/E/F/R, and every cast repaints the ability HUD. */
+  const code = e.code || '';
+  if (k === 'q' || code === 'KeyQ') { castClassAbility(); syncAbilityHud(); }
+  if (k === 'e' || code === 'KeyE') castAbilitySlot('e');
+  if (k === 'f' || code === 'KeyF') castAbilitySlot('f');
+  if (k === 'r' || code === 'KeyR') castAbilitySlot('r');
   if (k === 'z' && hasAbility('overdrive')) startOverdrive();
   if (k === '1') useConsumableSlot(0);
   if (k === '2') useConsumableSlot(1);
   if (k === '3') useConsumableSlot(2);
-  if (k === 'Shift') castAbilitySlot('shift');
+  if (k === 'Shift' || code === 'ShiftLeft' || code === 'ShiftRight') castAbilitySlot('shift');
 });
 window.addEventListener('keyup', (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
@@ -12902,6 +12916,10 @@ function classAbilityDef(slot, classId) {
 function hasAbility(id) {
   if (id === 'q') return true;
   if (id === 'overdrive') return !!(gameState.unlockedAbilities && gameState.unlockedAbilities.overdrive);
+  /* PIXELFX playability: the class kit is live from the first frame. The unlock
+     ceremony (syncAbilityUnlocks / grantBossAbility) still runs and still shows
+     its card, it just is not a gate on the keys any more. */
+  if (classAbilityDef(id)) return true;
   const def = classAbilityDef(id);
   return !!(def && gameState.unlockedAbilities && gameState.unlockedAbilities[def.id]);
 }
@@ -28525,14 +28543,17 @@ const PFX = (function () {
     knight: 'sword', berserker: 'greatsword', shadow: 'dagger', sniper: 'spear'
   };
   /* which skeleton the player's class animates, and what its actions are */
+  /* `lmb` is the primary attack, `dash` the Shift teleport (the dash-strike for
+     every class — a dash reads the same whatever you are holding), `alt` the
+     class's own secondary performance for Q and the ability slots. */
   const CLASS_ACTIONS = {
-    knight:    { lmb: 'moves/sword-combo',     alt: 'moves/dash-strike',      element: 'steel',  ramp: INKS.steel },
-    gunslinger:{ lmb: 'moves/pistol-shots',    alt: 'moves/rocket-launcher',  element: 'physical', ramp: INKS.gold },
-    sniper:    { lmb: 'moves/rocket-launcher', alt: 'moves/ice-lance-throw',  element: 'ice',    ramp: INKS.ice },
-    mage:      { lmb: 'moves/fireball-throw',  alt: 'moves/lightning-call',   element: 'fire',   ramp: INKS.spark },
-    berserker: { lmb: 'moves/earth-stomp',     alt: 'moves/ground-pound',     element: 'fire',   ramp: INKS.spark },
-    shadow:    { lmb: 'moves/dash-strike',     alt: 'moves/dash-strike',      element: 'poison', ramp: INKS.toxic },
-    tech:      { lmb: 'moves/pistol-shots',    alt: 'moves/rocket-launcher',  element: 'electric', ramp: INKS.arcane }
+    knight:    { lmb: 'moves/sword-combo',     dash: 'moves/dash-strike', alt: 'moves/dash-strike',      element: 'steel',  ramp: INKS.steel },
+    gunslinger:{ lmb: 'moves/pistol-shots',    dash: 'moves/dash-strike', alt: 'moves/rocket-launcher',  element: 'physical', ramp: INKS.gold },
+    sniper:    { lmb: 'moves/rocket-launcher', dash: 'moves/dash-strike', alt: 'moves/ice-lance-throw',  element: 'ice',    ramp: INKS.ice },
+    mage:      { lmb: 'moves/fireball-throw',  dash: 'moves/dash-strike', alt: 'moves/lightning-call',   element: 'fire',   ramp: INKS.spark },
+    berserker: { lmb: 'moves/earth-stomp',     dash: 'moves/dash-strike', alt: 'moves/ground-pound',     element: 'fire',   ramp: INKS.spark },
+    shadow:    { lmb: 'moves/dash-strike',     dash: 'moves/dash-strike', alt: 'moves/dash-strike',      element: 'poison', ramp: INKS.toxic },
+    tech:      { lmb: 'moves/pistol-shots',    dash: 'moves/dash-strike', alt: 'moves/rocket-launcher',  element: 'electric', ramp: INKS.arcane }
   };
   /* every universe's weather + nature pair (spec §5)
 
@@ -28541,18 +28562,19 @@ const PFX = (function () {
      overlay never goes above 25% alpha, and the bake throws away three of every
      four particles (see thinField). */
   const WEATHER_TUNE = {
-    scale: 0.4,          /* particle size vs the old one-field-stretched look  */
-    alpha: 0.25,         /* hard ceiling for every weather overlay            */
-    density: 0.25,       /* fraction of particles that survive the bake        */
-    wash: 0.22,          /* static full-frame backdrop alpha, before the overlay */
+    scale: 0.34,         /* particle size vs the old one-field-stretched look  */
+    alpha: 0.15,         /* hard ceiling for every weather overlay            */
+    density: 0.05,       /* fraction of particles that survive the bake: one in
+                            twenty, an 80% cut on the round-3 value of 0.25  */
+    wash: 0.08,          /* static full-frame backdrop alpha, before the overlay */
     fadeIn: 1.6,         /* seconds to ramp in after a zone load               */
     fps: 8
   };
   const WEATHER = {
     0: { name: 'Rain over the village', tint: null,
-         fx: [{ id: 'weather/rain', tag: 'u0a' }, { id: 'weather/falling-leaves', tag: 'u0b', scale: 0.8 }] },
+         fx: [{ id: 'weather/rain', tag: 'u0a' }, { id: 'weather/falling-leaves', tag: 'u0b', scale: 0.8, density: 0.015 }] },
     1: { name: 'Sand fog under god-rays', tint: [1.0, 0.8, 0.52],
-         fx: [{ id: 'weather/fog', tag: 'u1a', tint: [1.0, 0.78, 0.48], density: 1 }, { id: 'weather/god-rays', tag: 'u1b', tint: [1.0, 0.86, 0.55], density: 1 }] },
+         fx: [{ id: 'weather/fog', tag: 'u1a', tint: [1.0, 0.78, 0.48], density: 0.35 }, { id: 'weather/god-rays', tag: 'u1b', tint: [1.0, 0.86, 0.55], density: 0.35 }] },
     2: { name: 'Cherry blossoms on the leaf storm', tint: null,
          fx: [{ id: 'weather/cherry-blossoms', tag: 'u2a' }, { id: 'nature/leaf-storm', tag: 'u2b', scale: 1.2 }] },
     3: { name: 'Acid cloud and storm', tint: [0.72, 1.0, 0.6],
@@ -28580,6 +28602,8 @@ const PFX = (function () {
     add('act:' + cls + ':run', 'pfx/run', { kind: 'act', body: CLASS_BODY[cls], palette: a.ramp, window: 0.5, fps: 18, tint: null });
     /* the secondary performance warms in the background after the dissolve */
     if (a.alt && a.alt !== a.lmb) add('act:' + cls + ':alt', a.alt, { kind: 'act', body: CLASS_BODY[cls], palette: a.ramp, scale: 1, window: 0.9, lazy: true });
+    /* the Shift teleport: dash-strike, short window, baked after the dissolve */
+    add('act:' + cls + ':dash', a.dash, { kind: 'act', body: CLASS_BODY[cls], palette: a.ramp, scale: 1, window: 0.7 });
   });
 
   /* --- the bestiary: six critters, three skins (spec §3) ------------------ */
@@ -28611,6 +28635,8 @@ const PFX = (function () {
   add('fx.zap', 'lightning/zap-hit', { scale: 0.9, window: 0.6 });
   add('fx.emp', 'scifi/emp-blast', { scale: 1, window: 1.2, lazy: true });
   add('fx.force-field', 'scifi/force-field', { loop: true, window: 1.4, scale: 1 });
+  /* the shift/blink teleport, played as a burst on top of the dash move */
+  add('fx.blink-in', 'arcane/blink-in', { scale: 0.9, window: 0.6 });
   add('fx.magic-circle', 'arcane/magic-circle-cast', { scale: 0.8, window: 1.6, lazy: true });
   add('fx.black-hole', 'shadow/black-hole', { loop: true, window: 1.6, scale: 1, lazy: true });
   add('fx.holy-pillar', 'holy/holy-pillar', { scale: 1, window: 2.0, lazy: true });
@@ -28650,7 +28676,8 @@ const PFX = (function () {
   add('boom.small', 'explosions/small-explosion', { scale: 0.8, window: 1.2 });
   add('boom.barrel', 'explosions/barrel-explosion', { scale: 1, window: 1.3 });
   add('boom.grenade', 'explosions/grenade', { scale: 0.85, window: 1.2, lazy: true });
-  add('boom.dirt', 'explosions/dirt-explosion', { scale: 0.8, window: 1.2, lazy: true });
+  /* `explosions/dirt-explosion` is NOT baked any more: it dropped fistfuls of
+     brown mud across the floor and read as clutter, not as a hit. */
   add('boom.plasma', 'explosions/plasma-explosion', { scale: 0.8, window: 1.2, lazy: true });
   add('slash.sword', 'melee/sword-slash', { scale: 0.9, window: 0.75 });
   add('slash.spin', 'melee/spin-slash', { scale: 0.9, window: 0.8 });
@@ -29365,7 +29392,7 @@ const PFX = (function () {
     const key = 'act:' + cls + ':' + which;
     if (!clips.has(key)) return false;
     const cur = CLASS_ACTIONS[cls] || CLASS_ACTIONS.knight;
-    const id = which === 'alt' ? cur.alt : cur.lmb;
+    const id = which === 'dash' ? (cur.dash || cur.alt) : which === 'alt' ? cur.alt : cur.lmb;
     if (moves.busy > 0 && !force) {
       /* chain: queue the next stroke so held triggers stay responsive */
       moves.queue = which;
@@ -30106,7 +30133,7 @@ const PFX = (function () {
         sparse: f.density != null ? f.density : WEATHER_TUNE.density,
         /* field effects (fog, god-rays, eclipse) keep more of their wash: they
            are atmosphere rather than droplets */
-        wash: f.density != null ? 0.6 : WEATHER_TUNE.wash,
+        wash: f.density != null ? 0.22 : WEATHER_TUNE.wash,
         seed: 11 + i * 7 + u * 31,
         opts: f.id === 'weather/rain' ? { density: WEATHER_TUNE.density } : null
       }).catch(() => null));
@@ -30139,7 +30166,7 @@ const PFX = (function () {
           if (dist(e.x, e.y, p.x, p.y) < 120) PFXStatus.apply(e, 'poisoned', 5);
         }
       } else {
-        spawn('boom.dirt', p.x, p.y, { scale: 0.4, layer: 'ground', life: 0.9 });
+        spawn('impact.spark', p.x, p.y, { scale: 0.5, layer: 'ground', life: 0.5 });
       }
       p.dead = true;
       const oi = game.obstacles.findIndex((o) => o.pfxProp === p);
@@ -30182,47 +30209,59 @@ const PFX = (function () {
     },
     /** the ground under everything */
     drawGround() {
-      /* The camera transform puts one world pixel on viewScale*zoom *device*
-         pixels, which is 0.8 on a 1280-wide viewport at dpr 1: a 128 px tile
-         then covers 102.4 device px, and nearest sampling at a fractional
-         scale drops a row at every tile edge — that is what drew the faint
-         horizontal banding over the floor. So the floor is blitted in device
-         space with every tile edge rounded to a whole pixel: the tiles butt
-         edge to edge, no seams, no shimmer, at any zoom the host picks. */
+      /* Seamless slate at any camera position.
+         The camera transform puts one world pixel on `viewScale * zoom` device
+         pixels, which is 0.8 in a 1280-wide window: a 128 px tile then covers
+         102.4 device px, and nearest sampling at a fractional scale drops a row
+         wherever a tile edge lands between pixels. Drawn naively that shows up
+         as black tear lines right across the floor.
+         So the floor is composed in DEVICE space, three times over:
+           1. one stretched blit of the base tile under everything, so an
+              uncovered pixel can never be the near-black backdrop;
+           2. the tiles, each edge rounded to a whole device pixel and butted
+              to its neighbour (they share the rounded edge, so there is no gap
+              and no overlap), extended one tile beyond the viewport;
+           3. the detail layer at four times the span, same rule. */
       const tile = groundTile(this.theme, false);
       const detail = groundTile(this.theme, true);
       const cv = ctx.canvas;
       const cw = cv ? cv.width : W, ch = cv ? cv.height : H;
+      if (!(cw > 0) || !(ch > 0)) return;
       const m = (ctx.getTransform && ctx.getTransform()) || { a: viewScaleX, d: viewScaleY, e: 0, f: 0 };
       const kx = m.a, ky = m.d;
-      if (!(kx > 0.01) || !(ky > 0.01)) return;
-      const wl = -m.e / kx, wr = (cw - m.e) / kx;
-      const wt = -m.f / ky, wb = (ch - m.f) / ky;
-      const S = 128, D = 256;
+      if (!Number.isFinite(kx) || !Number.isFinite(ky) || !(Math.abs(kx) > 0.01) || !(Math.abs(ky) > 0.01)) return;
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.imageSmoothingEnabled = false;
+      /* 1 · underlay: the tile stretched over the whole canvas (and 2 px past
+             every edge), so nothing behind the floor can ever show through */
+      ctx.drawImage(tile, 0, 0, 128, 128, -2, -2, cw + 4, ch + 4);
+      /* visible world window, plus a full tile of bleed on the far edges */
+      const wl = (-m.e) / kx - 128, wr = (cw - m.e) / kx + 128;
+      const wt = (-m.f) / ky - 128, wb = (ch - m.f) / ky + 128;
+      const S = 128, D = 256;
+      /* 2 · tiles: consecutive edges are computed from the same rounded value */
       for (let x = Math.floor(wl / S) * S; x < wr; x += S) {
         const dx0 = Math.round(kx * x + m.e);
         const dx1 = Math.round(kx * (x + S) + m.e);
-        if (dx1 <= 0 || dx0 >= cw) continue;
+        if (dx1 <= 0 || dx0 >= cw || dx1 <= dx0) continue;
         for (let y = Math.floor(wt / S) * S; y < wb; y += S) {
           const dy0 = Math.round(ky * y + m.f);
           const dy1 = Math.round(ky * (y + S) + m.f);
-          if (dy1 <= 0 || dy0 >= ch) continue;
-          ctx.drawImage(tile, dx0, dy0, dx1 - dx0, dy1 - dy0);
+          if (dy1 <= 0 || dy0 >= ch || dy1 <= dy0) continue;
+          ctx.drawImage(tile, dx0, dy0, dx1 - dx0 + 1, dy1 - dy0 + 1);
         }
       }
-      /* the detail layer, same rule, four times the span */
+      /* 3 · detail layer, four times the span, same rounding rule */
       for (let x = Math.floor(wl / D) * D; x < wr; x += D) {
         const dx0 = Math.round(kx * x + m.e);
         const dx1 = Math.round(kx * (x + D) + m.e);
-        if (dx1 <= 0 || dx0 >= cw) continue;
+        if (dx1 <= 0 || dx0 >= cw || dx1 <= dx0) continue;
         for (let y = Math.floor(wt / D) * D; y < wb; y += D) {
           const dy0 = Math.round(ky * y + m.f);
           const dy1 = Math.round(ky * (y + D) + m.f);
-          if (dy1 <= 0 || dy0 >= ch) continue;
-          ctx.drawImage(detail, dx0, dy0, dx1 - dx0, dy1 - dy0);
+          if (dy1 <= 0 || dy0 >= ch || dy1 <= dy0) continue;
+          ctx.drawImage(detail, dx0, dy0, dx1 - dx0 + 1, dy1 - dy0 + 1);
         }
       }
       ctx.restore();
@@ -30285,9 +30324,9 @@ const PFX = (function () {
       if (!w) return;
       const fade = this.weatherFade == null ? 1 : this.weatherFade;
       if (fade <= 0.001) return;
-      /* Environmental air, not a foreground effect: every layer is tiled at 40%
-         of the old per-particle size, hard-capped at 25% alpha, and baked with
-         three of every four particles deleted. */
+      /* Barely-there background flavour (round 4): the bake keeps one particle
+         in twenty, the tiles are a third of the old size, and the whole overlay
+         is flat-capped at 0.15 alpha with no per-layer boost. */
       for (let i = 0; i < w.fx.length; i++) {
         const f = w.fx[i];
         const key = f.key || (f.id + '#' + f.tag);
@@ -30295,7 +30334,7 @@ const PFX = (function () {
         if (!clip) continue;
         const base = (W / clip.w) * WEATHER_TUNE.scale * (f.scale || 1);
         const t = game.time * 0.6 + i * 3.1;
-        const alpha = WEATHER_TUNE.alpha * fade * (i === 0 ? 1 : 0.8);
+        const alpha = WEATHER_TUNE.alpha * fade * (i === 0 ? 1 : 0.7);
         drawTiled(key, t, { scale: base, alpha: alpha, vary: true });
       }
     }
@@ -31128,13 +31167,83 @@ const PFX = (function () {
         return r;
       };
     });
+    /* ---- abilities → animation state → HUD -------------------------------
+       Three things have to happen on every successful cast, and the host only
+       does one of them (the effect itself):
+         · the pose has to switch to a pixelfx move, or the character stands
+           still while the ability fires;
+         · the bottom HUD has to repaint, or the cooldown ring still reads
+           "ready" and the player hammers a key that is on cooldown;
+         · a teleport has to leave a blink behind, which is the only tell that
+           the dash worked at all.
+       Wrapping the cast here means the keyboard, the HUD button, the gamepad
+       and the touch bar all get the same behaviour from one place. */
+    function syncHud() {
+      try { if (typeof syncAbilityHud === 'function') syncAbilityHud(); } catch (e) { /* never break a cast */ }
+    }
+    function blinkBurst() {
+      const p = game.player;
+      if (!p) return;
+      try { spawn('fx.blink-in', p.x, p.y - 16, { scale: 0.85, layer: 'air', life: 0.45 }); } catch (e) { /* ignore */ }
+      try { spawn('ink:arcane', p.x, p.y - 8, { scale: 0.6, layer: 'ground', life: 0.35 }); } catch (e) { /* ignore */ }
+    }
+    /** the pose a cast plays: the class's secondary performance, which is the
+        dash-strike for every class that has one */
+    function castPose(kind) {
+      const p = game.player;
+      if (!p || game.screen !== 'playing') return;
+      /* forced: an ability must be *seen*. Queueing it behind a swing that is
+         already playing is what made a cast look like nothing happened. */
+      if (!playMove(p.classId, kind === 'dash' ? 'dash' : 'alt', true) && kind === 'dash') {
+        /* the dash clip is not in the cache (low-spec profile): the class's
+           secondary performance still reads as a burst of movement */
+        playMove(p.classId, 'alt', true);
+      }
+      moves.castKind = kind || 'ability';
+      moves.castAt = game.time;
+    }
+    if (typeof globalThis.castAbilitySlot === 'function') {
+      const slotCast = globalThis.castAbilitySlot;
+      globalThis.castAbilitySlot = function (slot) {
+        let before = 0;
+        try { before = abilityCooldown(slot) || 0; } catch (e) { /* ignore */ }
+        const r = slotCast.apply(this, arguments);
+        try {
+          const after = abilityCooldown(slot) || 0;
+          if (after > before) {
+            /* it really fired: animate, blink if it is a teleport, repaint */
+            const def = classAbilityDef(slot);
+            const id = (def && def.id) || '';
+            /* a teleport ability plays the dash-strike and leaves a blink; the
+               rest play the class's secondary performance */
+            const dashLike = /blink|vanish|teleport|jet|charge|dash|shadowstep/.test(id);
+            castPose(dashLike ? 'dash' : 'ability');
+            if (dashLike) blinkBurst();
+          }
+          syncHud();
+        } catch (e) { /* the cast already happened; UI must not throw it away */ }
+        return r;
+      };
+    }
     ['castClassAbility', 'dash', 'throwBomb', 'novaBlast', 'startRage'].forEach((fn) => {
       const orig = globalThis[fn];
       if (typeof orig !== 'function') return;
       LEGACY[fn] = orig;
       globalThis[fn] = function () {
+        let before = 0;
+        let beforeQ = 0;
+        try { before = game.dashCd || 0; beforeQ = game.qCd || 0; } catch (e) { /* ignore */ }
         const r = orig.apply(this, arguments);
-        try { if (game.player && game.screen === 'playing') playMove(game.player.classId, 'alt', false); } catch (e) { /* ignore */ }
+        try {
+          const fired = r !== false && ((game.qCd || 0) > beforeQ || (game.dashCd || 0) > before);
+          if (fired && game.player && game.screen === 'playing') {
+            const p = game.player;
+            const dashLike = fn === 'dash' || fn === 'throwBomb';
+            castPose(dashLike ? 'dash' : 'ability');
+            if (dashLike) blinkBurst();
+          }
+          syncHud();
+        } catch (e) { /* never break a cast */ }
         return r;
       };
     });
@@ -31457,6 +31566,36 @@ const PFX = (function () {
       return snap;
     },
     setAudit(on) { state.auditOn = !!on; auditActive = !!on; if (on) installAudit(); },
+    /* what the sprite is doing right now: the baked clip key, the pixelfx move
+       id it came from, and whether it is a cast. Read-only, for HUD/debug. */
+    get animationState() {
+      return {
+        clip: moves.clip || '',
+        move: moves.id || '',
+        kind: moves.busy > 0 ? (moves.castKind || moves.kind || 'lmb') : 'locomotion',
+        t: moves.t,
+        busy: moves.busy
+      };
+    },
+    /** the four keys the class abilities answer to, for HUD/debug */
+    get abilityState() {
+      const p = game.player;
+      const out = { q: { name: '', cd: 0, max: 1 } };
+      try {
+        const cls = getClass();
+        out.q = { name: cls.q.name, cd: game.qCd || 0, max: qCdMax() };
+        ABILITY_SLOTS.forEach((slot) => {
+          const def = classAbilityDef(slot);
+          out[slot] = {
+            name: def ? def.name : '',
+            cd: abilityCooldown(slot) || 0,
+            max: def ? skillCooldownSeconds(slot, def.cd * cdScale()) : 1,
+            unlocked: !!hasAbility(slot)
+          };
+        });
+      } catch (e) { /* the HUD is diagnostic only */ }
+      return out;
+    },
     hooks: {
       tick, onEnemyHit, onEnemySpawn: onEnemySpawn, onEnemyDeath: onEnemyDeath,
       onPlayerHit, onZoneLoad, onLevelUp,
