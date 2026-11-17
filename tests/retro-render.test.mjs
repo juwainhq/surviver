@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+function source(start,end){const a=html.indexOf(start),b=html.indexOf(end,a);assert.ok(a>=0&&b>a);return html.slice(a,b);}
+const marks=[];
+const tileCtx={fillStyle:'',fillRect(x,y,w,h){marks.push({color:this.fillStyle,x,y,w,h});}};
+const ctx={imageSmoothingEnabled:true,fillStyle:'',save(){},restore(){},fillRect(x,y,w,h){marks.push({color:this.fillStyle,x,y,w,h});},createPattern(canvas,repeat){assert.equal(canvas.width,64);assert.equal(repeat,'repeat');return 'pattern';}};
+const env={ctx,document:{createElement(){return {getContext(){return tileCtx;}}}},game:{cam:{x:67,y:129},bullets:[],enemyBullets:[]},gameState:{currentUniverse:0},viewW:()=>800,viewH:()=>600,drawWorldBoundary(){}};
+vm.createContext(env);
+vm.runInContext(source('const SLIME_PALETTES = [','function drawPixelEnemy'),env);
+const enemy=vm.runInContext('enemyPixelStyle',env);
+assert.equal(enemy({type:'knight'}),'slime');assert.equal(enemy({type:'swarm'}),'bat');
+assert.equal(enemy({type:'archer'}),'eyeball');assert.equal(enemy({type:'wizard'}),'eyeball');
+assert.equal(enemy({type:'knight',eliteVariant:true}),'ghost');assert.equal(enemy({type:'brute',elite:true}),'flying-skull');
+vm.runInContext(source('const floorNoiseCanvas =','function drawArenaGround()'),env);
+assert.ok(marks.some(m=>m.color==='#1a1c23'&&m.w===64));
+assert.ok(marks.some(m=>m.w===2)&&marks.some(m=>m.w===4));
+marks.length=0;vm.runInContext('drawGround()',env);
+assert.deepEqual(marks[0],{color:'pattern',x:3,y:65,w:928,h:728});
+env.game.bullets=[{x:20,y:40,vx:1,vy:0,kind:'orb'},{x:30,y:50,vx:0,vy:1,kind:'pistol'}];
+env.game.enemyBullets=[];marks.length=0;
+vm.runInContext(source('function drawBullets()','/* a slow violet orb'),env);
+vm.runInContext('drawBullets()',env);
+assert.ok(marks.some(m=>m.color==='#fbbf24'&&m.w===6));
+assert.ok(marks.some(m=>m.color==='#22d3ee'&&m.w===4));
+assert.ok(marks.some(m=>m.w===2&&m.h===2));
+console.log('Critter archetypes, world-anchored noise and pixel projectile checks passed');
