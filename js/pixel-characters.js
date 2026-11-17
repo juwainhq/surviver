@@ -1,6 +1,6 @@
 // Cached 16-bit character skins built from PixelFX's articulated rig. All
 // pixel writes and costume details are baked offscreen, never in the render loop.
-import { posed, poseAt, STAND } from '../vendor/pixelfx/src/core/index.js';
+import { posed, poseAt, skeleton, STAND } from '../vendor/pixelfx/src/core/index.js';
 const STYLES = {
   knight: ['#334155','#94a3b8','#f59e0b','#991b1b','knight'],
   gunslinger: ['#451a03','#a16207','#dc2626','#78350f','gunslinger'],
@@ -21,9 +21,10 @@ const STYLES = {
 const PLAYER_STYLES = {
   knight: ['#334155', '#475569', '#fbbf24', '#991b1b', 'knight'],
   mage: ['#312e81', '#4338ca', '#f59e0b', '#1e1b4b', 'mage'],
+  sniper: ['#0f172a', '#334155', '#10b981', '#064e3b', 'sniper'],
   gunslinger: ['#451a03', '#78350f', '#ef4444', '#78350f', 'gunslinger']
 };
-const PLAYER_OUTLINES = { knight:'#f59e0b', mage:'#06b6d4', gunslinger:'#ef4444' };
+const PLAYER_OUTLINES = { knight:'#f59e0b', mage:'#06b6d4', sniper:'#10b981', gunslinger:'#ef4444' };
 const MOVES = {knight:'sword-combo',gunslinger:'pistol-shots',sniper:'pistol-shots',mage:'fireball-throw',berserker:'ground-pound',shadow:'sword-combo',tech:'pistol-shots',enemyKnight:'sword-combo',enemyArcher:'arrow-shot',enemyMage:'fireball-throw',enemyBrute:'ground-pound',enemyBomber:'ground-pound',boss:'sword-combo'};
 const DURATIONS = {'sword-combo':0.38,'dash-strike':0.4,'ground-pound':0.8,'earth-stomp':0.4,'fireball-throw':0.45,'meteor-call':0.6,'pistol-shots':0.3,'rocket-launcher':0.45,'arrow-shot':0.4};
 const SOURCE_DURATIONS = {'sword-combo':1.55,'dash-strike':1.8,'ground-pound':1.4,'earth-stomp':1.2,'fireball-throw':1.6,'meteor-call':2.3,'pistol-shots':1.2,'rocket-launcher':1.5,'arrow-shot':1.1};
@@ -66,35 +67,6 @@ function details(g, spec, state, frame) {
   else if(kind==='archer') { rect(g,ink,61,43,2,22); rect(g,light,62,44,2,20); rect(g,ink,55,52,13,2); rect(g,accent,55+(state==='attack'? -2:0),52,12,1); }
   else if(kind==='bomber') { rect(g,ink,34,48,10,14); rect(g,cloth,35,49,8,12); rect(g,accent,37,47,4,3); }
 }
-// The three requested player silhouettes are baked along with the rig.
-// Coordinates share the 96px rig canvas (feet at 48,78).
-function playerDetails(g, spec, state, frame, style) {
-  if (!PLAYER_STYLES[style]) { details(g, spec, state, frame); return; }
-  const [dark, light, trim, cape] = spec, ink = '#090d16';
-  if (style === 'knight') {
-    g.globalCompositeOperation = 'destination-over';
-    // Fill first, then its outline: destination-over paints behind existing pixels.
-    rect(g, cape, 34, 48, 12, 25 + (frame % 2));
-    rect(g, ink, 33, 47, 14, 27 + (frame % 2));
-    g.globalCompositeOperation = 'source-over';
-    rect(g, ink, 40, 36, 16, 9); rect(g, dark, 41, 37, 14, 7);
-    rect(g, '#ef4444', 47, 41, 7, 2); // crimson visor
-    rect(g, ink, 56, 42, 5, 24); rect(g, '#cbd5e1', 57, 43, 3, 17);
-    rect(g, '#fbbf24', 54, 60, 9, 2); rect(g, '#fbbf24', 58, 62, 2, 5);
-    rect(g, ink, 37, 51, 7, 14); rect(g, light, 38, 52, 5, 11);
-  } else if (style === 'mage') {
-    rect(g, ink, 41, 31, 15, 13); rect(g, dark, 42, 32, 13, 11);
-    rect(g, '#f59e0b', 43, 32, 11, 2); rect(g, '#f59e0b', 43, 34, 2, 8);
-    rect(g, ink, 58, 39, 5, 29); rect(g, '#78350f', 59, 40, 3, 27);
-    rect(g, ink, 57, 35, 7, 7); rect(g, '#22d3ee', 58, 36, 5, 5);
-    rect(g, '#cffafe', 59, 36, 2, 2);
-  } else {
-    rect(g, ink, 40, 37, 19, 3); rect(g, dark, 43, 32, 12, 5);
-    rect(g, '#ef4444', 45, 46, 8, 2);
-    rect(g, ink, 56, 51, 13, 5); rect(g, '#cbd5e1', 57, 52, 11, 3);
-    rect(g, ink, 57, 55, 3, 5);
-  }
-}
 export class PixelCharacters {
   constructor(onReady) {
     this.cache=new Map();this.queue=[];this.working=false;this.moves={};this.onReady=onReady;
@@ -107,7 +79,7 @@ export class PixelCharacters {
     style=STYLES[style]?style:'knight';
     if(state!=='attack') move='';
     const key=this.key(style,state,skin,move,player), prior=this.cache.get(key);
-    if(prior) return prior.ready?prior:null;
+    if(prior) return prior.ready || (player && prior.length) ? prior : null;
     const frames=[], spec=[...(player && PLAYER_STYLES[style] ? PLAYER_STYLES[style] : STYLES[style])];
     if(skin && skin.navy && skin.navyLit) { spec[0]=skin.navyDark||skin.navy; spec[1]=skin.navyLit; spec[2]=skin.visor||spec[2]; spec[3]=skin.navy; }
     const job={key,style,state,player,move:move||MOVES[style],frames,spec,index:0,count:state==='idle'?4:state==='jump'?2:6};
@@ -116,13 +88,18 @@ export class PixelCharacters {
   schedule() {
     if(this.working||!this.queue.length)return; this.working=true;
     later(()=>{this.working=false; const job=this.queue.shift();
-      if(job.state==='attack' && this.moves[job.move] === null) { this.queue.push(job); this.schedule(); return; }
+      if((job.state==='attack' && this.moves[job.move] === null) || (job.player && job.style==='knight' && job.state==='idle' && this.moves['sword-combo'] === null)) { this.queue.push(job); this.schedule(); return; }
       try {
         let pose=fixedPose(job.state,job.index,job.count);
         const move=this.moves[job.move];
+        if(job.player && job.style==='knight' && job.state==='idle' && this.moves['sword-combo'])
+          pose=poseAt(this.moves['sword-combo'].act.poses,0);
         if(job.state==='attack' && move && move.act && move.act.poses) pose=poseAt(move.act.poses,job.index*(SOURCE_DURATIONS[job.move]||1)/6);
         // Never bake translation into the body: gameplay owns world x/y/z.
-        const rig=posed({...pose,x:0,y:0});
+        // Mage's staff-like spear is PixelFX's own rig geometry, not a drawn overlay.
+        if (job.player && job.style === 'mage') pose={...pose,weapon:'spear',sa:-Math.PI/2};
+        const rigPose={...pose,x:0,y:0};
+        const rig=posed(rigPose);
         const c=document.createElement('canvas');c.width=c.height=96;const g=c.getContext('2d'),image=g.createImageData(96,96);
         const dark=rgb(job.spec[0]),light=rgb(job.spec[1]),accent=rgb(job.spec[2]);
         // Outline the complete rig before filling it, once per cached frame.
@@ -139,7 +116,8 @@ export class PixelCharacters {
           const x=rig.xs[i]+48,y=rig.ys[i]+78;if(x<0||y<0||x>=96||y>=96)continue;
           const v=rig.color[i],r=v&255,gr=(v>>>8)&255,b=(v>>>16)&255, lum=(r+gr+b)/3;
           let col=lum<32?[9,13,22]:mix(dark,light,Math.max(0,Math.min(1,(lum-35)/190)));
-          if(job.player && PLAYER_OUTLINES[job.style] && !rig.ink[i]) {
+          if(job.player && job.style==='mage' && rig.src[i]<0 && !rig.ink[i]) col=[r,gr,b];
+          else if(job.player && PLAYER_OUTLINES[job.style] && !rig.ink[i] && rig.src[i]>=0) {
             // src identifies the corresponding rest-pose pixel: center head and
             // torso versus arms and legs, even when animated into a new pose.
             const src=rig.src[i], sx=src%24, sy=Math.floor(src/24);
@@ -148,8 +126,11 @@ export class PixelCharacters {
           const k=(y*96+x)*4;image.data[k]=col[0];image.data[k+1]=col[1];image.data[k+2]=col[2];image.data[k+3]=v>>>24;
         }
         g.putImageData(image,0,0);
-        if (job.player) playerDetails(g,job.spec,job.state,job.index,job.style);
-        else details(g,job.spec,job.state,job.index);
+        if (!job.player) details(g,job.spec,job.state,job.index);
+        if (job.player && job.style === 'mage') {
+          const hand=skeleton(rigPose).joints.handN;
+          c.staffTip={x:hand[0],y:hand[1]-47};
+        }
         job.frames.push(c); if(++job.index<job.count)this.queue.push(job);
         else {job.frames.ready=true;if(this.onReady) this.onReady(job.style,job.state);}
       } catch (_) { this.cache.delete(job.key); }
@@ -168,7 +149,12 @@ export class PixelCharacters {
       ctx.translate(x,y);ctx.scale(Math.cos(angle||0)<0?-1:1,1);ctx.imageSmoothingEnabled=false;
       const scale=options.scale||1.25;ctx.scale(scale,scale);
       const bob=state==='idle'?Math.round(Math.sin((time||0)*2)*2)/scale:0;
-      ctx.drawImage(frames[n],-48,-78+bob);
+      const frame=frames[Math.min(n,frames.length-1)];
+      ctx.drawImage(frame,-48,-78+bob);
+      if (frame.staffTip && options.onStaffTip) {
+        const face=Math.cos(angle||0)<0?-1:1;
+        options.onStaffTip(x+face*scale*frame.staffTip.x,y+scale*(frame.staffTip.y+bob));
+      }
     } finally {ctx.restore();}return true;
   }
 }

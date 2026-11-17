@@ -1,6 +1,6 @@
 // Run with: node tests/pixel-fx.test.mjs
 import assert from 'node:assert/strict';
-import { PixelFXCache, PixelFXManager, ERA_PALETTES } from '../js/pixel-fx-manager.js';
+import { PixelFXCache, PixelFXManager, ERA_PALETTES, ENEMY_PLASMA_PALETTE } from '../js/pixel-fx-manager.js';
 
 const tasks = [];
 globalThis.requestIdleCallback = cb => tasks.push(cb);
@@ -47,7 +47,7 @@ assert.equal(manager.spawn(id, 5, 7, { palette }), true);
 manager.update(0.1); manager.draw(main);
 assert.equal(draws.length, 1);
 assert.equal(manager.drawLoop(main, id, 5, 7, 0, { palette, progress: 0.5 }), true);
-manager.update(1); assert.equal(manager.live.length, 0);
+manager.update(entry.duration); assert.equal(manager.live.length, 0);
 assert.equal(manager.spawn('missing', 0, 0), false);
 const red=['#280812','#5b1020','#a31b2c','#ec3044','#ff7962','#ffc7a2','#fff4df'];
 cache.request('arcane/arcane-orb',red);
@@ -56,4 +56,10 @@ await flush(orb,cache);
 const orbOffset=-52*96/136;
 assert.equal(manager.drawLoop(main,'arcane/arcane-orb',8,9,0.3,{palette:red,angle:Math.PI/2,scale:1.5,offsetY:orbOffset}),true);
 assert.ok(Math.abs(draws.at(-1)[2]-(-orb.originY-orbOffset))<0.001, 'orb center must stay at collision position');
+const primed = new PixelFXManager();
+for (const name of ['critters/slime','critters/bat','critters/eyeball','projectiles/bullet-tracer','projectiles/laser-bolt','projectiles/energy-disc','arcane/arcane-orb','melee/sword-slash','melee/heavy-cleave','melee/hammer-smash','melee/dagger-flurry']) {
+  const first=primed.cache.request(name);
+  assert.ok(first && first.frames.length, name+' must be drawable immediately');
+}
+assert.ok(primed.cache.request('projectiles/plasma-shot', ENEMY_PLASMA_PALETTE));
 console.log('PixelFX cache, palette, world-space draw and fallback checks passed');

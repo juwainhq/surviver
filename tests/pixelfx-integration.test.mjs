@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+const src=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+function part(a,b){const i=src.indexOf(a),j=src.indexOf(b,i);assert.ok(i>=0&&j>i);return src.slice(i,j);}
+const calls=[], game={time:2,player:{x:10,y:10},gemsList:[{x:1,y:2,t:1}],shards:[{x:2,y:3,t:1}],pickups:[{kind:'chip',x:3,y:4},{kind:'health',x:4,y:5}],enemyBullets:[{x:8,y:9,vx:4,vy:3,spin:0}],arenas:[{x:40,y:40,r:100,active:true}],boss:null};
+const PixelFX={loop(...x){calls.push(x);return true},era(){return null}};
+const ctx={save(){},restore(){},translate(){},scale(){},fillText(){},set imageSmoothingEnabled(v){assert.equal(v,false)}};
+const env={game,gameState:{currentUniverse:0},ctx,PixelFX,CHAR:{},SPAWN_TELEGRAPH_TIME:.8,INVIS_MIN_ALPHA:.45,TAU:2*Math.PI,angleTo:()=>0,clamp:(x,a,b)=>Math.max(a,Math.min(x,b)),arenaRadiusValue:a=>a.r,arenaWaveProgressText:()=>'',ENEMY_PLASMA_PALETTE:['#280812']};
+vm.createContext(env);
+vm.runInContext(part('const SLIME_PALETTES = [','/* ============================================================================\n   THE CHAMPIONS'),env);
+const enemy={type:'knight',x:1,y:2,r:12,hp:2,maxHp:2};env.enemy=enemy;vm.runInContext('drawEnemy(enemy)',env);
+assert.equal(calls[0][1],'critters/slime');assert.equal(calls[0][5].scale,1.5);assert.ok(calls[0][5].palette);
+vm.runInContext(part('function drawShards()', 'function jumpPlayer()'),env);
+vm.runInContext(part('function drawGems()', 'function drawParticles()'),env);
+vm.runInContext(part('function drawPickups()', 'function drawHiddenSpots()'),env);
+vm.runInContext('drawShards();drawGems();drawPickups()',env);
+assert.deepEqual(calls.slice(1).map(x=>x[1]),['pickups/xp-orb','pickups/gem-spin','pickups/power-star','pickups/heart-pickup']);
+assert.match(part('function queueClassLevelUp(', 'function showLevelUpToast('),/ui\/level-up/);
+assert.match(part('function queueClassLevelUp(', 'function showLevelUpToast('),/holy\/halo/);
+assert.match(part('function fireSniper(', 'function fireMageOrbs('),/playMove\(p, 'rocket-launcher'\)/);
+assert.match(part('function firePistols(', 'function fireSniper('),/playMove\(p, 'pistol-shots'\)/);
+assert.match(part('function fireDisc(', 'function updateDiscs('),/playMove\(p, 'rocket-launcher'\)/);
+assert.doesNotMatch(part('function drawPixelEnemy(', 'function drawEnemyHealthUI('),/\.(fillRect|arc|lineTo)\s*\(/);
+console.log('PixelFX combat, pickup, level-up and skeletal move integration verified');
