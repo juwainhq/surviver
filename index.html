@@ -3488,6 +3488,53 @@ h1, h2, .screen-title, .card-title{ line-height:1.5 !important; }
 }
 </style>
 
+
+<style id="pfx-ability-hud">
+/* ---- locked / cooling slots ------------------------------------------- */
+#abilities .ability{ position:relative; }
+#abilities .ability.locked .ab-btn{ opacity:.3; filter:grayscale(1); cursor:default; }
+#abilities .ability .ab-lock{
+  position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+  pointer-events:none; z-index:3;
+}
+#abilities .ability.locked .ab-lock{ display:flex; }
+#abilities .ability .ab-dim{                   /* dark translucent overlay */
+  position:absolute; inset:0; z-index:2; display:none; pointer-events:none;
+  background:rgba(6,8,12,.62); border-radius:inherit;
+}
+#abilities .ability.cooling .ab-dim{ display:block; }
+#abilities .ability .ab-cd{                    /* white pixel-font countdown */
+  position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+  z-index:4; pointer-events:none;
+  font-family:'Press Start 2P',var(--font-pixel,monospace);
+  font-size:10px; line-height:1; letter-spacing:0; color:#fff;
+  text-shadow:1px 1px 0 #000,-1px 1px 0 #000,1px -1px 0 #000,-1px -1px 0 #000;
+}
+#abilities .ability.cooling .ab-cd{ display:flex; }
+
+/* ---- developer panel --------------------------------------------------- */
+#devPanel{
+  position:fixed; top:12px; right:12px; z-index:9999; display:none;
+  flex-direction:column; gap:5px; padding:8px;
+  background:#1a1c23; border:2px solid #ffffff;
+  font-family:'Press Start 2P',var(--font-pixel,monospace);
+  font-size:9px; line-height:1.2; color:#e5e7eb; text-transform:uppercase;
+  box-shadow:0 6px 0 rgba(0,0,0,.55); pointer-events:auto;
+  image-rendering:pixelated;
+}
+#devPanel.open{ display:flex; }
+#devPanel .dev-head{ color:#8b93a7; font-size:8px; letter-spacing:0; margin-bottom:2px; }
+#devPanel .dev-btn{
+  display:block; padding:6px 7px; text-align:left; cursor:pointer;
+  background:#23262f; color:#f8fafc; border:1px solid #4b5563;
+  font-family:inherit; font-size:9px; letter-spacing:0; text-transform:uppercase;
+  box-shadow:inset -1px -1px 0 #101218;
+}
+#devPanel .dev-btn:hover{ background:#2e323d; border-color:#ffffff; }
+#devPanel .dev-btn:active{ transform:translate(1px,1px); }
+#devPanel .dev-btn.on{ background:#3f2d12; border-color:#c8a24a; color:#f5d68a; }
+#devPanel .dev-note{ color:#6b7280; font-size:7px; margin-top:2px; }
+</style>
 </head>
 <body>
 <div id="gameCanvas" class="screen game-screen">
@@ -8743,6 +8790,8 @@ function cdScale() {
 /* ---- Q: the class ability ---- */
 function castClassAbility() {
   if (game.qCd > 0 || game.screen !== 'playing' || gameState.isDying) return;
+  /* PIXELFX progression: Q opens at class level 3 and not one level sooner */
+  if (!hasAbility('q')) return;
   game.qCd = qCdMax();
   const cls = getClass();
   if (cls.q.id === 'bash') shieldBash();
@@ -9655,6 +9704,8 @@ function hurtPlayer(amount, raw, source) {
   }
   if (!raw && amount > 0) amount = quantizeHeartDamage(amount);
   if (currentSkill('thick_skull')) amount *= 0.85;
+  /* PIXELFX · dev god mode: an explicit flag that outranks every damage path */
+  if (p.invincible) { p.hp = Math.max(p.hp, 9999); return; }
   const hpBeforeHit = p.hp;
   p.hp -= amount;
   if (typeof PFX !== 'undefined' && PFX.ready) {
@@ -12913,15 +12964,21 @@ function classAbilityDef(slot, classId) {
   for (let i = 0; i < kit.length; i++) if (kit[i].slot === slot) return kit[i];
   return null;
 }
+const ABILITY_LEVEL_REQ = { q: 3, e: 5, f: 10, r: 15 };
+function playerClassLevel() {
+  try { return Math.max(1, (getClassProgress(gameState.currentClass) || {}).level | 0); } catch (e) { return 1; }
+}
+function abilityLevelReq(slot) { return ABILITY_LEVEL_REQ[slot] || 1; }
+/* PIXELFX progression gate — read by the cast path, the HUD and the engine. */
 function hasAbility(id) {
-  if (id === 'q') return true;
   if (id === 'overdrive') return !!(gameState.unlockedAbilities && gameState.unlockedAbilities.overdrive);
-  /* PIXELFX playability: the class kit is live from the first frame. The unlock
-     ceremony (syncAbilityUnlocks / grantBossAbility) still runs and still shows
-     its card, it just is not a gate on the keys any more. */
-  if (classAbilityDef(id)) return true;
+  /* the dash is a level-1 movement tool, never a progression reward */
+  if (id === 'shift' || id === 'dash') return true;
+  /* Q is the class ability (cls.q) and is NOT part of the e/shift/f/r kit */
+  if (id === 'q') return playerClassLevel() >= abilityLevelReq('q');
   const def = classAbilityDef(id);
-  return !!(def && gameState.unlockedAbilities && gameState.unlockedAbilities[def.id]);
+  if (!def) return false;
+  return playerClassLevel() >= abilityLevelReq(id);
 }
 function abilityUnlockedCount() {
   let n = 0;
@@ -13145,18 +13202,202 @@ function abilityIconSVG(def) {
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (def.icon || '<circle cx="12" cy="12" r="8"/>') + '</svg>';
 }
 
+/* One padlock glyph, drawn — never an emoji, so it survives the pixel font. */
+const PFX_LOCK_SVG = '<svg viewBox="0 0 12 14" width="12" height="14" aria-hidden="true">' +
+  '<path d="M3 6V4.5a3 3 0 0 1 6 0V6" fill="none" stroke="#9aa4b2" stroke-width="1.6"/>' +
+  '<rect x="1" y="6" width="10" height="7" fill="#6b7280" stroke="#9aa4b2" stroke-width="1"/></svg>';
+
+/* Shared slot painter: locked -> dim + padlock, cooling -> dark overlay plus a
+   bright white pixel-font timer centred in that ability's own box. */
+function pfxPaintSlot(el, unlocked, cooling, cd, req) {
+  if (!el) return;
+  let lockEl = el.querySelector('.ab-lock');
+  if (!lockEl) {
+    lockEl = document.createElement('span');
+    lockEl.className = 'ab-lock';
+    lockEl.setAttribute('aria-hidden', 'true');
+    el.appendChild(lockEl);
+  }
+  let dimEl = el.querySelector('.ab-dim');
+  if (!dimEl) {
+    dimEl = document.createElement('span');
+    dimEl.className = 'ab-dim';
+    dimEl.setAttribute('aria-hidden', 'true');
+    el.appendChild(dimEl);
+  }
+  let cdEl = el.querySelector('.ab-cd');
+  if (!cdEl) {
+    cdEl = document.createElement('span');
+    cdEl.className = 'ab-cd';
+    cdEl.setAttribute('aria-hidden', 'true');
+    el.appendChild(cdEl);
+  }
+  el.classList.toggle('locked', !unlocked);
+  el.classList.toggle('unlocked', !!unlocked);
+  el.classList.toggle('cooling', !!cooling);
+  el.dataset.reqLevel = String(req || 1);
+  el.dataset.level = String(playerClassLevel());
+  if (!unlocked) {
+    if (!lockEl.firstChild) lockEl.innerHTML = PFX_LOCK_SVG;
+    lockEl.title = 'Unlocks at level ' + (req || 1);
+    el.title = 'Locked \u2014 level ' + (req || 1);
+  } else {
+    if (lockEl.firstChild) lockEl.innerHTML = '';
+    lockEl.removeAttribute('title');
+    el.removeAttribute('title');
+  }
+  cdEl.textContent = cooling ? ((cd >= 10 ? cd.toFixed(0) : cd.toFixed(1)) + 's') : '';
+}
+
+
+/* ============================ developer panel ============================
+   A pixel-font HTML overlay (top-right, ~ or ` to toggle) that drives the real
+   game state directly, so a mechanic can be exercised without playing wave 1:
+   max level, god mode, a slime swarm, a boss, and a map wipe. Nothing here is
+   reachable from normal play; the panel starts hidden. */
+const DEV_STATE = { god: false, open: false };
+function devSay(msg) {
+  const el = document.getElementById('devStatus');
+  if (el) el.textContent = String(msg).toUpperCase();
+}
+function devSetOpen(open) {
+  const el = document.getElementById('devPanel');
+  if (!el) return;
+  DEV_STATE.open = !!open;
+  el.classList.toggle('open', DEV_STATE.open);
+  if (DEV_STATE.open) devSay('LV ' + playerClassLevel());
+}
+function devLevelMax() {
+  if (!game || !game.player) return;
+  if (typeof awardClassXP === 'function') awardClassXP(1e9, 'dev');
+  /* bookkeeping flag for every class ability, so any unlock UI agrees */
+  const kit = (typeof CLASS_ABILITIES !== 'undefined' && CLASS_ABILITIES[gameState.currentClass]) || [];
+  if (!gameState.unlockedAbilities) gameState.unlockedAbilities = {};
+  for (let i = 0; i < kit.length; i++) gameState.unlockedAbilities[kit[i].id] = true;
+  if (typeof pendingClassLevelUp !== 'undefined') pendingClassLevelUp = null;
+  /* level-up flourish: the toast, the sound and the pixelfx burst */
+  if (typeof showLevelUpToast === 'function') showLevelUpToast(playerClassLevel());
+  if (typeof PFX !== 'undefined' && PFX.ready) { try { PFX.hooks.onLevelUp(); } catch (e1) { /* ignore */ } }
+  if (typeof syncAbilityHud === 'function') syncAbilityHud();
+  if (typeof syncClassXpHud === 'function') syncClassXpHud();
+  devSay('LV ' + playerClassLevel() + ' MAX');
+}
+function devGodMode() {
+  const p = game && game.player;
+  if (!p) return;
+  DEV_STATE.god = !DEV_STATE.god;
+  p.invincible = DEV_STATE.god;
+  if (DEV_STATE.god) {
+    p.maxHp = Math.max(9999, Number(p.maxHp) || 0);
+    p.hp = 9999;
+    p.invincibleTimer = Math.max(Number(p.invincibleTimer) || 0, 1);
+  } else {
+    p.maxHp = Math.max(1, Math.min(Number(p.maxHp) || 100, 100));
+    p.hp = Math.min(Number(p.hp) || 0, p.maxHp);
+  }
+  const btn = document.getElementById('devGod');
+  if (btn) btn.classList.toggle('on', DEV_STATE.god);
+  devSay(DEV_STATE.god ? 'GOD ON' : 'GOD OFF');
+}
+function devSpawnSwarm() {
+  const p = game && game.player;
+  if (!p || typeof spawnEnemy !== 'function') return;
+  for (let i = 0; i < 20; i++) {
+    const a = (i / 20) * TAU + 0.27;
+    const d = 96 + (i % 4) * 26;
+    const x = clamp(p.x + Math.cos(a) * d, 40, WORLD - 40);
+    const y = clamp(p.y + Math.sin(a) * d, 40, WORLD - 40);
+    try { spawnEnemy('minion', x, y, 0); } catch (e2) { /* ignore */ }
+  }
+  /* the brief asks for critters/slime specifically: pin the fresh ring to it */
+  const fresh = game.enemies.slice(-20);
+  for (let i = 0; i < fresh.length; i++) {
+    const e = fresh[i];
+    e.critter = 'slime';
+    e.critterKey = 'critter:slime:' + (e.critterSkin || 'base');
+  }
+  devSay('SWARM 20');
+}
+function devSpawnBoss() {
+  const p = game && game.player;
+  if (!p) return;
+  if (typeof spawnBoss === 'function') {
+    try {
+      spawnBoss();
+      if (game.boss) {
+        game.boss.x = clamp(p.x + 240, 80, WORLD - 80);
+        game.boss.y = clamp(p.y - 20, 80, WORLD - 80);
+        game.boss.entering = null;
+        game.bossUnlocked = true;
+      }
+    } catch (e3) { /* fall through to the elite */ }
+  }
+  if (!game.boss && typeof spawnEnemy === 'function') {
+    try { spawnEnemy('brute', clamp(p.x + 200, 60, WORLD - 60), p.y, 0); } catch (e4) { /* ignore */ }
+  }
+  devSay(game.boss ? 'BOSS' : 'ELITE');
+}
+function devWipeMap() {
+  if (!game) return;
+  let killed = 0;
+  const list = game.enemies.slice();
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    try { if (typeof damageEnemy === 'function') damageEnemy(e, 1e6, true); else { e.hp = 0; } } catch (e5) { e.hp = 0; }
+    killed++;
+  }
+  if (game.boss && game.boss.hp > 0) {
+    /* a boss caps every single hit at 12% of max HP (anti-melt), so the wipe
+       lands as a short burst of real hits instead of one impossible number */
+    try {
+      for (let i = 0; i < 12 && game.boss && game.boss.hp > 0; i++) {
+        if (typeof damageBoss === 'function') damageBoss(1e6, { silent: true });
+        else { game.boss.hp = 0; break; }
+      }
+    } catch (e6) { game.boss.hp = 0; }
+  }
+  devSay('WIPED ' + killed);
+}
+function installDevPanel() {
+  const panel = document.getElementById('devPanel');
+  if (!panel || panel.dataset.wired === '1') return;
+  panel.dataset.wired = '1';
+  const bind = (id, fn) => {
+    const b = document.getElementById(id);
+    if (b) b.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); try { fn(); } catch (err) { devSay('ERR'); } });
+  };
+  bind('devLevelMax', devLevelMax);
+  bind('devGod', devGodMode);
+  bind('devSwarm', devSpawnSwarm);
+  bind('devBoss', devSpawnBoss);
+  bind('devWipe', devWipeMap);
+  window.addEventListener('keydown', (ev) => {
+    if (ev.key === '~' || ev.key === '`' || ev.code === 'Backquote') {
+      ev.preventDefault();
+      devSetOpen(!DEV_STATE.open);
+    }
+  }, true);
+  devSetOpen(false);
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', installDevPanel);
+} else {
+  installDevPanel();
+}
+
 function syncAbilityHud() {
   const cls = getClass();
   updateAbilityIcons(cls.id);
   const qEl = UI.abilities.q;
   if (qEl) {
     const qBtn = qEl.querySelector('.ab-btn');
-    const qCooling = game.qCd > 0;
-    qEl.classList.toggle('cooling', qCooling);
-    qBtn.disabled = false;
-    qBtn.setAttribute('aria-disabled', String(qCooling));
+    const qUnlocked = hasAbility('q');
+    const qCooling = qUnlocked && game.qCd > 0;
+    pfxPaintSlot(qEl, qUnlocked, qCooling, game.qCd, abilityLevelReq('q'));
+    qBtn.disabled = !qUnlocked;
+    qBtn.setAttribute('aria-disabled', String(!qUnlocked || qCooling));
     qBtn.setAttribute('aria-label', cls.q.name + ' (Q)');
-    qBtn.title = cls.q.name;
+    qBtn.title = qUnlocked ? cls.q.name : 'Locked \u2014 level ' + abilityLevelReq('q');
     qBtn.style.setProperty('--cooldown-angle', (clamp(game.qCd / Math.max(0.001, qCdMax()), 0, 1) * 360) + 'deg');
   }
   for (let i = 0; i < ABILITY_SLOTS.length; i++) {
@@ -13169,9 +13410,7 @@ function syncAbilityHud() {
     const cd = abilityCooldown(slot);
     const maxCd = def ? skillCooldownSeconds(slot, def.cd * cdScale()) : 1;
     const cooling = unlocked && cd > 0;
-    el.classList.toggle('locked', !unlocked);
-    el.classList.toggle('unlocked', unlocked);
-    el.classList.toggle('cooling', cooling);
+    pfxPaintSlot(el, unlocked, cooling, cd, abilityLevelReq(slot));
     button.disabled = !unlocked;
     button.setAttribute('aria-disabled', String(!unlocked || cooling));
     button.style.setProperty('--cooldown-angle', (clamp(cd / Math.max(0.001, maxCd), 0, 1) * 360) + 'deg');
@@ -13181,6 +13420,26 @@ function syncAbilityHud() {
     }
   }
 }
+
+/* ---- ability bar tick: 10 Hz, and only while something is cooling --------- */
+let abilityHudClock = 0;
+function tickAbilityHud(dt) {
+  abilityHudClock += Math.max(0, Number(dt) || 0);
+  if (abilityHudClock < 0.1) return;
+  abilityHudClock = 0;
+  if (game.screen !== 'playing') return;
+  let anyCooling = (game.qCd || 0) > 0;
+  if (!anyCooling) {
+    for (let i = 0; i < ABILITY_SLOTS.length; i++) {
+      if ((abilityCooldown(ABILITY_SLOTS[i]) || 0) > 0) { anyCooling = true; break; }
+    }
+  }
+  /* also repaint when the level changes, so a slot unlocks without a cast */
+  const lvl = playerClassLevel();
+  if (lvl !== tickAbilityHud.level) { tickAbilityHud.level = lvl; anyCooling = true; }
+  if (anyCooling) syncAbilityHud();
+}
+tickAbilityHud.level = 0;
 
 function castAbilitySlot(slot) {
   if (game.screen !== 'playing' || isPaused || gameState.isDying || abilitiesLocked()) return;
@@ -27451,6 +27710,11 @@ function update(dt) {
   if (typeof PFX !== 'undefined' && PFX.ready) {
     try { PFX.hooks.tick(sdt, dt); } catch (ePFX) { /* ignore */ }
   }
+  /* PIXELFX: the ability bar redraws itself while anything is on cooldown, so
+     the countdown in each slot actually counts down */
+  if (typeof tickAbilityHud === 'function') {
+    try { tickAbilityHud(dt); } catch (eHud) { /* the bar is cosmetic */ }
+  }
   updateTurrets(sdt);
   updateBombs(sdt);
   updateRift(sdt);
@@ -28706,7 +28970,9 @@ const PFX = (function () {
   add('ui.crit', 'ui/crit-number', { scale: 0.85, window: 1.2, fps: 12 });
   add('ui.exclaim', 'ui/exclamation', { scale: 1, window: 1.0, fps: 12 });
   
-  add('ui.scanner', 'scifi/scanner', { loop: true, window: 1.6, fps: 10, scale: 1 });
+  /* `scifi/scanner` is NOT baked any more: it is a green bracket box with a
+     percentage readout, and it was being stretched over the minimap where it
+     read as a giant green bounding box stuck to the screen. */
   add('ui.energy-core', 'scifi/energy-core', { loop: true, window: 1.6, fps: 10, scale: 1 });
   add('ui.hologram', 'scifi/hologram', { loop: true, window: 1.6, fps: 10, scale: 1 });
 
@@ -30470,20 +30736,66 @@ const PFX = (function () {
     if (c.hitFlash > 0) drawClip('impact.flash', c.x, c.y, 0, { scale: 0.5 });
   }
 
-  /* ---- the minimap: a pixelfx scanner sweep with sprite pips ------------- */
+  /* ---- the minimap: a neutral generated plate with sprite pips ----------- */
   function minimapRect() {
     const el = UI.minimap;
     const w = el && el.clientWidth ? el.clientWidth : 148;
     const h = el && el.clientHeight ? el.clientHeight : 148;
     return { x: W - w - 18, y: 76, w: w, h: h };
   }
+  /* ---- minimap plate: neutral, no scanner, no readout ------------------
+     The old backdrop was the pixelfx `scifi/scanner` kit stretched over the
+     whole minimap — a bright green bracket box with a percentage inside it,
+     which read as a broken crosshair bounding box parked on the screen. The
+     plate below is generated once as pixels (dark slab, 2 px steel edge,
+     corner ticks) and blitted, so the map still has a frame without a single
+     canvas primitive and without a single green pixel. */
+  const plateCache = new Map();
+  function minimapPlate(w, h) {
+    const key = w + 'x' + h;
+    if (plateCache.has(key)) return plateCache.get(key);
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const g = cv.getContext('2d');
+    const img = g.createImageData(w, h);
+    const d = img.data;
+    const put = (x, y, r, gg, b, a) => {
+      if (x < 0 || y < 0 || x >= w || y >= h) return undefined;
+      const i = (y * w + x) * 4;
+      d[i] = r; d[i + 1] = gg; d[i + 2] = b; d[i + 3] = a;
+      return undefined;
+    };
+    const EDGE = [42, 48, 60, 235];      /* #2a303c */
+    const SLAB = [10, 13, 18, 168];      /* #0a0d12 at 66% */
+    const TICK = [71, 85, 105, 235];     /* #475569 */
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const edge = x < 2 || y < 2 || x >= w - 2 || y >= h - 2;
+        if (edge) { put(x, y, EDGE[0], EDGE[1], EDGE[2], EDGE[3]); continue; }
+        put(x, y, SLAB[0], SLAB[1], SLAB[2], SLAB[3]);
+      }
+    }
+    /* four corner ticks, 10 px long, so the frame reads as a viewport */
+    const L = Math.max(8, Math.round(Math.min(w, h) * 0.14));
+    for (let i = 2; i < 2 + L; i++) {
+      put(i, 2, TICK[0], TICK[1], TICK[2], TICK[3]); put(i, h - 3, TICK[0], TICK[1], TICK[2], TICK[3]);
+      put(2, i, TICK[0], TICK[1], TICK[2], TICK[3]); put(w - 3, i, TICK[0], TICK[1], TICK[2], TICK[3]);
+      put(w - 1 - i, 2, TICK[0], TICK[1], TICK[2], TICK[3]); put(w - 1 - i, h - 3, TICK[0], TICK[1], TICK[2], TICK[3]);
+      put(2, h - 1 - i, TICK[0], TICK[1], TICK[2], TICK[3]); put(w - 3, h - 1 - i, TICK[0], TICK[1], TICK[2], TICK[3]);
+    }
+    g.putImageData(img, 0, 0);
+    plateCache.set(key, cv);
+    return cv;
+  }
+
   function drawMinimapPfx() {
     if (document.body.classList.contains('mobile-hud')) return;
     const r = minimapRect();
+    const w = Math.max(24, Math.round(r.w)), h = Math.max(24, Math.round(r.h));
     ctx.save();
-    ctx.globalAlpha = 0.9;
-    const s = Math.max(r.w / 112, r.h / 78);
-    drawClip('ui.scanner', r.x + r.w / 2, r.y + r.h / 2, game.time, { scale: s });
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = 0.92;
+    ctx.drawImage(minimapPlate(w, h), Math.round(r.x), Math.round(r.y));
     const p = game.player;
     if (p) {
       const kx = r.w / WORLD, ky = r.h / WORLD;
@@ -31653,5 +31965,15 @@ window.addEventListener('load', resize);
   if (typeof PFX !== 'undefined') PFX.boot();
 })();
 </script>
+
+<div id="devPanel" aria-label="Developer panel" role="toolbar">
+  <div class="dev-head">DEV &middot; <span id="devStatus">LV 1</span></div>
+  <button type="button" class="dev-btn" id="devLevelMax">[Lv MAX]</button>
+  <button type="button" class="dev-btn" id="devGod">[God Mode]</button>
+  <button type="button" class="dev-btn" id="devSwarm">[Spawn Swarm]</button>
+  <button type="button" class="dev-btn" id="devBoss" >[Spawn Boss]</button>
+  <button type="button" class="dev-btn" id="devWipe" >[Wipe Map]</button>
+  <div class="dev-note">~ or ` to toggle</div>
+</div>
 </body>
 </html>

@@ -632,3 +632,98 @@ is gone.
 4. **Moves are pose-stepped at 10 fps** and interpolate nothing between cells; if motion looks choppy on a 144 Hz display, raise `CFG.actFps` to 12–15 (costs ~6 MB).
 5. **`game.player.classId` values** are the host's (`knight, gunslinger, sniper, mage, berserker, shadow, tech`). Unknown ids fall back to `CLASS_ACTIONS.knight`.
 6. **Memory** is ~105 MB of canvas at boot on desktop. If that is too much for a target, the low-spec profile is automatic on weak devices; the next lever is halving the atlas for clips over ~24 000 px.
+
+## 11e · Round five: reticle hygiene, level-gated abilities, dev panel
+
+### A · The green box was not the reticle
+
+The cursor itself was already correct — a 2 px white cross with a 6 px hollow
+centre and a 2×2 `#ef4444` pip, drawn through the sanctioned `fillRect` block
+(1500 calls per 300 frames, still the only primitive on the battlefield). The
+"massive green bounding box with a `0%` readout" was the **minimap backdrop**:
+`ui.scanner` → `scifi/scanner`, a sci-fi bracket frame *with a percentage
+readout baked into the sprite*, stretched over `minimapRect()` at
+`s = max(w/112, h/78)`. At 1920×1080 that is a ~1.9× stretch of a green HUD
+panel in the top-right corner, which reads exactly like a broken crosshair
+bounding box.
+
+Fixed by deleting the clip rather than tuning it:
+
+1. `ui.scanner` is no longer in the manifest — `scifi/scanner` is not baked at
+   boot at all (165 clips).
+2. `drawMinimapPfx()` builds its own plate once per size: a `#0a0d12` slab at
+   66 % alpha, a 2 px `#2a303c` edge and four `#475569` corner ticks, written
+   as `ImageData` and blitted with `drawImage`. No primitives, no green, no
+   text, no number.
+
+Green-pixel census of the minimap region (top-right, 287×246 px at 1024×768):
+**0 green pixels** in both the idle and the post-attack frame, where the
+scanner used to be.
+
+### B · Progression is a real gate again (by level, not by boss)
+
+Round four bought playability by making `hasAbility()` true for every class
+slot; that also deleted progression. Round five replaces the shortcut with the
+gate the brief asks for:
+
+```js
+const ABILITY_LEVEL_REQ = { q: 3, e: 5, f: 10, r: 15 };
+function hasAbility(id) {
+  if (id === 'overdrive') return …shop unlock…;
+  if (id === 'shift' || id === 'dash') return true;   // level-1 movement
+  if (id === 'q') return playerClassLevel() >= 3;     // cls.q, not in the kit
+  const def = classAbilityDef(id);                    // e / f / r
+  return def ? playerClassLevel() >= ABILITY_LEVEL_REQ[def.slot] : false;
+}
+```
+
+Note the Q trap: `ABILITY_SLOTS` is `['e','shift','f','r']`, so Q is *not* part
+of the class kit — it is `cls.q` and has its own cast function
+`castClassAbility()`. Gating the kit alone would have left Q firing at level 1.
+`castClassAbility()` now returns before it burns `game.qCd`, so the engine's
+cast wrapper stays quiet too: a locked key produces no pose, no move and no
+cooldown.
+
+Verified with real DOM key events on a level-1 knight: `locked=4`,
+`e/f/r/q` all `unlocked:false`, every cast a no-op; LMB still plays
+`moves/sword-combo` and SHIFT still plays `moves/dash-strike`.
+
+### C · The HUD tells the truth
+
+`syncAbilityHud()` became `pfxPaintSlot(el, unlocked, cooling, cd, req)` — one
+painter for all five slots (Q has its own branch and needed the same treatment):
+
+| state | slot |
+|---|---|
+| locked | `.ab-btn` at `opacity:.3` + `grayscale(1)`, a drawn grey padlock (SVG, never an emoji) centred on the slot, `disabled`, `title="Locked — level N"` |
+| cooling | a real `.ab-dim` layer (`rgba(6,8,12,.62)`, `z-index:2`) over the box plus a `.ab-cd` readout (`z-index:4`, `Press Start 2P` 10 px, `#fff`, 4-way 1 px black outline) showing `3.5s` / `12s` |
+| ready | neither layer is displayed; the cooldown ring keeps its `--cooldown-angle` sweep |
+
+The countdown needs a clock the host does not have: nothing repainted the bar
+between casts, so a burned cooldown would have shown a frozen number. The
+engine now calls `tickAbilityHud(dt)` every frame — a 10 Hz repaint, skipped
+entirely when no slot is cooling and no level changed.
+
+Readout measured mid-cooldown: `abQ 7.1s`, `abE 9.3s`, `abShift 12s`,
+`abF 23s`, `abR 18s`, all with `.ab-dim` at `display:block`.
+
+### D · `div#devPanel` — the testing lever
+
+An HTML overlay (not canvas), top-right, `position:fixed`, `z-index:9999`,
+`#1a1c23` on a 2 px `#fff` border, `Press Start 2P` at 9 px, hidden by
+default, toggled by `~` or `` ` `` (`ev.key` or `ev.code === 'Backquote'`,
+capture phase, `preventDefault`). Every button drives the real game state:
+
+| button | does | measured |
+|---|---|---|
+| `[Lv MAX]` | `awardClassXP(1e9)`, flags every class ability, clears the queued level card, fires the toast + `PFX.hooks.onLevelUp()` | level 1 → 20, `locked` 4 → 0 |
+| `[God Mode]` | toggles `player.invincible`, `hp/maxHp = 9999`; the damage path returns early on that flag | `{inv:true, hp:9999, maxHp:9999}` |
+| `[Spawn Swarm]` | 20 `spawnEnemy('minion', …)` in a ring, pinned to `critters/slime` | `enemies 0 → 20`, all `critter:'slime'`, key `critter:slime:base` |
+| `[Spawn Boss]` | `spawnBoss()` placed 240 px from the player, `entering = null`; falls back to an elite brute | `Sir Malvork, Ashen Warden`, hp 134.4, 222 px away |
+| `[Wipe Map]` | `damageEnemy(e, 1e6)` for every enemy, then 12 real `damageBoss()` hits (the boss caps one hit at 12 % max HP) | 20 enemies → 0, boss → gone |
+
+### E · Gate
+
+`tools/pfx-harness/run.mjs`: **ALL CHECKS PASSED** — 169 clips at 141.4 MB
+worst universe, 0 forbidden primitives over 300 frames, 1500 sanctioned
+(crosshair), 305 `drawImage`/frame at 12 enemies. Boot log: 165 clips.
