@@ -1,0 +1,12 @@
+{
+  "name": "survive-pfx-harness",
+  "private": true,
+  "type": "module",
+  "description": "Headless jsdom harness for the 2.5D pixelfx game in index.html",
+  "scripts": {
+    "test": "node run.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1"
+  }
+}
