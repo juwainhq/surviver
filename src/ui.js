@@ -320,7 +320,11 @@ export function startStage() {
   game.rageT = 0;
   game.cd.shift = 0; game.cd.q = 0; game.cd.e = 0; game.cd.r = 0;
   game.stats = { hits: 0, kills: 0, casts: 0, maxCombo: 0, combo: 0, comboT: 0 };
-  game.run = { kills: 0, maxCombo: 0, level: 1, started: game.time, universe: universeIndex, deaths: 0 };
+  const prevRun = game.run || {};
+  game.run = {
+    kills: 0, maxCombo: 0, level: 1, started: game.time, universe: universeIndex, deaths: 0,
+    best: prevRun.best || 0, victories: prevRun.victories || 0   /* lifetime bests survive a restart */
+  };
   resetPlayer();
   player.invuln = 0;
   player.dead = false;
