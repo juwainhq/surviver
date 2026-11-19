@@ -3494,15 +3494,28 @@ h1, h2, .screen-title, .card-title{ line-height:1.5 !important; }
 #abilities .ability{ position:relative; }
 #abilities .ability.locked .ab-btn{ opacity:.3; filter:grayscale(1); cursor:default; }
 #abilities .ability .ab-lock{
-  position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+  position:absolute; inset:0; display:none; flex-direction:column; gap:1px;
+  align-items:center; justify-content:center;
   pointer-events:none; z-index:3;
 }
 #abilities .ability.locked .ab-lock{ display:flex; }
-#abilities .ability .ab-dim{                   /* dark translucent overlay */
+#abilities .ability .ab-lock-lv{
+  font-family:'Press Start 2P',var(--font-pixel,monospace);
+  font-size:6px; line-height:1; letter-spacing:0; color:#cbd5e1;
+  text-shadow:1px 1px 0 #000;
+}
+#abilities .ability .ab-dim{                   /* soft tint over a cooling slot */
   position:absolute; inset:0; z-index:2; display:none; pointer-events:none;
-  background:rgba(6,8,12,.62); border-radius:inherit;
+  background:rgba(6,8,12,.34); border-radius:inherit;
 }
 #abilities .ability.cooling .ab-dim{ display:block; }
+#abilities .ability .ab-fill{                  /* the dark cooldown fill itself */
+  position:absolute; left:0; right:0; bottom:0; z-index:2; display:none;
+  pointer-events:none; border-radius:inherit;
+  height:calc(var(--cd-remain, 1) * 100%);
+  background:rgba(3,5,9,.78);
+}
+#abilities .ability.cooling .ab-fill{ display:block; }
 #abilities .ability .ab-cd{                    /* white pixel-font countdown */
   position:absolute; inset:0; display:none; align-items:center; justify-content:center;
   z-index:4; pointer-events:none;
@@ -3511,29 +3524,47 @@ h1, h2, .screen-title, .card-title{ line-height:1.5 !important; }
   text-shadow:1px 1px 0 #000,-1px 1px 0 #000,1px -1px 0 #000,-1px -1px 0 #000;
 }
 #abilities .ability.cooling .ab-cd{ display:flex; }
-
-/* ---- developer panel --------------------------------------------------- */
-#devPanel{
-  position:fixed; top:12px; right:12px; z-index:9999; display:none;
-  flex-direction:column; gap:5px; padding:8px;
-  background:#1a1c23; border:2px solid #ffffff;
-  font-family:'Press Start 2P',var(--font-pixel,monospace);
-  font-size:9px; line-height:1.2; color:#e5e7eb; text-transform:uppercase;
-  box-shadow:0 6px 0 rgba(0,0,0,.55); pointer-events:auto;
-  image-rendering:pixelated;
+/* ---- the cast flash: white/gold border pulse for 0.2 s ------------------ */
+#abilities .ability.fired{
+  border-radius:10px;
+  box-shadow:inset 0 0 0 2px #ffffff, inset 0 0 14px rgba(251,191,36,.85), 0 0 16px rgba(251,191,36,.6);
 }
-#devPanel.open{ display:flex; }
-#devPanel .dev-head{ color:#8b93a7; font-size:8px; letter-spacing:0; margin-bottom:2px; }
-#devPanel .dev-btn{
-  display:block; padding:6px 7px; text-align:left; cursor:pointer;
+#abilities .ability.fired .ab-btn{ filter:brightness(1.45) saturate(1.2); }
+
+/* ---- developer admin panel --------------------------------------------- */
+#devAdmin{
+  position:fixed; top:10px; right:10px; z-index:9999;
+  display:flex; flex-direction:column; align-items:flex-end; gap:6px;
+  font-family:'Press Start 2P',var(--font-pixel,monospace);
+  font-size:9px; line-height:1.25; color:#e5e7eb; text-transform:uppercase;
+}
+#devAdmin .dev-toggle{
+  padding:4px 7px; cursor:pointer; background:#1a1c23; color:#9ca3af;
+  border:2px solid #4b5563; font-family:inherit; font-size:8px; letter-spacing:0;
+  box-shadow:0 3px 0 rgba(0,0,0,.5); opacity:.75;
+}
+#devAdmin .dev-toggle:hover{ opacity:1; border-color:#fff; color:#fff; }
+#devAdmin .dev-toggle.on{ border-color:#c8a24a; color:#f5d68a; opacity:1; }
+#dev-admin-panel{
+  display:none; width:236px; padding:8px; background:#1a1c23;
+  border:2px solid #ffffff; box-shadow:0 6px 0 rgba(0,0,0,.55);
+  max-height:calc(100vh - 60px); overflow-y:auto;
+}
+#dev-admin-panel.open{ display:block; }
+#dev-admin-panel .dev-head{ color:#8b93a7; font-size:8px; margin-bottom:6px; }
+#dev-admin-panel .dev-status{ color:#fbbf24; font-size:8px; margin-bottom:6px; min-height:10px; }
+#dev-admin-panel .dev-row{ display:flex; gap:4px; margin-bottom:4px; }
+#dev-admin-panel .dev-btn, #dev-admin-panel .dev-select{
+  flex:1 1 auto; padding:5px 6px; cursor:pointer; text-align:left;
   background:#23262f; color:#f8fafc; border:1px solid #4b5563;
-  font-family:inherit; font-size:9px; letter-spacing:0; text-transform:uppercase;
+  font-family:inherit; font-size:8px; letter-spacing:0; text-transform:uppercase;
   box-shadow:inset -1px -1px 0 #101218;
 }
-#devPanel .dev-btn:hover{ background:#2e323d; border-color:#ffffff; }
-#devPanel .dev-btn:active{ transform:translate(1px,1px); }
-#devPanel .dev-btn.on{ background:#3f2d12; border-color:#c8a24a; color:#f5d68a; }
-#devPanel .dev-note{ color:#6b7280; font-size:7px; margin-top:2px; }
+#dev-admin-panel .dev-btn:hover, #dev-admin-panel .dev-select:hover{ background:#2e323d; border-color:#ffffff; }
+#dev-admin-panel .dev-btn:active{ transform:translate(1px,1px); }
+#dev-admin-panel .dev-btn.on{ background:#3f2d12; border-color:#c8a24a; color:#f5d68a; }
+#dev-admin-panel .dev-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin-bottom:4px; }
+#dev-admin-panel .dev-note{ color:#6b7280; font-size:7px; margin-top:4px; }
 </style>
 </head>
 <body>
@@ -6255,6 +6286,10 @@ window.addEventListener('pointerup', (e) => {
   if (e.pointerType === 'touch') return; /* touchend releases the touch trigger */
   if (e.button === 0) game.mouse.down = false;
 });
+/* PIXELFX: the release also answers a plain mouseup and a moved-off-canvas
+   release, so a machine without pointer events cannot latch the trigger on. */
+window.addEventListener('mouseup', (e) => { if (e.button === 0) game.mouse.down = false; });
+window.addEventListener('dragend', () => { game.mouse.down = false; });
 window.addEventListener('blur', () => { game.mouse.down = false; game.keys = Object.create(null); });
 
 window.addEventListener('keydown', (e) => {
@@ -13207,9 +13242,11 @@ const PFX_LOCK_SVG = '<svg viewBox="0 0 12 14" width="12" height="14" aria-hidde
   '<path d="M3 6V4.5a3 3 0 0 1 6 0V6" fill="none" stroke="#9aa4b2" stroke-width="1.6"/>' +
   '<rect x="1" y="6" width="10" height="7" fill="#6b7280" stroke="#9aa4b2" stroke-width="1"/></svg>';
 
-/* Shared slot painter: locked -> dim + padlock, cooling -> dark overlay plus a
-   bright white pixel-font timer centred in that ability's own box. */
-function pfxPaintSlot(el, unlocked, cooling, cd, req) {
+/* Shared slot painter.
+   locked  -> dim + greyscale icon, a grey padlock and the unlock level (LV 3)
+   cooling -> a dark fill that drains top-down plus a white pixel-font timer
+   fired   -> a white/gold border pulse for 0.2 s (pfxFlashAbilitySlot) */
+function pfxPaintSlot(el, unlocked, cooling, cd, maxCd, req) {
   if (!el) return;
   let lockEl = el.querySelector('.ab-lock');
   if (!lockEl) {
@@ -13225,6 +13262,13 @@ function pfxPaintSlot(el, unlocked, cooling, cd, req) {
     dimEl.setAttribute('aria-hidden', 'true');
     el.appendChild(dimEl);
   }
+  let fillEl = el.querySelector('.ab-fill');
+  if (!fillEl) {
+    fillEl = document.createElement('span');
+    fillEl.className = 'ab-fill';
+    fillEl.setAttribute('aria-hidden', 'true');
+    el.appendChild(fillEl);
+  }
   let cdEl = el.querySelector('.ab-cd');
   if (!cdEl) {
     cdEl = document.createElement('span');
@@ -13238,50 +13282,114 @@ function pfxPaintSlot(el, unlocked, cooling, cd, req) {
   el.dataset.reqLevel = String(req || 1);
   el.dataset.level = String(playerClassLevel());
   if (!unlocked) {
-    if (!lockEl.firstChild) lockEl.innerHTML = PFX_LOCK_SVG;
+    const label = 'LV ' + (req || 1);
+    if (lockEl.dataset.label !== label) {
+      lockEl.innerHTML = PFX_LOCK_SVG + '<span class="ab-lock-lv">' + label + '</span>';
+      lockEl.dataset.label = label;
+    }
     lockEl.title = 'Unlocks at level ' + (req || 1);
-    el.title = 'Locked \u2014 level ' + (req || 1);
+    el.title = 'Locked \u2014 unlocks at level ' + (req || 1);
   } else {
-    if (lockEl.firstChild) lockEl.innerHTML = '';
+    if (lockEl.firstChild) { lockEl.innerHTML = ''; delete lockEl.dataset.label; }
     lockEl.removeAttribute('title');
     el.removeAttribute('title');
   }
-  cdEl.textContent = cooling ? ((cd >= 10 ? cd.toFixed(0) : cd.toFixed(1)) + 's') : '';
+  if (cooling) {
+    const frac = Math.max(0, Math.min(1, cd / Math.max(0.001, maxCd || 1)));
+    el.style.setProperty('--cd-remain', frac.toFixed(3));
+    cdEl.textContent = (cd >= 10 ? cd.toFixed(0) : cd.toFixed(1)) + 's';
+  } else {
+    el.style.removeProperty('--cd-remain');
+    cdEl.textContent = '';
+  }
+}
+
+/* The 0.2 s confirmation: bright white/gold border on the slot that fired. */
+const PFX_FLASH_TIMERS = Object.create(null);
+function pfxFlashAbilitySlot(slot) {
+  if (!slot) return;
+  const el = pfxAbilityEl(slot);
+  if (!el) return;
+  el.classList.remove('fired');
+  /* force a reflow so a second cast inside 0.2 s restarts the pulse */
+  void el.offsetWidth;
+  el.classList.add('fired');
+  if (PFX_FLASH_TIMERS[slot]) clearTimeout(PFX_FLASH_TIMERS[slot]);
+  PFX_FLASH_TIMERS[slot] = setTimeout(() => {
+    el.classList.remove('fired');
+    PFX_FLASH_TIMERS[slot] = null;
+  }, 200);
 }
 
 
-/* ============================ developer panel ============================
-   A pixel-font HTML overlay (top-right, ~ or ` to toggle) that drives the real
-   game state directly, so a mechanic can be exercised without playing wave 1:
-   max level, god mode, a slime swarm, a boss, and a map wipe. Nothing here is
-   reachable from normal play; the panel starts hidden. */
+/* ========================= developer admin panel ========================
+   A pixel-font HTML overlay (top-right, ` or ~ to toggle, or the DEV chip)
+   wired straight into live game state so a mechanic can be exercised without
+   playing wave 1: level, god mode, cooldowns, class swaps, universes, the
+   swarm, the boss and a map clear. Hidden by default. */
 const DEV_STATE = { god: false, open: false };
 function devSay(msg) {
   const el = document.getElementById('devStatus');
   if (el) el.textContent = String(msg).toUpperCase();
 }
+function devPanelEl() { return document.getElementById('dev-admin-panel'); }
 function devSetOpen(open) {
-  const el = document.getElementById('devPanel');
-  if (!el) return;
+  const el = devPanelEl();
+  const chip = document.getElementById('devToggle');
   DEV_STATE.open = !!open;
-  el.classList.toggle('open', DEV_STATE.open);
-  if (DEV_STATE.open) devSay('LV ' + playerClassLevel());
+  if (el) el.classList.toggle('open', DEV_STATE.open);
+  if (chip) chip.classList.toggle('on', DEV_STATE.open);
+  if (DEV_STATE.open) devSay('LV ' + playerClassLevel() + ' \u00b7 ' + gameState.currentClass);
+}
+/* ---- progression ------------------------------------------------------- */
+/* Dev levels are granted in memory only: they never touch localStorage, so a
+   test session cannot quietly max out a real save. */
+function devGrantLevel(level) {
+  const rec = getClassProgress(gameState.currentClass);
+  const target = Math.max(1, Math.min(CLASS_MAX_LEVEL, level | 0));
+  if (rec.level < target) {
+    const before = totalEarnedSkillPoints(rec.level);
+    rec.level = target;
+    rec.xp = 0;
+    const gained = Math.max(0, totalEarnedSkillPoints(rec.level) - before);
+    if (gained) rec.skillPoints += gained;
+    recalculateSkillPoints(rec);
+  }
+  if (typeof pendingClassLevelUp !== 'undefined') pendingClassLevelUp = null;
+  syncAbilityHud();
+  syncClassXpHud();
+  return rec.level;
+}
+function devLevelUpVfx() {
+  if (typeof showLevelUpToast === 'function') showLevelUpToast(playerClassLevel());
+  if (typeof PFX !== 'undefined' && PFX.ready) { try { PFX.hooks.onLevelUp(); } catch (e0) { /* ignore */ } }
+}
+function devAddLevel() {
+  if (!game || !game.player) return;
+  const before = playerClassLevel();
+  const now = devGrantLevel(before + 1);
+  if (now > before) devLevelUpVfx();
+  devSay('LV ' + now);
 }
 function devLevelMax() {
   if (!game || !game.player) return;
-  if (typeof awardClassXP === 'function') awardClassXP(1e9, 'dev');
+  const before = playerClassLevel();
+  const now = devGrantLevel(CLASS_MAX_LEVEL);
   /* bookkeeping flag for every class ability, so any unlock UI agrees */
   const kit = (typeof CLASS_ABILITIES !== 'undefined' && CLASS_ABILITIES[gameState.currentClass]) || [];
   if (!gameState.unlockedAbilities) gameState.unlockedAbilities = {};
   for (let i = 0; i < kit.length; i++) gameState.unlockedAbilities[kit[i].id] = true;
-  if (typeof pendingClassLevelUp !== 'undefined') pendingClassLevelUp = null;
-  /* level-up flourish: the toast, the sound and the pixelfx burst */
-  if (typeof showLevelUpToast === 'function') showLevelUpToast(playerClassLevel());
-  if (typeof PFX !== 'undefined' && PFX.ready) { try { PFX.hooks.onLevelUp(); } catch (e1) { /* ignore */ } }
-  if (typeof syncAbilityHud === 'function') syncAbilityHud();
-  if (typeof syncClassXpHud === 'function') syncClassXpHud();
-  devSay('LV ' + playerClassLevel() + ' MAX');
+  if (now > before) devLevelUpVfx();
+  syncAbilityHud();
+  devSay('LV ' + playerClassLevel() + ' MAX \u00b7 ALL UNLOCKED');
 }
+function devResetCooldowns() {
+  game.qCd = 0; game.novaCd = 0; game.turretCd = 0; game.overchargeCd = 0;
+  if (game.player) game.player.dashCd = 0;
+  syncAbilityHud();
+  devSay('COOLDOWNS CLEAR');
+}
+/* ---- cheats ------------------------------------------------------------ */
 function devGodMode() {
   const p = game && game.player;
   if (!p) return;
@@ -13296,9 +13404,32 @@ function devGodMode() {
     p.hp = Math.min(Number(p.hp) || 0, p.maxHp);
   }
   const btn = document.getElementById('devGod');
-  if (btn) btn.classList.toggle('on', DEV_STATE.god);
+  if (btn) {
+    btn.classList.toggle('on', DEV_STATE.god);
+    btn.textContent = '[God Mode: ' + (DEV_STATE.god ? 'ON' : 'OFF') + ']';
+  }
   devSay(DEV_STATE.god ? 'GOD ON' : 'GOD OFF');
 }
+function devSwitchClass(id) {
+  if (!id || !game || !game.player) return;
+  const before = playerClassLevel();
+  try {
+    startRun(id, gameState.currentZone, { changeClass: true });
+    /* keep the level so the new class\'s kit can actually be cast */
+    devGrantLevel(before);
+    syncAbilityHud();
+    devSay('CLASS ' + gameState.currentClass + ' LV ' + playerClassLevel());
+  } catch (e2) { devSay('CLASS FAILED'); }
+}
+function devSetUniverse(n) {
+  if (!game || !game.player) return;
+  const u = Math.max(1, Math.min(6, Number(n) || 1));
+  try {
+    loadZone((u - 1) * LEVELS_PER_UNIVERSE, { freshPlayer: false });
+    devSay('UNIVERSE ' + (gameState.currentUniverse + 1));
+  } catch (e3) { devSay('UNIVERSE FAILED'); }
+}
+/* ---- spawn / clear ----------------------------------------------------- */
 function devSpawnSwarm() {
   const p = game && game.player;
   if (!p || typeof spawnEnemy !== 'function') return;
@@ -13307,7 +13438,7 @@ function devSpawnSwarm() {
     const d = 96 + (i % 4) * 26;
     const x = clamp(p.x + Math.cos(a) * d, 40, WORLD - 40);
     const y = clamp(p.y + Math.sin(a) * d, 40, WORLD - 40);
-    try { spawnEnemy('minion', x, y, 0); } catch (e2) { /* ignore */ }
+    try { spawnEnemy('minion', x, y, 0); } catch (e4) { /* ignore */ }
   }
   /* the brief asks for critters/slime specifically: pin the fresh ring to it */
   const fresh = game.enemies.slice(-20);
@@ -13330,10 +13461,10 @@ function devSpawnBoss() {
         game.boss.entering = null;
         game.bossUnlocked = true;
       }
-    } catch (e3) { /* fall through to the elite */ }
+    } catch (e5) { /* fall through to the elite */ }
   }
   if (!game.boss && typeof spawnEnemy === 'function') {
-    try { spawnEnemy('brute', clamp(p.x + 200, 60, WORLD - 60), p.y, 0); } catch (e4) { /* ignore */ }
+    try { spawnEnemy('brute', clamp(p.x + 200, 60, WORLD - 60), p.y, 0); } catch (e6) { /* ignore */ }
   }
   devSay(game.boss ? 'BOSS' : 'ELITE');
 }
@@ -13343,7 +13474,7 @@ function devWipeMap() {
   const list = game.enemies.slice();
   for (let i = 0; i < list.length; i++) {
     const e = list[i];
-    try { if (typeof damageEnemy === 'function') damageEnemy(e, 1e6, true); else { e.hp = 0; } } catch (e5) { e.hp = 0; }
+    try { if (typeof damageEnemy === 'function') damageEnemy(e, 1e6, true); else e.hp = 0; } catch (e7) { e.hp = 0; }
     killed++;
   }
   if (game.boss && game.boss.hp > 0) {
@@ -13354,23 +13485,37 @@ function devWipeMap() {
         if (typeof damageBoss === 'function') damageBoss(1e6, { silent: true });
         else { game.boss.hp = 0; break; }
       }
-    } catch (e6) { game.boss.hp = 0; }
+    } catch (e8) { game.boss.hp = 0; }
   }
-  devSay('WIPED ' + killed);
+  devSay('KILLED ' + killed);
 }
-function installDevPanel() {
-  const panel = document.getElementById('devPanel');
+/* ---- wiring ------------------------------------------------------------ */
+function installDevAdminPanel() {
+  const panel = devPanelEl();
   if (!panel || panel.dataset.wired === '1') return;
   panel.dataset.wired = '1';
   const bind = (id, fn) => {
     const b = document.getElementById(id);
     if (b) b.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); try { fn(); } catch (err) { devSay('ERR'); } });
   };
+  bind('devLevelUp', devAddLevel);
   bind('devLevelMax', devLevelMax);
+  bind('devResetCd', devResetCooldowns);
   bind('devGod', devGodMode);
+  bind('devU1', () => devSetUniverse(1));
+  bind('devU2', () => devSetUniverse(2));
+  bind('devU3', () => devSetUniverse(3));
+  bind('devU4', () => devSetUniverse(4));
+  bind('devU5', () => devSetUniverse(5));
+  bind('devU6', () => devSetUniverse(6));
   bind('devSwarm', devSpawnSwarm);
   bind('devBoss', devSpawnBoss);
   bind('devWipe', devWipeMap);
+  const sel = document.getElementById('devClass');
+  if (sel) sel.addEventListener('change', (ev) => { ev.stopPropagation(); devSwitchClass(ev.target.value); });
+  const chip = document.getElementById('devToggle');
+  if (chip) chip.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); devSetOpen(!DEV_STATE.open); });
+  /* ` and ~ both toggle, by key and by physical code */
   window.addEventListener('keydown', (ev) => {
     if (ev.key === '~' || ev.key === '`' || ev.code === 'Backquote') {
       ev.preventDefault();
@@ -13380,9 +13525,9 @@ function installDevPanel() {
   devSetOpen(false);
 }
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', installDevPanel);
+  document.addEventListener('DOMContentLoaded', installDevAdminPanel);
 } else {
-  installDevPanel();
+  installDevAdminPanel();
 }
 
 function syncAbilityHud() {
@@ -13393,11 +13538,11 @@ function syncAbilityHud() {
     const qBtn = qEl.querySelector('.ab-btn');
     const qUnlocked = hasAbility('q');
     const qCooling = qUnlocked && game.qCd > 0;
-    pfxPaintSlot(qEl, qUnlocked, qCooling, game.qCd, abilityLevelReq('q'));
+    pfxPaintSlot(qEl, qUnlocked, qCooling, game.qCd, qCdMax(), abilityLevelReq('q'));
     qBtn.disabled = !qUnlocked;
     qBtn.setAttribute('aria-disabled', String(!qUnlocked || qCooling));
     qBtn.setAttribute('aria-label', cls.q.name + ' (Q)');
-    qBtn.title = qUnlocked ? cls.q.name : 'Locked \u2014 level ' + abilityLevelReq('q');
+    qBtn.title = qUnlocked ? cls.q.name : 'Locked \u2014 unlocks at level ' + abilityLevelReq('q');
     qBtn.style.setProperty('--cooldown-angle', (clamp(game.qCd / Math.max(0.001, qCdMax()), 0, 1) * 360) + 'deg');
   }
   for (let i = 0; i < ABILITY_SLOTS.length; i++) {
@@ -13410,7 +13555,7 @@ function syncAbilityHud() {
     const cd = abilityCooldown(slot);
     const maxCd = def ? skillCooldownSeconds(slot, def.cd * cdScale()) : 1;
     const cooling = unlocked && cd > 0;
-    pfxPaintSlot(el, unlocked, cooling, cd, abilityLevelReq(slot));
+    pfxPaintSlot(el, unlocked, cooling, cd, maxCd, abilityLevelReq(slot));
     button.disabled = !unlocked;
     button.setAttribute('aria-disabled', String(!unlocked || cooling));
     button.style.setProperty('--cooldown-angle', (clamp(cd / Math.max(0.001, maxCd), 0, 1) * 360) + 'deg');
@@ -13419,6 +13564,12 @@ function syncAbilityHud() {
       button.title = def.name + ' — ' + def.desc;
     }
   }
+}
+
+/* slot key -> HUD element id is not one-to-one ('shift' -> #abShift) */
+function pfxAbilityEl(slot) {
+  if (!UI.abilities) return null;
+  return UI.abilities[slot] || UI.abilities[slot === 'dash' ? 'shift' : slot] || null;
 }
 
 /* ---- ability bar tick: 10 Hz, and only while something is cooling --------- */
@@ -28745,8 +28896,26 @@ const PFX = (function () {
     bakeMs: 0,
     strict: true,
     audit: { canvas: 0, forbidden: 0, calls: {}, sanctioned: 0, sanctionedCalls: {} },
-    auditExempt: false
+    auditExempt: false,
+    unresolved: []           /* ids asked for that resolve to nothing            */
   };
+
+  /* -------------------------------------------------- unresolved-id reporting
+     Nothing should ever be silently invisible. Every draw / move call names a
+     clip key; if that key is not in the manifest it is a typo or a stale vendor
+     path, so it is reported once to the console and remembered in
+     state.unresolved for the harness and the dev panel. */
+  const UNRESOLVED_SEEN = Object.create(null);
+  function unresolvedId(kind, id) {
+    const tag = kind + ' ' + id;
+    if (UNRESOLVED_SEEN[tag]) return;
+    UNRESOLVED_SEEN[tag] = true;
+    state.unresolved.push(tag);
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('[PFX] unresolved ' + kind + ' id "' + id + '" — it will draw nothing. ' +
+        'Check the key against src/fx/index.js (e.g. scifi/scanner, moves/sword-combo).');
+    }
+  }
 
   /* --------------------------------------------------------------- palettes */
   /* 3-stop ramps: core.fit() resamples them onto whatever length a module's
@@ -29462,7 +29631,13 @@ const PFX = (function () {
   /** The one painter. ctx is the game canvas, image smoothing off, snapped. */
   function drawClip(key, x, y, time, o) {
     const clip = clips.get(key);
-    if (!clip || !clip.canvas) return false;
+    if (!clip || !clip.canvas) {
+      /* a key that is not in the manifest at all can never appear — unless it
+         is an on-demand bake (combat text, a new damage roll) that simply has
+         not finished: say so only for the genuinely unknown ones */
+      if (!CLIP_DEF_BY_KEY.has(key) && !onDemand.has(key) && !pending.has(key)) unresolvedId('clip', key);
+      return false;
+    }
     const c = ctx;
     let f = Math.floor((time || 0) * clip.fps + (o && o.phase ? o.phase * clip.n : 0));
     if (clip.loop) f = ((f % clip.n) + clip.n) % clip.n;
@@ -29492,7 +29667,10 @@ const PFX = (function () {
   /** A tiled screen layer (weather): the clip repeated to cover the viewport. */
   function drawTiled(key, time, o) {
     const clip = clips.get(key);
-    if (!clip) return false;
+    if (!clip) {
+      if (!CLIP_DEF_BY_KEY.has(key) && !onDemand.has(key) && !pending.has(key)) unresolvedId('layer', key);
+      return false;
+    }
     const s = (o && o.scale) || 4;
     const w = clip.w * s, h = clip.h * s;
     const ox = (o && o.ox) || 0, oy = (o && o.oy) || 0;
@@ -29563,7 +29741,21 @@ const PFX = (function () {
 
   function spawn(key, x, y, o) {
     const clip = clips.get(key);
-    if (!clip) { FXCache.request(key, o && o.id ? o.id : key); return null; }
+    if (!clip) {
+      /* A lazy clip is not baked yet: request it by its MANIFEST vendor id.
+         Passing the key ("fx.holy-pillar") through as an id asks the loader for
+         a module that cannot exist, which is the bug that made every first
+         holy-pillar / level-up burst silently bake nothing. */
+      const def = CLIP_DEF_BY_KEY.get(key);
+      if (!def) {
+        unresolvedId('spawn', key);
+        return null;
+      }
+      FXCache.request(key, (o && o.id) || def.id, {
+        scale: def.scale, window: def.window, loop: def.loop, kind: def.kind
+      });
+      return null;
+    }
     if (live.length >= MAX_LIVE) live.shift();
     const inst = {
       key, x, y, t: 0,
@@ -29656,7 +29848,23 @@ const PFX = (function () {
 
   function playMove(cls, which, force) {
     const key = 'act:' + cls + ':' + which;
-    if (!clips.has(key)) return false;
+    /* a class whose secondary performance IS its primary (shadow) has no
+       separate `alt` clip by design — that is not a missing asset */
+    const acts = CLASS_ACTIONS[cls] || CLASS_ACTIONS.knight;
+    if (which === 'alt' && acts.alt === acts.lmb) return playMove(cls, 'lmb', force);
+    if (!clips.has(key)) {
+      const def = CLIP_DEF_BY_KEY.get(key);
+      if (!def) {
+        unresolvedId('move', key);
+        return false;
+      }
+      /* a lazy performance is not baked yet: queue it by its vendor id, and
+         still play something NOW — a cast that looks like nothing happened is
+         the exact failure this pass exists to remove */
+      FXCache.request(key, def.id, { kind: 'act', body: def.body, palette: def.palette, window: def.window });
+      if (which === 'alt') return playMove(cls, 'lmb', force);
+      return false;
+    }
     const cur = CLASS_ACTIONS[cls] || CLASS_ACTIONS.knight;
     const id = which === 'dash' ? (cur.dash || cur.alt) : which === 'alt' ? cur.alt : cur.lmb;
     if (moves.busy > 0 && !force) {
@@ -31514,6 +31722,27 @@ const PFX = (function () {
       moves.castKind = kind || 'ability';
       moves.castAt = game.time;
     }
+    /* ---------------------------------------------------- cast feedback ---
+       Every ability that really fired gets three confirmations: the HUD slot
+       flashes, the name floats over the player, and the heavy slots (Q/E/F/R)
+       punch a short screen shake. The dash is mobility, so it stays quiet. */
+    function castFeedback(slot, label) {
+      try {
+        if (typeof globalThis.pfxFlashAbilitySlot === 'function') globalThis.pfxFlashAbilitySlot(slot);
+      } catch (e) { /* the flash is cosmetic */ }
+      const p = game.player;
+      if (!p || game.screen !== 'playing') return;
+      const heavy = slot !== 'shift' && slot !== 'dash' && slot !== 'lmb';
+      if (heavy) {
+        try {
+          if (label && typeof globalThis.addText === 'function') {
+            globalThis.addText(p.x, p.y - 54, String(label).toUpperCase(), '#fde68a');
+          }
+        } catch (e) { /* ignore */ }
+        game.shake = Math.max(game.shake || 0, 0.34);
+      }
+    }
+
     if (typeof globalThis.castAbilitySlot === 'function') {
       const slotCast = globalThis.castAbilitySlot;
       globalThis.castAbilitySlot = function (slot) {
@@ -31531,6 +31760,7 @@ const PFX = (function () {
             const dashLike = /blink|vanish|teleport|jet|charge|dash|shadowstep/.test(id);
             castPose(dashLike ? 'dash' : 'ability');
             if (dashLike) blinkBurst();
+            castFeedback(slot, def && def.name);
           }
           syncHud();
         } catch (e) { /* the cast already happened; UI must not throw it away */ }
@@ -31553,6 +31783,14 @@ const PFX = (function () {
             const dashLike = fn === 'dash' || fn === 'throwBomb';
             castPose(dashLike ? 'dash' : 'ability');
             if (dashLike) blinkBurst();
+            /* Q is the class ability; the dash stays silent */
+            if (fn === 'castClassAbility') {
+              let qName = 'ABILITY';
+              try { qName = (getClass().q && getClass().q.name) || 'ABILITY'; } catch (e) { qName = 'ABILITY'; }
+              castFeedback('q', qName);
+            } else if (fn !== 'dash') {
+              castFeedback('q', '');
+            }
           }
           syncHud();
         } catch (e) { /* never break a cast */ }
@@ -31795,6 +32033,16 @@ const PFX = (function () {
           await FXCache.flushOnDemand(10);
         }
       });
+      /* every manifest id must resolve to a real module. A stale vendor path
+         (scifi/ vs sci-fi/, spawn-and-death/, a renamed kit) would bake nothing
+         and leave an ability invisible, so it is reported once, by id. */
+      const seenEffect = Object.create(null);
+      MANIFEST.forEach((d) => {
+        if (!d.id || seenEffect[d.id]) return;
+        seenEffect[d.id] = true;
+        if (String(d.id).indexOf('pfx/') === 0) return;
+        if (!state.effects || !state.effects[d.id]) unresolvedId('effect', d.id);
+      });
       state.progress = 1;
       state.ready = true;
       state.status = 'ready';
@@ -31915,7 +32163,9 @@ const PFX = (function () {
       tryInstall: install
     },
     /* used by tooling */
-    _internals: { state, clips, bake: (d) => FXCache.bake(d), thinFrame, sparsifySheet, clipsForTest: MANIFEST }
+    get unresolved() { return state.unresolved.slice(); },
+    get textCount() { return textList.length; },
+    _internals: { state, clips, bake: (d) => FXCache.bake(d), thinFrame, sparsifySheet, clipsForTest: MANIFEST, unresolvedId }
   };
 })();
 
@@ -31966,14 +32216,39 @@ window.addEventListener('load', resize);
 })();
 </script>
 
-<div id="devPanel" aria-label="Developer panel" role="toolbar">
-  <div class="dev-head">DEV &middot; <span id="devStatus">LV 1</span></div>
-  <button type="button" class="dev-btn" id="devLevelMax">[Lv MAX]</button>
-  <button type="button" class="dev-btn" id="devGod">[God Mode]</button>
-  <button type="button" class="dev-btn" id="devSwarm">[Spawn Swarm]</button>
-  <button type="button" class="dev-btn" id="devBoss" >[Spawn Boss]</button>
-  <button type="button" class="dev-btn" id="devWipe" >[Wipe Map]</button>
-  <div class="dev-note">~ or ` to toggle</div>
+<div id="devAdmin">
+  <button type="button" class="dev-toggle" id="devToggle" title="Developer panel (`)">DEV</button>
+  <div id="dev-admin-panel" aria-label="Developer admin panel" role="toolbar">
+    <div class="dev-head">DEV ADMIN &middot; ` to toggle</div>
+    <div class="dev-status" id="devStatus">LV 1</div>
+    <div class="dev-row"><button type="button" class="dev-btn" id="devLevelUp">[+1 Level]</button></div>
+    <div class="dev-row"><button type="button" class="dev-btn" id="devLevelMax">[Lv MAX + Unlock All]</button></div>
+    <div class="dev-row"><button type="button" class="dev-btn" id="devResetCd">[Reset Cooldowns]</button></div>
+    <div class="dev-row"><button type="button" class="dev-btn" id="devGod">[God Mode: OFF]</button></div>
+    <div class="dev-row">
+      <select class="dev-select" id="devClass" aria-label="Switch class">
+        <option value="knight">Vanguard Knight</option>
+        <option value="gunslinger">Gunslinger</option>
+        <option value="sniper">Sniper</option>
+        <option value="mage">Mage</option>
+        <option value="berserker">Berserker</option>
+        <option value="shadow">Shadow</option>
+        <option value="tech">Tech Specialist</option>
+      </select>
+    </div>
+    <div class="dev-grid">
+      <button type="button" class="dev-btn" id="devU1">U1</button>
+      <button type="button" class="dev-btn" id="devU2">U2</button>
+      <button type="button" class="dev-btn" id="devU3">U3</button>
+      <button type="button" class="dev-btn" id="devU4">U4</button>
+      <button type="button" class="dev-btn" id="devU5">U5</button>
+      <button type="button" class="dev-btn" id="devU6">U6</button>
+    </div>
+    <div class="dev-row"><button type="button" class="dev-btn" id="devSwarm">[Spawn Swarm]</button></div>
+    <div class="dev-row"><button type="button" class="dev-btn" id="devBoss">[Spawn Boss]</button></div>
+    <div class="dev-row"><button type="button" class="dev-btn" id="devWipe">[Kill All Enemies]</button></div>
+    <div class="dev-note">~ or ` toggles &middot; wired to live state</div>
+  </div>
 </div>
 </body>
 </html>

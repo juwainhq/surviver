@@ -727,3 +727,135 @@ capture phase, `preventDefault`). Every button drives the real game state:
 `tools/pfx-harness/run.mjs`: **ALL CHECKS PASSED** — 169 clips at 141.4 MB
 worst universe, 0 forbidden primitives over 300 frames, 1500 sanctioned
 (crosshair), 305 `drawImage`/frame at 12 enemies. Boot log: 165 clips.
+
+## 11f · Round six: effect-id audit, progression truth, dev admin panel
+
+### A · The green box, one more time
+
+Re-confirmed by census, not by eye: the top-right corner (287×200 px at
+1024×768) contains **0 green pixels** in both the knight and mage idle frames.
+The reticle is unchanged — 2 px white arms, 6 px hollow centre, one 2×2
+`#ef4444` pip at `mouse.x/mouse.y`, drawn inside the sanctioned `fillRect`
+block (1500 calls / 300 frames, the only primitive on the battlefield). The
+`0% / 32% / 49%` readout was the `scifi/scanner` minimap backdrop, which has
+been unbaked since round five and is replaced by a generated plate.
+
+### B · Every effect id, checked against the vendor tree
+
+`92` unique ids across `24` categories are requested by the manifest. Audited
+two ways — the manifest table (`PFX._internals.clipsForTest`) against
+`vendor/pixelfx/src/fx/<category>/<effect>.js`, and every quoted `cat/name`
+literal in the script:
+
+| category | ids | category | ids | category | ids |
+|---|---|---|---|---|---|
+| ui | 30 | moves | 20 | critters | 20 |
+| impacts | 14 | projectiles | 10 | pickups | 8 |
+| scifi | 5 | spawn | 5 | status | 5 |
+| fire | 5 | arcane | 5 | explosions | 4 |
+| melee | 3 | lightning | 3 | nature | 3 |
+| holy | 2 | ice | 2 | shadow | 2 |
+| transitions | 2 | pfx/* (synthetic) | 14 | — | — |
+
+**0 missing** at rest. The audit did find three live failures, which is the
+point of doing it:
+
+1. **`fx.holy-pillar: no such effect`.** `spawn(key, …)` passed the clip *key*
+   to `FXCache.request(key, id)` whenever the clip was still lazy, so the
+   loader was asked for a module literally named `fx.holy-pillar`. Every
+   first-time holy pillar / level-up burst baked nothing. `spawn()` now
+   resolves the vendor id from the manifest, and requests it by `def.id`.
+2. **`act:shadow:alt`.** The shadow's secondary performance *is* its primary
+   (`moves/dash-strike`), so the manifest never bakes a separate `alt` clip —
+   and `playMove` reported it as missing on every cast. Now `playMove` folds
+   `alt → lmb` when the class defines them identically, before any lookup.
+3. **On-demand text false positives.** `clip w:rage` is a legitimately
+   deferred bake; `drawClip` only warns for keys that are *neither* in the
+   manifest *nor* queued (`onDemand` / `pending`).
+
+Reporting is now first-class: `unresolvedId(kind, id)` warns once per id
+(`[PFX] unresolved clip id "…" — it will draw nothing`), records into
+`state.unresolved`, is exposed as `PFX.unresolved`, and the harness fails the
+build if the list is non-empty or if any manifest id has no module. A lazy
+cast also *plays something now*: `playMove` queues the missing performance and
+falls back to the primary clip so the press still reads as an action.
+
+```
+effect ids: 92 unique, 0 unresolved
+runtime unresolved keys: []
+```
+
+### C · Progression, activation and feedback
+
+The gate is unchanged and now visibly enforced in three places at once: the
+cast function, the HUD, and the engine wrapper.
+
+| level | unlocked |
+|---|---|
+| 1 | LMB (primary), SHIFT (dash/mobility) |
+| 3 | Q |
+| 5 | E |
+| 10 | F |
+| 15 | R |
+
+Locked slots render `opacity:.3` + `grayscale(1)`, a drawn grey padlock, and
+the unlock level as text — **LV 3 / LV 5 / LV 10 / LV 15** — plus
+`title="Locked — unlocks at level N"` and `disabled`. Pressing a locked key
+does nothing measurable: `q/e/f/r` cooldowns stay `0`, no pose, no move.
+
+Casting an unlocked ability produces three confirmations:
+
+1. **the animation** — `playMove` runs immediately (forced, so it is not
+   queued behind a swing), `PFX.animationState` reports the clip and kind;
+2. **the slot** — a `pfxFlashAbilitySlot()` pulse (inset 2 px white ring +
+   gold glow, `#abilities .ability.fired`) for **200 ms**, then a dark fill
+   (`.ab-fill`, height `--cd-remain`) that drains and a white pixel-font
+   countdown (`.ab-cd`), measured `9.9s → 9.1s` with `--cd-remain 0.990 →
+   0.912`;
+3. **the punch** — heavy slots (Q/E/F/R) float the ability name over the
+   player and add a `0.34` screen-shake pulse; the dash deliberately stays
+   quiet because it is mobility, not an ability.
+
+Handler audit: exactly one keyboard cast path exists (one `window` keydown that
+maps `e.key` **and** `e.code`), plus the HUD buttons and the touch taps, all of
+which funnel through `castAbilitySlot()` / `castClassAbility()` — no duplicate
+or conflicting listener was found. One real latch bug was fixed on the way: a
+browser without pointer events could set `game.mouse.down` via the `mousedown`
+fallback and never clear it, so `mouseup` and `dragend` now release the trigger
+alongside `pointerup` / `pointercancel` / `blur`.
+
+### D · `#dev-admin-panel`
+
+Hidden retro overlay, top-right, `#1a1c23` on a 2 px white border, `Press Start
+2P`, toggled by `` ` `` / `~` or the small **DEV** chip. Every control touches
+live state:
+
+| control | effect | measured |
+|---|---|---|
+| `[+1 Level]` | one level, in memory only (never written to localStorage), with the level-up toast + pixelfx burst | 1 → 2 → … |
+| `[Lv MAX + Unlock All]` | level 20 + every class flag + VFX | `locked` 4 → 0 |
+| `[Reset Cooldowns]` | `q/nova/turret/overcharge/dash = 0` | all `0.00`, `cooling` 0 |
+| `[God Mode: ON/OFF]` | `player.invincible`, hp/maxHp 9999; the damage path honours the flag | `{inv:true, hp:9999}` → `{inv:false, hp:100}` |
+| `[Switch Class]` | `startRun(id, zone, {changeClass:true})`, carrying the level across | 7/7 classes at Lv 20, their own moves fire |
+| `U1…U6` | `loadZone((u-1)*LEVELS_PER_UNIVERSE)` | zone 0/5/10/15/20/25, universe 1…6 |
+| `[Spawn Swarm]` | 20 ringed enemies pinned to `critters/slime` | 20 / all `critter:'slime'` |
+| `[Spawn Boss]` | `spawnBoss()` 240 px away, no entrance | `Chronos the Shattered`, hp 2912.4 |
+| `[Kill All Enemies]` | `damageEnemy(1e6)` each + 12 real boss hits | 20 → 0, boss gone |
+
+### E · Gate
+
+```
+effect ids: 92 unique, 0 unresolved
+runtime unresolved keys: []
+audit: 0 forbidden primitive calls over 300 frames ({})
+audit: 1500 sanctioned calls (the crosshair block)
+audit: 306 drawImage/frame at 12 enemies
+engine errors: []
+--- ALL CHECKS PASSED ---
+```
+
+Console noise: **zero** errors from `PFX.ready` onward, across boot, the level
+gate, every ability keypress on all seven classes, all six universe switches,
+the swarm, the boss and the map clear. (jsdom cannot resolve dynamic `import`,
+so the page's own first boot attempt logs one environmental error before the
+harness injects the modules; a real browser served over http starts clean.)

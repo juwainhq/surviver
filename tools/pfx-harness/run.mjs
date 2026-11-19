@@ -183,6 +183,22 @@ if (want('--audit')) {
   if (snap.forbidden) errors.push('forbidden primitives on the battlefield canvas: ' + JSON.stringify(snap.calls));
 }
 
+/* ------------------------------------------------------- effect-id audit ----
+   Every id the manifest asks for must resolve to a real fx module. A stale
+   vendor path (scifi/ vs sci-fi/, spawn-and-death/, a renamed kit) bakes
+   nothing and leaves that ability invisible, so the contract is checked here
+   instead of being discovered in play. */
+{
+  const ids = win.eval('PFX._internals.clipsForTest.map(d => d.id)');
+  const effects = state.effects || {};
+  const missing = Array.from(new Set(ids)).filter((id) => id && !/^pfx\//.test(id) && !effects[id]);
+  say(`effect ids: ${new Set(ids).size} unique, ${missing.length} unresolved`);
+  if (missing.length) errors.push('unresolved vendor effect ids: ' + missing.join(', '));
+  const unresolvedRuntime = win.eval('PFX.unresolved');
+  say('runtime unresolved keys: ' + JSON.stringify(unresolvedRuntime));
+  if (unresolvedRuntime.length) errors.push('unresolved clip keys at runtime: ' + JSON.stringify(unresolvedRuntime));
+}
+
 const errs = state.errors.filter((e) => !/dynamic import/.test(e));
 say('engine errors: ' + JSON.stringify(errs.slice(0, 8)));
 if (errs.length) errors.push('engine errors: ' + JSON.stringify(errs.slice(0, 8)));
