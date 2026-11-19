@@ -16,6 +16,16 @@ projectiles, damage numbers, HUD ability icons — comes from the vendored
 into offscreen atlases at boot and blitted with `drawImage`.
 `imageSmoothingEnabled` is off on every canvas.
 
+Each clip is baked into an atlas of `content + 4 px` cells — a 2 px transparent
+gutter on every side — so sampling one frame can never pull a line of the
+neighbouring frame onto a sprite's edge. The character's class palette is
+remapped on the frame's **colour plane**, before the glow is composited: after
+it, additive light pushes body pixels off their exact palette value and the
+fighter turns grey inside his own spell. The crop box is measured from the
+composited pixels, so the bloom around an orb, a gem or a fireball stays inside
+its frame, and anything below alpha 10 is scrubbed so a glow fades into the floor
+instead of ending on a hard 1 px edge.
+
 ![frame](docs/media/frame.png)
 
 ---
@@ -200,10 +210,28 @@ The camera follows the fighter **up**: `cam.y = clamp((z - 75) × 0.35, 0, 90)`
 shifts the world down as you climb, and a resize re-clamps `y` back into the
 lane.
 
-### Airborne poses
+### Grips and poses
 
-`stanceMod()` bakes `act:<class>:jump` and `act:<class>:fall` for all seven
-rigs. The body plays **jump** while `vz > 40` and **fall** while `vz <= 40`.
+`stanceMod()` bakes `act:<class>:idle / run / jump / fall` for all seven rigs
+(the body plays **jump** while `vz > 40`, **fall** while `vz <= 40`). The legs,
+the carriage and the head are shared pose data; the **arms are not**. Each class
+carries its own grip, copied from the kit that animates that weapon, so a
+fighter at rest holds the weapon exactly the way his attack does:
+
+| Class | Weapon | Grip, and where it comes from |
+|---|---|---|
+| Knight | `sword` | `melee/sword-slash` **GUARD** — blade up and forward (`fx 12, fy -21, sa -0.85`) |
+| Berserker | `greatsword` | `melee/heavy-cleave` **REST_** — two-handed, blade back over the shoulder (`sa -1`) |
+| Gunslinger | `pistol` | `moves/pistol-shots` **REST_** — low ready (`sa 0.9`); aims in the air (`sa 0.15`) |
+| Sniper | `bow` | `moves/arrow-shot` **REST_** — bow across the body (`sa -0.4`); draws aloft |
+| Tech | `launcher` | `moves/rocket-launcher` **REST_** — tube shouldered, both hands (`sa -1`) |
+| Chrono Mage | *none* | `moves/fireball-throw` **HOLD** — bare hands; the air pose is `lightning-call`'s **UP** |
+| Assassin | `dagger` | `melee/dagger-flurry` **BASE**, rolled to a crouched reverse grip (`sa 2.2`) |
+
+`sa` is the weapon axis: **negative** tips the blade up and back, **positive**
+drives it forward and down. There is no shared `sa: 1.15` — that rammed every
+blade out horizontally. The mage holds nothing at all: the old `handle` weapon
+read as a stubby brick in his fist.
 
 ---
 
@@ -282,6 +310,15 @@ charge or −20 % cooldowns.
 | Flying skull | `critters/flying-skull` | 10 / 92 | Weaves and dives |
 | **The Hollow Warden** | `critters/ghost` + rune circle | `110 + 12 × LV` | Stage boss with three phases |
 
+Death is not one animation for everyone. `spawn/shatter-death` is a **humanoid**
+dummy bursting apart, so it is reserved for the player: a slime or a bat dying
+that way used to read as a person standing inside the critter. Regular critters
+now die as their own kind — a `spawn/poof` cloud and an `impacts/hit-spark`
+baked in the creature's own ramp (toxic green for slime/frog, violet for
+bat/eyeball/skull), or `ice/ice-shatter` + `ice/freeze` if they died while
+`snare > 0`. The Warden goes up in `explosions/big-explosion` ×3 plus a
+`shadow/dark-explosion`, and no statue either.
+
 The warden is a real fight: **phase 1** hurls three-bolt volleys, **phase 2**
 widens the spread and slams the street, **phase 3** speeds up and summons a
 skull escort — each shift announced with a banner, a blast and a camera kick.
@@ -350,7 +387,7 @@ Five harnesses, all runnable from the repo root:
 
 ```bash
 npm install                       # jsdom, once (inside tools/pfx-harness)
-npm test                          # behaviour: imports src/main.js, 120 checks
+npm test                          # behaviour: imports src/main.js, 154 checks
 npm run test:guard                # the boot guard: file://, throws, 404 probe, DevTools hint
 npm run test:pages                # deployment: .nojekyll + subpath-safe, exact-case graph
 npm run test:graph                # walks the module graph over HTTP (+ cycle check)
@@ -359,12 +396,21 @@ node /tmp/render13.mjs /tmp/r13   # optional: PNG frames via @napi-rs/canvas
 ```
 
 ```
-npm test              → 120 checks · --- ALL CHECKS PASSED ---
+npm test              → 154 checks · --- ALL CHECKS PASSED ---
 npm run test:guard    →  14 checks · --- ALL CHECKS PASSED ---
 npm run test:pages    →  15 checks · --- PAGES OK ---
 npm run test:graph    → 287 modules · acyclic yes · 0 problems
 npm run test:browser  → linked 1.9 s, boot 7.1 s · 137 clips · title → PLAY verified · --- BROWSER BOOT OK ---
 ```
+
+`npm test` also pins the art rules from the rig work: six classes carry their
+authored grip and the mage carries none, `sa: 1.15` is gone, every class bakes
+its four locomotion stances plus a rigged cast body for every non-`moves/*`
+slot, `remapBody()` swaps an exact palette pixel but leaves a glow-shifted one
+alone (the reason the body palette is remapped *before* `core.composite()`),
+every atlas cell is `content + 4 px`, critter deaths never spawn
+`spawn/shatter-death`, a frozen critter dies in ice, the boss dies in
+explosions, and the mage's orb spawns `x + dirX · 36` clear of his torso.
 
 `test:pages` is the one that has to stay green for the deployed site: it fails if
 `.nojekyll` disappears from the root, if anything in `index.html` is root-absolute,

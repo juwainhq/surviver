@@ -8,7 +8,7 @@ its own DOM listeners and its `window.__SURVIVE` hook.
 ```bash
 cd tools/pfx-harness
 npm install                # jsdom only
-node run.mjs               # behaviour: 120 checks
+node run.mjs               # behaviour: 154 checks
 node boot-guard.mjs        # the inline boot guard: file://, throws, 404 probe (14)
 node pages-audit.mjs       # deployment: .nojekyll + subpath-safe, exact-case graph (15)
 node http-graph.mjs        # module graph over HTTP + acyclicity (server on :8080)

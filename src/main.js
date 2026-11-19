@@ -370,7 +370,8 @@ async function buildClips() {
     'impacts/hit-spark', 'impacts/crit-hit', 'impacts/hit-flash', 'impacts/heavy-landing',
     'impacts/ground-slam', 'impacts/bullet-impact', 'impacts/blunt-hit',
     'pickups/collect-burst', 'ui/level-up', 'ui/damage-number', 'arcane/rune-circle',
-    'lightning/charge-up', 'explosions/big-explosion', 'ice/freeze', 'status/rage'
+    'lightning/charge-up', 'explosions/big-explosion', 'shadow/dark-explosion',
+    'ice/freeze', 'ice/ice-shatter', 'status/rage'
   ]);
   for (const cls of CLASS_IDS) {
     const c = CLASSES[cls];
@@ -383,8 +384,24 @@ async function buildClips() {
       if (def.clip && !riggedClip(def.clip)) effects.add(def.clip);   /* world overlay */
     }
   }
+  /* a class may recolor the effect it fires (the mage's orb is violet, not the
+     vendor's default blue): the clip is baked once, in the class's ramp */
+  const fxPal = new Map();
+  for (const cls of CLASS_IDS) {
+    const c = CLASSES[cls];
+    for (const slot of SLOTS) {
+      const def = c[slot];
+      if (!def || !def.palette) continue;
+      for (const id of [def.bolt, def.vfx, def.clip]) {
+        if (id && effects.has(id)) fxPal.set(id, PALETTES[def.palette]);
+      }
+    }
+  }
   verifyIds([...effects]);
-  for (const id of effects) list.push({ key: 'fx:' + id, id, window: 1.0, fps: 18, maxFrames: 18 });
+  for (const id of effects) {
+    const pal = fxPal.get(id) || null;
+    list.push({ key: 'fx:' + id, id, window: 1.0, fps: 18, maxFrames: 18, opts: pal ? { palette: pal } : null });
+  }
 
   let done = 0;
   const failed = [];

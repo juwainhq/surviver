@@ -690,7 +690,7 @@ function drawWeather() {
   const scale = Math.max(W / clip.w, H / clip.h) * 1.1;
   const dw = Math.ceil(clip.w * scale), dh = Math.ceil(clip.h * scale);
   const f = Math.floor(game.time * clip.fps) % clip.n;
-  const sx = (f % clip.cols) * clip.w, sy = Math.floor(f / clip.cols) * clip.h;
+  const sx = (f % clip.cols) * clip.cw + 2, sy = Math.floor(f / clip.cols) * clip.ch + 2;
   ctx.save();
   ctx.globalAlpha = Math.min(0.15, u.weather.alpha);            /* spec ceiling */
   ctx.imageSmoothingEnabled = false;

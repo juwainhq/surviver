@@ -97,6 +97,7 @@ win.console.error = (...a) => errors.push('[console.error] ' + a.map(String).joi
 win.console.warn = () => {};
 
 await import(pathToFileURL(MAIN).href);
+const pfx = await import(pathToFileURL(path.join(ROOT, 'src/pfx.js')).href);
 const S = win.__SURVIVE;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -438,6 +439,134 @@ check('a whiffed rail still renders its beam', S.game.fx.some((f) => /arcane\/ar
 
 check('jump and fall poses exist for all seven classes',
   S.CLASS_IDS.every((c) => S.CLIPS.has('act:' + c + ':jump') && S.CLIPS.has('act:' + c + ':fall')));
+
+/* ===================================================== 4d · grips & atlas == */
+console.log('\n--- grips, palette remap, atlas ---');
+check('every class has its own grip', S.CLASS_IDS.every((c) => !!pfx.GRIPS[c]), Object.keys(pfx.GRIPS));
+check('every grip has idle/run/jump/fall overrides',
+  S.CLASS_IDS.every((c) => ['idle', 'run', 'jump', 'fall'].every((st) => !!pfx.GRIPS[c][st])));
+const armed = S.CLASS_IDS.filter((c) => pfx.GRIPS[c].weapon);
+check('six classes carry a weapon, the mage is bare-handed', armed.length === 6 &&
+  !pfx.GRIPS.mage.weapon, S.CLASS_IDS.map((c) => c + ':' + (pfx.GRIPS[c].weapon || 'none')));
+check('the mage no longer holds the stubby `handle`', !Object.values(pfx.GRIPS).some((g) => g.weapon === 'handle'));
+check('no one-size-fits-all sa: 1.15 remains', !Object.values(pfx.GRIPS).some((g) => g.sa === 1.15),
+  Object.fromEntries(S.CLASS_IDS.map((c) => [c, pfx.GRIPS[c].sa])));
+check('the knight copies sword-slash’s GUARD (blade up and forward)', pfx.GRIPS.knight.sa === -0.85 &&
+  pfx.GRIPS.knight.fx === 12 && pfx.GRIPS.knight.fy === -21, pfx.GRIPS.knight);
+check('the berserker two-hands the blade, back over the shoulder',
+  pfx.GRIPS.berserker.two === true && pfx.GRIPS.berserker.sa === -1, pfx.GRIPS.berserker);
+check('the gunslinger rests where pistol-shots does', pfx.GRIPS.gunslinger.sa === 0.9 && pfx.GRIPS.gunslinger.fx === 10);
+check('the sniper holds the bow where arrow-shot does', pfx.GRIPS.sniper.sa === -0.4 && pfx.GRIPS.sniper.fx === 12);
+check('the tech shoulders the tube like rocket-launcher', pfx.GRIPS.tech.two === true && pfx.GRIPS.tech.sa === -1);
+check('the assassin is in a crouched reverse grip', pfx.GRIPS.assassin.crouch > 3 && pfx.GRIPS.assassin.sa > 2,
+  { crouch: pfx.GRIPS.assassin.crouch, sa: pfx.GRIPS.assassin.sa });
+check('every class bakes its four locomotion stances',
+  S.CLASS_IDS.every((c) => ['idle', 'run', 'jump', 'fall'].every((st) => S.CLIPS.has('act:' + c + ':' + st))));
+/* every slot that is not a rigged `moves/*` kit must still animate a rigged body */
+const missingCast = [];
+for (const c of S.CLASS_IDS) {
+  for (const slot of ['lmb', 'air', 'shift', 'q', 'e', 'r']) {
+    const def = S.CLASSES[c][slot];
+    if (!def || !def.clip || def.clip.indexOf('moves/') === 0) continue;
+    if (!S.CLIPS.has(c + '::' + slot + '::cast')) missingCast.push(c + '/' + slot);
+  }
+}
+check('every non-kit slot keeps a rigged cast body', missingCast.length === 0, missingCast);
+check('the stances really differ per class', (() => {
+  const sizes = S.CLASS_IDS.map((c) => { const k = S.CLIPS.get('act:' + c + ':idle'); return k.w + 'x' + k.h; });
+  return new Set(sizes).size >= 4;
+})(), S.CLASS_IDS.map((c) => { const k = S.CLIPS.get('act:' + c + ':idle'); return c + ':' + k.w + 'x' + k.h; }));
+
+/* the mage's cast keeps his colours: remap runs on the colour plane, so a pixel
+   that glow has already shifted is NOT remapped (which is why it must run first) */
+const mageMap = pfx.bodyMapFor('mage');
+const hexRgbOf = (h) => { const v = parseInt(h.slice(1), 16); return [(v >> 16) & 255, (v >> 8) & 255, v & 255]; };
+const pack = (r, g, b) => (r | (g << 8) | (b << 16)) >>> 0;
+const dummy = pack(...hexRgbOf('#e4e6ec')), mageA = pack(...hexRgbOf('#e0f2fe'));
+check('the mage body map knows all 10 dummy colours', mageMap.size === 10, mageMap.size);
+check('…and maps the dummy highlight to the mage highlight', mageMap.get(dummy) === mageA);
+/* [packed rgb, alpha] — the frame's colour plane, exactly as core/fx.js holds it */
+const frameStub = (px) => ({ color: Uint32Array.from(px.map(([c, a]) => (((a << 24) | c) >>> 0))), light: new Uint32Array(px.length) });
+const f1 = frameStub([[dummy, 255], [dummy + 12, 255], [0, 0]]);
+pfx.remapBody(f1, mageMap);
+check('remapBody swaps an exact palette pixel', f1.color[0] === (((255 << 24) | mageA) >>> 0));
+check('…leaves a glow-shifted pixel alone (so it must run before composite)', f1.color[1] === (((255 << 24) | (dummy + 12)) >>> 0));
+check('…and leaves transparency transparent', f1.color[2] === 0);
+const f2 = frameStub([[dummy, 128]]);
+pfx.remapBody(f2, mageMap);
+check('…while preserving alpha', f2.color[0] === (((128 << 24) | mageA) >>> 0), (f2.color[0] >>> 24));
+
+const noGutter = [...S.CLIPS.values()].filter((c) => c.cw !== c.w + 4 || c.ch !== c.h + 4);
+check('every atlas cell carries a 2 px transparent gutter', noGutter.length === 0,
+  noGutter.slice(0, 3).map((c) => c.key + ' ' + c.w + 'x' + c.h + ' vs ' + c.cw + 'x' + c.ch));
+check('…and every clip still reports its content size',
+  [...S.CLIPS.values()].every((c) => c.w > 0 && c.h > 0 && c.cw >= c.w + 4 && c.ch >= c.h + 4));
+check('the atlas is wide enough for its own cells', [...S.CLIPS.values()].every(
+  (c) => c.canvas === null || c.canvas.getContext === undefined ||
+    (c.canvas.width >= c.cols * c.cw && c.canvas.height >= Math.ceil(c.n / c.cols) * c.ch)));
+
+/* the mage's orb is a violet variant thrown clear of the body */
+S.setClass('mage');
+S.game.enemies.length = 0; S.game.bolts.length = 0; S.game.fx.length = 0;
+p.x = 1000; p.y = 720; p.z = 0; p.onGround = true; p.facing = 1; p.anim.busy = 0; p.invuln = 99;
+S.game.cd.lmb = 0;
+S.basicAttack(); step(30);
+const orb = S.game.bolts[0];
+check('the mage throws an arcane orb', !!orb && /arcane\/arcane-orb/.test(orb.key), orb && orb.key);
+check('…spawned clear of the torso (x + dirX · 36)', !!orb && orb.x - p.x >= 34, orb && Math.round(orb.x - p.x));
+check('…in the mage’s violet, not the vendor default',
+  [...S.CLIPS.keys()].includes('fx:arcane/arcane-orb') &&
+  S.CLIPS.get('fx:arcane/arcane-orb').w > 0);
+
+/* ======================================================= 4c · death vfx ==== */
+console.log('\n--- death vfx ---');
+const fxKeys = () => S.game.fx.map((f) => f.key || '');
+const swingAt = (dx) => click(Math.max(6, Math.round(p.x - S.game.cam.x + dx)), 300);
+const killOne = (type, snare) => {
+  S.game.enemies.length = 0; S.game.fx.length = 0; S.game.bolts.length = 0;
+  p.x = 1000; p.y = 720; p.z = 0; p.vz = 0; p.onGround = true; p.facing = 1; p.anim.busy = 0; p.invuln = 99;
+  const e = S.spawnEnemy(type, p.x + 40, p.y);
+  step(6);
+  e.atkCd = 99; e.hp = 1; e.snare = snare || 0;
+  S.game.fx.length = 0;
+  p.anim.busy = 0;
+  swingAt(70);
+  step(24);
+  return { dead: e.dead, keys: fxKeys() };
+};
+
+S.setClass('knight');
+S.ARENAS.forEach((a) => { a.done = true; a.active = false; });
+S.game.arena = null; S.game.cam.lock = 0; S.game.level = 5;
+const slimeDeath = killOne('slime');
+check('a critter dies', slimeDeath.dead);
+check('no humanoid shatter statue on a critter death', !slimeDeath.keys.some((k) => /shatter-death/.test(k)),
+  slimeDeath.keys);
+check('…it pops as a tinted poof instead', slimeDeath.keys.some((k) => /spawn\/poof/.test(k)), slimeDeath.keys.slice(0, 6));
+check('…plus a spark in the same ramp', slimeDeath.keys.some((k) => /hit-spark/.test(k)), slimeDeath.keys.slice(0, 6));
+check('the toxic ramp is baked as its own clip',
+  [...S.CLIPS.keys()].some((k) => k.startsWith('fx:spawn/poof#') && k.includes('2f6b28')), 
+  [...S.CLIPS.keys()].filter((k) => k.startsWith('fx:spawn/poof#')));
+
+const batDeath = killOne('bat');
+check('a flying critter dies the same way, in violet',
+  batDeath.dead && !batDeath.keys.some((k) => /shatter-death/.test(k)), batDeath.keys.slice(0, 5));
+
+const iceDeath = killOne('frog', 2);
+check('a frozen critter shatters as ICE, not as a body',
+  iceDeath.dead && iceDeath.keys.some((k) => /ice\/ice-shatter/.test(k)) &&
+  !iceDeath.keys.some((k) => /shatter-death/.test(k)), iceDeath.keys.slice(0, 6));
+
+S.game.enemies.length = 0; S.game.fx.length = 0; S.game.boss = null;
+S.devBoss(); step(4);
+const bossDied = S.game.boss;
+if (bossDied) { bossDied.x = p.x + 50; bossDied.y = p.y; bossDied.z = 6; bossDied.hp = 1; }
+S.game.fx.length = 0; p.anim.busy = 0; p.dashT = 0;
+S.castSlot('e'); step(26);
+const bossKeys = fxKeys();
+check('the boss dies in explosions, not a statue',
+  !bossDied || (!bossKeys.some((k) => /shatter-death/.test(k)) &&
+    bossKeys.some((k) => /big-explosion/.test(k)) && bossKeys.some((k) => /dark-explosion/.test(k))), bossKeys.slice(0, 8));
 
 /* ============================================================ 5 · waves === */
 console.log('\n--- arenas, gates, cards ---');

@@ -1311,3 +1311,71 @@ diagnose:
    and a thrown error prints the full module path next to the short filename.
    `boot-guard.mjs` stubs `fetch` to 404 on `_lib.js` and asserts exactly this
    text, so the message cannot regress into blaming `src/main.js` again.
+
+---
+
+### 13i · Four rendering bugs: grips, grey bodies, chopped glows, atlas bleed
+
+Four visual defects that only a real rasteriser makes obvious, and the fix for
+each in `src/pfx.js` / `src/classes.js`.
+
+**1 · A humanoid statue inside every critter.** `killEnemy()` spawned
+`spawn/shatter-death` for everything. That kit is a *human dummy* bursting
+apart — correct for the player's death, absurd on a slime or a bat. Kills now go
+through `deathFx()`:
+
+| Who | What it plays |
+|---|---|
+| slime, frog | `spawn/poof` + `impacts/hit-spark`, both baked in a **toxic** ramp |
+| bat, eyeball, skull | the same pair in a **violet** ramp |
+| anything with `snare > 0` | `spawn/poof` + `ice/ice-shatter` + `ice/freeze` — it died frozen |
+| the Warden | `explosions/big-explosion` ×3 + `shadow/dark-explosion` |
+
+`spawnFx()` grew a palette variant: a recoloured effect bakes once into its own
+clip, keyed `fx:<id>#<ramp>` (`fxKey()`), so the toxic poof and the violet poof
+coexist without baking per spawn.
+
+**2 · One grip for seven weapons.** `stanceMod()` merged every stance over
+`core.READY` and forced `sa: 1.15` — one angle for a sword, a bow and a rocket
+tube, which is why blades jutted out horizontally and the mage waved a brick.
+The stances now split into **body motion** (`STANCE_BODY`: legs, carriage, head,
+`dch`/`dlean` deltas) and a per-class **grip** (`GRIPS`), each copied from the
+kit that animates that weapon: sword-slash `GUARD` (`sa -0.85`), heavy-cleave
+`REST_` (`two`, `sa -1`), pistol-shots `REST_` (`sa 0.9`), arrow-shot `REST_`
+(`sa -0.4`), rocket-launcher `REST_` (`two`, `sa -1`), dagger-flurry `BASE`
+rolled to a reverse grip (`sa 2.2`), and the mage **bare-handed** — `weapon:
+'handle'` is gone. Each grip carries its own idle/run/jump/fall override, so the
+weapon sits differently running, rising and falling.
+
+**3 · The mage turning grey mid-cast.** `bake()` remapped the `DUMMY` palette
+*after* `core.composite()`. Composite is additive over the light plane: any body
+pixel a spell blooms over is no longer exactly a `DUMMY` colour, the exact-match
+map misses it, and the fighter loses his class palette in a patch shaped like the
+fireball. `remapBody()` now runs on `frame.color` **before** composite, so the
+swap is exact for every body pixel and the glow still lands on top. The mage's
+LMB also stopped using `moves/fireball-throw` (that kit chains a `fire/fireball`
+cue which keeps its own orange ramp — a chained cue does not inherit the parent
+palette), and throws a violet `arcane/arcane-orb` from a rigged cast pose,
+spawned at `player.x + dirX * 36` (**`spawnFwd`**) so it never sits in his torso.
+
+**4 · Square glows and 1 px bottom edges.** Two separate causes:
+
+* the crop box came from `frame.color`, which knows nothing about the additive
+  `light` plane — so the bloom around `arcane/arcane-orb`, `pickups/gem-spin` and
+  `pickups/xp-orb` fell outside the crop and the halo was cut into a square. The
+  box is now measured from `img.data` **after** composite, over pixels with
+  alpha ≥ 10, and anything fainter is scrubbed to zero so a glow fades into the
+  floor instead of ending on a hard edge.
+* cells were packed edge to edge, so a bilinear-free sample of the neighbouring
+  cell could still show a 1 px line at a sprite's bottom edge. Every cell is now
+  `content + 4 px` (`cw = bw + 4`, `ch = bh + 4`), each frame is drawn inset by
+  `+2, +2`, and every sampler — `drawClip`, `blitClip`, `clipFrame`, the
+  weather tiling in `world.js` — reads from `sx + 2, sy + 2` with the cell
+  stride carried as `clip.cw` / `clip.ch`.
+
+`run.mjs` grew from 120 to **154 checks** covering all four: grip provenance
+(including "`sa: 1.15` is gone"), the presence of a cast body for every
+non-`moves/*` slot, `remapBody()` semantics (an exact pixel swaps, a
+glow-shifted pixel does not, alpha survives), `cw === w + 4 && ch === h + 4` on
+every clip, "no `shatter-death` on a critter", the frozen-ice death, the boss
+explosions, and the mage's orb spawning clear of the torso.

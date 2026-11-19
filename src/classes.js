@@ -36,8 +36,11 @@ const CLASSES = {
   },
   mage: {
     name: 'CHRONO MAGE', short: 'MAGE', body: 'mage', ramp: 'arcane', hp: 8, accent: '#4cd6f0',
-    lmb:   { name: 'FIREBALL', clip: 'moves/fireball-throw', bolt: 'arcane/arcane-orb', kind: 'shot', speed: 620, reach: 560, dmg: 4, dur: 0.34, level: 1 },
-    air:   { name: 'AIR FIREBALL', clip: 'moves/fireball-throw', bolt: 'arcane/arcane-orb', kind: 'shot', speed: 620, reach: 560, dmg: 5, dur: 0.34, level: 1, down: 1 },
+    /* a bare-handed arcane cast, not `moves/fireball-throw`: that kit carries its
+       own orange fire ring (a chained cue keeps its own palette), which clashed
+       with the chrono violet. The orb is the spell, thrown from the hand. */
+    lmb:   { name: 'ARCANE ORB', clip: 'arcane/arcane-orb', overlay: false, bolt: 'arcane/arcane-orb', palette: 'violet', spawnFwd: 36, kind: 'shot', speed: 620, reach: 560, dmg: 4, dur: 0.34, level: 1 },
+    air:   { name: 'AIR ARCANE ORB', clip: 'arcane/arcane-orb', overlay: false, bolt: 'arcane/arcane-orb', palette: 'violet', spawnFwd: 36, kind: 'shot', speed: 620, reach: 560, dmg: 5, dur: 0.34, level: 1, down: 1 },
     shift: { name: 'BLINK', clip: 'arcane/blink-out', vfx: 'arcane/blink-in', kind: 'blink', dist: 280, dmg: 0, dur: 0.3, cd: 3, level: 1 },
     q:     { name: 'ICE LANCE', clip: 'moves/ice-lance-throw', bolt: 'ice/freeze', vfx: 'ice/ice-shatter', kind: 'frost', speed: 720, dmg: 6, dur: 0.36, cd: 5, level: 1, snare: 2.2 },
     e:     { name: 'CHAIN STORM', clip: 'moves/lightning-call', vfx: 'lightning/chain-lightning', kind: 'aoe', reach: 250, dmg: 12, dur: 0.56, cd: 10, level: 3 },
@@ -164,11 +167,16 @@ function spawnBolt(def, extra) {
   const s = depthScale(player.y);
   const lvl = o.z != null ? o.z : player.z + 26;
   const key = def.bolt || def.vfx || 'projectiles/bullet-tracer';
-  if (!CLIPS.has('fx:' + key)) bake({ key: 'fx:' + key, id: key, window: 1.0, fps: 18, maxFrames: 10, tint: def.tint || null });
+  const pal = def.palette ? PALETTES[def.palette] : null;
+  if (!CLIPS.has('fx:' + key)) {
+    bake({ key: 'fx:' + key, id: key, window: 1.0, fps: 18, maxFrames: 10, tint: def.tint || null, opts: pal ? { palette: pal } : null });
+  }
   const aim = o.aim || (o.aimless ? null : aimShot(def));
   const dirX = aim ? (sign(aim.vx) || player.facing) : player.facing;
+  /* a bolt must clear the body: spawned at the torso it reads as stuck inside it */
+  const fwd = o.fwd != null ? o.fwd : (def.spawnFwd || 22);
   const b = {
-    x: player.x + dirX * 22,
+    x: player.x + dirX * fwd,
     y: player.y,
     z: lvl,
     vx: aim ? aim.vx : dirX * (def.speed || 700),
@@ -295,7 +303,7 @@ function resolveAbility(def, slot, opts) {
   const isAoe = def.kind === 'aoe' || def.kind === 'snare' || def.kind === 'strike';
   const isRail = def.kind === 'rail';
   const piercing = isRail || o.pierce;
-  const readyClip = def.clip && !riggedClip(def.clip) ? def.clip : null;
+  const readyClip = def.clip && !riggedClip(def.clip) && def.overlay !== false ? def.clip : null;
   const zc = player.z + 26;
   let hitAny = false;
   const hitList = [];
@@ -430,10 +438,39 @@ function damageEnemy(e, dmg, def, heavy) {
   if (e.hp <= 0) killEnemy(e);
 }
 
+/* ---------------------------------------------------------- death effects --
+ * `spawn/shatter-death` is a *humanoid* dummy breaking apart. On a slime, a frog
+ * or a bat that reads as a person standing inside the monster, so regular
+ * critters die as their own kind: a poof tinted to the creature plus a spark —
+ * ice shards instead when it died frozen. The boss gets explosions, and no
+ * human statue either.
+ */
+const DEATH_RAMP = { slime: 'toxic', frog: 'toxic', bat: 'violet', eyeball: 'violet', skull: 'violet' };
+
+function deathFx(e) {
+  const h = e.h || 24;
+  if (e.def.boss) {
+    for (let i = 0; i < 3; i++) {
+      spawnFx('explosions/big-explosion', e.x + rand(-40, 40), e.y, e.z + rand(0, 40), { scale: 1.6, life: 0.8 });
+    }
+    spawnFx('shadow/dark-explosion', e.x, e.y, e.z + h * 0.4, { scale: 1.5, life: 0.9 });
+    return;
+  }
+  const ramp = PALETTES[DEATH_RAMP[e.type] || 'toxic'];
+  const frozen = e.snare > 0;                        /* it died held in ice */
+  spawnFx('spawn/poof', e.x, e.y, e.z + h * 0.35, { scale: 0.75 + h / 60, life: 0.55, palette: ramp });
+  if (frozen) {
+    spawnFx('ice/ice-shatter', e.x, e.y, e.z + h * 0.4, { scale: 0.85, life: 0.5 });
+    spawnFx('ice/freeze', e.x, e.y, e.z + h * 0.55, { scale: 0.8, life: 0.4, alpha: 0.85 });
+  } else {
+    spawnFx('impacts/hit-spark', e.x, e.y, e.z + h * 0.45, { scale: 1, life: 0.36, palette: ramp });
+  }
+}
+
 function killEnemy(e) {
   if (e.dead) return;
   e.dead = true;
-  spawnFx('spawn/shatter-death', e.x, e.y, e.z, { scale: e.def.boss ? 2.4 : 1.15, life: 0.7 });
+  deathFx(e);
   bus.audio('kill');
   game.stats.kills++;
   game.run.kills++;
@@ -453,7 +490,6 @@ function killEnemy(e) {
     game.boss = null;
     bus.banner('WARDEN DOWN', 'THE STAGE IS YOURS');
     game.cam.shake = 18;
-    for (let i = 0; i < 3; i++) spawnFx('explosions/big-explosion', e.x + rand(-40, 40), e.y, e.z + rand(0, 40), { scale: 1.6, life: 0.8 });
     /* the stage is only cleared once every gate is open */
     if (ARENAS.every((a) => a.done)) game.victoryT = 1.1;
   }
