@@ -993,3 +993,90 @@ audit: 304 drawImage/frame at 12 enemies
 engine errors: []
 --- ALL CHECKS PASSED ---
 ```
+
+---
+
+## 12 · Round 10 — the 2.5D rebuild
+
+Sections 11b–11g describe the previous top-down engine (6000 × 6000 zones, fog of
+war, three arenas, a five-slot bar). That engine is gone: `index.html` was
+replaced from scratch by a side-view 2.5D action platformer on the same vendored
+renderer, same import discipline, same `imageSmoothingEnabled = false` rule. This
+section is the current map.
+
+### 12a · The scene graph is a painter list, not a tree
+
+The frame is a fixed pipeline of seven painters; only the fifth is dynamic:
+
+1. `drawSky` — baked once per universe/resize into an offscreen canvas (gradient
+   bands, stars/nebula, moon or sun with glow). Blitted with a 0.9 px shake offset.
+2. `drawFar` — castle/ruin/mountain silhouettes at **0.25×** parallax.
+3. `drawWall` — stone wall, arches, columns, parapet at **0.75×**, plus the
+   `fire/brazier` clips on the same factor.
+4. `drawFloor` — curb at the horizon (45 %), then the perspective street:
+   per-tile shaded paving with a seam grid and an aerial-haze mix toward the curb.
+5. `drawWorld` — platforms and every actor, **depth-sorted by `y` on every
+   frame**, with the platform's own front edge and pillars riding in the same
+   list so an actor can stand in front of or behind a deck.
+6. `drawFx` — pixelfx performances and projectiles, still `y`-sorted.
+7. `drawHud` — DOM, not canvas.
+
+That is why the street reads as a stage rather than a backdrop: the parallax
+factors (0.25 / 0.75 / 1.0) and the `y` sort do all the 3D work, and no actor
+ever needs a projection matrix.
+
+### 12b · Three coordinates per actor
+
+`x` runs along the 3600 px street, `y` across the depth lane
+(`FLOOR_TOP … FLOOR_BOTTOM`), `z` is height. Draw at `(x, y - z)`; draw the
+contact shadow at `(x, y)`. Depth scale is `lerp(0.86, 1.04, v)` where `v` is the
+normalised lane position, so the far lane is smaller *and* casts a smaller
+shadow. Hits compare `|dy| < DEPTH_TOL (44)` and `|dz centre| < HEIGHT_TOL (60)`,
+which is why a grounded uppercut whiffs on a hovering boss and a rocket jump can
+put you inside a flier's hitbox.
+
+Platforms carry `{x, y, z, w, d}`: `y` is the footprint's near edge and `d` its
+depth. A landing is resolved only when the actor is falling, its depth is inside
+`[p.y, p.y + p.d]`, and its feet cross `p.z` that frame. `S + SPACE` sets
+`dropThrough` for 0.25 s, which suppresses exactly that deck.
+
+### 12c · One gatekeeper for every ability
+
+`castSlot(slot)` is the only entry point (keyboard, pointer, dev bar and harness
+all use it): it checks the level gate, the cooldown, and `anim.busy`, then plays
+`ACTION_KEY[class][slot]`, applies the slot's `kind` (`melee`, `aoe`, `launch`,
+`shot`, `dash`, `blink`, `lob`, `rocket`, `barrage`, `rail`, `snare`, `frost`),
+spawns the callout, and starts the cooldown. `resolveAbility` is where the z-axis
+lives: `launch` writes `vz`, `barrage` schedules `shots` bolts, `recoil` writes
+the player's own `vz`, `stop` freezes enemies for `stop` seconds.
+
+Every clip key is baked at boot as `cls::slot::id` (74–75 clips). The animation
+state machine maps `act:<cls>:<slot>` back through `ACTION_KEY` before it looks
+the clip up, so a class swap can never play another class's tint.
+
+### 12d · Boot bake and the harness contract
+
+`buildClips` walks the class table plus critters, pickups, weather and the number
+font, baking each manifest at its own fps into one atlas per clip with the ink
+bounds trimmed. `MISSING` collects any id that `fx/index.js` does not export; it
+must stay empty.
+
+`tools/pfx-harness/run.mjs` boots the real file in jsdom (injecting the vendored
+modules as globals, because jsdom cannot run the page's `import` statements),
+replaces the canvas with a recording stub and asserts behaviour, not pixels:
+54 checks across boot, physics, all 4 × 4 ability slots, combat feedback, waves,
+boss, HUD and the dev bar. 40 ms hit-stop is asserted as `hitStop === 0.04`, not
+"approximately".
+
+### 12e · What changed versus round 9
+
+| Area | Round 9 | Round 10 |
+|---|---|---|
+| View | top-down 6000 × 6000 | side view, horizon 45 %, 3600 px street |
+| Movement | 2D + jump | `x` / depth `y` / height `z`, double jump, drop-through |
+| Sort | painter layers | `y` sort every frame, including platforms |
+| Slots | 5 (LMB/SHIFT/Q/E/F/R unlocked by level) | 4 (SHIFT/Q/E/R) + LMB/Air, LV 3 / LV 5 gates |
+| Ult | cooldown | charge meter, +8 % hit / +15 % kill |
+| Enemies | 4 archetypes + zone boss | 5 critters with z physics + stage boss |
+| Weather | 0.18 alpha | 0.15 alpha ceiling |
+| Verify | boot + sweep + primitive audit | boot + physics + kits + waves + HUD |
