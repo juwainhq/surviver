@@ -1,0 +1,11 @@
+{
+  "name": "survive-25d",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SURVIVE — a semi-3D side-view action platformer-brawler. One page, native ES modules, no build step.",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node tools/pfx-harness/run.mjs"
+  }
+}

@@ -1,109 +1,119 @@
 # SURVIVE — The Hollow Street
 
-A **semi-3D (2.5D) side-view action platformer-brawler** that ships as **one
-`index.html`** — no build step, no bundler, no framework.
+A **semi-3D (2.5D) side-view action platformer-brawler**: seven classes, a
+3600 px stone street that recedes to a real horizon, raised decks you can fight
+on and drop through, arena gates that slam shut behind you, and a stage boss that
+changes phase as it dies.
 
-You are dropped onto a stone street that recedes toward a real horizon. Enemies
-walk in from the depth lane, hoppers bounce, fliers hover above the paving, and a
-stage boss waits at the far end of the road. Everything you see is drawn by
-[`patch-gg/pixelfx`](https://github.com/patch-gg/pixelfx) modules baked once into
-offscreen atlases at boot and then blitted with `drawImage` — no primitive boxes,
-no sprite sheets, no CDN. `imageSmoothingEnabled` is off on every canvas.
+No build tools, no bundler, no framework. The page is native ES modules
+(`<script type="module" src="./src/main.js">`) so it runs as-is on GitHub Pages,
+on `python3 -m http.server`, or anywhere else that serves files over HTTP.
 
-![frame](docs/media/round10-frame.png)
+Every visual — fighters, critters, bosses, platforms, torches, weather, pickups,
+projectiles, damage numbers — comes from the vendored
+[`patch-gg/pixelfx`](https://github.com/patch-gg/pixelfx) renderer, baked once
+into offscreen atlases at boot and blitted with `drawImage`.
+`imageSmoothingEnabled` is off on every canvas.
+
+![frame](docs/media/frame.png)
 
 ---
 
 ## The stage
 
-The frame is split at exactly **45 %**: sky above, walkable street below.
+The viewport splits at a **46 % horizon**: sky above, walkable street below.
 
-| Layer | Motion | What it is |
+| Layer | Scroll | What it is |
 |---|---|---|
-| Sky | static | Baked gradient, moon/sun with glow, nebula, stars, gentle colour banding |
-| Far silhouettes | **0.25×** | Castle spires, ruined towers, mountains — cut out of the universe's far tone |
-| Back wall | **0.75×** | Stone wall with arches, columns, a parapet and animated `fire/brazier` torches |
-| Curb | **1.0×** | Stone lip that marks the horizon and catches the wall's shadow |
-| Street | **1.0×** | Perspective paving: seam grid, per-tile shading, aerial haze toward the curb |
-| Platforms | 1.0× | 8 raised decks with a lit top face, a 3D front thickness edge, support pillars and a cast shadow on the street |
-| Entities | 1.0× | Depth-sorted by `y` every frame, so a fighter behind a deck is *behind* it |
+| Sky | — | Baked gradient, stars/nebula, moon or sun with halo |
+| Far skyline | **0.25×** | Mountain cones and silhouettes |
+| Mid skyline | **0.42×** | Castle towers, keeps and ruins (kept clear of the moon) |
+| Back wall | **0.75×** | Stone battlement: courses, blind arches, columns, animated `fire/brazier` torches |
+| Curb | 1.0× | The stone lip that marks the horizon |
+| Street | 1.0× | Perspective paving: converging joints, per-tile shading, depth haze |
+| Platforms | 1.0× | 9 raised decks with a lit top face, a 3D front lip, pillars to the floor and cast shadows |
+| Actors | 1.0× | Depth-sorted by `y` every frame, so you can stand in front of *or* behind a deck |
 
-The street is **`stageWidth = 3600`** px wide and the camera only moves
-horizontally (`camX`), with a light vertical look-up that follows you when you
-jump high. Platforms sit at **`z = 75 … 155`**, each 4 px of depth tolerance per
-level. Ground/wall geometry is built for the current viewport, so a resize just
-rebuilds the painters.
+The street spans **`stageWidth = 3600`**, decks hang at **`z = 75 … 155`**, and
+three **arena gates** lock the road when you walk in — amber barrier columns at
+both edges, camera clamped between them, dissolving with a blinking `GO →` when
+the wave is dead.
+
+Support beacons and spawns use `spawn/spawn-portal`; blows land with
+`impacts/hit-spark` / `impacts/crit-hit` plus `ui/damage-number`; deaths burst
+with `spawn/shatter-death` and drop bouncing `pickups/xp-orb` / `pickups/gem-spin`.
 
 ---
 
 ## Coordinates and physics
 
-Every actor carries three numbers:
-
 ```
-x    position along the street (0 … 3600)
-y    position across the depth lane (FLOOR_TOP … FLOOR_BOTTOM)
-z    height above the street (0 = grounded, up is +)
+x    along the street        (0 … 3600)
+y    across the depth lane   (FLOOR_TOP … FLOOR_BOTTOM)
+z    height above the street (0 = grounded)
 ```
 
-`y` sorts and `z` draws: an actor is blitted at `(x, y - z)` and its contact
-shadow at `(x, y)`, scaled by `depthScale = lerp(0.86, 1.04, v)` so the far lane
-reads smaller than the near lane. Shadows are soft dark ellipses, never a
-`fillRect`.
+Actors are blitted at `(x, y - z)` with a crisp elliptical contact shadow at
+`(x, y)`, scaled by `depthScale = lerp(0.86, 1.04, v)` so the back of the lane is
+smaller than the front.
 
 | Constant | Value |
 |---|---|
-| `STAGE_W` | 3600 |
 | `SPEED_X` / `SPEED_Y` | 268 / 200 |
 | `JUMP_VZ` / `DOUBLE_JUMP_VZ` | 580 / 545 |
 | `GRAVITY` | 1550 |
-| `HITSTOP` | 0.04 s on heavy hits, plus a camera punch |
-| `DEPTH_TOL` / `HEIGHT_TOL` | 44 / 60 px of hit tolerance |
+| `HITSTOP` | 0.04 s (+ camera punch) |
+| hit tolerance | `DEPTH_TOL 44` / `HEIGHT_TOL 60` |
+| horizon | 46 % of the viewport |
 
-Landing is solved against the platform decks under you: a deck only catches you
-if you fall onto its top face while your depth `y` is inside its footprint.
-**S + SPACE** drops through the deck you are standing on.
+Landing is solved against the deck under you: it only catches you when you are
+falling onto its top face with your depth `y` inside its footprint. **S + SPACE**
+drops through it.
 
 ---
 
-## Classes and the four-slot kit
+## The four-slot kit
 
-Four classes, each with a real z-axis kit (air juggles, ground slams, launch
-recoil). **SHIFT** / **Q** / **E** / **R** are the four slots, **LMB** is your
-ground attack and the same button in the air is an air attack.
+Every class has **LMB** (a different move in the air), **SHIFT** (mobility,
+2.5–4 s), **Q** (tactical, 4–6 s), **E** (heavy, LV 3, 8–12 s) and **R**
+(ultimate, LV 5). A cast animates the rig on its own baked clip, fires its
+pixelfx performance, applies hit-stop + shake when it lands hard, floats a
+callout, and starts a white pixel countdown (`4.2s`) on its slot.
 
-| Class | LMB / Air | SHIFT · 3 s | Q · 5 s | E · 10 s (LV 3) | R (LV 5, charge meter) |
+The ultimate is not a timer: it charges **+8 % per hit** and **+15 % per kill**,
+glows gold at 100 %, and empties when used.
+
+| Class | LMB / Air | SHIFT | Q | E · LV 3 | R · LV 5 |
 |---|---|---|---|---|---|
-| **Vanguard Knight** | `moves/sword-combo` · `moves/ground-pound` + `impacts/ground-slam` | `moves/dash-strike` | `melee/uppercut` *(launch vz 430)* | `moves/earth-stomp` + `nature/quake` | `moves/holy-smite` + `holy/holy-pillar` |
-| **Gunslinger** | `moves/pistol-shots` + `projectiles/bullet-tracer` | dodge roll + `explosions/smoke-bomb` | `explosions/grenade` *(bounces)* | `moves/rocket-launcher` + `explosions/big-explosion` *(recoil throws you onto ledges)* | `projectiles/muzzle-smg` × 8 |
-| **Chrono Mage** | `moves/fireball-throw` + `arcane/arcane-orb` | `arcane/blink-out` → `blink-in` | `moves/ice-lance-throw` + `ice/freeze` / `ice/ice-shatter` | `moves/lightning-call` + `lightning/chain-lightning` | `moves/meteor-call` + `arcane/time-stop` |
-| **Rift Sniper** | `moves/arrow-shot` + cyan `projectiles/laser-bolt` | `scifi/warp-out` → `warp-in` | `scifi/laser-grid` *(snare)* | `arcane/arcane-beam` *(piercing rail)* | `scifi/emp-blast` + `lightning/lightning-strike` |
+| **Vanguard Knight** | `moves/sword-combo` · `moves/ground-pound` | `moves/dash-strike` | `melee/uppercut` *(launch 430)* | `moves/earth-stomp` + `nature/quake` | `moves/holy-smite` + `holy/holy-pillar` |
+| **Gunslinger** | `moves/pistol-shots` + `projectiles/bullet-tracer` | dodge roll + `explosions/smoke-bomb` | `explosions/grenade` *(bounce)* | `moves/rocket-launcher` + `explosions/big-explosion` *(recoil)* | `projectiles/muzzle-smg` × 8 |
+| **Chrono Mage** | `moves/fireball-throw` + `arcane/arcane-orb` | `arcane/blink-out` → `blink-in` | `moves/ice-lance-throw` + `ice/freeze` | `moves/lightning-call` + `lightning/chain-lightning` | `moves/meteor-call` + `arcane/time-stop` |
+| **Rift Sniper** | `moves/arrow-shot` + `projectiles/laser-bolt` | `scifi/warp-out` → `warp-in` | `scifi/laser-grid` *(snare)* | `arcane/arcane-beam` *(rail)* | `scifi/emp-blast` + `lightning/lightning-strike` |
+| **Berserker** | `melee/heavy-cleave` · `melee/hammer-smash` | berserk leap (`moves/ground-pound`) | `melee/spin-slash` | `moves/ground-pound` + `fire/fire-ring` | `status/rage` + `fire/fire-tornado` *(+40 % damage)* |
+| **Shadow Assassin** | `melee/dagger-flurry` | `shadow/shadow-flames` blink | `shadow/grasping-hands` *(root)* | `shadow/void-orb` + `shadow/dark-explosion` | `shadow/black-hole` + `shadow/necro-skulls` |
+| **Tech Specialist** | bouncing `projectiles/energy-disc` | `scifi/jetpack` boost | `scifi/force-field` *(dome)* | `scifi/tractor-beam` + `explosions/plasma-explosion` | `scifi/energy-core` + `explosions/nuke` |
 
-A cast always does all five things: animates the rig on its own baked clip,
-spawns the pixelfx performance, applies hit-stop and camera punch when it lands
-hard, floats a callout, and starts a white pixel-font cooldown countdown
-(`4.9s`) on its HUD slot.
-
-**Progression** — `XP_STEPS = [0, 6, 16, 30, 50]` → **LV 5**. SHIFT and Q are
-live from LV 1, E unlocks at **LV 3**, R at **LV 5**. The ultimate is not on a
-timer: it charges **+8 % per hit** and **+15 % per kill**, glows gold at 100 %,
-and empties when you use it.
+**Progression** — `XP_STEPS = [0, 6, 16, 30, 50]` → **LV 5**; E opens at LV 3,
+R at LV 5. Clearing an arena gate drops three **Data Chip** cards (pick one with
+a click or `1` / `2` / `3`): extra HP, +15 % damage, +10 % speed, +25 % ultimate
+charge or −20 % cooldowns.
 
 ---
 
-## Enemies, waves, boss
+## Enemies & bosses
 
 | Enemy | Kit | HP / speed | Behaviour |
 |---|---|---|---|
-| Slime | `critters/slime` | 8 / 58 | Hops along the lane, squash-and-rise arc |
-| Frog | `critters/frog` | 9 / 74 | Long hops that clear the near lane |
-| Bat | `critters/bat` | 6 / 104 | Flies at `z 60 … 110`, dips to bite |
-| Eyeball | `critters/eyeball` | 7 / 86 | Hovers at `z ≈ 106`, tracks you |
-| Flying skull | `critters/flying-skull` | 10 / 92 | Weaves, then dives |
-| **The Hollow Warden** | `critters/ghost` + rune circle | `110 + 12 × LV` | Stage boss: hovers, bolt volleys, slam waves; own health bar |
+| Slime | `critters/slime` | 8 / 58 | Hops along the lane |
+| Frog | `critters/frog` | 9 / 74 | Long hops |
+| Bat | `critters/bat` | 6 / 104 | Flies at `z 60–110` |
+| Eyeball | `critters/eyeball` | 7 / 86 | Hovers, tracks you |
+| Flying skull | `critters/flying-skull` | 10 / 92 | Weaves and dives |
+| **The Hollow Warden** | `critters/ghost` + rune circle | `110 + 12 × LV` | Stage boss with three phases |
 
-Three **arena gates** lock the street when you walk in (camera clamped, gold
-posts at both edges) and only open when the waves are down:
+The warden is a real fight: **phase 1** hurls three-bolt volleys, **phase 2**
+widens the spread and slams the street, **phase 3** speeds up and summons a
+skull escort — each shift announced with a banner, a blast and a camera kick.
 
 | # | Arena | Waves | Pool |
 |---|---|---|---|
@@ -111,25 +121,22 @@ posts at both edges) and only open when the waves are down:
 | 1 | **THE BROKEN STAIR** | 3 | slime, frog, bat, eyeball |
 | 2 | **THE HOLLOW GATE** | 2 + boss | bat, eyeball, skull, frog |
 
-Kills drop gems and XP motes that drift toward you; the HUD counts combo pips
-beside the ability bar.
-
 ---
 
 ## Six universes
 
-`setUniverse(i)` re-tints the sky, the far silhouettes, the wall, the paving and
-the weather in one frame. Weather is a pixelfx field capped at **0.15 alpha** so
-it never hides the fight.
+`setUniverse(i)` repaints the sky, both skylines, the wall, the paving and the
+weather in one frame. Weather is capped at **0.15 alpha** so it never hides the
+fight.
 
 | # | Universe | Body | Weather |
 |---|---|---|---|
-| 1 | **MEDIEVAL 1347** | moon | `weather/rain` 0.12 |
-| 2 | **ANCIENT EGYPT** | sun | `weather/fog` 0.14 |
-| 3 | **FEUDAL JAPAN** | blood moon | `weather/cherry-blossoms` 0.15 |
-| 4 | **POST-APOCALYPSE** | dust sun | `weather/storm` 0.13 |
-| 5 | **DEEP SPACE** | ringed planet | `weather/shooting-stars` 0.14 |
-| 6 | **THE VOID** | eclipse | `weather/aurora` 0.15 |
+| 1 | **MEDIEVAL 1347** | moon | `weather/rain` |
+| 2 | **ANCIENT EGYPT** | sun with rays | `weather/fog` |
+| 3 | **FEUDAL JAPAN** | blood moon | `weather/cherry-blossoms` |
+| 4 | **POST-APOCALYPSE** | dust sun | `weather/storm` |
+| 5 | **DEEP SPACE** | ringed planet | `weather/shooting-stars` |
+| 6 | **THE VOID** | eclipse + nebula | `weather/aurora` |
 
 ---
 
@@ -137,65 +144,93 @@ it never hides the fight.
 
 | Input | Action |
 |---|---|
-| **A / D** | run left / right |
-| **W / S** | move across the depth lane (toward / away from the camera) |
-| **SPACE** | jump, again in the air for a double jump |
-| **S + SPACE** | drop through the platform under you |
+| **A / D** | run along the street |
+| **W / S** | move across the depth lane |
+| **SPACE** | jump · again in the air for a double jump |
+| **S + SPACE** | drop through the deck under you |
 | **LMB** | ground attack · air attack while airborne |
-| **SHIFT** | mobility slot (dash / roll / blink / warp — invincible while it runs) |
-| **Q / E / R** | tactical / heavy / ultimate |
-| **`** or **~** | open the dev bar |
+| **SHIFT** | mobility (dash / roll / blink / warp / leap — invincible while it runs) |
+| **Q / E / R** | tactical · heavy · ultimate |
+| **1 / 2 / 3** | pick a Data Chip when a draft is open |
+| **`** or **~** | open the dev panel |
 
-### Dev bar (top right)
+### Dev panel (top right, clear of the HUD)
 
-`[Switch Class]`, `[Universe 1–6]`, `[Unlock All + Fill Ult]`, `[God Mode]`,
-`[Spawn Wave]`, `[Spawn Boss]`, `[Reset CDs]`. The same actions are exposed on
-`window.__SURVIVE` (`setClass`, `setUniverse`, `unlockAll`, `toggleGod`,
-`spawnWave`, `spawnEnemy`, `devBoss`, `resetCds`, `castSlot`, `gainXp`, `gainUlt`,
-`step`, `state`) for scripted runs.
+`[Switch Class]` (all seven) · `[Universe 1–6]` · `[+1 Level]` ·
+`[Unlock All + Fill Ult]` · `[God Mode]` · `[Spawn Wave]` · `[Spawn Boss]` ·
+`[Reset Cooldowns]` · `[Wipe Map]`.
+
+The same actions are on `window.__SURVIVE`: `setClass`, `setUniverse`, `unlockAll`,
+`toggleGod`, `spawnWave`, `spawnEnemy`, `devBoss`, `resetCds`, `wipeMap`,
+`openCards`, `takeCard`, `castSlot`, `gainXp`, `gainUlt`, `step`, `state`.
 
 ---
 
 ## Running it
 
-The page imports the vendored engine with real ES modules, so it must be served
-over HTTP — `file://` will not do:
-
 ```bash
-python3 -m http.server 8080     # then open http://localhost:8080/index.html
+python3 -m http.server 8080     # → http://localhost:8080/index.html
 ```
 
-First boot bakes 75 clips (≈5 s on a laptop) behind a progress bar; every frame
-after that is pure `drawImage` blits.
+First boot bakes ~112 clips behind the progress bar (a few seconds); after that a
+frame is pure `drawImage` blits.
 
 ---
 
 ## Verification
 
-`tools/pfx-harness` boots the real `index.html` in jsdom with a recording canvas
-stub and drives it through its own listeners and the `__SURVIVE` hook:
+`tools/pfx-harness` boots the real module graph in jsdom with a recording canvas
+and drives the game through its own listeners:
 
 ```bash
 cd tools/pfx-harness && npm install
-node run.mjs
+node run.mjs           # or: npm test from the repo root
 ```
 
-It fails the build on: a boot error, an unresolved effect id, a class slot that
-does not animate, a hit that does not land damage, a heavy hit without 40 ms
-hit-stop, a broken arena wave count, a boss that will not die, a HUD slot without
-its countdown, or a dev-bar button that does nothing. Current run:
-**54 checks, ALL CHECKS PASSED**.
+```
+60 checks · --- ALL CHECKS PASSED ---
+```
 
-Layout: `index.html` (page shell, CSS, HUD markup, engine module) ·
-`vendor/pixelfx/src` (vendored renderer) · `docs/PIXELFX-ARCHITECTURE.md` ·
-`tools/pfx-harness` · `platformer-test.html` (earlier side-scrolling prototype,
-kept for reference).
+It fails on: a boot error, an unresolved effect id, any of the 7 classes × 4
+slots failing to animate, a hit that deals no damage, a heavy hit without exactly
+40 ms hit-stop, a broken wave count, a card draft that will not open, a boss that
+will not die, a HUD slot without its countdown, or a dev button that does
+nothing.
+
+Pixels were verified separately against a real rasteriser (all six universes,
+every class mid-cast, the boss fight, the card draft).
+
+---
+
+## Layout
+
+```
+index.html                 page shell: canvas, retro HUD, title/class overlay, dev panel
+src/main.js                loop, input, audio blips, depth-sorted render list, boot
+src/core.js                constants, viewport, shared state, math helpers (imports nothing)
+src/pfx.js                 pixelfx loader + id verification + atlas baker + fx pool
+src/world.js               six universes, parallax, wall, street, decks, gates, weather, camera
+src/classes.js             seven classes, the 4-slot kit, z-axis combat, physics
+src/enemies.js             critters, boss phases, wave spawner, arena flow
+src/ui.js                  HUD, ability bar, callouts, Data Chip cards, dev panel
+vendor/pixelfx/            the vendored renderer (unmodified)
+tools/pfx-harness/         jsdom verification harness
+legacy-topdown.html        the previous top-down engine, kept for reference only
+platformer-test.html       the earlier side-scrolling prototype, reference only
+```
+
+Module graph (strictly one-way):
+
+```
+core → pfx → world → classes → enemies / ui → main
+```
+
+`core.js` also exposes a `bus` for the handful of upward notifications (callout,
+banner, denial, cards), which is what keeps `classes` from importing `ui`.
 
 ---
 
 ## Credits
 
-Renderer: [`patch-gg/pixelfx`](https://github.com/patch-gg/pixelfx) (vendored
-under `vendor/pixelfx`, unmodified). Every visual in the game — characters,
-critters, platforms, weather, pickups, projectiles, text — comes from its effect
-manifests.
+Renderer: [`patch-gg/pixelfx`](https://github.com/patch-gg/pixelfx), vendored
+under `vendor/pixelfx`, unmodified.

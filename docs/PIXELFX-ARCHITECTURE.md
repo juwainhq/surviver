@@ -1080,3 +1080,84 @@ boss, HUD and the dev bar. 40 ms hit-stop is asserted as `hitStop === 0.04`, not
 | Enemies | 4 archetypes + zone boss | 5 critters with z physics + stage boss |
 | Weather | 0.18 alpha | 0.15 alpha ceiling |
 | Verify | boot + sweep + primitive audit | boot + physics + kits + waves + HUD |
+
+Round 11 then split the whole thing into `src/*.js` — see section 13.
+
+---
+
+## 13 · Round 11 — the modular rebuild
+
+`index.html` is no longer the game: it is the shell. The 1.36 MB top-down page
+was moved aside as `legacy-topdown.html` (kept for reference, never imported) and
+the 2.5D engine was split into native ES modules under `src/`, so the page runs
+from any static server with zero build steps.
+
+### 13a · One-way module graph
+
+```
+core → pfx → world → classes → enemies / ui → main
+```
+
+* `core.js` — contract constants, the viewport bindings (only `layout()` writes
+  them), shared `game` state, `keys` / `input`, math helpers. It imports nothing,
+  which is what makes the rest of the graph acyclic.
+* `pfx.js` — loads `vendor/pixelfx/src`, verifies ids with `verifyIds()` against
+  the real manifest, bakes atlases, and owns the fx + damage-number pools.
+* `world.js` — universes, baked sky, parallax layers, wall texture, street,
+  platforms, arena gates, weather, camera, and `setUniverse`.
+* `classes.js` — the seven classes and the entire (x, y, z) solve.
+* `enemies.js` — critters, boss phases, wave spawner, arena flow.
+* `ui.js` — HUD, ability bar, callouts, Data Chip cards, dev panel.
+* `main.js` — canvas, input, audio blips, the depth-sorted render list, boot.
+
+The one place a cycle threatened was `world` scheduling arena waves that
+`enemies` owns. `core.bus` (banner, callout, number, deny, hud, dev, cards, go,
+audio, startArena, nextWave) is that seam: `world` calls `bus.startArena(a)`,
+`main` wires it to `enemies.startArena`. Upward notifications from `classes` to
+`ui` use the same channel, which is why `classes.js` never imports `ui.js`.
+
+`main.js` does not re-implement the browser: it *is* the entry module. The
+harness imports `src/main.js` in Node with jsdom globals installed, so the module
+graph links exactly as it does on the page (live bindings and all) instead of
+being re-evaluated from an extracted string.
+
+### 13b · The three new classes
+
+Berserker, Shadow Assassin and Tech Specialist were added to `CLASSES` and the
+baker picks them up for free (`CLASS_IDS` drives stances, acts and `ACTION_KEY`).
+Two new ability kinds were needed:
+
+* `leap` — forward + `vz` hop that resolves its damage on the way up (berserk
+  leap, jetpack). It also sets `jumps` so you keep the air move.
+* `dome` — a short invulnerability window plus a stun ring (force field).
+
+`rage` (berserker R) writes `game.rageT`, and `damageEnemy` multiplies by 1.4
+while it runs; `pull` (black hole, tractor beam) drags non-boss enemies toward
+the caster and snares them.
+
+### 13c · Data Chip cards
+
+`nextWave()` announces, prompts `GO →`, and calls `bus.cards()`. `openCards()`
+offers three of five chips and sets `game.paused`, which the loop respects. Each
+chip mutates `game.upgrades`, and those multipliers are read where they matter:
+`damageEnemy` (power), `gainUlt` (charge), `castSlot` (cdr), `updatePlayer`
+(speed), `resetPlayer` (hp). Numbers `1` / `2` / `3` are swallowed by the draft so
+they cannot leak into movement.
+
+### 13d · Two presentation fixes found by looking at frames
+
+* **The moon notch** — a mid-ground silhouette tower drawn after the celestial
+  body left a hard rectangle of sky-coloured pixels inside the moon. `drawSkyBody`
+  now records the body's disc in `bodyGuard` and `clearOfBody()` shortens any
+  tower whose box would cross it. The moon is always whole.
+* **The vanishing caster** — a whiffed AoE spawned its performance on top of the
+  player at 1.1×. It is now pushed out to `reach × 0.58` and scaled to 0.82 so the
+  effect frames the character instead of swallowing them.
+
+### 13e · Verification
+
+`tools/pfx-harness/run.mjs` now imports `src/main.js` and asserts 60 behaviours,
+including: all seven classes × four slots animate on their own baked clip, a
+runner's click sets `facing` before the swing, 40 ms hit-stop on a heavy hit, the
+gate → wave → clear → card draft → unpause chain, boss phase 2 after damage, the
+HUD countdown, and all nine dev-panel controls.

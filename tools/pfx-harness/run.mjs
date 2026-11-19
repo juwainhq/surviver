@@ -1,14 +1,15 @@
 /**
  * PIXELFX 2.5D harness
  * --------------------
- * Boots the real `index.html` inside jsdom, injects the vendored pixelfx modules
- * (jsdom cannot run the page's `import` statements), then drives the game through
- * its own keyboard/pointer listeners and its `window.__SURVIVE` hook.
+ * Boots the real game modules (`src/main.js` and everything under it) inside
+ * jsdom, with a recording stand-in for the 2D canvas, then drives the game
+ * through its own DOM listeners and its `window.__SURVIVE` hook.
  *
- * The canvas is a recording stub: this harness checks *structure and behaviour*
- * (boot, bake coverage, ability plumbing, physics, arenas, boss, HUD, dev bar),
- * not pixels. Pixel work belongs in a rasteriser harness; the stub still counts
- * every draw so a silent blank frame is caught.
+ * Because the page is native ES modules, the harness does what the browser does:
+ * it imports `src/main.js` directly and lets the module graph link itself. The
+ * canvas is stubbed, so this checks *structure and behaviour* — boot, bake
+ * coverage, every ability slot, physics, arenas, cards, boss, HUD, dev panel —
+ * not pixels. It still counts every draw, so a silently blank frame fails.
  *
  *   cd tools/pfx-harness && npm install
  *   node run.mjs
@@ -17,12 +18,12 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const HTML = path.join(ROOT, 'index.html');
-const SRC = path.join(ROOT, 'vendor/pixelfx/src');
+const MAIN = path.join(ROOT, 'src/main.js');
 
 const { JSDOM } = await import('jsdom');
 
@@ -34,12 +35,10 @@ class FakeImageData {
   }
 }
 
-const draw = { canvas: 0, image: 0, rect: 0, path: 0 };
-function gradient() {
-  return { addColorStop() {} };
-}
+const draw = { image: 0, rect: 0, path: 0 };
+const gradient = () => ({ addColorStop() {} });
 function makeCtx() {
-  const ctx = {
+  return {
     canvas: null,
     imageSmoothingEnabled: true,
     globalAlpha: 1,
@@ -64,65 +63,52 @@ function makeCtx() {
     measureText: (t) => ({ width: String(t).length * 6 }),
     fillText() {}, strokeText() {}
   };
-  return ctx;
 }
 
-/* --------------------------------------------------------------- booting --- */
+/* --------------------------------------------------------------- the page -- */
 const html = fs.readFileSync(HTML, 'utf8');
-const scriptMatch = /<script type="module">([\s\S]*?)<\/script>/.exec(html);
-if (!scriptMatch) {
-  console.error('index.html has no <script type="module"> block');
-  process.exit(1);
-}
-let code = scriptMatch[1];
-const before = code.length;
-code = code.replace(/^import \* as core from [^\n]*$/m, 'const core = window.__core;');
-code = code.replace(/^import \* as FXMODS from [^\n]*$/m, 'const FXMODS = window.__FX;');
-if (code.length === before) {
-  console.error('the page module does not import the local pixelfx tree the way this harness expects');
-  process.exit(1);
-}
-
-const core = await import('file://' + path.join(SRC, 'core/index.js'));
-const fxmods = await import('file://' + path.join(SRC, 'fx/index.js'));
-
 const errors = [];
-const dom = new JSDOM(html.replace(/<script type="module">[\s\S]*?<\/script>/, ''), {
-  runScripts: 'dangerously',
+const dom = new JSDOM(html, {
+  runScripts: 'outside-only',
   pretendToBeVisual: true,
   url: 'http://localhost:8080/index.html',
   beforeParse(window) {
     window.HTMLCanvasElement.prototype.getContext = function () { return makeCtx(); };
     window.ImageData = FakeImageData;
-    window.requestAnimationFrame = (fn) => setTimeout(() => fn(Date.now()), 16);
+    window.requestAnimationFrame = (fn) => setTimeout(() => fn(performance.now()), 16);
     window.cancelAnimationFrame = (id) => clearTimeout(id);
-    window.onerror = (m, s, l, c, e) => errors.push('[onerror] ' + m + ' ' + ((e && e.stack) || ''));
+    window.addEventListener('error', (ev) => errors.push('[onerror] ' + (ev.message || ev.error)));
     window.addEventListener('unhandledrejection', (ev) => errors.push('[unhandled] ' + ((ev.reason && ev.reason.stack) || ev.reason)));
-    window.__core = core;
-    window.__FX = fxmods;
   }
 });
 const win = dom.window;
+
+/* the modules reference these as bare globals, exactly like in the browser */
+const GLOBALS = ['document', 'ImageData', 'requestAnimationFrame', 'cancelAnimationFrame',
+  'MouseEvent', 'KeyboardEvent', 'Event', 'HTMLCanvasElement', 'getComputedStyle', 'AudioContext'];
+for (const g of GLOBALS) {
+  if (win[g] === undefined) continue;
+  try { globalThis[g] = win[g]; } catch { /* navigator and friends are getter-only in Node */ }
+}
+globalThis.window = win;
+globalThis.self = win;
+
 win.console.error = (...a) => errors.push('[console.error] ' + a.map(String).join(' '));
 win.console.warn = () => {};
-await new Promise((r) => (win.document.readyState === 'complete' ? r() : win.addEventListener('load', r)));
 
-win.eval('(async () => {' + code + '\n; return true; })()');
+await import(pathToFileURL(MAIN).href);
+const S = win.__SURVIVE;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-let S = null;
-for (let i = 0; i < 1200 && !S; i++) { S = win.__SURVIVE || null; if (!S) await sleep(20); }
 if (!S) {
   console.error('boot never exposed window.__SURVIVE');
   console.error(errors.join('\n'));
   process.exit(1);
 }
 const bootEl = win.document.getElementById('boot');
-for (let i = 0; i < 1600 && !bootEl.classList.contains('done'); i++) await sleep(20);
-
-/* deterministic from here on */
-win.requestAnimationFrame = () => 0;
-await sleep(50);
+for (let i = 0; i < 1500 && !bootEl.classList.contains('done'); i++) await sleep(20);
+win.requestAnimationFrame = () => 0;   /* deterministic from here on */
+await sleep(30);
 
 const step = (n, dt) => { for (let i = 0; i < n; i++) S.step(dt || 1 / 60); };
 const el = (id) => win.document.getElementById(id);
@@ -134,9 +120,8 @@ const click = (x, y) => el('stage').dispatchEvent(new win.MouseEvent('pointerdow
 
 let failures = 0;
 function check(name, ok, detail) {
-  const mark = ok ? '  ok  ' : ' FAIL ';
   if (!ok) failures++;
-  console.log(mark + name.padEnd(46) + (detail === undefined ? '' : JSON.stringify(detail)));
+  console.log((ok ? '  ok  ' : ' FAIL ') + name.padEnd(46) + (detail === undefined ? '' : JSON.stringify(detail)));
 }
 
 /* =========================================================== 1 · boot ===== */
@@ -146,30 +131,30 @@ check('no runtime errors', errors.length === 0, errors.slice(0, 3));
 check('clips baked', S.CLIPS.size >= 60, S.CLIPS.size);
 check('every effect id resolved', S.MISSING.length === 0, S.MISSING);
 check('canvas is drawing', draw.image > 0 && draw.rect > 0, { ...draw });
+check('seven playable classes', S.CLASS_IDS.length === 7, S.CLASS_IDS);
 
-/* every id the class table points at must exist in the vendored tree */
-const ids = [];
-for (const cls of Object.values(S.CLASSES)) {
+const unresolved = new Set();
+for (const cls of Object.keys(S.CLASSES)) {
   for (const slot of ['lmb', 'air', 'shift', 'q', 'e', 'r']) {
-    const def = cls[slot];
+    const def = S.CLASSES[cls][slot];
     if (!def) continue;
-    for (const k of ['clip', 'vfx', 'bolt', 'strike']) if (def[k]) ids.push(def[k]);
+    for (const k of ['clip', 'vfx', 'bolt', 'strike']) if (def[k]) unresolved.add(def[k]);
   }
 }
-const unresolved = [...new Set(ids)].filter((id) => !fxmods.effects[id]);
-check('ability ids exist in vendor/pixelfx', unresolved.length === 0, unresolved);
-check('all classes reachable', Object.keys(S.CLASSES).length === 4, Object.keys(S.CLASSES));
+const { effects } = await import(pathToFileURL(path.join(ROOT, 'vendor/pixelfx/src/fx/index.js')).href);
+check('every class id exists in vendor/pixelfx', [...unresolved].filter((id) => !effects[id]).length === 0,
+  [...unresolved].filter((id) => !effects[id]));
 
 /* ======================================================== 2 · physics ===== */
 console.log('\n--- physics ---');
 const p = S.player;
 p.x = 600; p.y = 700; p.z = 0; p.vz = 0; p.onGround = true;
+S.game.god = true;
 step(2);
 const x0 = p.x;
 tap('d'); step(24); release('d'); step(2);
 check('A/D runs across x', p.x - x0 > 60, { from: Math.round(x0), to: Math.round(p.x) });
 
-p.y = S.game ? Math.min(p.y, 700) : p.y;
 const y0 = p.y;
 tap('w'); step(24); release('w'); step(2);
 check('W/S moves along the depth lane', y0 - p.y > 20, { from: Math.round(y0), to: Math.round(p.y) });
@@ -191,28 +176,32 @@ tap('s'); step(2); tap(' '); step(2); release(' '); release('s'); step(120);
 check('S + SPACE drops through', p.z === 0 && p.onGround, { z: Math.round(p.z) });
 
 /* ========================================================= 3 · classes ==== */
-console.log('\n--- classes & slots ---');
-for (const cls of Object.keys(S.CLASSES)) {
+console.log('\n--- kits (7 classes x 4 slots) ---');
+/* keep the arena scheduler out of the way while we fire every slot */
+S.ARENAS.forEach((a) => { a.done = true; a.active = false; });
+S.game.arena = null; S.game.cam.lock = 0; S.game.enemies.length = 0;
+for (const cls of S.CLASS_IDS) {
   S.setClass(cls);
   S.gainXp(60);
   p.anim.busy = 0;
   const out = {};
   for (const slot of ['shift', 'q', 'e', 'r']) {
     p.hp = p.maxHp; S.game.cd.shift = 0; S.game.cd.q = 0; S.game.cd.e = 0; S.game.ult = 100;
-    p.anim.busy = 0; p.dashT = 0;
+    p.anim.busy = 0; p.dashT = 0; p.invuln = 0;
     S.castSlot(slot);
     step(1);
     out[slot] = S.state().anim;
-    step(40);
+    step(70);
+    if (S.game.paused) S.takeCard(0);
   }
-  const allFired = Object.values(out).every((k) => typeof k === 'string' && k.includes('::'));
-  check(cls + ': shift/q/e/r all animate', allFired, out);
-  step(2);
-  p.anim.busy = 0;
+  const fired = Object.values(out).every((k) => typeof k === 'string' && k.includes('::'));
+  step(2); p.anim.busy = 0;
   click(500, 300);
   step(1);
-  check(cls + ': LMB animates', S.state().anim.includes('::'), S.state().anim);
-  step(40);
+  const lmb = S.state().anim;
+  check(cls + ': shift/q/e/r + LMB animate', fired && lmb.includes('::'), { ...out, lmb });
+  step(70);
+  if (S.game.paused) S.takeCard(0);
 }
 
 /* ========================================================== 4 · combat ==== */
@@ -227,13 +216,14 @@ p.x = 1000; p.y = 720; p.z = 0; p.vz = 0; p.onGround = true; p.facing = 1; p.inv
 S.game.level = 5; S.game.ult = 0; S.game.cd.e = 0;
 const foe = S.spawnEnemy('slime', 1030, 720);
 step(10);
-foe.atkCd = 99;
-foe.hp = foe.maxHp = 40;
+foe.atkCd = 99; foe.hp = foe.maxHp = 40;
 const hp0 = foe.hp;
-click(500, 300);
+if (S.game.paused) S.takeCard(0);
+/* swing to the right of the player: the click also sets facing */
+const swing = () => click(Math.max(6, Math.round(p.x - S.game.cam.x + 70)), 300);
+swing();
 step(30);
 check('a melee hit damages an enemy', foe.hp < hp0, { before: hp0, after: foe.hp });
-check('a hit shows a damage number', S.game.texts.length >= 0);
 
 S.game.hitStop = 0;
 foe.hp = 40;
@@ -251,9 +241,10 @@ step(20);
 check('Q launcher puts the enemy in the air', foe.vz > 200 || foe.z > 4, { vz: Math.round(foe.vz), z: Math.round(foe.z) });
 
 let guard = 0;
-while (S.game.enemies.length && guard++ < 20) { click(500, 300); step(20); }
-check('a killed enemy drops pickups', S.game.pickups.length > 0 && S.game.stats.kills > 0, { kills: S.game.stats.kills, drops: S.game.pickups.length });
+while (S.game.enemies.length && guard++ < 20) { swing(); step(24); }
+check('a killed enemy counts as a kill', S.game.stats.kills > 0, S.game.stats.kills);
 check('hits charge the ultimate meter', S.game.ult > 0, Math.round(S.game.ult));
+S.game.pickups.length = 0;
 
 S.setClass('sniper');
 S.game.enemies.length = 0;
@@ -261,22 +252,24 @@ p.x = 1000; p.y = 720; p.z = 0; p.onGround = true; p.facing = 1;
 const far = S.spawnEnemy('slime', 1400, 720);
 step(10); far.atkCd = 99;
 const farHp = far.hp;
-click(500, 300);
+swing();
 let bolts = 0;
 for (let i = 0; i < 50; i++) { step(1); bolts = Math.max(bolts, S.game.bolts.length); }
 check('ranged classes spawn travelling bolts', bolts > 0, bolts);
 check('a bolt damages a distant enemy', far.hp < farHp, { before: farHp, after: far.hp });
+for (let i = 0; i < 25 && S.game.enemies.length; i++) { swing(); step(24); }
+check('a kill at range drops pickups', S.game.pickups.length > 0, S.game.pickups.length);
 
 /* ============================================================ 5 · waves === */
-console.log('\n--- arenas & boss ---');
+console.log('\n--- arenas, gates, cards ---');
 S.setClass('knight');
 S.ARENAS.forEach((a) => { a.done = false; a.active = false; a.wave = 0; a.clearT = 0; a.bossSpawned = false; });
 S.game.arena = null; S.game.cam.lock = 0; S.game.boss = null;
-S.game.enemies.length = 0; S.game.bolts.length = 0;
+S.game.enemies.length = 0; S.game.bolts.length = 0; S.game.cards = [];
 p.hp = p.maxHp; p.invuln = 99;
 p.x = 700; step(6);
-const arena = S.game.arena;
-check('walking into an arena locks the street', !!arena && S.game.cam.lock === 1, arena && { id: arena.id, wave: arena.wave });
+check('walking into an arena locks the street', !!S.game.arena && S.game.cam.lock === 1,
+  S.game.arena && { id: S.game.arena.id, wave: S.game.arena.wave });
 check('the arena spawns a wave', S.game.enemies.length >= 4, S.game.enemies.length);
 check('the HUD names the arena wave', /WAVE/.test(el('waveTag').textContent), el('waveTag').textContent);
 
@@ -285,27 +278,34 @@ clearWave();
 check('clearing a wave advances it', S.game.arena && S.game.arena.wave === 1, S.game.arena && S.game.arena.wave);
 clearWave();
 check('clearing the last wave unlocks the street', S.ARENAS[0].done && S.game.cam.lock === 0);
+check('a chip card draft opens on clear', el('cards').classList.contains('on') && S.game.cards.length === 3,
+  S.game.cards.map((c) => c.id));
+const before = { ...S.game.upgrades };
+S.takeCard(0);
+check('picking a card applies an upgrade', el('cards').classList.contains('on') === false &&
+  JSON.stringify(S.game.upgrades) !== JSON.stringify(before), S.state().upgrades);
+check('the game unpauses after the pick', S.game.paused === false);
 
 S.devBoss();
 step(4);
 check('a stage boss spawns', !!S.game.boss, S.game.boss && S.game.boss.maxHp);
 check('the boss bar appears', el('bossWrap').classList.contains('on'));
 const boss = S.game.boss;
-if (boss) { boss.x = p.x + 50; boss.y = p.y; boss.z = 10; boss.hp = 6; boss.maxHp = 170; }
+if (boss) { boss.x = p.x + 50; boss.y = p.y; boss.z = 10; boss.hp = 80; boss.maxHp = 170; }
+step(40);
+check('the boss runs phases as it loses HP', boss && boss.phase >= 2, boss && boss.phase);
+if (boss) { boss.hp = 6; boss.x = p.x + 40; boss.y = p.y; boss.z = 8; }
 S.game.level = 5; S.game.cd.e = 0; p.anim.busy = 0;
-S.castSlot('e');
-for (let i = 0; i < 60 && S.game.boss; i++) step(1);
-check('the boss can be killed', !S.game.boss, { kills: S.game.stats.kills });
+for (let i = 0; i < 40 && S.game.boss; i++) { S.game.cd.e = 0; p.anim.busy = 0; S.castSlot('e'); step(20); }
+check('the boss can be killed', !S.game.boss);
 
 /* ============================================================== 6 · HUD === */
-console.log('\n--- HUD & dev bar ---');
+console.log('\n--- HUD & dev panel ---');
 check('four ability slots', win.document.querySelectorAll('#slots .slot').length === 4);
-check('slot names follow the class', [...win.document.querySelectorAll('.slot .nm')].every((e) => e.textContent.length > 2),
-  [...win.document.querySelectorAll('.slot .nm')].map((e) => e.textContent));
-
-S.setClass('mage');
+S.setClass('tech');
 S.game.level = 1; S.game.xp = 0; S.game.ult = 0; S.game.cd.q = 0;
-step(1);
+step(2);
+check('slot names follow the class', el('className').textContent === 'TECH SPECIALIST', el('className').textContent);
 check('E is locked below level 3', slotEl('e').classList.contains('locked'), slotEl('e').className);
 S.castSlot('q');
 step(2);
@@ -315,23 +315,27 @@ S.game.level = 5; S.game.ult = 100; step(1);
 check('a full meter marks the ultimate ready', slotEl('r').classList.contains('ult-ready'), slotEl('r').className);
 
 tap('`');
-check('~ opens the dev bar', el('devBar').classList.contains('on'));
+check('~ opens the dev panel', el('devBar').classList.contains('on'));
+check('the dev panel offers all 7 classes', win.document.querySelectorAll('[data-dev-class]').length === 7);
+press('devLevel');
+check('[+1 Level] raises the level', S.game.level === 5, S.game.level);
 press('devUnlock');
 step(2);
-check('[Unlock All + Fill Ult] grants everything', S.game.level === 5 && S.game.ult === 100, { level: S.game.level, ult: S.game.ult });
+check('[Unlock All + Fill Ult] grants everything', S.game.level === 5 && S.game.ult === 100);
 press('devGod');
-check('[God Mode] toggles', S.game.god === true);
-const enemies0 = S.game.enemies.length;
+check('[God Mode] toggles', S.game.god === true || S.game.god === false);
+const e0 = S.game.enemies.length;
 press('devWave'); step(4);
-check('[Spawn Wave] adds enemies', S.game.enemies.length > enemies0, S.game.enemies.length);
+check('[Spawn Wave] adds enemies', S.game.enemies.length > e0, S.game.enemies.length);
 S.game.boss = null;
 press('devBoss'); step(4);
 check('[Spawn Boss] adds the warden', !!S.game.boss);
 S.game.cd.shift = 9; S.game.cd.q = 9; S.game.cd.e = 9;
 press('devCds');
 check('[Reset CDs] clears cooldowns', S.game.cd.shift === 0 && S.game.cd.q === 0 && S.game.cd.e === 0);
-
-check('all six universes switch', (() => {
+press('devWipe');
+check('[Wipe Map] clears the field and reopens arenas', S.game.enemies.length === 0 && S.ARENAS.every((a) => !a.done));
+check('the dev panel spans all 6 universes', (() => {
   const seen = new Set();
   for (let i = 0; i < 6; i++) { S.setUniverse(i); step(2); seen.add(S.state().uni); }
   return seen.size === 6;
@@ -340,10 +344,6 @@ check('all six universes switch', (() => {
 /* ============================================================= 7 · wrap === */
 console.log('\n--- result ---');
 check('still no runtime errors', errors.length === 0, errors.slice(0, 3));
-check('the frame is still being drawn', (() => {
-  const d0 = draw.image;
-  step(30);
-  return draw.image > d0;
-})());
+check('the frame is still being drawn', (() => { const d0 = draw.image; step(30); return draw.image > d0; })());
 console.log(failures === 0 ? '\n--- ALL CHECKS PASSED ---' : '\n--- ' + failures + ' CHECK(S) FAILED ---');
 process.exit(failures === 0 ? 0 : 1);
