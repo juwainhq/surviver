@@ -164,6 +164,59 @@ in memory only — they never touch your save.
 
 ---
 
+## 2.5D platformer prototype
+
+`platformer-test.html` is a separate, self-contained proof-of-feel file: a true
+semi-3D platformer-brawler sandbox that imports the **local** pixelfx tree
+(`./vendor/pixelfx/src/`) directly and shares no code with `index.html`. Same
+server, no flags:
+
+```bash
+python3 -m http.server 8080
+# open http://localhost:8080/platformer-test.html
+```
+
+It exists to answer one question — does a perspective lane with real height beat
+the top-down arena? — so all six universes, three class kits and the whole enemy
+roster are wired to a test bar and nothing else.
+
+* **World** — `STAGE_W` 3200, horizon at 42 % of the viewport. Sky, then a far
+  ridge (0.22×) behind a near ridge (0.30×), then mid ruins (0.55×), then a
+  crenellated battlement with `fire/brazier` torches (0.75×). The lower 58 % is a
+  walkable lane with receding tile rows and a foreground lip.
+* **Physics** — every body carries `(x, y, z, vx, vy, vz)`: `x` across the stage,
+  `y` depth inside the lane, `z` height over the surface below it. Gravity 1500,
+  jump 560 (double jump 520), landing snaps onto a platform top when `vz < 0`
+  over its footprint, `S + Space` drops through. Sprites draw at
+  `y - z * depthScale(y)`, shadows stay on the ground at `y`, and everything —
+  platforms, enemies, the player, VFX, pickups — goes through one painter's list
+  sorted by depth every frame.
+* **Combat** — pixelfx skeletal acts are pre-baked into offscreen atlases at boot
+  (38 clips in ~2.2 s), then blitted. Knight: LMB `moves/sword-combo`, Q
+  `moves/earth-stomp`, Shift `moves/dash-strike`, air + LMB `moves/ground-pound`.
+  Mage: LMB `moves/fireball-throw`, Q `moves/lightning-call`, E
+  `moves/meteor-call`, Shift blink (`arcane/blink-in` + `arcane/blink-out`).
+  Gunslinger: LMB `moves/pistol-shots`, Q `moves/rocket-launcher`, Shift
+  dodge-roll with a dust puff.
+* **Hit tests** — `|dx|` against reach, `|dy| < 42 px` (depth) and `|dz| < 56 px`
+  (height), so a jump really does clear a ground slam.
+* **Enemies** — `critters/slime` and `critters/frog` hop along the lane,
+  `critters/bat`, `critters/eyeball` and `critters/flying-skull` hover at
+  `z = 60…110`. `spawn/spawn-portal` on arrival, `impacts/hit-spark` +
+  `impacts/crit-hit` with 40 ms hit-stop and camera shake, `ui/damage-number`,
+  `spawn/shatter-death`, `pickups/xp-orb` / `pickups/gem-spin`.
+* **Weather** — one kit per universe (`rain`, `fog`, `cherry-blossoms`, `storm`,
+  `shooting-stars`, `aurora`) at ≤ 0.18 alpha.
+* **Test bar** (top right) — Class, Universe 1–6, Spawn Wave, Hitboxes. `A/D`
+  move, `W/S` depth, `Space` jump, `S + Space` drop through, `LMB` attack, `Q`
+  heavy, `E` mage extra, `Shift` dash.
+
+`window.__PT` exposes `state()`, `step(dt)`, `setClass()`, `setUniverse()`,
+`spawnWave()` and the live `game`/`player`/`platforms` objects for console or
+harness poking.
+
+---
+
 ## Verification
 
 `tools/pfx-harness/` boots the real page in jsdom with a rasteriser and drives it
@@ -200,6 +253,7 @@ the round-by-round change log live in
 
 ```
 index.html                     the whole game (markup, CSS, engine, game logic)
+platformer-test.html           standalone 2.5D platformer prototype (local pixelfx only)
 vendor/pixelfx/                vendored pixelfx (src/, LICENSE, NOTICE)
 docs/PIXELFX-ARCHITECTURE.md   engine design + verification log
 tools/pfx-harness/             headless jsdom + rasteriser test harness
