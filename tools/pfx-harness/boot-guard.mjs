@@ -11,7 +11,9 @@
  *   - a file:// page warns the user to serve over http,
  *   - `id="bootSub"` appears once (no duplicate ids anywhere),
  *   - a thrown error and an unhandled rejection both paint #bootMsg red,
- *   - a failed module request paints #bootMsg red,
+ *   - a failed module request paints #bootMsg red and points at DevTools,
+ *   - the probe names the *dependency* that 404'd (a Jekyll-stripped `_lib.js`)
+ *     and the `.nojekyll` fix, instead of blaming src/main.js,
  *   - the watchdog exists and is wired to `window.__SURVIVE`.
  */
 import fs from 'node:fs';
@@ -30,11 +32,20 @@ const check = (name, ok, detail) => {
 };
 
 const html = fs.readFileSync(HTML, 'utf8');
+let probeCalls = [];
 const dom = new JSDOM(html, {
   runScripts: 'dangerously',
   url: 'file://' + HTML,
   pretendToBeVisual: true,
-  beforeParse(w) { w.HTMLCanvasElement.prototype.getContext = () => null; }
+  beforeParse(w) {
+    w.HTMLCanvasElement.prototype.getContext = () => null;
+    /* a stand-in network: everything exists except the Jekyll-stripped kits */
+    w.fetch = (url) => {
+      probeCalls.push(url);
+      const missing = /_lib\.js$/.test(url);
+      return Promise.resolve({ status: missing ? 404 : 200, ok: !missing, url });
+    };
+  }
 });
 const win = dom.window;
 const doc = win.document;
@@ -58,13 +69,22 @@ check('a thrown error paints #bootMsg red', /err/.test(msg.className) && /oops/.
 win.dispatchEvent(Object.assign(new win.Event('unhandledrejection'), { reason: new Error('chunk failed') }));
 check('a rejection paints #bootMsg red', /err/.test(msg.className) && /chunk failed/.test(msg.textContent), msg.textContent.slice(0, 70));
 
-/* and a module request that 404s */
+/* and a module request that 404s — the real GitHub Pages shape: the entry is
+   fine, one of its dependencies was stripped by Jekyll */
 const fake = doc.createElement('script');
 fake.type = 'module';
 fake.src = 'http://localhost:8080/src/main.js';
 doc.body.appendChild(fake);
 fake.dispatchEvent(new win.Event('error'));
-check('a failed module fetch is reported', /Could not load/.test(msg.textContent), msg.textContent.slice(0, 70));
+await new Promise((r) => setTimeout(r, 30));
+check('a failed module fetch is reported', /Boot error/.test(msg.textContent) || /Could not load/.test(msg.textContent),
+  msg.textContent.slice(0, 70));
+check('…and it names the file that actually 404’d', /_lib\.js/.test(msg.textContent), msg.textContent.slice(0, 90));
+check('…instead of only blaming src/main.js', !/^Could not load .*main\.js$/.test(msg.textContent.split('\n')[0]),
+  msg.textContent.split('\n')[0]);
+check('…and it names the .nojekyll fix', /\.nojekyll/.test(msg.textContent));
+check('…and it points at DevTools', /F12/.test(msg.textContent), msg.textContent.slice(0, 60));
+check('the probe used HEAD requests, not downloads', probeCalls.length > 0, probeCalls.slice(0, 3));
 
 check('the guard exposes a manual fail hook', typeof win.__bootFail === 'function');
 win.__bootFail('manual', 'warn');

@@ -38,6 +38,40 @@ street.
 
 Add `?dev=1` to the URL to boot with the dev panel open.
 
+### Deploying to GitHub Pages
+
+The site is published from the repository **root**, so every URL lives under a
+subpath (`https://juwainhq.github.io/surviver/`). Two rules make that work, and
+both are enforced by `npm run test:pages`:
+
+1. **`.nojekyll` must exist at the root.** With the legacy Pages builder, GitHub
+   runs Jekyll before publishing, and Jekyll **silently deletes every file or
+   folder whose name starts with `_`**. pixelfx ships twenty of them —
+   `vendor/pixelfx/src/fx/{arcane,critters,fire,…}/_lib.js` — and every kit imports
+   its own `./_lib.js`, so the whole module graph dies at `./src/main.js` with
+   `Could not load …/src/main.js — check the path and that the server sends
+   JavaScript`, even though `main.js` is served correctly. An empty `.nojekyll`
+   next to `index.html` turns Jekyll off and Pages publishes the branch byte for
+   byte (including 1.4 MB `legacy-topdown.html` and `docs/`).
+   ```bash
+   : > .nojekyll        # empty file, committed, beside index.html
+   ```
+2. **Everything is a relative, exact-case, explicit path.** No `/src/main.js`
+   (that resolves to the *user site* root, not `/surviver/`), no extension-less
+   specifiers, and no case drift — Pages is a case-sensitive Linux filesystem
+   whatever your laptop does. `index.html` loads exactly one module
+   (`./src/main.js`) plus its `modulepreload`, and the other 286 modules are
+   reached only through `./` / `../` imports.
+
+Verify before you push:
+
+```bash
+npm run test:pages      # .nojekyll, subpath safety, exact-case resolution (offline)
+```
+
+If the deployed page still fails, the boot guard now probes the deep files on
+failure and names the one that 404'd, instead of blaming the entry script.
+
 ### If the boot screen does not move
 
 It cannot stay silent: an inline guard in `index.html` runs before the engine and
@@ -46,10 +80,11 @@ writes the reason into `#bootMsg`.
 | What you see | What it means |
 |---|---|
 | amber `Opened from file://` | you double-clicked the file — serve it instead |
-| red `Could not load …/src/main.js` | wrong server root, a 404, or a server sending `text/plain` for `.js` |
-| red `Boot error: …` | a throw inside a module, with the file and line |
+| red `Could not load …/src/main.js` | wrong server root, a 404, or a server sending `text/plain` for `.js` — the guard probes deeper and names the file that actually failed |
+| red `HTTP 404 on …/_lib.js` | GitHub Pages ran Jekyll and stripped the `_`-prefixed kits: commit an empty `.nojekyll` at the repo root |
+| red `Boot error: …` | a throw inside a module, with the file, line and full path |
 | amber `Still loading the engine modules (6s)…` | the ~290 module requests are slow (proxy/network); it is working |
-| red `Engine never started after 20 s` | the module graph never arrived — check the console |
+| red `Engine never started after 20 s` | the module graph never arrived — DevTools (F12) → Network lists every request |
 | red `Baked N clips, M failed` | one manifest failed to bake; the rest of the game still boots |
 
 ---
@@ -316,7 +351,8 @@ Five harnesses, all runnable from the repo root:
 ```bash
 npm install                       # jsdom, once (inside tools/pfx-harness)
 npm test                          # behaviour: imports src/main.js, 120 checks
-npm run test:guard                # the inline boot guard: file://, throws, 404s
+npm run test:guard                # the boot guard: file://, throws, 404 probe, DevTools hint
+npm run test:pages                # deployment: .nojekyll + subpath-safe, exact-case graph
 npm run test:graph                # walks the module graph over HTTP (+ cycle check)
 npm run test:browser              # cold boot over HTTP, then link and boot
 node /tmp/render13.mjs /tmp/r13   # optional: PNG frames via @napi-rs/canvas
@@ -324,10 +360,16 @@ node /tmp/render13.mjs /tmp/r13   # optional: PNG frames via @napi-rs/canvas
 
 ```
 npm test              → 120 checks · --- ALL CHECKS PASSED ---
-npm run test:guard    →   9 checks · --- ALL CHECKS PASSED ---
+npm run test:guard    →  14 checks · --- ALL CHECKS PASSED ---
+npm run test:pages    →  15 checks · --- PAGES OK ---
 npm run test:graph    → 287 modules · acyclic yes · 0 problems
 npm run test:browser  → linked 1.9 s, boot 7.1 s · 137 clips · title → PLAY verified · --- BROWSER BOOT OK ---
 ```
+
+`test:pages` is the one that has to stay green for the deployed site: it fails if
+`.nojekyll` disappears from the root, if anything in `index.html` is root-absolute,
+if an import specifier is bare/extension-less/case-drifted, or if two tracked files
+differ only by case.
 
 `test:browser` is the one that behaves like a real browser: it registers an ESM
 loader that fetches every module over HTTP and **refuses anything not served as
@@ -357,6 +399,7 @@ cast-pose body that stays on screen, and an air-slam impact.
 ## Layout
 
 ```
+.nojekyll                  empty marker: stops GitHub Pages running Jekyll (keeps vendor/…/_lib.js)
 index.html                 page shell: canvas, pixel HUD, title/class/pause/over/win screens, dev panel
 src/main.js                loop, input, audio blips, depth-sorted render list, boot + bake
 src/core.js                constants, viewport, shared state, screen enum, math helpers (imports nothing)

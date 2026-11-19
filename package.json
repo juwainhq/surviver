@@ -3,12 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "SURVIVE \u2014 a semi-3D side-view action platformer-brawler. One page, native ES modules, no build step.",
+  "description": "SURVIVE — a semi-3D side-view action platformer-brawler. One page, native ES modules, no build step.",
   "scripts": {
     "start": "python3 -m http.server 8080",
     "test": "node tools/pfx-harness/run.mjs",
     "test:guard": "node tools/pfx-harness/boot-guard.mjs",
+    "test:graph": "node tools/pfx-harness/http-graph.mjs",
     "test:browser": "node tools/pfx-harness/http-boot.mjs",
-    "test:graph": "node tools/pfx-harness/http-graph.mjs"
+    "test:pages": "node tools/pfx-harness/pages-audit.mjs",
+    "test:all": "node tools/pfx-harness/run.mjs && node tools/pfx-harness/boot-guard.mjs && node tools/pfx-harness/pages-audit.mjs"
   }
 }

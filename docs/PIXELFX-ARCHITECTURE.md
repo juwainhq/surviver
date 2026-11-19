@@ -1253,3 +1253,61 @@ title over the *live* street (the menu tick pans the camera and keeps weather an
 torches running), a class selector with a live `act:<cls>:idle` preview canvas,
 a pause menu, a death burst that ends in a run summary instead of a silent
 respawn, and STAGE CLEARED once every gate is open and the Warden is down.
+
+---
+
+### 13h · GitHub Pages: the `_lib.js` trap and the `.nojekyll` marker
+
+The build was green locally and dead on `https://juwainhq.github.io/surviver/`
+with the browser's least helpful sentence:
+
+> Could not load …/surviver/src/main.js — check the path and that the server
+> sends JavaScript.
+
+`src/main.js` was fine. The page is published from the repository root with the
+**legacy** Pages builder, which runs **Jekyll** before publishing — and Jekyll
+drops any file or directory whose name begins with `_` or `.`. pixelfx vendors
+twenty such files:
+
+```
+vendor/pixelfx/src/fx/{arcane,critters,explosions,fire,holy,ice,impacts,
+  lightning,melee,nature,pickups,projectiles,scifi,shadow,spawn,status,
+  transitions,ui,water,weather}/_lib.js
+```
+
+`fx/index.js` imports every kit, every kit imports its own `./_lib.js`, so the
+graph dies at instantiation time. The failing request is four levels below the
+entry script, and a module `<script>`'s `error` event names only the entry.
+
+Three changes make this class of failure impossible to ship and trivial to
+diagnose:
+
+1. **`.nojekyll`** — an empty marker at the repository root beside `index.html`.
+   Pages then serves the branch byte for byte: `_lib.js` included, `docs/` and
+   `legacy-topdown.html` included. (`: > .nojekyll`, commit it; `.gitignore`
+   does not touch it.)
+2. **`tools/pfx-harness/pages-audit.mjs`** — the deployment gate, offline:
+   the marker exists and is empty; the twenty Jekyll-sensitive files are still
+   the vendored kits; `index.html` has one relative module entry and zero
+   root-absolute `src`/`href`/`url()`; and all 785 specifiers across 287 modules
+   are relative, extension-explicit and **exact case** against the on-disk
+   listing (Pages is case-sensitive Linux, whatever the authoring laptop does).
+   It also fails on two tracked files that differ only by case.
+3. **A boot guard that names the file that failed.** A module error carries no
+   dependency information, so on failure the inline guard `HEAD`-probes a short
+   list of deep files (`./src/main.js`, `./src/pfx.js`,
+   `./vendor/pixelfx/src/core/index.js`, `./vendor/pixelfx/src/fx/index.js`, two
+   `_lib.js` kits) and reports the first 403/404 **by URL**, with the specific
+   remedy:
+
+   > Boot error: HTTP 404 on ./vendor/pixelfx/src/fx/arcane/_lib.js
+   > GitHub Pages strips any file whose name starts with "_" (Jekyll) unless the
+   > repository root holds an empty `.nojekyll` — add `.nojekyll` beside
+   > index.html and redeploy. DevTools (F12) -> Network tab, then reload: every
+   > failing request is listed by name.
+
+   Every other failure path — thrown error, unhandled rejection, the 6 s slow
+   notice, the 20 s watchdog — now ends with the same `F12 → Network` pointer,
+   and a thrown error prints the full module path next to the short filename.
+   `boot-guard.mjs` stubs `fetch` to 404 on `_lib.js` and asserts exactly this
+   text, so the message cannot regress into blaming `src/main.js` again.

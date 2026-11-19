@@ -598,9 +598,17 @@
 <script>
 /* ------------------------------------------------------------------ boot guard
  * Runs before the engine module. ES modules are fetched separately from this
- * page, so anything that stops them (file://, a 404, a MIME mismatch, a throw
- * inside a module) would otherwise leave the boot screen sitting at 0 % with no
- * explanation. This turns every one of those into visible red text.
+ * page, so anything that stops them would otherwise leave the boot screen at
+ * 0 % with no explanation. This turns every failure into visible text — and it
+ * names the *file*, not just the entry script, because a module graph almost
+ * never fails at its entry point.
+ *
+ * A module <script>'s error event carries no dependency information, so on
+ * failure the guard probes a few deep files with HEAD requests and reports the
+ * first 404 by name. That is what turns
+ *   "Could not load ./src/main.js"
+ * into
+ *   "404 on ./vendor/pixelfx/src/fx/arcane/_lib.js … commit an empty .nojekyll".
  */
 (function () {
   var msg = document.getElementById('bootMsg');
@@ -610,30 +618,84 @@
     if (!msg) return;
     msg.textContent = text;
     msg.className = kind || 'err';
-    msg.style.maxWidth = '86vw';
-    msg.style.lineHeight = '1.9';
+    msg.style.whiteSpace = 'pre-line';
+    msg.style.maxWidth = '88vw';
+    msg.style.lineHeight = '1.85';
   }
   window.__bootFail = fail;
 
+  /* the files worth probing first: the entry, a module it imports, the pixelfx
+     barrel, and two of the twenty `_lib.js` files Jekyll removes on Pages */
+  var PROBE = [
+    './src/main.js',
+    './src/pfx.js',
+    './vendor/pixelfx/src/core/index.js',
+    './vendor/pixelfx/src/fx/index.js',
+    './vendor/pixelfx/src/fx/arcane/_lib.js',
+    './vendor/pixelfx/src/fx/fire/_lib.js'
+  ];
+  var probing = false;
+
+  function hintFor(url) {
+    var devtools = '\nDevTools (F12) -> Network tab, then reload: every failing request is listed by name.';
+    if (/_lib\.js$/i.test(url)) {
+      return '\nGitHub Pages strips any file whose name starts with "_" (Jekyll) unless the repository root ' +
+        'holds an empty `.nojekyll` — add `.nojekyll` beside index.html and redeploy.' + devtools;
+    }
+    return '\nOpen the Network tab to see whether this is the path, the MIME type or the server.' + devtools;
+  }
+
+  /** report the first probe that 404s, otherwise the original message */
+  function probe(fallback) {
+    if (probing) return;
+    probing = true;
+    var doFetch = typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
+    if (!doFetch) { fail(fallback, 'err'); return; }
+    var i = 0;
+    (function next() {
+      if (i >= PROBE.length) { fail(fallback, 'err'); return; }
+      var url = PROBE[i++];
+      doFetch(url, { method: 'HEAD', cache: 'no-store' }).then(function (res) {
+        if (res && (res.status === 404 || res.status === 403)) {
+          fail('Boot error: HTTP ' + res.status + ' on ' + url + hintFor(url), 'err');
+          return;
+        }
+        next();
+      }, function () { next(); });
+    })();
+  }
+  window.__bootProbe = probe;
+
   if (location.protocol === 'file:') {
-    fail('Opened from file:// — browsers block ES modules there. Run: python3 -m http.server 8080 then open http://localhost:8080/', 'warn');
+    fail('Opened from file:// — browsers block ES modules there.\n' +
+      'Run: python3 -m http.server 8080 then open http://localhost:8080/\n' +
+      '(Or open DevTools with F12 -> Network to confirm.)', 'warn');
   }
 
   /* resource errors (a module 404 / MIME rejection) do not bubble: capture them */
   window.addEventListener('error', function (e) {
     var t = e && e.target;
     if (t && t.tagName === 'SCRIPT') {
-      fail('Could not load ' + (t.src || 'a module') + ' — check the path and that the server sends JavaScript.', 'err');
+      var src = t.src || './src/main.js';
+      probe('Could not load ' + src + '\n' +
+        'A file it imports is the usual culprit: open DevTools (F12) -> Network tab, ' +
+        'reload, and read the red 404 row — that row is the exact file that failed.');
       return;
     }
     var detail = (e && (e.message || (e.error && e.error.message))) || 'unknown error';
-    if (e && e.filename) detail += '  @ ' + e.filename.split('/').pop() + ':' + e.lineno;
-    fail('Boot error: ' + detail, 'err');
+    if (e && e.filename) {
+      var short = String(e.filename).split('/').pop();
+      detail += '  @ ' + short + ':' + e.lineno;
+      if (short !== 'index.html') detail += '  (' + e.filename + ')';   /* full path: useful under /surviver/ */
+    }
+    fail('Boot error: ' + detail + '\nOpen DevTools (F12) -> Console for the full stack (F12 -> Network for a 404).', 'err');
   }, true);
 
   window.addEventListener('unhandledrejection', function (e) {
     var r = e && e.reason;
-    fail('Boot promise rejected: ' + ((r && (r.stack || r.message)) || r), 'err');
+    var text = (r && (r.message || r)) || 'unknown rejection';
+    fail('Boot promise rejected: ' + text + '\n' +
+      'Open DevTools (F12) -> Network tab and reload: the failing module request is listed there by name.', 'err');
   });
 
   /* if the engine never checks in, say so instead of spinning forever */
@@ -642,11 +704,16 @@
     if (window.__SURVIVE) { clearInterval(tick); return; }
     var s = Math.round((Date.now() - t0) / 1000);
     if (s === 6 && !shown) {
-      fail('Still loading the engine modules (' + s + 's)… ' + location.protocol + '//' + location.host, 'warn');
+      fail('Still loading the engine modules (' + s + 's)… ' + location.protocol + '//' + location.host +
+        '\nSlow network or a stalled request: DevTools (F12) -> Network shows what is pending.', 'warn');
     }
     if (s >= 20 && !shown) {
       clearInterval(tick);
-      fail('Engine never started after 20 s. Open the console — most often this is file://, a wrong path, or a server that does not send JavaScript for .js files.', 'err');
+      fail('Engine never started after 20 s.\n' +
+        'Open DevTools (F12) -> Network tab and reload: every module request is listed, ' +
+        'and the red one is the exact file that failed. Most often it is file://, a wrong ' +
+        'path, a server that does not send JavaScript for .js files, or (on GitHub Pages) ' +
+        'a missing `.nojekyll`.', 'err');
     }
   }, 1000);
 })();

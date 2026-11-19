@@ -9,7 +9,8 @@ its own DOM listeners and its `window.__SURVIVE` hook.
 cd tools/pfx-harness
 npm install                # jsdom only
 node run.mjs               # behaviour: 120 checks
-node boot-guard.mjs        # the inline boot guard in index.html
+node boot-guard.mjs        # the inline boot guard: file://, throws, 404 probe (14)
+node pages-audit.mjs       # deployment: .nojekyll + subpath-safe, exact-case graph (15)
 node http-graph.mjs        # module graph over HTTP + acyclicity (server on :8080)
 node http-boot.mjs         # cold boot over HTTP, browser-style MIME rules
 ```
@@ -50,6 +51,23 @@ What it proves:
   `#hint`/`#lmbTip`, no 6/7 px pixel type left in the shell, a hidden
   `#devToggle`, per-class slot names, the LV 3 gate, a `5.0s` countdown, the gold
   `ult-ready` state, all nine dev buttons and all six universes.
+
+`boot-guard.mjs` also drives the **deployment probe**: it stubs `fetch` so that
+`vendor/pixelfx/src/fx/*/_lib.js` answers 404 (exactly what GitHub Pages does when
+Jekyll strips `_`-prefixed files), fires the module `error` event, and asserts the
+boot screen names that `.js` file and the `.nojekyll` fix instead of blaming
+`src/main.js` — plus a `F12 → Network` pointer in every failure path.
+
+`pages-audit.mjs` is the offline deployment gate, and it needs no server:
+
+* `.nojekyll` exists at the published root and is empty;
+* the twenty Jekyll-sensitive files are still the vendored `_lib.js` kits;
+* `index.html` has exactly one relative module entry and no root-absolute
+  `src`/`href`/`url()` (a leading `/` resolves to the *user site* root and 404s
+  under `/surviver/`);
+* all 785 import specifiers in the 287-module graph are relative, carry a file
+  extension, and resolve **with exact case** against the on-disk directory
+  listing — the same case-sensitivity Pages enforces.
 
 `http-boot.mjs` is the browser-fidelity run: it registers an ESM loader that
 fetches each module over HTTP and refuses anything not served as JavaScript, so a
