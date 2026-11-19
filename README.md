@@ -233,6 +233,11 @@ drives it forward and down. There is no shared `sa: 1.15` — that rammed every
 blade out horizontally. The mage holds nothing at all: the old `handle` weapon
 read as a stubby brick in his fist.
 
+![the seven rigs in five stances](docs/media/grips.png)
+
+Seven classes × five stances (`idle`, `run`, `jump`, `fall`, `cast`), rendered
+from the baked atlases with `@napi-rs/canvas` — the picture the harness pins.
+
 ---
 
 ## Firing, aiming and abilities
