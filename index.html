@@ -2292,6 +2292,7 @@ html,body{ background:var(--bg); color:var(--text); }
   74% { opacity:1; transform:scaleY(1) translateX(0); }
   100%{ opacity:0; transform:scaleY(.92) translateX(10px); }
 }
+</style>
 <style id="orb-badge-style">
   #abQ{ position:relative; }
   .orb-badge{
@@ -2304,6 +2305,7 @@ html,body{ background:var(--bg); color:var(--text); }
     box-shadow:0 0 10px rgba(226,232,240,.8), 0 2px 5px rgba(0,0,0,.6);
     pointer-events:none;
   }
+</style>
 <style id="class-cards-medieval">
   /* ---- class cards: aged wood grain + carved stone header band ---- */
   .class-card{
@@ -3099,7 +3101,6 @@ body.touch-mode #touchControls.show{ display:block; }
   pointer-events:auto; touch-action:none; opacity:.92;
   -webkit-appearance:none; appearance:none; -webkit-tap-highlight-color:transparent;
 }
-#fireBtn.aim-stick.active{ border-color:#f43f5e; opacity:1; box-shadow:inset 0 0 26px rgba(0,0,0,.5), 0 0 28px rgba(244,63,94,.35); }
 #fireBtn.aim-stick.active{ border-color:#fda4af; opacity:1; box-shadow:inset 0 0 26px rgba(0,0,0,.5), 0 0 24px rgba(244,63,94,.28); }
 #aimDot{
   position:absolute; left:50%; top:50%; width:46px; height:46px; border-radius:50%;
@@ -3395,7 +3396,7 @@ html, body, body *{
 #topRight .stat svg{ width:12px !important; height:12px !important; }
 #topRight .stat.time{ color:#fde68a !important; font-variant-numeric:normal !important; }
 #topRight .stat.time span{ min-width:0 !important; }
-#topRight .stat .mult{ font-size:7px !important; color:#6ee7b7 !important; color:var(--px-dim); }
+#topRight .stat .mult{ font-size:7px !important; color:var(--px-dim); }
 
 /* ---- class badge + XP bar ---------------------------------------------- */
 #className{ font-size:8px !important; line-height:12px !important; color:var(--px-ink) !important; font-weight:400 !important; }
@@ -3490,6 +3491,12 @@ h1, h2, .screen-title, .card-title{ line-height:1.5 !important; }
 
 
 <style id="pfx-ability-hud">
+/* the retro skin kills every text-shadow with `!important`; the cooldown
+   readout and the lock badge must keep their outline or they disappear */
+#abilities .ability .ab-cd,
+#abilities .ability .ab-lock-lv{
+  text-shadow:1px 1px 0 #000,-1px 1px 0 #000,1px -1px 0 #000,-1px -1px 0 #000,0 0 6px rgba(0,0,0,.9) !important;
+}
 /* ---- locked / cooling slots ------------------------------------------- */
 #abilities .ability{ position:relative; }
 #abilities .ability.locked .ab-btn{ opacity:.3; filter:grayscale(1); cursor:default; }
@@ -3504,6 +3511,7 @@ h1, h2, .screen-title, .card-title{ line-height:1.5 !important; }
   font-size:6px; line-height:1; letter-spacing:0; color:#cbd5e1;
   text-shadow:1px 1px 0 #000;
 }
+#abilities .ability.cooling .ab-sweep{ opacity:.35; }
 #abilities .ability .ab-dim{                   /* soft tint over a cooling slot */
   position:absolute; inset:0; z-index:2; display:none; pointer-events:none;
   background:rgba(6,8,12,.34); border-radius:inherit;
@@ -3533,38 +3541,42 @@ h1, h2, .screen-title, .card-title{ line-height:1.5 !important; }
 
 /* ---- developer admin panel --------------------------------------------- */
 #devAdmin{
-  position:fixed; top:10px; right:10px; z-index:9999;
-  display:flex; flex-direction:column; align-items:flex-end; gap:6px;
   font-family:'Press Start 2P',var(--font-pixel,monospace);
   font-size:9px; line-height:1.25; color:#e5e7eb; text-transform:uppercase;
 }
+/* the chip lives in the bottom-right corner, out of the way of the HUD, the
+   pause button and the class select cards */
 #devAdmin .dev-toggle{
+  position:fixed; bottom:14px; right:14px; z-index:12000;
   padding:4px 7px; cursor:pointer; background:#1a1c23; color:#9ca3af;
   border:2px solid #4b5563; font-family:inherit; font-size:8px; letter-spacing:0;
-  box-shadow:0 3px 0 rgba(0,0,0,.5); opacity:.75;
+  box-shadow:0 3px 0 rgba(0,0,0,.5); opacity:.7;
 }
 #devAdmin .dev-toggle:hover{ opacity:1; border-color:#fff; color:#fff; }
 #devAdmin .dev-toggle.on{ border-color:#c8a24a; color:#f5d68a; opacity:1; }
-#dev-admin-panel{
+/* 64px clears #topRight (score/gems/timer) and the pause chip; 12000 keeps it
+   above the HUD layer but below modals */
+#devPanel{
+  position:fixed; top:64px; right:12px; z-index:12000;
   display:none; width:236px; padding:8px; background:#1a1c23;
   border:2px solid #ffffff; box-shadow:0 6px 0 rgba(0,0,0,.55);
-  max-height:calc(100vh - 60px); overflow-y:auto;
+  max-height:calc(100vh - 140px); overflow-y:auto;
 }
-#dev-admin-panel.open{ display:block; }
-#dev-admin-panel .dev-head{ color:#8b93a7; font-size:8px; margin-bottom:6px; }
-#dev-admin-panel .dev-status{ color:#fbbf24; font-size:8px; margin-bottom:6px; min-height:10px; }
-#dev-admin-panel .dev-row{ display:flex; gap:4px; margin-bottom:4px; }
-#dev-admin-panel .dev-btn, #dev-admin-panel .dev-select{
+#devPanel.open{ display:block; }
+#devPanel .dev-head{ color:#8b93a7; font-size:8px; margin-bottom:6px; }
+#devPanel .dev-status{ color:#fbbf24; font-size:8px; margin-bottom:6px; min-height:10px; }
+#devPanel .dev-row{ display:flex; gap:4px; margin-bottom:4px; }
+#devPanel .dev-btn, #devPanel .dev-select{
   flex:1 1 auto; padding:5px 6px; cursor:pointer; text-align:left;
   background:#23262f; color:#f8fafc; border:1px solid #4b5563;
   font-family:inherit; font-size:8px; letter-spacing:0; text-transform:uppercase;
   box-shadow:inset -1px -1px 0 #101218;
 }
-#dev-admin-panel .dev-btn:hover, #dev-admin-panel .dev-select:hover{ background:#2e323d; border-color:#ffffff; }
-#dev-admin-panel .dev-btn:active{ transform:translate(1px,1px); }
-#dev-admin-panel .dev-btn.on{ background:#3f2d12; border-color:#c8a24a; color:#f5d68a; }
-#dev-admin-panel .dev-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin-bottom:4px; }
-#dev-admin-panel .dev-note{ color:#6b7280; font-size:7px; margin-top:4px; }
+#devPanel .dev-btn:hover, #devPanel .dev-select:hover{ background:#2e323d; border-color:#ffffff; }
+#devPanel .dev-btn:active{ transform:translate(1px,1px); }
+#devPanel .dev-btn.on{ background:#3f2d12; border-color:#c8a24a; color:#f5d68a; }
+#devPanel .dev-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin-bottom:4px; }
+#devPanel .dev-note{ color:#6b7280; font-size:7px; margin-top:4px; }
 </style>
 </head>
 <body>
@@ -3810,10 +3822,9 @@ h1, h2, .screen-title, .card-title{ line-height:1.5 !important; }
       <div class="row"><b>WASD</b> move</div>
       <div class="row"><b>LEFT CLICK</b> use class weapon</div>
       <div class="row touch-only"><b>TOUCH</b> left thumb moves · right thumb aims and fires · Tap ability and satchel icons directly</div>
-      <div class="row"><b>Q</b> class ability</div>
       <div class="row"><b>Q</b> Class ability · <b>E</b> Ability 2 · <b>SHIFT</b> Ability 3 · <b>F</b> Ability 4 · <b>R</b> Ability 5</div>
       <div class="row"><b>1 2 3</b> use a satchel supply</div>
-      <div class="row">Each class has four unique unlockable abilities. Boss 1 unlocks E, boss 2 unlocks SHIFT, boss 3 unlocks F, and boss 4 unlocks R.</div>
+      <div class="row">Abilities unlock with your <b>class level</b>: <b>LMB</b> and <b>SHIFT</b> from LV 1, <b>Q</b> at LV 3, <b>E</b> at LV 5, <b>F</b> at LV 10, <b>R</b> at LV 15. Locked slots show a padlock with the level they need — the Dev Panel can unlock everything at once.</div>
       <div class="row">Class XP: regular enemies 10 · elites (Oni, Mutant, Mech, Chaos Titan) 25 · bosses 150. Earn 1 Skill Point every class level, plus 1 bonus SP at Levels 5, 10 and 15 (22 total). Unlock each row left to right: tiers cost 1/1/2/3 SP and require Levels 2/5/10/15.</div>
       <div class="row">Open SKILL TREE from pause or a level-up banner. Each class keeps its own level, XP and permanent skills across every zone and universe.</div>
       <div class="row">Clear every arena, beat the champion, then walk into the portal it leaves behind. Six universes, five levels each.</div>
@@ -6266,7 +6277,8 @@ UI.canvas.addEventListener('pointerdown', (e) => {
       deployTurretAt(Math.round(game.mouse.x / viewZoom() + game.cam.x),
                      Math.round((game.mouse.y - SKY_H) / viewZoom() + game.cam.y));
     } else {
-      dash();
+      /* the right-click dash is an ability trigger like any other */
+      castAbilitySlot('shift');
     }
   }
 });
@@ -6300,7 +6312,7 @@ window.addEventListener('keydown', (e) => {
   /* PIXELFX: keys also answer by physical code, so a non-US layout or an IME
      cannot swallow Q/E/F/R, and every cast repaints the ability HUD. */
   const code = e.code || '';
-  if (k === 'q' || code === 'KeyQ') { castClassAbility(); syncAbilityHud(); }
+  if (k === 'q' || code === 'KeyQ') castAbilitySlot('q');
   if (k === 'e' || code === 'KeyE') castAbilitySlot('e');
   if (k === 'f' || code === 'KeyF') castAbilitySlot('f');
   if (k === 'r' || code === 'KeyR') castAbilitySlot('r');
@@ -6560,12 +6572,13 @@ function updatePlayer(dt) {
     const aimX = p.x + Math.cos(touchAim.angle) * 180;
     const aimY = p.y + Math.sin(touchAim.angle) * 180;
     if (game.mouse) {
+      /* worldX/worldY stay in world space, x/y are SCREEN space */
       game.mouse.worldX = aimX;
       game.mouse.worldY = aimY;
-      game.mouse.x = aimX;
-      game.mouse.y = aimY;
-      game.mouse.screenX = aimX;
-      game.mouse.screenY = aimY;
+      game.mouse.x = toScreenX(aimX);
+      game.mouse.y = toScreenY(aimY);
+      game.mouse.screenX = game.mouse.x;
+      game.mouse.screenY = game.mouse.y;
     }
     p.facingAngle = touchAim.angle;
     if (Number.isFinite(Number(touchAim.angle))) p.angle = touchAim.angle;
@@ -13022,6 +13035,9 @@ function abilityUnlockedCount() {
 }
 function abilityCooldown(slot) {
   const p = game.player;
+  /* Q lives on its own timer; exposing it here is what lets the engine's cast
+     wrapper see a Q cast as "really fired" like any other slot */
+  if (slot === 'q') return game.qCd || 0;
   if (slot === 'e') return game.novaCd || 0;
   if (slot === 'shift') return p ? (p.dashCd || 0) : 0;
   if (slot === 'f') return game.turretCd || 0;
@@ -13030,7 +13046,8 @@ function abilityCooldown(slot) {
 }
 function setAbilityCooldown(slot, seconds) {
   const p = game.player;
-  if (slot === 'e') game.novaCd = seconds;
+  if (slot === 'q') game.qCd = seconds;
+  else if (slot === 'e') game.novaCd = seconds;
   else if (slot === 'shift' && p) p.dashCd = seconds;
   else if (slot === 'f') game.turretCd = seconds;
   else if (slot === 'r') game.overchargeCd = seconds;
@@ -13282,7 +13299,7 @@ function pfxPaintSlot(el, unlocked, cooling, cd, maxCd, req) {
   el.dataset.reqLevel = String(req || 1);
   el.dataset.level = String(playerClassLevel());
   if (!unlocked) {
-    const label = 'LV ' + (req || 1);
+    const label = 'LV' + (req || 1);   /* compact badge: LV3 / LV5 / LV10 / LV15 */
     if (lockEl.dataset.label !== label) {
       lockEl.innerHTML = PFX_LOCK_SVG + '<span class="ab-lock-lv">' + label + '</span>';
       lockEl.dataset.label = label;
@@ -13332,7 +13349,7 @@ function devSay(msg) {
   const el = document.getElementById('devStatus');
   if (el) el.textContent = String(msg).toUpperCase();
 }
-function devPanelEl() { return document.getElementById('dev-admin-panel'); }
+function devPanelEl() { return document.getElementById('devPanel'); }
 function devSetOpen(open) {
   const el = devPanelEl();
   const chip = document.getElementById('devToggle');
@@ -13522,7 +13539,14 @@ function installDevAdminPanel() {
       devSetOpen(!DEV_STATE.open);
     }
   }, true);
-  devSetOpen(false);
+  /* ?dev=1 opens the panel on load, for a keyboard layout where ` is a dead
+     key (the chip in the corner does the same thing with a mouse) */
+  let devQuery = false;
+  try { devQuery = /(?:^|[?&])dev=1(?:&|$)/.test(String(location.search || '')); } catch (eQ) { devQuery = false; }
+  devSetOpen(devQuery);
+  if (touchForcedByFlag() && typeof activateTouchMode === 'function') {
+    try { activateTouchMode('flag'); } catch (eT) { /* touch layer is optional */ }
+  }
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', installDevAdminPanel);
@@ -13593,8 +13617,18 @@ function tickAbilityHud(dt) {
 tickAbilityHud.level = 0;
 
 function castAbilitySlot(slot) {
+  /* ---- the single gatekeeper ------------------------------------------------
+     keyboard Q/E/SHIFT/F/R, the right-click dash, the HUD buttons and every
+     touch tap arrive here. Lock, cooldown and the animation hook are therefore
+     enforced once, in one place. */
   if (game.screen !== 'playing' || isPaused || gameState.isDying || abilitiesLocked()) return;
   if (!hasAbility(slot)) return;
+  if (slot === 'q') {
+    if (game.qCd > 0) return;
+    castClassAbility();          /* it re-checks the lock and burns game.qCd */
+    syncAbilityHud();
+    return;
+  }
   if (abilityCooldown(slot) > 0) return;
   const def = classAbilityDef(slot);
   if (!def) return;
@@ -13608,7 +13642,7 @@ function castAbilitySlot(slot) {
 }
 
 function useAbilityButton(id) {
-  if (id === 'q') { castClassAbility(); syncAbilityHud(); return; }
+  /* one door for every trigger — see castAbilitySlot() */
   castAbilitySlot(id);
 }
 
@@ -28146,6 +28180,11 @@ function isTechSpecialistClass() {
   }
 }
 
+/* `?touch=1` forces the mobile twin-stick layer for testing on a desktop */
+function touchForcedByFlag() {
+  try { return /(?:^|[?&])touch=1(?:&|$)/.test(String(location.search || '')); } catch (e) { return false; }
+}
+
 function activateTouchMode(source) {
   touchInputState.supported = true;
   touchInputState.active = true;
@@ -32050,6 +32089,16 @@ const PFX = (function () {
       setBootLabel('ready');
       await FXCache.flushOnDemand(200);
       install();
+      /* documented flag: `?pfxaudit=1` turns the primitive audit on at boot, so
+         a live session can be checked with PFX.audit() the same way the harness
+         does it */
+      try {
+        if (/[?&]pfxaudit=1/.test(String(window.location && window.location.search || ''))) {
+          state.auditOn = true;
+          auditActive = true;
+          installAudit();
+        }
+      } catch (eAudit) { /* the audit is a diagnostic, never a boot blocker */ }
       bootState.ready = true;
       /* hold a beat so 100% is legible, then dissolve into the game */
       await new Promise((r) => setTimeout(r, 260));
@@ -32218,7 +32267,7 @@ window.addEventListener('load', resize);
 
 <div id="devAdmin">
   <button type="button" class="dev-toggle" id="devToggle" title="Developer panel (`)">DEV</button>
-  <div id="dev-admin-panel" aria-label="Developer admin panel" role="toolbar">
+  <div id="devPanel" aria-label="Developer admin panel" role="toolbar">
     <div class="dev-head">DEV ADMIN &middot; ` to toggle</div>
     <div class="dev-status" id="devStatus">LV 1</div>
     <div class="dev-row"><button type="button" class="dev-btn" id="devLevelUp">[+1 Level]</button></div>
@@ -32246,7 +32295,7 @@ window.addEventListener('load', resize);
     </div>
     <div class="dev-row"><button type="button" class="dev-btn" id="devSwarm">[Spawn Swarm]</button></div>
     <div class="dev-row"><button type="button" class="dev-btn" id="devBoss">[Spawn Boss]</button></div>
-    <div class="dev-row"><button type="button" class="dev-btn" id="devWipe">[Kill All Enemies]</button></div>
+    <div class="dev-row"><button type="button" class="dev-btn" id="devWipe">[Wipe Map]</button></div>
     <div class="dev-note">~ or ` toggles &middot; wired to live state</div>
   </div>
 </div>

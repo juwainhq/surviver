@@ -859,3 +859,137 @@ gate, every ability keypress on all seven classes, all six universe switches,
 the swarm, the boss and the map clear. (jsdom cannot resolve dynamic `import`,
 so the page's own first boot attempt logs one environmental error before the
 harness injects the modules; a real browser served over http starts clean.)
+
+## 11g · Round seven: head structure, one gatekeeper, panel placement, README
+
+### A · The `<head>` was not actually well-formed
+
+Two `<style>` elements were never closed:
+
+```
+<style id="medieval-theme">   … 400 lines …   <style id="orb-badge-style">
+                                              <style id="class-cards-medieval">
+</style>                       ← closed the *third* tag, not the first
+```
+
+The parser recovered, but `orb-badge-style` and the whole class-card skin were
+living inside the medieval-theme sheet, and `medieval-theme` never ended. Two
+`</style>` tags now close them where the author meant, verified by the count:
+**20 `<style>` opens, 20 closes**.
+
+Three duplicates went with it:
+
+* `#fireBtn.aim-stick.active` was declared twice (two different border
+  colours); the later one always won, so the first was dead CSS. One is left.
+* `#topRight .stat .mult` set `color` twice (`#6ee7b7 !important` then
+  `var(--px-dim)`), so the mint green never rendered. One declaration is left.
+* `<div class="row"><b>Q</b> class ability</div>` appeared twice in
+  `#howToPlay`, and the surviving paragraph still described the *old*
+  boss-defeat unlock model. Both replaced with the level-based progression the
+  game actually runs on.
+
+**The retro skin vs. the cooldown timer.** `#pfx-retro-ui` sets
+`html, body, body *{ text-shadow:none !important }` — correct for the skin,
+fatal for `.ab-cd`, whose 1 px black outline is the only thing keeping white
+text legible over bright art. A higher-specificity rule with `!important`
+restores the outline for `.ab-cd` and `.ab-lock-lv` only:
+
+```css
+#abilities .ability .ab-cd,
+#abilities .ability .ab-lock-lv{
+  text-shadow:1px 1px 0 #000,-1px 1px 0 #000,1px -1px 0 #000,-1px -1px 0 #000,0 0 6px rgba(0,0,0,.9) !important;
+}
+```
+
+### B · Touch aim wrote world coordinates into screen space
+
+`updatePlayer()` kept a virtual cursor in front of Rael while the right stick was
+active — and assigned **world** coordinates to `game.mouse.x/y/screenX/screenY`.
+Everything that reads those (`drawTacticalCrosshair`, `crosshairOverEnemy`,
+recoil bloom, the aim arc, `atan2` for facing) expects **screen** space, so on
+touch the reticle and every hit test were off by `(cam.x, cam.y - SKY_H)` — hundreds
+of pixels.
+
+```js
+game.mouse.worldX = aimX;   game.mouse.worldY = aimY;      // world space
+game.mouse.x = toScreenX(aimX); game.mouse.y = toScreenY(aimY);  // screen space
+game.mouse.screenX = game.mouse.x; game.mouse.screenY = game.mouse.y;
+```
+
+### C · One gatekeeper for every ability trigger
+
+Q is not part of the `e/shift/f/r` kit — it is `cls.q` behind
+`castClassAbility()` — so it had its own keyboard branch, its own HUD branch, and
+the right-click dash called `dash()` straight past the slot path. Three doors
+means three chances for a locked ability to fire.
+
+Now there is one: `castAbilitySlot(slot)`.
+
+* `abilityCooldown('q')` / `setAbilityCooldown('q', s)` expose `game.qCd`, so the
+  engine's cast wrapper can see a Q cast as "really fired" like any other slot.
+* `castAbilitySlot('q')` guards the lock, checks the timer, then delegates to
+  `castClassAbility()` (which re-checks) and repaints the HUD.
+* Keyboard Q, HUD buttons, touch taps (`useAbilityButton → castAbilitySlot`) and
+  **right-click dash** (`castAbilitySlot('shift')`) all arrive here.
+
+Verified per level by mutating the class record directly:
+
+| class level | Q | E | F | R | SHIFT |
+|---|---|---|---|---|---|
+| 1 | – | – | – | – | ✅ |
+| 2 | **blocked (`qCd 0`)** | – | – | – | ✅ |
+| 3 | ✅ (`qCd 8`) | – | – | – | ✅ |
+| 5 | ✅ | ✅ | – | – | ✅ |
+| 10 | ✅ | ✅ | ✅ | – | ✅ |
+| 15 | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+Locked slots paint `.ab-lock` (drawn padlock) plus a compact badge —
+**LV3 / LV5 / LV10 / LV15**. `.ab-sweep` is dropped to 35 % while cooling so it
+cannot wash out the fill or the timer.
+
+### D · `#devPanel` has a place on the screen
+
+Moved to `top:64px; right:12px; z-index:12000` — below `#topRight` (score/gems/
+timer), clear of `#mobilePauseBtn` and the class-select cards. The `[DEV]` chip
+now lives bottom-right (`bottom:14px; right:14px`). Three ways in: the chip,
+`` ` `` / `~`, or `?dev=1`. Every control drives live state and repaints the
+HUD immediately; `+1 Level`/`Lv MAX` grant levels **in memory only** so a test
+session cannot max out a real save. `[Wipe Map]` is the label for the mass-kill
+(12 real boss hits, because one hit is capped at 12 % of max HP).
+
+### E · Flags that used to be documentation only
+
+`?pfxaudit=1` was mentioned in a comment but never parsed. It is now read after
+`install()` and switches the primitive audit on at boot. `?touch=1` is new, and
+forces the mobile twin-stick layer for desktop testing. Both verified:
+`?touch=1 → body.touch-mode`, `?dev=1 → #devPanel.open`.
+
+### F · Bottom render block, re-checked
+
+No stray geometry on the player: mid-swing `PFX.animationState` is
+`act:knight:lmb` / `moves/sword-combo`, and 1.5 s later it is
+`clip:'' / kind:'locomotion'` with `moves.busy 0` — the stance machine owns the
+body again, so no attack frame is left standing. Over 120 idle frames the
+battlefield context received exactly **600** `fillRect` calls: 5 per frame, the
+crosshair (4 arms + pip), nothing else. Weather stays inside its documented
+ceiling (`alpha: 0.15`, `density: 0.05`, `wash: 0.08`).
+
+### G · README
+
+`README.md` now documents the whole game rather than the engine branch: overview
+and latest updates, the core loop (6000×6000 zones → 3 arenas → boss → rift),
+the six universes with their five zones and bosses, all seven classes (4 starter
++ 3 Armory), per-class XP/levels to 20, the 3-row skill tree (1/1/2/3 SP at
+levels 2/5/10/15), the ability unlock table, Data Chip families, the Armory
+tabs, desktop and mobile controls, local serving, every debug flag, and the
+harness with its current output.
+
+```
+effect ids: 92 unique, 0 unresolved
+runtime unresolved keys: []
+audit: 0 forbidden primitive calls over 300 frames ({})
+audit: 1500 sanctioned calls (the crosshair block)
+audit: 304 drawImage/frame at 12 enemies
+engine errors: []
+--- ALL CHECKS PASSED ---
+```
