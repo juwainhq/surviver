@@ -6,7 +6,8 @@
 <title>SURVIVE · 2.5D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="modulepreload" href="./src/main.js">
 <style>
   :root{
     --px:'Press Start 2P',ui-monospace,'Courier New',monospace;
@@ -38,6 +39,10 @@
   #boot.done{ opacity:0; pointer-events:none; }
   #bootTitle{ font-size:18px; color:var(--gold); text-shadow:0 0 22px rgba(245,197,66,.4); letter-spacing:2px; }
   #bootSub{ font-size:8px; color:#5a6a80; }
+  .bootHint{ font-size:7px; color:#5a6a80; opacity:.7; line-height:2; max-width:80vw; text-align:center; }
+  #bootMsg.err{ color:#ff6a6a; }
+  #bootMsg.warn{ color:#ffc65c; }
+  #bootMsg.ok{ color:#7cffcf; }
   #bootBar{ width:300px; height:12px; border:2px solid var(--edge); background:#0a0e14; padding:2px; }
   #bootFill{ height:100%; width:0%; background:linear-gradient(90deg,#7a5a10,var(--gold)); transition:width .08s linear; }
   #bootMsg{ font-size:8px; color:#54637a; max-width:74vw; line-height:1.9; min-height:12px; }
@@ -236,7 +241,7 @@
   <div id="bootClasses"></div>
   <div id="bootBar"><div id="bootFill"></div></div>
   <div id="bootMsg">baking pixelfx modules…</div>
-  <div id="bootSub" style="opacity:.65">A/D run · W/S lane · SPACE jump · LMB attack · SHIFT Q E R abilities</div>
+  <div class="bootHint">A/D run · W/S lane · SPACE jump · LMB attack · SHIFT Q E R abilities</div>
 </div>
 
 <div id="hpPanel">
@@ -313,6 +318,62 @@
   <b>LMB</b> attack · <b>SHIFT</b> mobility · <b>Q</b> tactical · <b>E</b> heavy · <b>R</b> ultimate
 </div>
 
+<script>
+/* ------------------------------------------------------------------ boot guard
+ * Runs before the engine module. ES modules are fetched separately from this
+ * page, so anything that stops them (file://, a 404, a MIME mismatch, a throw
+ * inside a module) would otherwise leave the boot screen sitting at 0 % with no
+ * explanation. This turns every one of those into visible red text.
+ */
+(function () {
+  var msg = document.getElementById('bootMsg');
+  var shown = false;
+  function fail(text, kind) {
+    shown = true;
+    if (!msg) return;
+    msg.textContent = text;
+    msg.className = kind || 'err';
+    msg.style.maxWidth = '86vw';
+    msg.style.lineHeight = '1.9';
+  }
+  window.__bootFail = fail;
+
+  if (location.protocol === 'file:') {
+    fail('Opened from file:// — browsers block ES modules there. Run: python3 -m http.server 8080 then open http://localhost:8080/', 'warn');
+  }
+
+  /* resource errors (a module 404 / MIME rejection) do not bubble: capture them */
+  window.addEventListener('error', function (e) {
+    var t = e && e.target;
+    if (t && t.tagName === 'SCRIPT') {
+      fail('Could not load ' + (t.src || 'a module') + ' — check the path and that the server sends JavaScript.', 'err');
+      return;
+    }
+    var detail = (e && (e.message || (e.error && e.error.message))) || 'unknown error';
+    if (e && e.filename) detail += '  @ ' + e.filename.split('/').pop() + ':' + e.lineno;
+    fail('Boot error: ' + detail, 'err');
+  }, true);
+
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e && e.reason;
+    fail('Boot promise rejected: ' + ((r && (r.stack || r.message)) || r), 'err');
+  });
+
+  /* if the engine never checks in, say so instead of spinning forever */
+  var t0 = Date.now();
+  var tick = setInterval(function () {
+    if (window.__SURVIVE) { clearInterval(tick); return; }
+    var s = Math.round((Date.now() - t0) / 1000);
+    if (s === 6 && !shown) {
+      fail('Still loading the engine modules (' + s + 's)… ' + location.protocol + '//' + location.host, 'warn');
+    }
+    if (s >= 20 && !shown) {
+      clearInterval(tick);
+      fail('Engine never started after 20 s. Open the console — most often this is file://, a wrong path, or a server that does not send JavaScript for .js files.', 'err');
+    }
+  }, 1000);
+})();
+</script>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>

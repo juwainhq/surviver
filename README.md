@@ -172,30 +172,59 @@ The same actions are on `window.__SURVIVE`: `setClass`, `setUniverse`, `unlockAl
 python3 -m http.server 8080     # → http://localhost:8080/index.html
 ```
 
-First boot bakes ~112 clips behind the progress bar (a few seconds); after that a
-frame is pure `drawImage` blits.
+The page **must be served over http** — opening `index.html` from disk (`file://`)
+makes browsers refuse ES modules. First boot fetches ~290 modules, then bakes 112
+clips behind a progress bar that keeps animating; after that a frame is pure
+`drawImage` blits.
+
+### If the boot screen does not move
+
+It can no longer stay silent: an inline guard in `index.html` runs before the
+engine and writes the reason into `#bootMsg`.
+
+| What you see | What it means |
+|---|---|
+| amber `Opened from file://` | you double-clicked the file — serve it instead |
+| red `Could not load …/src/main.js` | wrong server root, a 404, or a server sending `text/plain` for `.js` |
+| red `Boot error: …` | a throw inside a module, with the file and line |
+| amber `Still loading the engine modules (6s)…` | the ~290 module requests are slow (proxy/network); it is working |
+| red `Engine never started after 20 s` | the module graph never arrived — check the console |
+| red `Baked N clips, M failed` | one manifest failed to bake; the rest of the game still boots |
 
 ---
 
 ## Verification
 
-`tools/pfx-harness` boots the real module graph in jsdom with a recording canvas
-and drives the game through its own listeners:
+Four harnesses, all runnable from the repo root:
 
 ```bash
-cd tools/pfx-harness && npm install
-node run.mjs           # or: npm test from the repo root
+npm install                       # jsdom, once (inside tools/pfx-harness)
+npm test                          # behaviour: imports src/main.js, 65 checks
+npm run test:guard                # the inline boot guard: file://, throws, 404s
+npm run test:graph                # walks the module graph over HTTP
+npm run test:browser              # cold boot over HTTP, then link and boot
 ```
 
 ```
-60 checks · --- ALL CHECKS PASSED ---
+npm test              → 65 checks · --- ALL CHECKS PASSED ---
+npm run test:guard    →  9 checks · --- ALL CHECKS PASSED ---
+npm run test:graph    → 287 modules, 0 problems · --- GRAPH OK ---
+npm run test:browser  → linked 1.5 s, boot 7.3 s · --- BROWSER BOOT OK ---
 ```
 
-It fails on: a boot error, an unresolved effect id, any of the 7 classes × 4
-slots failing to animate, a hit that deals no damage, a heavy hit without exactly
-40 ms hit-stop, a broken wave count, a card draft that will not open, a boss that
-will not die, a HUD slot without its countdown, or a dev button that does
-nothing.
+`test:browser` is the one that behaves like a real browser: it registers an ESM
+loader that fetches every module over HTTP and **refuses anything not served as
+JavaScript** — the rule that silently kills module scripts — then links the graph
+and boots the page, asserting the overlay dismisses, the bar reaches 100 %, the
+seven class chips exist, the bake reports, a frame renders and the console stays
+clean. `test:graph` is the same audit without a DOM, so it can be pointed at any
+deployment.
+
+`npm test` fails on: a boot error, an unresolved effect id, any of the 7 classes ×
+4 slots failing to animate, a hit that deals no damage, a heavy hit without
+exactly 40 ms hit-stop, a broken wave count, a card draft that will not open, a
+boss that will not die, a HUD slot without its countdown, or a dev button that
+does nothing.
 
 Pixels were verified separately against a real rasteriser (all six universes,
 every class mid-cast, the boss fight, the card draft).

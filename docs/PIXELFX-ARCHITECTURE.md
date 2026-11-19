@@ -1161,3 +1161,33 @@ including: all seven classes × four slots animate on their own baked clip, a
 runner's click sets `facing` before the swing, 40 ms hit-stop on a heavy hit, the
 gate → wave → clear → card draft → unpause chain, boss phase 2 after damage, the
 HUD countdown, and all nine dev-panel controls.
+
+### 13f · Boot diagnostics (the 0 % hang)
+
+A page whose ES modules never arrive shows exactly one thing: the static HTML and
+a progress bar sitting at 0 %. Everything the engine would have said lives inside
+the module that failed to load, so the failure is silent by construction. Three
+changes make that impossible:
+
+* **An inline guard before the module tag** (`index.html`). It checks
+  `location.protocol === 'file:'` — the single most common cause, because
+  browsers refuse module scripts from a `file://` origin — and installs capture
+  phase `error` / `unhandledrejection` listeners that write the reason into
+  `#bootMsg` in red. Resource errors do not bubble, which is why the listener is
+  registered with `capture: true` and inspects `event.target.tagName`. A watchdog
+  also reports "still loading the engine modules (6s)" and then "engine never
+  started after 20 s", so a network-stalled graph is distinguishable from a crash.
+* **A duplicate `id="bootSub"`** — two elements shared the id, so the second never
+  matched `#bootSub` styling and `getElementById` silently returned the first.
+  The hint line is now `.bootHint`.
+* **An async bake.** `buildClips()` now `await`s `setTimeout(…, 0)` every three
+  clips and writes `baking 34 / 112 · critters/bat` into `#bootMsg`. A synchronous
+  loop of 112 canvas bakes blocks the event loop for seconds, during which the
+  browser cannot paint the very bar that is reporting progress. Each bake is also
+  wrapped in `try/catch`, so one bad manifest degrades to a message instead of a
+  dead tab.
+
+Verification for exactly this class of bug is now part of the harness: the module
+graph is walked over HTTP (`http-graph.mjs`) and the page is cold-booted through
+an HTTP-fetching ESM loader that enforces the browser's JavaScript MIME rule
+(`http-boot.mjs`).

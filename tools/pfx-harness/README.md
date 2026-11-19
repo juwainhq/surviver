@@ -8,8 +8,11 @@ statements), and then drives the game through its own DOM listeners and its
 
 ```bash
 cd tools/pfx-harness
-npm install     # jsdom only
-node run.mjs    # 54 checks; exit code 1 on any failure
+npm install                # jsdom only
+node run.mjs               # behaviour: 65 checks
+node boot-guard.mjs        # the inline boot guard in index.html
+node http-graph.mjs        # module graph over HTTP (needs a server on :8080)
+node http-boot.mjs         # cold boot over HTTP, browser-style MIME rules
 ```
 
 What it proves:
@@ -31,8 +34,13 @@ What it proves:
 * the dev bar opens on `` ` `` and every one of its six buttons works, and all six
   universes switch.
 
-What it cannot prove: how any of it looks — the canvas is a stub that only
-counts calls. Do the visual pass in a real browser, served over http:
+`http-boot.mjs` is the browser-fidelity run: it registers an ESM loader that
+fetches each module over HTTP and refuses anything not served as JavaScript, so a
+404, a wrong path or a `text/plain` `.js` fails here exactly as it would in
+Chrome. `http-graph.mjs` is the same audit without booting anything.
+
+What none of them can prove: how it looks — the canvas is a stub that only counts
+calls. Do the visual pass in a real browser, served over http:
 
 ```bash
 python3 -m http.server 8080    # then open /index.html

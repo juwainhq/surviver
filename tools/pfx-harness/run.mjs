@@ -132,6 +132,14 @@ check('clips baked', S.CLIPS.size >= 60, S.CLIPS.size);
 check('every effect id resolved', S.MISSING.length === 0, S.MISSING);
 check('canvas is drawing', draw.image > 0 && draw.rect > 0, { ...draw });
 check('seven playable classes', S.CLASS_IDS.length === 7, S.CLASS_IDS);
+check('the title overlay lists all seven classes', win.document.querySelectorAll('#bootClasses .bc').length === 7,
+  win.document.querySelectorAll('#bootClasses .bc').length);
+check('the boot bar reached 100 %', el('bootFill').style.width === '100%', el('bootFill').style.width);
+check('the boot line reported the bake', /ready · \d+ clips/.test(el('bootMsg').textContent), el('bootMsg').textContent);
+check('no duplicate boot ids', (() => {
+  const ids = [...win.document.querySelectorAll('[id]')].map((n) => n.id);
+  return ids.length === new Set(ids).size;
+})());
 
 const unresolved = new Set();
 for (const cls of Object.keys(S.CLASSES)) {

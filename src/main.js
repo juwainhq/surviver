@@ -29,6 +29,10 @@ import {
 const stage = document.getElementById('stage');
 setCanvas(stage);
 
+/* the module graph is live: say so, so a silent boot screen is never ambiguous */
+const bootMsgEl = document.getElementById('bootMsg');
+if (bootMsgEl) { bootMsgEl.className = 'ok'; bootMsgEl.textContent = 'engine modules loaded · building the stage…'; }
+
 /* ------------------------------------------------------------------ audio */
 
 /**
@@ -221,10 +225,18 @@ const bootMsg = document.getElementById('bootMsg');
 
 function setProgress(p, msg) {
   if (bootFill) bootFill.style.width = Math.round(p * 100) + '%';
-  if (bootMsg) bootMsg.textContent = msg;
+  if (bootMsg && msg) { bootMsg.textContent = msg; bootMsg.className = ''; }
 }
 
-function buildClips() {
+/** hand the main thread back so the browser can actually paint the bar */
+const yieldFrame = () => new Promise((r) => setTimeout(r, 0));
+
+function bootFail(text) {
+  if (window.__bootFail) window.__bootFail(text, 'err');
+  else if (bootMsg) { bootMsg.className = 'err'; bootMsg.textContent = text; }
+}
+
+async function buildClips() {
   const list = [];
   const SLOTS = ['lmb', 'air', 'shift', 'q', 'e', 'r'];
 
@@ -281,11 +293,22 @@ function buildClips() {
   for (const id of effects) list.push({ key: 'fx:' + id, id, window: 1.0, fps: 18, maxFrames: 18 });
 
   let done = 0;
+  const failed = [];
   for (const def of list) {
-    bake(def);
+    try {
+      bake(def);
+    } catch (err) {
+      /* one bad clip must not take the whole boot down */
+      failed.push(def.id || def.key);
+      console.error('[pfx] bake failed for ' + (def.id || def.key), err);
+    }
     done++;
-    if ((done & 3) === 0 || done === list.length) setProgress(done / list.length, 'baking ' + (def.id || def.key));
+    if (done % 3 === 0 || done === list.length) {
+      setProgress(done / list.length, 'baking ' + done + ' / ' + list.length + ' · ' + (def.id || def.key));
+      await yieldFrame();          /* keeps #bootFill animating in a real browser */
+    }
   }
+  if (failed.length) bootFail('Baked ' + (list.length - failed.length) + ' clips, ' + failed.length + ' failed: ' + failed.slice(0, 3).join(', '));
   if (MISSING.length) console.warn('[pfx] unresolved ids:', MISSING.join(', '));
   return list.length;
 }
@@ -293,27 +316,39 @@ function buildClips() {
 /* ---------------------------------------------------------------- boot ---- */
 
 async function boot() {
-  placePlatforms();
-  resetPlayer();
-  game.mouse.x = W * 0.6;
-  game.mouse.y = H * 0.5;
-  buildDevBar();
-  buildBootClasses();
-  markDev();
-  await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 30)));
+  try {
+    bootClassChips();
+    placePlatforms();
+    resetPlayer();
+    game.mouse.x = W * 0.6;
+    game.mouse.y = H * 0.5;
+    buildDevBar();
+    markDev();
+    setProgress(0.02, 'stage built · baking pixelfx clips…');
+    await yieldFrame();
+    await yieldFrame();
 
-  const t0 = performance.now();
-  const n = buildClips();
-  const ms = Math.round(performance.now() - t0);
-  setProgress(1, 'ready · ' + n + ' clips in ' + ms + 'ms');
+    const t0 = performance.now();
+    const n = await buildClips();
+    const ms = Math.round(performance.now() - t0);
+    setProgress(1, 'ready · ' + n + ' clips in ' + ms + 'ms');
 
-  spawnWave(3, ['slime', 'frog'], 380);
-  syncHud();
-  banner('SURVIVE', 'HEAD RIGHT · HOLD THE STREET');
+    spawnWave(3, ['slime', 'frog'], 380);
+    syncHud();
+    banner('SURVIVE', 'HEAD RIGHT · HOLD THE STREET');
 
-  await new Promise((r) => setTimeout(r, 180));
-  if (bootEl) bootEl.classList.add('done');
-  requestAnimationFrame(frame);
+    await new Promise((r) => setTimeout(r, 180));
+    if (bootEl) bootEl.classList.add('done');
+    requestAnimationFrame(frame);
+  } catch (err) {
+    console.error(err);
+    bootFail('Boot failed: ' + (err && (err.message || err)));
+  }
+}
+
+/** the seven class chips are the first thing on screen — build them immediately */
+function bootClassChips() {
+  try { buildBootClasses(); } catch (err) { console.error(err); }
 }
 
 let last = 0;
