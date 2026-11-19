@@ -134,6 +134,13 @@ check('the live state is sane', (() => {
   const st = S.state();
   return st.clips > 100 && st.hp > 0 && typeof st.uni === 'string';
 })(), S.state().uni + ' · hp ' + S.state().hp);
+check('boot hands over to the title screen', S.state().screen === 'title', S.state().screen);
+/* and PLAY really does start a run, over HTTP, in a real DOM */
+win.document.querySelector('#screen-title [data-act="play"]')
+  .dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+S.step(1 / 60);
+check('PLAY starts the run', S.state().screen === 'playing' && S.game.enemies.length > 0,
+  { screen: S.state().screen, enemies: S.game.enemies.length });
 check('no console errors during boot', errors.length === 0, errors.slice(0, 3));
 
 console.log(failures === 0 ? '\n--- BROWSER BOOT OK ---' : '\n--- ' + failures + ' CHECK(S) FAILED ---');

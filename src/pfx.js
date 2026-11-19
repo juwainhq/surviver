@@ -95,18 +95,86 @@ const RUN_POSES = [
   [0.375, { lean: 0.12, ffx: 3, ffy: 0, fbx: -8, fby: -3, fx: 10, fy: -20, bx: 11, by: -22 }],
   [0.5, { lean: 0.1, ffx: 7, ffy: 0, fbx: -7, fby: 0, fx: 11, fy: -21, bx: 9, by: -21 }]
 ];
+/* Airborne + cast stances. The rig is the only thing that may be on screen for
+   the player's body — world effects are drawn as a separate overlay — so every
+   slot that is not backed by a `moves/*` kit animates through CAST_POSES. */
+const JUMP_POSES = [
+  [0.0, { crouch: 6, fx: 12, fy: -26, bx: 10, by: -24, ffx: 9, ffy: -9, fbx: -4, fby: -4, lean: 0.06 }],
+  [0.12, { crouch: 5, fx: 13, fy: -28, bx: 10, by: -25, ffx: 10, ffy: -12, fbx: -5, fby: -6, lean: 0.08 }],
+  [0.24, { crouch: 4, fx: 12, fy: -27, bx: 9, by: -24, ffx: 9, ffy: -10, fbx: -6, fby: -5, lean: 0.06 }]
+];
+const FALL_POSES = [
+  [0.0, { crouch: 1, fx: 13, fy: -19, bx: 9, by: -19, ffx: 12, ffy: -2, fbx: -8, fby: 0, lean: -0.04 }],
+  [0.16, { crouch: 1, fx: 14, fy: -18, bx: 8, by: -18, ffx: 13, ffy: 0, fbx: -9, fby: 1, lean: -0.06 }],
+  [0.32, { crouch: 1, fx: 13, fy: -19, bx: 9, by: -19, ffx: 12, ffy: -1, fbx: -8, fby: 0, lean: -0.04 }]
+];
+const CAST_POSES = [
+  [0.0, { crouch: 4, fx: 10, fy: -21, bx: 9, by: -21 }],
+  [0.14, { crouch: 2, fx: 15, fy: -24, bx: 7, by: -20, lean: 0.1, sa: 0.55 }],
+  [0.28, { crouch: 3, fx: 14, fy: -23, bx: 8, by: -21, lean: 0.08, sa: 0.7 }]
+];
+const STANCES = {
+  idle: { meta: { name: 'Idle', duration: 2.4 }, poses: IDLE_POSES },
+  run: { meta: { name: 'Run', duration: 0.5 }, poses: RUN_POSES },
+  jump: { meta: { name: 'Jump', duration: 0.24 }, poses: JUMP_POSES },
+  fall: { meta: { name: 'Fall', duration: 0.32 }, poses: FALL_POSES },
+  cast: { meta: { name: 'Cast', duration: 0.28 }, poses: CAST_POSES }
+};
 function stanceMod(cls, which) {
-  const base = which === 'run'
-    ? { meta: Object.assign({}, STANCE_META, { name: 'Run', duration: 0.5 }), poses: RUN_POSES }
-    : { meta: Object.assign({}, STANCE_META, { name: 'Idle', duration: 2.4 }), poses: IDLE_POSES };
+  const base = STANCES[which] || STANCES.idle;
+  const meta = Object.assign({}, STANCE_META, base.meta);
   const ready = core.READY || READY_POSE;
   const weapon = WEAPON_BY_CLASS[cls];
   const poses = base.poses.map(([t, p]) => {
     const pose = Object.assign({}, ready, p);
-    if (weapon) Object.assign(pose, { weapon, sa: 1.15 });
+    if (weapon) Object.assign(pose, { weapon, sa: p.sa != null ? p.sa : 1.15 });
     return [t, pose];
   });
-  return { meta: base.meta, act: { poses }, draw() {}, drawBack() {} };
+  return { meta, act: { poses }, draw() {}, drawBack() {} };
+}
+
+/** `moves/*` kits animate the rig; everything else is a pure world effect */
+export function riggedClip(id) {
+  return typeof id === 'string' && id.startsWith('moves/');
+}
+
+/**
+ * One frame of a baked clip, as an atlas rect — used by the HUD ability slots to
+ * blit a real pixelfx thumbnail instead of drawing CSS bars.
+ */
+export function clipFrame(key, frame) {
+  const c = CLIPS.get(key);
+  if (!c) return null;
+  const n = c.n || 1;
+  const f = ((Math.round(frame == null ? Math.floor(n * 0.5) : frame) % n) + n) % n;
+  return { canvas: c.canvas, sx: (f % c.cols) * c.w, sy: Math.floor(f / c.cols) * c.h, w: c.w, h: c.h };
+}
+
+/**
+ * Draw one frame of a baked clip into any 2D context (a menu preview canvas or a
+ * HUD slot thumbnail). Always nearest-neighbour: the whole point is crisp pixels.
+ */
+export function blitClip(c2d, key, w, h, t, opt) {
+  const c = CLIPS.get(key);
+  if (!c || !c2d) return false;
+  const o = opt || {};
+  let f = Math.floor((t || 0) * c.fps + (o.phase ? o.phase * c.n : 0));
+  if (c.loop) f = ((f % c.n) + c.n) % c.n;
+  else f = Math.max(0, Math.min(c.n - 1, f));
+  const sx = (f % c.cols) * c.w, sy = Math.floor(f / c.cols) * c.h;
+  const zoom = o.zoom || 1;
+  const s = Math.min(w / c.w, h / c.h) * zoom;
+  const dw = Math.max(1, Math.round(c.w * s)), dh = Math.max(1, Math.round(c.h * s));
+  c2d.imageSmoothingEnabled = false;
+  c2d.clearRect(0, 0, w, h);
+  c2d.save();
+  if (o.flip) { c2d.translate(w, 0); c2d.scale(-1, 1); }
+  const dx = Math.round((w - dw) / 2);
+  const dy = o.middle ? Math.round((h - dh) / 2) : Math.round(h - dh - (o.pad || 0));
+  if (o.bg) { c2d.fillStyle = o.bg; c2d.fillRect(0, 0, w, h); }
+  c2d.drawImage(c.canvas, sx, sy, c.w, c.h, dx, dy, dw, dh);
+  c2d.restore();
+  return true;
 }
 
 function frameBounds(frame, w, h) {

@@ -9,7 +9,7 @@ import {
   bus, clamp, ctx, depthScale, depthV, game, lerp, rand, sign
 } from './core.js';
 import { CLIPS, bake, drawClip, spawnFx } from './pfx.js';
-import { shadowAt } from './world.js';
+import { contactShadow } from './world.js';
 import { gainXp, hurtPlayer, player, spawnHostileBolt } from './classes.js';
 
 const ENEMY_TYPES = {
@@ -34,7 +34,7 @@ function spawnEnemy(type, x, y) {
     hp: t.hp, maxHp: t.hp, h: t.h,
     facing: 1, t: rand(0, 2), flash: 0, dead: false,
     hopT: rand(0.2, 1.1), atkCd: rand(0.8, 1.6),
-    snare: 0, spawnT: 0.45, lastHitToken: -1, airT: 0
+    snare: 0, spawnT: 0.45, lastHitToken: -1, airT: 0, marked: 0
   };
   game.enemies.push(e);
   spawnFx('spawn/spawn-portal', e.x, e.y, 0, { scale: t.boss ? 2.2 : 1, life: 0.8 });
@@ -65,6 +65,7 @@ function startArena(a) {
   game.cam.lock = 1;
   spawnWave(a.waves * 3 + 1, a.pool, a.w * 0.34);
   bus.banner(a.label, 'WAVE 1 / ' + a.waves);
+  bus.audio('gate');
 }
 
 function nextWave(a) {
@@ -82,6 +83,7 @@ function nextWave(a) {
       game.arena = null;
       game.cam.lock = 0;
       bus.banner('AREA CLEARED', a.label);
+      bus.audio('gate');
       bus.go(a);
       gainXp(3);
       bus.cards();
@@ -97,6 +99,7 @@ function updateEnemies(dt) {
     if (e.dead) continue;
     e.t += dt;
     if (e.flash > 0) e.flash -= dt;
+    if (e.marked > 0) e.marked = Math.max(0, e.marked - dt * 0.5);
     if (e.spawnT > 0) { e.spawnT -= dt; continue; }
     if (e.snare > 0) { e.snare -= dt; }
     const dx = player.x - e.x;
@@ -188,7 +191,8 @@ function drawEnemy(e) {
   const sy = e.y - e.z * s;
   const flip = e.facing < 0;
   const sc = e.def.boss ? SPRITE.boss : SPRITE.enemy;
-  shadowAt(e.x, e.y, e.def.boss ? 2.6 : (e.def.fly ? 1 : 1.3), 1);
+  /* the contact shadow sits on the deck and shrinks as the critter hovers */
+  contactShadow(e.x, e.y, e.z, e.def.boss ? 2.6 : (e.def.fly ? 1 : 1.3), 1, 0);
 
   ctx.save();
   if (e.spawnT > 0) ctx.globalAlpha = clamp(1 - e.spawnT / 0.45, 0.12, 1);
@@ -214,6 +218,17 @@ function drawEnemy(e) {
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = '#b6f2ff';
     ctx.fillRect(Math.round(e.x - game.cam.x) - 14, Math.round(sy) - Math.round(e.h * sc) - 6, 28, 2);
+    ctx.globalAlpha = 1;
+  }
+  /* assassin's mark: a violet tag over the head while it is vulnerable */
+  if (e.marked > 0) {
+    const mx = Math.round(e.x - game.cam.x);
+    const my = Math.round(sy) - Math.round(e.h * sc) - 14;
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = '#b8a2ff';
+    ctx.fillRect(mx - 5, my, 10, 2);
+    ctx.fillRect(mx - 1, my + 2, 2, 5);
+    ctx.fillRect(mx - 3, my - 2, 6, 2);
     ctx.globalAlpha = 1;
   }
 }

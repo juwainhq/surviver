@@ -22,6 +22,13 @@ export const SPEED_X = 268;
 export const SPEED_Y = 200;           /* depth is a little slower than width */
 export const DEPTH_TOL = 44;          /* |dy| tolerance for every hit test */
 export const HEIGHT_TOL = 60;         /* |dz| tolerance for every hit test */
+export const MELEE_HEIGHT_TOL = 75;   /* melee is forgiving: swat what is above you */
+export const JUMP_BUFFER = 0.12;      /* press early, jump on touchdown */
+export const COYOTE_TIME = 0.10;      /* leave a ledge, still jumpable */
+export const VARIABLE_JUMP = 0.55;    /* early release cuts the rise */
+export const ACCEL = 2100;            /* px/s² toward the input vector */
+export const DECEL = 2600;            /* px/s² toward rest with no input */
+export const AIR_CONTROL = 0.72;
 export const HITSTOP = 0.04;          /* 40 ms freeze on a clean hit */
 export const HORIZON_FRAC = 0.46;     /* the horizon line sits at 46 % of the view */
 export const MAX_LEVEL = 5;
@@ -82,6 +89,13 @@ export const game = {
   ult: 0,
   god: false,
   paused: false,
+  /* 'boot' | 'title' | 'classSelect' | 'playing' | 'paused' | 'cards' | 'gameover' | 'victory' */
+  screen: 'boot',
+  prevScreen: 'title',
+  run: { kills: 0, maxCombo: 0, level: 1, started: 0, universe: 0, deaths: 0 },
+  menu: { t: 0, camFrom: 0, pan: 0, controls: false, universePick: 0 },
+  deathT: 0,
+  victoryT: 0,
   boss: null,
   cd: { shift: 0, q: 0, e: 0, r: 0 },
   mouse: { x: 0, y: 0, down: false },
@@ -104,7 +118,7 @@ export const game = {
 /** key state, written by main.js and read by the movement code */
 export const keys = Object.create(null);
 /** one-shot flags that have to survive a frame */
-export const input = { jump: false, jumpBuf: 0 };
+export const input = { jump: false, jumpBuf: 0, jumpHeld: false, jumpCut: false };
 
 /* --------------------------------------------------------------- helpers */
 

@@ -4,9 +4,12 @@
  * list and the boot pipeline. Everything it draws comes from the modules below
  * it, so this is the only file that knows the whole game.
  */
-import { H, W, bus, clamp, ctx, game, input, keys, rand, setCanvas } from './core.js';
 import {
-  ACTION_KEY, CLIPS, MISSING, PALETTES, bake, drawFxOne, updateFx, verifyIds
+  FLOOR_BOTTOM, FLOOR_TOP, H, JUMP_BUFFER, W, STAGE_W, bus, clamp, ctx, game, input, keys, rand,
+  setCanvas
+} from './core.js';
+import {
+  ACTION_KEY, CLIPS, MISSING, PALETTES, bake, drawFxOne, riggedClip, updateFx, verifyIds
 } from './pfx.js';
 import {
   ARENAS, drawArenaLock, drawFloor, drawParallax, drawPlatform, drawWeather, placePlatforms,
@@ -14,14 +17,16 @@ import {
 } from './world.js';
 import {
   CLASSES, CLASS_IDS, basicAttack, castSlot, drawBolt, drawPickupOne, drawPlayer, gainUlt,
-  gainXp, lockedSlots, player, resetPlayer, updateAnim, updateBarrage, updateBolts,
-  updatePickups, updatePlayer, updateTexts
+  gainXp, hurtPlayer, lockedSlots, player, resetPlayer, respawn, updateAnim, updateBarrage,
+  updateBolts, updatePickups, updatePlayer, updateTexts
 } from './classes.js';
 import { ENEMY_TYPES, drawEnemy, nextWave, spawnEnemy, spawnWave, startArena, updateEnemies } from './enemies.js';
 import {
-  addNumber, banner, bindArenas, buildBootClasses, buildDevBar, callout, cardsVisible, denySlot, devBoss,
-  devWave, drawCombo, drawCrosshair, drawTexts, markDev, openCards, resetCds, setClass,
-  showGo, syncHud, takeCard, tickGo, toggleDev, toggleGod, unlockAll, wipeMap
+  addNumber, banner, bindArenas, buildBootClasses, buildDevBar, callout, cardsVisible, closeControls,
+  controlsVisible, denySlot, devBoss, devOpenState, devWave, drawCombo, drawCrosshair, drawTexts,
+  markDev, openCards, pauseGame, resetCds, resumeGame, setClass, setScreen, showGameOver, showGo,
+  showVictory, startStage, syncHud, takeCard, tickGo, tickMenus, toggleDev, toggleGod, unlockAll,
+  wipeMap
 } from './ui.js';
 
 /* ----------------------------------------------------------------- canvas */
@@ -45,7 +50,10 @@ const audio = (() => {
   const cues = {
     cast: [520, 660, 0.06], hit: [220, 180, 0.05], crit: [880, 1320, 0.05],
     kill: [180, 90, 0.12], level: [660, 990, 0.14], card: [740, 1100, 0.1],
-    pick: [900, 1400, 0.06], gate: [300, 620, 0.16], hurt: [150, 70, 0.12]
+    pick: [900, 1400, 0.06], gate: [300, 620, 0.16], hurt: [150, 70, 0.12],
+    /* movement + feedback cues, so every action in the game has a voice */
+    jump: [430, 620, 0.07], land: [150, 64, 0.1], lmb: [320, 240, 0.04],
+    deny: [180, 140, 0.08], die: [220, 60, 0.22]
   };
   const unlock = () => {
     if (!actx) {
@@ -98,6 +106,19 @@ function normKey(e) {
   return e.key.length === 1 ? e.key.toLowerCase() : e.key;
 }
 
+const DIGITS = ['1', '2', '3', '4', '5', '6', '7'];
+
+function pickClassByIndex(i) {
+  const id = CLASS_IDS[i];
+  if (!id) return;
+  if (game.screen === 'classSelect') {
+    const card = document.querySelectorAll('#csGrid [data-pick]')[i];
+    if (card) card.click();
+    return;
+  }
+  setClass(id);
+}
+
 window.addEventListener('keydown', (e) => {
   const k = normKey(e);
   if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', '`'].includes(k)) e.preventDefault();
@@ -105,33 +126,71 @@ window.addEventListener('keydown', (e) => {
   /* cards take 1 / 2 / 3 and swallow the rest while they are open */
   if (cardsVisible()) {
     if (k === '1' || k === '2' || k === '3') takeCard(+k - 1);
-    if (k === '`') toggleDev();
+    if (k === '`' || k === '~') toggleDev();
     return;
   }
   if (k === '`' || k === '~') { toggleDev(); return; }
+
+  if (k === 'Escape') {
+    if (controlsVisible()) { closeControls(); return; }
+    if (game.screen === 'playing') pauseGame();
+    else if (game.screen === 'paused') resumeGame();
+    return;
+  }
+  if (game.screen === 'title' && (k === 'Enter' || k === ' ')) { startStage(); return; }
+  if (game.screen === 'classSelect' && (k === 'Enter' || k === ' ')) {
+    const go = document.getElementById('csDeploy');
+    if (go) go.click();
+    return;
+  }
+  if (game.screen === 'gameover' && (k === 'Enter' || k === ' ')) { startStage(); return; }
+  if (game.screen === 'victory' && (k === 'Enter' || k === ' ')) { startStage(); return; }
+
+  /* 1-7 pick a class while the dev panel is open (or on the class screen) */
+  if (DIGITS.indexOf(k) >= 0 && (devOpenState() || game.screen === 'classSelect')) {
+    pickClassByIndex(DIGITS.indexOf(k));
+    return;
+  }
+  if (game.screen !== 'playing') return;
+
   if (keys[k]) return;
   keys[k] = true;
-  if (k === ' ') input.jump = true;
+  if (k === ' ') { input.jumpBuf = JUMP_BUFFER; input.jumpHeld = true; input.jump = true; }
   if (k === 'Shift') castSlot('shift');
   if (k === 'q') castSlot('q');
   if (k === 'e') castSlot('e');
   if (k === 'r') castSlot('r');
 });
 
-window.addEventListener('keyup', (e) => { keys[normKey(e)] = false; });
-window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; input.jump = false; });
+window.addEventListener('keyup', (e) => {
+  const k = normKey(e);
+  keys[k] = false;
+  if (k === ' ') {
+    input.jumpHeld = false;
+    input.jump = false;
+    if (player.vz > 0) player.vz *= 0.55;      /* variable jump height */
+  }
+});
+window.addEventListener('blur', () => {
+  for (const k in keys) keys[k] = false;
+  input.jump = false; input.jumpBuf = 0; input.jumpHeld = false;
+  game.mouse.down = false;
+});
 
 stage.addEventListener('pointermove', (e) => {
   game.mouse.x = e.clientX;
   game.mouse.y = e.clientY;
 });
 stage.addEventListener('pointerdown', (e) => {
-  if (cardsVisible()) return;
+  if (cardsVisible() || game.screen !== 'playing') return;
   audio.unlock();
   game.mouse.x = e.clientX;
   game.mouse.y = e.clientY;
   game.mouse.down = true;
-  player.facing = (e.clientX + game.cam.x) >= player.x ? 1 : -1;
+  /* never flip the body mid-swing: the rig owns its own facing during an act */
+  if (player.anim.busy <= 0 && player.dashT <= 0) {
+    player.facing = (e.clientX + game.cam.x) >= player.x ? 1 : -1;
+  }
   basicAttack();
 });
 window.addEventListener('pointerup', () => { game.mouse.down = false; });
@@ -142,13 +201,24 @@ window.addEventListener('resize', () => {
   buildSky();
   wallCache.clear();
   placePlatforms();
-  player.y = clamp(player.y, 0, 1) && 0 || player.y;   /* keep the lane spot */
+  /* the lane moved with the viewport: keep the fighter inside it */
+  player.y = clamp(player.y, FLOOR_TOP + 4, FLOOR_BOTTOM - 4);
+  player.x = clamp(player.x, 26, STAGE_W - 26);
 });
 
 /* ----------------------------------------------------------------- update */
 
 function update(dt) {
   game.time += dt;
+  /* death and victory are performances first, screens second */
+  if (game.deathT > 0) {
+    game.deathT -= dt;
+    if (game.deathT <= 0) { game.deathT = 0; showGameOver(); }
+  }
+  if (game.victoryT > 0) {
+    game.victoryT -= dt;
+    if (game.victoryT <= 0) { game.victoryT = 0; showVictory(); }
+  }
   if (game.rageT > 0) game.rageT = Math.max(0, game.rageT - dt);
   for (const k in game.cd) game.cd[k] = Math.max(0, game.cd[k] - dt);
   for (const k in lockedSlots) lockedSlots[k] = Math.max(0, lockedSlots[k] - dt);
@@ -162,6 +232,7 @@ function update(dt) {
   if (game.hitStop > 0) { game.hitStop -= dt; d = 0; }
 
   updatePlayer(d);
+  if (game.mouse.down && !player.dead) basicAttack();   /* hold LMB to chain */
   updateAnim(d);
   updateBarrage(d);
   updateEnemies(d);
@@ -172,6 +243,7 @@ function update(dt) {
   updateArena(dt, player);
   updateCamera(dt, player);
   tickGo(dt);
+  tickMenus(dt);
   syncHud();
 
   /* a boss that leaves the arena is pulled back in */
@@ -202,7 +274,8 @@ function render() {
   const list = [];
   for (const p of platforms) list.push({ y: p.y - 1, draw: () => drawPlatform(p) });
   for (const e of game.enemies) list.push({ y: e.y, draw: () => drawEnemy(e) });
-  list.push({ y: player.y, draw: drawPlayer });
+  /* the title and class screens are the street itself — no fighter standing in it */
+  if (game.screen !== 'title' && game.screen !== 'classSelect') list.push({ y: player.y, draw: drawPlayer });
   for (const b of game.bolts) list.push({ y: b.y, draw: () => drawBolt(b) });
   for (const f of game.fx) list.push({ y: f.y, draw: () => drawFxOne(f) });
   for (const p of game.pickups) list.push({ y: p.y, draw: () => drawPickupOne(p) });
@@ -216,6 +289,20 @@ function render() {
   drawCrosshair();
   drawCombo();
 }
+
+/** menus still need a living world behind them: parallax, torches, weather */
+function menuTick(dt) {
+  game.time += dt;
+  game.menu.t += dt;
+  updateFx(dt);
+  const maxX = Math.max(0, STAGE_W - W);
+  const target = maxX * (0.5 + 0.5 * Math.sin(game.menu.t * 0.07 + game.menu.pan));
+  game.cam.x = lerpCam(game.cam.x, clamp(target, 0, maxX), 1 - Math.pow(0.02, dt));
+  game.cam.y = lerpCam(game.cam.y, 0, 1 - Math.pow(0.05, dt));
+  if (game.cam.shake > 0) game.cam.shake = Math.max(0, game.cam.shake - dt * 34);
+  tickMenus(dt);          /* the class-select preview animates while paused */
+}
+const lerpCam = (a, b, t) => a + (b - a) * t;
 
 /* ------------------------------------------------------------- boot: bake */
 
@@ -245,16 +332,22 @@ async function buildClips() {
     const c = CLASSES[cls];
     list.push({ key: 'act:' + cls + ':idle', stance: 'idle', cls, loop: true, fps: 12, window: 2.4, maxFrames: 16 });
     list.push({ key: 'act:' + cls + ':run', stance: 'run', cls, loop: true, fps: 16, window: 0.5, maxFrames: 10 });
+    /* airborne poses: the rig must read as a jump and as a fall */
+    list.push({ key: 'act:' + cls + ':jump', stance: 'jump', cls, fps: 14, window: 0.24, maxFrames: 6 });
+    list.push({ key: 'act:' + cls + ':fall', stance: 'fall', cls, fps: 14, window: 0.32, maxFrames: 6 });
     ACTION_KEY[cls] = ACTION_KEY[cls] || {};
     for (const slot of SLOTS) {
       const def = c[slot];
       if (!def || !def.clip) continue;
-      const key = cls + '::' + slot + '::' + def.clip;
+      /* A `moves/*` kit animates the rig itself. Every other effect is a world
+         VFX overlay, so the body switches to a rigged cast pose instead of
+         disappearing into the effect. */
+      const rigged = riggedClip(def.clip);
+      const key = cls + '::' + slot + '::' + (rigged ? def.clip : 'cast');
       ACTION_KEY[cls][slot] = key;
-      list.push({
-        key, id: def.clip, cls, body: cls, window: 1.5, fps: 16, maxFrames: 22,
-        palette: PALETTES[c.ramp]
-      });
+      list.push(rigged
+        ? { key, id: def.clip, cls, body: cls, window: 1.5, fps: 16, maxFrames: 22, palette: PALETTES[c.ramp] }
+        : { key, stance: 'cast', cls, body: cls, fps: 16, window: 0.3, maxFrames: 6, palette: PALETTES[c.ramp] });
     }
   }
 
@@ -287,6 +380,7 @@ async function buildClips() {
       if (def.vfx) effects.add(def.vfx);
       if (def.bolt) effects.add(def.bolt);
       if (def.strike) effects.add(def.strike);
+      if (def.clip && !riggedClip(def.clip)) effects.add(def.clip);   /* world overlay */
     }
   }
   verifyIds([...effects]);
@@ -319,11 +413,14 @@ async function boot() {
   try {
     bootClassChips();
     placePlatforms();
+    buildSky();                     /* the sky must exist on frame 1 */
     resetPlayer();
+    game.cam.x = 240;
     game.mouse.x = W * 0.6;
     game.mouse.y = H * 0.5;
     buildDevBar();
     markDev();
+    if (typeof location !== 'undefined' && /[?&]dev=1/.test(location.search)) toggleDev(true);
     setProgress(0.02, 'stage built · baking pixelfx clips…');
     await yieldFrame();
     await yieldFrame();
@@ -333,9 +430,9 @@ async function boot() {
     const ms = Math.round(performance.now() - t0);
     setProgress(1, 'ready · ' + n + ' clips in ' + ms + 'ms');
 
-    spawnWave(3, ['slime', 'frog'], 380);
+    buildBootClasses();
+    setScreen('title');
     syncHud();
-    banner('SURVIVE', 'HEAD RIGHT · HOLD THE STREET');
 
     await new Promise((r) => setTimeout(r, 180));
     if (bootEl) bootEl.classList.add('done');
@@ -357,7 +454,9 @@ function frame(now) {
   let dt = (now - last) / 1000;
   last = now;
   dt = Math.min(dt, 0.05);
-  if (!game.paused) update(dt);
+  if (game.screen === 'playing') update(dt);
+  else if (game.screen === 'title' || game.screen === 'classSelect' ||
+           game.screen === 'gameover' || game.screen === 'victory') menuTick(dt);
   render();
   requestAnimationFrame(frame);
 }
@@ -366,9 +465,9 @@ function frame(now) {
 
 window.__SURVIVE = {
   game, player, platforms, CLASSES, CLASS_IDS, CLIPS, MISSING, ARENAS, ENEMIES: ENEMY_TYPES,
-  castSlot, basicAttack, spawnWave, spawnEnemy, gainXp, gainUlt, unlockAll, resetCds,
+  castSlot, basicAttack, hurtPlayer, respawn, spawnWave, spawnEnemy, gainXp, gainUlt, unlockAll, resetCds,
   setClass, setUniverse, toggleDev, toggleGod, devWave, devBoss, wipeMap, openCards, takeCard,
-  syncHud,
+  syncHud, setScreen, startStage, pauseGame, resumeGame, showGameOver, showVictory, tickMenus,
   step: (dt) => { update(dt || 1 / 60); render(); syncHud(); },
   state: () => ({
     cls: game.classId, uni: uni().id, level: game.level, xp: game.xp, ult: Math.round(game.ult),
@@ -379,7 +478,8 @@ window.__SURVIVE = {
     arena: game.arena ? game.arena.id : null, boss: game.boss ? Math.round(game.boss.hp) : null,
     cd: { shift: +game.cd.shift.toFixed(1), q: +game.cd.q.toFixed(1), e: +game.cd.e.toFixed(1) },
     clips: CLIPS.size, missing: MISSING.slice(), kills: game.stats.kills, hits: game.stats.hits,
-    paused: game.paused, upgrades: { ...game.upgrades }
+    paused: game.paused, screen: game.screen, upgrades: { ...game.upgrades },
+    run: { ...game.run }
   })
 };
 

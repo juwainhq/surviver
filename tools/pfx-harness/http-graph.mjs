@@ -62,6 +62,33 @@ if (!entries.length) problems.push({ url: BASE + 'index.html', error: 'no module
 const t0 = Date.now();
 for (const e of entries) await walk(new URL(e, BASE + 'index.html').href, 'index.html');
 
+/* cycles: a strongly connected component of size > 1 (or a self-edge) would
+   make the module graph non-acyclic, which the project forbids */
+function findCycle() {
+  const state = new Map();          /* 0 = new, 1 = on stack, 2 = done */
+  const stack = [];
+  let cycle = null;
+  const visit = (url) => {
+    if (cycle) return;
+    const st = state.get(url) || 0;
+    if (st === 1) {
+      const at = stack.indexOf(url);
+      cycle = stack.slice(at >= 0 ? at : 0).concat(url);
+      return;
+    }
+    if (st === 2) return;
+    state.set(url, 1);
+    stack.push(url);
+    for (const d of (seen.get(url) || {}).deps || []) visit(d);
+    stack.pop();
+    state.set(url, 2);
+  };
+  for (const url of seen.keys()) visit(url);
+  return cycle;
+}
+const cycle = findCycle();
+if (cycle) problems.push({ url: cycle[0], error: 'import cycle', path: cycle.map((u) => u.split('/').pop()) });
+
 const mods = [...seen.values()];
 const js = mods.filter((m) => /javascript/i.test(m.type || ''));
 const ms = Date.now() - t0;
@@ -71,6 +98,7 @@ console.log('modules         ' + mods.length + ' (' + js.length + ' javascript, 
 console.log('depth           ' + Math.max(...mods.map((m) => (m.deps || []).length)) + ' deps on one module (vendor fx barrel)');
 console.log('walked in       ' + ms + ' ms');
 console.log('extension-less  ' + (mods.filter((m) => !/\.(js|mjs)(\?|$)/.test(m.url)).length || 'none'));
+console.log('acyclic         ' + (cycle ? 'NO — ' + cycle.map((u) => u.split('/').pop()).join(' → ') : 'yes'));
 console.log('problems        ' + (problems.length ? JSON.stringify(problems.slice(0, 8), null, 2) : 'none'));
 console.log(problems.length ? '\n--- GRAPH FAILED ---' : '\n--- GRAPH OK ---');
 process.exit(problems.length ? 1 : 0);

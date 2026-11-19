@@ -116,7 +116,12 @@ const slotEl = (s) => win.document.querySelector('[data-slot="' + s + '"]');
 const press = (id) => el(id).dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
 const tap = (k) => win.dispatchEvent(new win.KeyboardEvent('keydown', { key: k, bubbles: true }));
 const release = (k) => win.dispatchEvent(new win.KeyboardEvent('keyup', { key: k, bubbles: true }));
-const click = (x, y) => el('stage').dispatchEvent(new win.MouseEvent('pointerdown', { clientX: x, clientY: y, button: 0, bubbles: true }));
+const click = (x, y) => {
+  el('stage').dispatchEvent(new win.MouseEvent('pointerdown', { clientX: x, clientY: y, button: 0, bubbles: true }));
+  win.dispatchEvent(new win.MouseEvent('pointerup', { clientX: x, clientY: y, button: 0, bubbles: true }));
+};
+const hold = (x, y) => el('stage').dispatchEvent(new win.MouseEvent('pointerdown', { clientX: x, clientY: y, button: 0, bubbles: true }));
+const letGo = () => win.dispatchEvent(new win.MouseEvent('pointerup', { button: 0, bubbles: true }));
 
 let failures = 0;
 function check(name, ok, detail) {
@@ -140,6 +145,66 @@ check('no duplicate boot ids', (() => {
   const ids = [...win.document.querySelectorAll('[id]')].map((n) => n.id);
   return ids.length === new Set(ids).size;
 })());
+
+/* ====================================================== 1b · game flow ==== */
+console.log('\n--- game flow ---');
+const worldSrc = fs.readFileSync(path.join(ROOT, 'src/world.js'), 'utf8');
+const htmlSrc = fs.readFileSync(HTML, 'utf8');
+check('boot lands on the title screen', S.state().screen === 'title' && el('screen-title').classList.contains('on'), S.state().screen);
+check('the title offers PLAY / CLASS / UNIVERSE / CONTROLS',
+  ['play', 'class', 'universe', 'controls'].every((a) => win.document.querySelector('#screen-title [data-act="' + a + '"]')));
+check('the title sits over a live parallax frame', draw.image > 0 && draw.rect > 0);
+S.setScreen('classSelect');
+check('class select frames all seven classes', win.document.querySelectorAll('#csGrid [data-pick]').length === 7,
+  win.document.querySelectorAll('#csGrid [data-pick]').length);
+check('class select has a live preview canvas', !!el('csPreview'));
+check('class select breaks down 4 abilities + LMB + AIR', win.document.querySelectorAll('#csAbil .row').length === 6,
+  win.document.querySelectorAll('#csAbil .row').length);
+check('class select offers universes 1-6', win.document.querySelectorAll('#csUnis .uni').length === 6);
+win.document.querySelector('#csGrid [data-pick="tech"]').dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+check('picking a class fills the info pane', /TECH/.test(el('csName').textContent), el('csName').textContent);
+S.startStage();
+check('DEPLOY starts a clean run', S.state().screen === 'playing' && S.game.enemies.length > 0 && S.game.level === 1,
+  { screen: S.state().screen, enemies: S.game.enemies.length, level: S.game.level });
+tap('Escape'); step(2);
+check('ESC pauses into the pause menu', S.state().screen === 'paused' && el('screen-pause').classList.contains('on'));
+check('the pause menu offers 5 actions', win.document.querySelectorAll('#screen-pause [data-act]').length === 5,
+  win.document.querySelectorAll('#screen-pause [data-act]').length);
+tap('Escape'); step(2);
+check('ESC again resumes', S.state().screen === 'playing' && !S.game.paused);
+
+/* every menu button must be wired to a real transition */
+const uiSrc = fs.readFileSync(path.join(ROOT, 'src/ui.js'), 'utf8');
+const acts = [...new Set([...htmlSrc.matchAll(/data-act="([A-Za-z]+)"/g)].map((m) => m[1]))];
+const deadActs = acts.filter((a) => uiSrc.indexOf("case '" + a + "'") < 0);
+check('every menu button has a handler', deadActs.length === 0, deadActs);
+
+const clickAct = (screen, act) => win.document
+  .querySelector('#' + screen + ' [data-act="' + act + '"]')
+  .dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+
+S.setScreen('title');
+const uni0 = S.state().uni;
+clickAct('screen-title', 'universe'); step(1);
+check('SELECT UNIVERSE cycles the universe', S.state().uni !== uni0, { before: uni0, after: S.state().uni });
+clickAct('screen-title', 'controls');
+check('CONTROLS opens the key overlay', el('screen-controls').classList.contains('on'));
+clickAct('screen-controls', 'closeControls');
+check('…and closes again', !el('screen-controls').classList.contains('on'));
+clickAct('screen-title', 'class'); step(1);
+check('SELECT CLASS opens the selector', S.state().screen === 'classSelect', S.state().screen);
+clickAct('screen-class', 'back');
+check('BACK returns to the title', S.state().screen === 'title', S.state().screen);
+clickAct('screen-title', 'play'); step(2);
+check('PLAY runs the stage', S.state().screen === 'playing', S.state().screen);
+tap('Escape'); step(1);
+clickAct('screen-pause', 'restart'); step(2);
+check('RESTART STAGE restarts and resumes', S.state().screen === 'playing' && S.game.level === 1, S.state().screen);
+tap('Escape'); step(1);
+clickAct('screen-pause', 'changeClass');
+check('CHANGE CLASS opens the selector', S.state().screen === 'classSelect', S.state().screen);
+clickAct('screen-class', 'deploy'); step(2);
+check('DEPLOY resumes play with the pick', S.state().screen === 'playing', S.state().screen);
 
 const unresolved = new Set();
 for (const cls of Object.keys(S.CLASSES)) {
@@ -167,14 +232,36 @@ const y0 = p.y;
 tap('w'); step(24); release('w'); step(2);
 check('W/S moves along the depth lane', y0 - p.y > 20, { from: Math.round(y0), to: Math.round(p.y) });
 
-tap(' '); step(2); release(' ');
-step(8);
+tap(' '); step(8);
 const z1 = p.z;
-tap(' '); step(2); release(' ');
-step(6);
+release(' ');
+tap(' '); step(6); release(' ');
 check('jump and double jump', z1 > 40 && p.z > z1, { first: Math.round(z1), double: Math.round(p.z) });
 for (let i = 0; i < 120; i++) step(1);
-check('gravity returns you to the street', p.z === 0 && p.onGround, { z: Math.round(p.z) });
+check('gravity returns you to the ground', p.onGround && p.z === p.groundZ && p.vz === 0,
+  { z: Math.round(p.z), gz: Math.round(p.groundZ) });
+
+/* jump buffer, coyote time and variable height */
+p.x = 600; p.y = 700; p.z = 0; p.vz = 0; p.onGround = true;
+p.anim.busy = 0;
+tap(' '); step(1); release(' ');
+const earlyZ = p.z;
+step(3);
+check('SPACE starts a jump', earlyZ > 0 || p.vz > 100, { z: Math.round(p.z), vz: Math.round(p.vz) });
+const vzBefore = p.vz;
+release(' ');
+check('early release clips the rise (variable jump)', p.vz < vzBefore * 0.9 || vzBefore <= 0, { before: Math.round(vzBefore), after: Math.round(p.vz) });
+for (let i = 0; i < 120; i++) step(1);
+check('variable jump still lands', p.z === 0 && p.onGround);
+
+/* buffer: press a hair before touchdown, with no double jump left to spend */
+p.x = 600; p.y = 700; p.z = 8; p.vz = -300; p.onGround = false; p.jumps = 0;
+tap(' '); release(' ');
+step(12);
+check('jump buffer fires on touchdown', p.z > 10, Math.round(p.z));
+for (let i = 0; i < 160; i++) step(1);
+
+check('platforms project 1:1 with the lane', !/spreadFar|spreadNear/.test(worldSrc));
 
 const pl = S.platforms[2];
 p.x = pl.x + pl.w / 2; p.y = pl.y + pl.d / 2; p.z = pl.z + 180; p.vz = 0; p.onGround = false;
@@ -203,11 +290,19 @@ for (const cls of S.CLASS_IDS) {
     if (S.game.paused) S.takeCard(0);
   }
   const fired = Object.values(out).every((k) => typeof k === 'string' && k.includes('::'));
+  /* every slot animates a *rigged* body clip, never a bare VFX id */
+  const wantBody = {};
+  for (const slot of ['shift', 'q', 'e', 'r']) {
+    const def = S.CLASSES[cls][slot];
+    wantBody[slot] = cls + '::' + slot + '::' + (def.clip.indexOf('moves/') === 0 ? def.clip : 'cast');
+  }
+  const bodies = ['shift', 'q', 'e', 'r'].every((k) => out[k] === wantBody[k] && S.CLIPS.has(out[k]));
   step(2); p.anim.busy = 0;
   click(500, 300);
   step(1);
   const lmb = S.state().anim;
   check(cls + ': shift/q/e/r + LMB animate', fired && lmb.includes('::'), { ...out, lmb });
+  check(cls + ': the body never gives way to the VFX', bodies, out);
   step(70);
   if (S.game.paused) S.takeCard(0);
 }
@@ -268,6 +363,82 @@ check('a bolt damages a distant enemy', far.hp < farHp, { before: farHp, after: 
 for (let i = 0; i < 25 && S.game.enemies.length; i++) { swing(); step(24); }
 check('a kill at range drops pickups', S.game.pickups.length > 0, S.game.pickups.length);
 
+/* ============================================================ 4b · aim ==== */
+console.log('\n--- cursor aiming & kit specifics ---');
+S.setClass('sniper');
+S.game.enemies.length = 0; S.game.bolts.length = 0; S.game.fx.length = 0;
+p.x = 1000; p.y = 720; p.z = 0; p.vz = 0; p.onGround = true; p.facing = 1; p.anim.busy = 0;
+const flyer = S.spawnEnemy('bat', 1260, 720);
+flyer.z = 130; flyer.atkCd = 99; flyer.snare = 9;
+const flyerHp = flyer.hp;
+/* point the cursor at the bat, which is well above the player's head */
+click(Math.round(1260 - S.game.cam.x), Math.round(720 - 130 - 30));
+step(50);
+check('cursor aiming hits a hovering flier', flyer.hp < flyerHp, { before: flyerHp, after: flyer.hp });
+
+S.setClass('gunslinger');
+p.anim.busy = 0; p.invuln = 99; p.hp = p.maxHp;
+S.game.bolts.length = 0;
+S.game.mouse.down = true;
+step(46);
+const held = S.game.bolts.length;
+letGo();
+check('holding LMB chains shots', held > 0, held);
+
+S.setClass('gunslinger');
+S.game.cd.q = 0; p.anim.busy = 0; S.game.bolts.length = 0;
+S.castSlot('q');
+step(12);
+const lob = S.game.bolts[0];
+check('the grenade lobs in an arc', !!lob && (lob.vz > 200 || lob.z > 26), lob && Math.round(lob.vz));
+
+S.setClass('tech');
+S.game.bolts.length = 0; p.anim.busy = 0;
+click(Math.round(p.x - S.game.cam.x + 120), 300);
+step(10);
+check('the tech energy disc is a disc bolt', S.game.bolts.some((b) => b.kind === 'disc'),
+  S.game.bolts.map((b) => b.kind));
+
+S.setClass('knight');
+S.game.enemies.length = 0; S.game.fx.length = 0;
+p.x = 1000; p.y = 700; p.z = 0; p.vz = 0; p.onGround = true; p.anim.busy = 0;
+tap(' '); step(3); release(' ');
+step(6);
+const airZ = p.z;
+p.anim.busy = 0;
+click(Math.round(p.x - S.game.cam.x + 40), 200);
+step(8);
+check('air slam drives the body down', p.vz <= -300 || p.z < airZ, { vz: Math.round(p.vz), z: Math.round(p.z) });
+for (let i = 0; i < 60; i++) step(1);
+check('air slam lands back on the deck', p.onGround, Math.round(p.z));
+
+S.setClass('assassin');
+S.game.enemies.length = 0;
+p.anim.busy = 0; p.invuln = 99;
+const marked = S.spawnEnemy('slime', p.x + 60, p.y);
+marked.z = 0; marked.atkCd = 99; marked.hp = 60; marked.maxHp = 60;
+S.game.cd.q = 0; p.anim.busy = 0;
+S.castSlot('q');
+step(24);
+check('the assassin mark lands', marked.marked > 0, marked.marked);
+const markedHp = marked.hp;
+p.anim.busy = 0;
+S.basicAttack();
+step(24);
+check('a marked target takes bonus damage', marked.hp < markedHp, { before: markedHp, after: marked.hp });
+
+S.setClass('sniper');
+S.game.enemies.length = 0; S.game.fx.length = 0;
+p.x = 1000; p.y = 700; p.z = 0; p.onGround = true; p.anim.busy = 0; p.invuln = 99;
+S.game.cd.e = 0;
+S.castSlot('e');
+step(20);
+check('a whiffed rail still renders its beam', S.game.fx.some((f) => /arcane\/arcane-beam/.test(f.key || f.id || '')),
+  S.game.fx.map((f) => f.key).slice(0, 4));
+
+check('jump and fall poses exist for all seven classes',
+  S.CLASS_IDS.every((c) => S.CLIPS.has('act:' + c + ':jump') && S.CLIPS.has('act:' + c + ':fall')));
+
 /* ============================================================ 5 · waves === */
 console.log('\n--- arenas, gates, cards ---');
 S.setClass('knight');
@@ -310,6 +481,10 @@ check('the boss can be killed', !S.game.boss);
 /* ============================================================== 6 · HUD === */
 console.log('\n--- HUD & dev panel ---');
 check('four ability slots', win.document.querySelectorAll('#slots .slot').length === 4);
+check('each slot carries a pixelfx thumbnail canvas', win.document.querySelectorAll('#slots canvas.thumb').length === 4);
+check('the live HUD has no hint/lmb tip bars', !el('hint') && !el('lmbTip'));
+check('the dev toggle is hidden by default', !el('devToggle').classList.contains('on'));
+check('no 6/7 px pixel-font sizes remain', !/font-size:6px|font-size:7px/.test(htmlSrc));
 S.setClass('tech');
 S.game.level = 1; S.game.xp = 0; S.game.ult = 0; S.game.cd.q = 0;
 step(2);
@@ -348,6 +523,41 @@ check('the dev panel spans all 6 universes', (() => {
   for (let i = 0; i < 6; i++) { S.setUniverse(i); step(2); seen.add(S.state().uni); }
   return seen.size === 6;
 })());
+
+/* ================================================= 6b · death & victory == */
+console.log('\n--- death & victory ---');
+S.setScreen('playing');
+S.game.enemies.length = 0;
+S.game.god = false;
+p.invuln = 0; p.hp = 1; p.dead = false; p.z = 0; p.onGround = true;
+S.hurtPlayer(9, false);
+check('death is a burst, not a silent respawn', p.dead === true && S.state().screen === 'playing', S.state().screen);
+step(80);
+check('then the game-over screen', S.state().screen === 'gameover' && el('screen-over').classList.contains('on'), S.state().screen);
+check('the run summary is filled in', /\d+/.test(el('overKills').textContent) && +el('overLevel').textContent >= 1,
+  { kills: el('overKills').textContent, level: el('overLevel').textContent });
+win.document.querySelector('#screen-over [data-act="retry"]').dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+step(2);
+check('RETRY starts a fresh run', S.state().screen === 'playing' && p.dead === false && p.hp === p.maxHp && S.game.level === 1,
+  { screen: S.state().screen, hp: p.hp, level: S.game.level });
+
+S.ARENAS.forEach((a) => { a.done = true; });
+S.devBoss(); step(2);
+const ward = S.game.boss;
+if (ward) { ward.x = p.x + 60; ward.y = p.y; ward.z = 8; ward.hp = 1; }
+S.game.level = 5; S.game.cd.e = 0; p.anim.busy = 0; S.game.enemies.forEach((e) => { e.atkCd = 99; });
+S.castSlot('e');
+step(24);
+check('killing the last Warden clears the stage', S.game.victoryT >= 0 && !S.game.boss);
+step(90);
+check('the victory screen appears', S.state().screen === 'victory' && el('screen-win').classList.contains('on'), S.state().screen);
+check('victory offers NEXT UNIVERSE + PLAY AGAIN',
+  !!win.document.querySelector('#screen-win [data-act="nextUni"]') && !!win.document.querySelector('#screen-win [data-act="again"]'));
+const uniBefore = S.state().uni;
+win.document.querySelector('#screen-win [data-act="nextUni"]').dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+step(2);
+check('NEXT UNIVERSE moves on and restarts', S.state().screen === 'playing' && S.state().uni !== uniBefore,
+  { before: uniBefore, after: S.state().uni });
 
 /* ============================================================= 7 · wrap === */
 console.log('\n--- result ---');

@@ -1191,3 +1191,65 @@ Verification for exactly this class of bug is now part of the harness: the modul
 graph is walked over HTTP (`http-graph.mjs`) and the page is cold-booted through
 an HTTP-fetching ESM loader that enforces the browser's JavaScript MIME rule
 (`http-boot.mjs`).
+
+---
+
+### 13g · Game feel, screens and the rigged body (round 13)
+
+Five classes of bug were fixed together, because they all came from the same
+place: the world effect and the fighter's body were the same object.
+
+**1 · The body is a rig, the effect is an overlay.** `buildClips()` used to bake
+`<cls>::<slot>::<def.clip>` as the *body* clip for every slot. For the thirteen
+slots whose `clip` is a pure pixelfx effect (`melee/uppercut`,
+`melee/heavy-cleave`, `melee/hammer-smash`, `melee/spin-slash`,
+`melee/dagger-flurry`, `status/rage`, `arcane/blink-out`, `scifi/warp-out`,
+`scifi/jetpack`, `scifi/force-field`, `scifi/tractor-beam`, `scifi/energy-core`,
+`shadow/*`), that meant the character *was* the effect — and an effect drawn at
+the player's feet is not a character, so the sprite appeared to vanish for the
+length of the act. Now:
+
+* a `moves/*` kit is rigged and keeps the slot's own clip,
+* anything else gets `…::cast`, a **baked cast stance** from `stanceMod(cls,
+  'cast')`, and the original effect is spawned as a world overlay at the hand.
+
+`drawPlayer()` therefore always has a real `act` clip: busy → the act, airborne
+→ `jump`/`fall`, otherwise `run`/`idle`. There is no path that draws nothing.
+
+**2 · Airborne poses.** `stanceMod()` gained `jump`, `fall` and `cast` poses, and
+every class bakes `act:<cls>:jump` and `act:<cls>:fall` (137 clips total). The
+jump pose tucks the knees and pulls the arms in; the fall pose extends the legs
+and drops the weapon arm.
+
+**3 · Projection is 1:1.** `drawPlatform()` used to multiply `(x - cam.x - W/2)`
+by `spreadFar/spreadNear` (0.74…1.0), so a deck drifted toward the viewport
+centre with distance and the fighter landed up to ~300 px away from the pixels
+that looked walkable. The squash is gone: both edges use the raw
+`x - game.cam.x`. The 3D read now comes from a tapered far edge, a cut front face
+(`slab ≈ 19·s` instead of a third of the deck), iron brackets down to the street
+and a cast shadow at the base. Deck depth is `FLOOR_H · 0.28`.
+
+**4 · The camera follows you up.** `targetY` was negated, so climbing made the
+world scroll *away* from the player. It is now
+`clamp((z - 75) × 0.35, 0, 90)` and positive — the world shifts down as you rise.
+
+**5 · Jump feel.** Three timers replaced one flag: a `0.12 s` press **buffer**
+(`input.jumpBuf`) that survives a landing, a `0.10 s` **coyote** window after
+leaving a ledge, and a **variable** rise (`vz *= 0.55` on early release).
+Horizontal motion is now acceleration toward a normalised input vector
+(`ACCEL 2100`, `DECEL 2600`, `AIR_CONTROL 0.72`) instead of an instant velocity
+write, so diagonals are no longer √2 faster and stopping reads as a skid rather
+than a snap.
+
+**6 · Cursor-true aim.** Screen `y` is inverted back into a height at the
+fighter's lane, so the shot really does leave the hand toward the pointer; the
+cone is clamped so a shot never stalls, and a small assist snaps the vertical
+component to the nearest valid target inside `reach`. That is what makes a
+grounded Sniper able to hit a Bat at `z 130`.
+
+**7 · Screens.** `game.screen` (`boot | title | classSelect | playing | paused |
+cards | gameover | victory`) with a single `ui.setScreen()` transition point, a
+title over the *live* street (the menu tick pans the camera and keeps weather and
+torches running), a class selector with a live `act:<cls>:idle` preview canvas,
+a pause menu, a death burst that ends in a run summary instead of a silent
+respawn, and STAGE CLEARED once every gate is open and the Warden is down.

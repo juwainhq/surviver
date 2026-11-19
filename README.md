@@ -3,19 +3,101 @@
 A **semi-3D (2.5D) side-view action platformer-brawler**: seven classes, a
 3600 px stone street that recedes to a real horizon, raised decks you can fight
 on and drop through, arena gates that slam shut behind you, and a stage boss that
-changes phase as it dies.
+changes phase as it dies — behind a full title → class-select → run → pause →
+game-over/victory flow.
 
 No build tools, no bundler, no framework. The page is native ES modules
 (`<script type="module" src="./src/main.js">`) so it runs as-is on GitHub Pages,
 on `python3 -m http.server`, or anywhere else that serves files over HTTP.
 
-Every visual — fighters, critters, bosses, platforms, torches, weather, pickups,
-projectiles, damage numbers — comes from the vendored
+Every visual — fighters, critters, bosses, decks, torches, weather, pickups,
+projectiles, damage numbers, HUD ability icons — comes from the vendored
 [`patch-gg/pixelfx`](https://github.com/patch-gg/pixelfx) renderer, baked once
 into offscreen atlases at boot and blitted with `drawImage`.
 `imageSmoothingEnabled` is off on every canvas.
 
 ![frame](docs/media/frame.png)
+
+---
+
+## Running it
+
+```bash
+cd /path/to/surviver
+python3 -m http.server 8080     # → http://localhost:8080/index.html
+```
+
+Any static server works; the only requirement is that `.js` is served as
+JavaScript. **Do not open `index.html` from disk** — `file://` makes browsers
+refuse ES modules, and the page will tell you so in red.
+
+First boot fetches ~290 modules, then bakes **137 clips** behind a progress bar
+that keeps animating; after that a frame is pure `drawImage` blits. The loader
+then hands over to the **title screen** — it never drops you straight into the
+street.
+
+Add `?dev=1` to the URL to boot with the dev panel open.
+
+### If the boot screen does not move
+
+It cannot stay silent: an inline guard in `index.html` runs before the engine and
+writes the reason into `#bootMsg`.
+
+| What you see | What it means |
+|---|---|
+| amber `Opened from file://` | you double-clicked the file — serve it instead |
+| red `Could not load …/src/main.js` | wrong server root, a 404, or a server sending `text/plain` for `.js` |
+| red `Boot error: …` | a throw inside a module, with the file and line |
+| amber `Still loading the engine modules (6s)…` | the ~290 module requests are slow (proxy/network); it is working |
+| red `Engine never started after 20 s` | the module graph never arrived — check the console |
+| red `Baked N clips, M failed` | one manifest failed to bake; the rest of the game still boots |
+
+---
+
+## Game flow
+
+`game.screen` is the single source of truth, and one function
+(`ui.setScreen(name)`) owns every transition:
+
+```
+boot ──► title ──► classSelect ──► playing ──► paused
+                          ▲            │  ▲        │
+                          └────────────┘  └────────┘
+                                  │
+              cards ◄─────────────┤
+                                  ├──► gameover  (hp 0)
+                                  └──► victory   (every gate open + warden down)
+```
+
+| Screen | What is on it |
+|---|---|
+| **Title** | `[PLAY] [SELECT CLASS] [SELECT UNIVERSE] [CONTROLS]` over the *live* street: the camera pans across the parallax, torches flicker, weather falls |
+| **Class select** | 7 pixel-framed cards · a live `act:<cls>:idle` canvas preview (click it to play that class's attack clip) · name, HP pips, weapon style · a breakdown of all four abilities plus Ground/Air LMB · the universe strip `1–6` · `[DEPLOY]` |
+| **Paused** (ESC) | `[RESUME] [CHANGE CLASS] [RESTART STAGE] [CONTROLS] [MAIN MENU]` |
+| **Game over** | a death burst first, then **YOU FELL** with kills / max combo / level and `[RETRY] [CHANGE CLASS] [MAIN MENU]` — no silent respawn |
+| **Victory** | **STAGE CLEARED** with the run summary and `[NEXT UNIVERSE] [PLAY AGAIN]` |
+| **Cards** | the Data Chip draft after a gate clears (`1` / `2` / `3`) |
+
+The HUD fades out on every screen that is not `playing`. `ESC` toggles pause;
+`Enter`/`Space` confirms on the menus; `1–7` pick a class on the class screen
+(and while the dev panel is open).
+
+---
+
+## The 16-bit UI
+
+Everything is a **forged-iron plate**: a 2 px dark step, an iron bevel, an inner
+top highlight, an inset bottom shadow and a hard drop shadow — no rounded
+corners, no blur, and `--accent` (the universe's, or the class's, colour) on the
+trim.
+
+| Rule | Why |
+|---|---|
+| Press Start 2P is used **only at 10–18 px** (titles, numbers, keycaps) | 6/7 px pixel type is illegible at 1× |
+| Body copy, blurbs, run summaries use an 11–12 px **bold monospace** (`Silkscreen` first) | readable when the pixel font has not loaded |
+| The four ability slots are `<canvas>` thumbnails | each one is the **mid-frame of that slot's baked pixelfx clip**, blitted with `imageSmoothingEnabled = false` — real pixels, not CSS bars |
+| `#hint` and `#lmbTip` are gone | the live HUD is HP crests, class/level/XP, the wave tag, the boss bar and the four slots |
+| `#devToggle` is hidden until the panel opens | `` ` `` / `~`, or `?dev=1` |
 
 ---
 
@@ -31,17 +113,21 @@ The viewport splits at a **46 % horizon**: sky above, walkable street below.
 | Back wall | **0.75×** | Stone battlement: courses, blind arches, columns, animated `fire/brazier` torches |
 | Curb | 1.0× | The stone lip that marks the horizon |
 | Street | 1.0× | Perspective paving: converging joints, per-tile shading, depth haze |
-| Platforms | 1.0× | 9 raised decks with a lit top face, a 3D front lip, pillars to the floor and cast shadows |
+| Decks | 1.0× | Raised slabs with an **angled 3D top face**, a cut front face, a lit lip, iron brackets to the street and a cast shadow |
 | Actors | 1.0× | Depth-sorted by `y` every frame, so you can stand in front of *or* behind a deck |
 
-The street spans **`stageWidth = 3600`**, decks hang at **`z = 75 … 155`**, and
-three **arena gates** lock the road when you walk in — amber barrier columns at
-both edges, camera clamped between them, dissolving with a blinking `GO →` when
-the wave is dead.
+The street spans **`STAGE_W = 3600`**, decks hang at **`z = 75 … 155`** with a
+deck depth of **`FLOOR_H × 0.28`**, and three **arena gates** lock the road when
+you walk in — amber barrier columns at both edges, camera clamped between them,
+dissolving with a blinking `GO →` when the wave is dead.
 
-Support beacons and spawns use `spawn/spawn-portal`; blows land with
-`impacts/hit-spark` / `impacts/crit-hit` plus `ui/damage-number`; deaths burst
-with `spawn/shatter-death` and drop bouncing `pickups/xp-orb` / `pickups/gem-spin`.
+### Projection is 1:1
+
+A deck is drawn at the **raw** `x - game.cam.x` for both its far and near edge —
+no horizontal `spread` squash against the viewport centre. If you can stand on
+it at world `x`, it is drawn at screen `x - cam.x`, so the fighter's feet always
+land on the pixels of the deck. The 3D read comes from the tapered far edge, the
+cut front face, the brackets and the shadow — never from moving the surface.
 
 ---
 
@@ -53,22 +139,72 @@ y    across the depth lane   (FLOOR_TOP … FLOOR_BOTTOM)
 z    height above the street (0 = grounded)
 ```
 
-Actors are blitted at `(x, y - z)` with a crisp elliptical contact shadow at
-`(x, y)`, scaled by `depthScale = lerp(0.86, 1.04, v)` so the back of the lane is
-smaller than the front.
+Actors are blitted at `(x, y - z·s)` with a contact shadow drawn **on the surface
+they are standing over** (`y - groundZ·s`) that shrinks and fades as
+`z - groundZ` grows. `s = depthScale(y) = lerp(0.86, 1.04, v)`.
 
 | Constant | Value |
 |---|---|
-| `SPEED_X` / `SPEED_Y` | 268 / 200 |
+| `SPEED_X` / `SPEED_Y` | 268 / 200 (diagonals are normalised) |
+| `ACCEL` / `DECEL` / `AIR_CONTROL` | 2100 / 2600 / 0.72 |
 | `JUMP_VZ` / `DOUBLE_JUMP_VZ` | 580 / 545 |
 | `GRAVITY` | 1550 |
+| `JUMP_BUFFER` | 0.12 s — a press just before landing still jumps |
+| `COYOTE_TIME` | 0.10 s — leaving a ledge keeps the jump |
+| variable jump | releasing early cuts the rise (`vz ×= 0.55`) |
 | `HITSTOP` | 0.04 s (+ camera punch) |
-| hit tolerance | `DEPTH_TOL 44` / `HEIGHT_TOL 60` |
+| hit tolerance | `DEPTH_TOL 44` / `HEIGHT_TOL 60` / melee `75` |
 | horizon | 46 % of the viewport |
 
 Landing is solved against the deck under you: it only catches you when you are
 falling onto its top face with your depth `y` inside its footprint. **S + SPACE**
-drops through it.
+drops through it. `peakZ` is tracked, so a fall from height always lands as a
+heavy landing (dust + shake) no matter how short the last frame was.
+
+The camera follows the fighter **up**: `cam.y = clamp((z - 75) × 0.35, 0, 90)`
+shifts the world down as you climb, and a resize re-clamps `y` back into the
+lane.
+
+### Airborne poses
+
+`stanceMod()` bakes `act:<class>:jump` and `act:<class>:fall` for all seven
+rigs. The body plays **jump** while `vz > 40` and **fall** while `vz <= 40`.
+
+---
+
+## Firing, aiming and abilities
+
+* **The body is always a rigged act clip.** A `moves/*` kit animates the rig
+  itself; every other effect (`melee/uppercut`, `shadow/void-orb`,
+  `scifi/force-field`, `status/rage`, …) is drawn as a **world VFX overlay** while
+  the character holds a baked *cast* pose. Nothing ever replaces or hides the
+  fighter — Berserker, Assassin, Tech, Knight-Q, Mage-SHIFT, Sniper-SHIFT and
+  Sniper-E all keep their sprite on screen.
+* **Hold LMB to chain.** Melee combos and ranged fire both repeat from
+  `game.mouse.down` as soon as the act ends. Facing never flips mid-swing.
+* **Ranged fires at 12 % of the act; melee at 28 %.**
+* **Cursor-true 2.5D aiming.** The shot leaves the hand toward
+  `(mouseX + cam.x, mouseY)` — screen `y` is inverted back into a height at the
+  fighter's lane — inside a clamped cone, with a gentle aim assist that snaps to
+  the nearest valid target in front of you. Grounded players can hit Bats,
+  Eyeballs and Skulls hovering overhead.
+* **Melee is forgiving vertically** (`HEIGHT_TOL 75`) so you can swat what is
+  above you.
+* **Air Slam** (`GROUND POUND`, `HAMMER SMASH`): `vz = -720`, and the shockwave
+  resolves on **landing**, not in mid-air.
+* **Gunslinger Q** lobs a grenade on a real arc (`vz ≈ 340`) that bounces once,
+  then detonates.
+* **Tech LMB** throws a bouncing `projectiles/energy-disc` (`kind: 'disc'`): it
+  skips along the deck, passes through targets and sparks
+  `impacts/bullet-impact` on each.
+* **Rail beams always render**, hit or miss; a `def.strike` telegraph is drawn on
+  every target it touches regardless of the skill's `kind`.
+* **Assassin marks**: Q sets `e.marked = 4`; each following hit deals **×1.75**
+  and shows the `impacts/crit-hit` spark.
+* A dash resolves its damage exactly **once**.
+
+Audio is wired to the action: `jump`, `land`, `lmb`, `cast`, `hit`, `crit`,
+`kill`, `pick`, `gate` (lock + open), `hurt` and `die`.
 
 ---
 
@@ -85,12 +221,12 @@ glows gold at 100 %, and empties when used.
 
 | Class | LMB / Air | SHIFT | Q | E · LV 3 | R · LV 5 |
 |---|---|---|---|---|---|
-| **Vanguard Knight** | `moves/sword-combo` · `moves/ground-pound` | `moves/dash-strike` | `melee/uppercut` *(launch 430)* | `moves/earth-stomp` + `nature/quake` | `moves/holy-smite` + `holy/holy-pillar` |
-| **Gunslinger** | `moves/pistol-shots` + `projectiles/bullet-tracer` | dodge roll + `explosions/smoke-bomb` | `explosions/grenade` *(bounce)* | `moves/rocket-launcher` + `explosions/big-explosion` *(recoil)* | `projectiles/muzzle-smg` × 8 |
+| **Vanguard Knight** | `moves/sword-combo` · `moves/ground-pound` *(air slam)* | `moves/dash-strike` | `melee/uppercut` *(launch 430)* | `moves/earth-stomp` + `nature/quake` | `moves/holy-smite` + `holy/holy-pillar` |
+| **Gunslinger** | `moves/pistol-shots` + `projectiles/bullet-tracer` | dodge roll + `explosions/smoke-bomb` | `explosions/grenade` *(arc + 1 bounce)* | `moves/rocket-launcher` + `explosions/big-explosion` *(recoil)* | `projectiles/muzzle-smg` × 8 |
 | **Chrono Mage** | `moves/fireball-throw` + `arcane/arcane-orb` | `arcane/blink-out` → `blink-in` | `moves/ice-lance-throw` + `ice/freeze` | `moves/lightning-call` + `lightning/chain-lightning` | `moves/meteor-call` + `arcane/time-stop` |
 | **Rift Sniper** | `moves/arrow-shot` + `projectiles/laser-bolt` | `scifi/warp-out` → `warp-in` | `scifi/laser-grid` *(snare)* | `arcane/arcane-beam` *(rail)* | `scifi/emp-blast` + `lightning/lightning-strike` |
-| **Berserker** | `melee/heavy-cleave` · `melee/hammer-smash` | berserk leap (`moves/ground-pound`) | `melee/spin-slash` | `moves/ground-pound` + `fire/fire-ring` | `status/rage` + `fire/fire-tornado` *(+40 % damage)* |
-| **Shadow Assassin** | `melee/dagger-flurry` | `shadow/shadow-flames` blink | `shadow/grasping-hands` *(root)* | `shadow/void-orb` + `shadow/dark-explosion` | `shadow/black-hole` + `shadow/necro-skulls` |
+| **Berserker** | `melee/heavy-cleave` · `melee/hammer-smash` *(air slam)* | berserk leap (`moves/ground-pound`) | `melee/spin-slash` | `moves/ground-pound` + `fire/fire-ring` | `status/rage` + `fire/fire-tornado` *(+40 % damage)* |
+| **Shadow Assassin** | `melee/dagger-flurry` | `shadow/shadow-flames` blink | `shadow/grasping-hands` *(root + mark)* | `shadow/void-orb` + `shadow/dark-explosion` | `shadow/black-hole` + `shadow/necro-skulls` |
 | **Tech Specialist** | bouncing `projectiles/energy-disc` | `scifi/jetpack` boost | `scifi/force-field` *(dome)* | `scifi/tractor-beam` + `explosions/plasma-explosion` | `scifi/energy-core` + `explosions/nuke` |
 
 **Progression** — `XP_STEPS = [0, 6, 16, 30, 50]` → **LV 5**; E opens at LV 3,
@@ -114,6 +250,7 @@ charge or −20 % cooldowns.
 The warden is a real fight: **phase 1** hurls three-bolt volleys, **phase 2**
 widens the spread and slams the street, **phase 3** speeds up and summons a
 skull escort — each shift announced with a banner, a blast and a camera kick.
+Killing it with every gate already open raises **STAGE CLEARED**.
 
 | # | Arena | Waves | Pool |
 |---|---|---|---|
@@ -126,8 +263,8 @@ skull escort — each shift announced with a banner, a blast and a camera kick.
 ## Six universes
 
 `setUniverse(i)` repaints the sky, both skylines, the wall, the paving and the
-weather in one frame. Weather is capped at **0.15 alpha** so it never hides the
-fight.
+weather in one frame — and re-tints `--accent`, so the menus follow. Weather is
+capped at **0.18 alpha** so it never hides the fight.
 
 | # | Universe | Body | Weather |
 |---|---|---|---|
@@ -146,70 +283,50 @@ fight.
 |---|---|
 | **A / D** | run along the street |
 | **W / S** | move across the depth lane |
-| **SPACE** | jump · again in the air for a double jump |
+| **SPACE** | jump · again in the air for a double jump · hold for height |
 | **S + SPACE** | drop through the deck under you |
-| **LMB** | ground attack · air attack while airborne |
+| **LMB** | ground attack · air attack while airborne · **hold to chain** |
+| **cursor** | aim — shots fly from the hand to the pointer |
 | **SHIFT** | mobility (dash / roll / blink / warp / leap — invincible while it runs) |
-| **Q / E / R** | tactical · heavy · ultimate |
+| **Q / E / R** | tactical · heavy (LV 3) · ultimate (LV 5) |
+| **ESC** | pause / resume |
 | **1 / 2 / 3** | pick a Data Chip when a draft is open |
-| **`** or **~** | open the dev panel |
+| **1 – 7** | pick a class on the class screen (or with the dev panel open) |
+| **`** or **~** | open / close the dev panel |
 
-### Dev panel (top right, clear of the HUD)
+### Dev panel
 
-`[Switch Class]` (all seven) · `[Universe 1–6]` · `[+1 Level]` ·
+`[Class]` (all seven) · `[Universe 1–6]` · `[+1 Level]` ·
 `[Unlock All + Fill Ult]` · `[God Mode]` · `[Spawn Wave]` · `[Spawn Boss]` ·
-`[Reset Cooldowns]` · `[Wipe Map]`.
+`[Reset Cooldowns]` · `[Wipe Map]`. It is hidden until you ask for it, and the
+`[DEV]` toggle only appears while it is open.
 
 The same actions are on `window.__SURVIVE`: `setClass`, `setUniverse`, `unlockAll`,
 `toggleGod`, `spawnWave`, `spawnEnemy`, `devBoss`, `resetCds`, `wipeMap`,
-`openCards`, `takeCard`, `castSlot`, `gainXp`, `gainUlt`, `step`, `state`.
-
----
-
-## Running it
-
-```bash
-python3 -m http.server 8080     # → http://localhost:8080/index.html
-```
-
-The page **must be served over http** — opening `index.html` from disk (`file://`)
-makes browsers refuse ES modules. First boot fetches ~290 modules, then bakes 112
-clips behind a progress bar that keeps animating; after that a frame is pure
-`drawImage` blits.
-
-### If the boot screen does not move
-
-It can no longer stay silent: an inline guard in `index.html` runs before the
-engine and writes the reason into `#bootMsg`.
-
-| What you see | What it means |
-|---|---|
-| amber `Opened from file://` | you double-clicked the file — serve it instead |
-| red `Could not load …/src/main.js` | wrong server root, a 404, or a server sending `text/plain` for `.js` |
-| red `Boot error: …` | a throw inside a module, with the file and line |
-| amber `Still loading the engine modules (6s)…` | the ~290 module requests are slow (proxy/network); it is working |
-| red `Engine never started after 20 s` | the module graph never arrived — check the console |
-| red `Baked N clips, M failed` | one manifest failed to bake; the rest of the game still boots |
+`openCards`, `takeCard`, `castSlot`, `basicAttack`, `gainXp`, `gainUlt`,
+`hurtPlayer`, `setScreen`, `startStage`, `pauseGame`, `resumeGame`,
+`showGameOver`, `showVictory`, `tickMenus`, `step`, `state`.
 
 ---
 
 ## Verification
 
-Four harnesses, all runnable from the repo root:
+Five harnesses, all runnable from the repo root:
 
 ```bash
 npm install                       # jsdom, once (inside tools/pfx-harness)
-npm test                          # behaviour: imports src/main.js, 65 checks
+npm test                          # behaviour: imports src/main.js, 120 checks
 npm run test:guard                # the inline boot guard: file://, throws, 404s
-npm run test:graph                # walks the module graph over HTTP
+npm run test:graph                # walks the module graph over HTTP (+ cycle check)
 npm run test:browser              # cold boot over HTTP, then link and boot
+node /tmp/render13.mjs /tmp/r13   # optional: PNG frames via @napi-rs/canvas
 ```
 
 ```
-npm test              → 65 checks · --- ALL CHECKS PASSED ---
-npm run test:guard    →  9 checks · --- ALL CHECKS PASSED ---
-npm run test:graph    → 287 modules, 0 problems · --- GRAPH OK ---
-npm run test:browser  → linked 1.5 s, boot 7.3 s · --- BROWSER BOOT OK ---
+npm test              → 120 checks · --- ALL CHECKS PASSED ---
+npm run test:guard    →   9 checks · --- ALL CHECKS PASSED ---
+npm run test:graph    → 287 modules · acyclic yes · 0 problems
+npm run test:browser  → linked 1.9 s, boot 7.1 s · 137 clips · title → PLAY verified · --- BROWSER BOOT OK ---
 ```
 
 `test:browser` is the one that behaves like a real browser: it registers an ESM
@@ -217,45 +334,52 @@ loader that fetches every module over HTTP and **refuses anything not served as
 JavaScript** — the rule that silently kills module scripts — then links the graph
 and boots the page, asserting the overlay dismisses, the bar reaches 100 %, the
 seven class chips exist, the bake reports, a frame renders and the console stays
-clean. `test:graph` is the same audit without a DOM, so it can be pointed at any
-deployment.
+clean. `test:graph` is the same audit without a DOM — plus a DFS that proves the
+import graph is **acyclic** — so it can be pointed at any deployment.
 
 `npm test` fails on: a boot error, an unresolved effect id, any of the 7 classes ×
-4 slots failing to animate, a hit that deals no damage, a heavy hit without
-exactly 40 ms hit-stop, a broken wave count, a card draft that will not open, a
-boss that will not die, a HUD slot without its countdown, or a dev button that
-does nothing.
+4 slots failing to animate *on a rigged body clip*, a body that gives way to a
+VFX id, a hit that deals no damage, a heavy hit without exactly 40 ms hit-stop, a
+jump that ignores its buffer or coyote window, a platform drawn with a viewport
+squash, a shot that cannot hit a hovering flier, an air slam that does not drive
+down, a disc that is not a disc, a rail that does not render when it whiffs, a
+dead menu button, a broken wave count, a card draft that will not open, a boss
+that will not die, a death that respawns silently, a victory screen that never
+appears, or a HUD slot without its countdown.
 
-Pixels were verified separately against a real rasteriser (all six universes,
-every class mid-cast, the boss fight, the card draft).
+World pixels were verified separately against a real rasteriser
+(`@napi-rs/canvas`): frame-1 sky, a fighter standing exactly on a deck, jump and
+fall poses, all seven classes idle, a cursor-aimed shot at a hovering bat, a
+cast-pose body that stays on screen, and an air-slam impact.
 
 ---
 
 ## Layout
 
 ```
-index.html                 page shell: canvas, retro HUD, title/class overlay, dev panel
-src/main.js                loop, input, audio blips, depth-sorted render list, boot
-src/core.js                constants, viewport, shared state, math helpers (imports nothing)
-src/pfx.js                 pixelfx loader + id verification + atlas baker + fx pool
-src/world.js               six universes, parallax, wall, street, decks, gates, weather, camera
-src/classes.js             seven classes, the 4-slot kit, z-axis combat, physics
+index.html                 page shell: canvas, pixel HUD, title/class/pause/over/win screens, dev panel
+src/main.js                loop, input, audio blips, depth-sorted render list, boot + bake
+src/core.js                constants, viewport, shared state, screen enum, math helpers (imports nothing)
+src/pfx.js                 pixelfx loader + id verification + atlas baker + stances + thumbnail blitter
+src/world.js               six universes, parallax, wall, street, decks, gates, weather, camera, shadows
+src/classes.js             seven classes, the 4-slot kit, aiming, z-axis combat, physics
 src/enemies.js             critters, boss phases, wave spawner, arena flow
-src/ui.js                  HUD, ability bar, callouts, Data Chip cards, dev panel
+src/ui.js                  screen machine, menus, HUD, ability bar, callouts, Data Chip cards, dev panel
 vendor/pixelfx/            the vendored renderer (unmodified)
-tools/pfx-harness/         jsdom verification harness
+tools/pfx-harness/         jsdom + HTTP verification harnesses
 legacy-topdown.html        the previous top-down engine, kept for reference only
 platformer-test.html       the earlier side-scrolling prototype, reference only
 ```
 
-Module graph (strictly one-way):
+Module graph (strictly one-way, verified acyclic):
 
 ```
 core → pfx → world → classes → enemies / ui → main
 ```
 
-`core.js` also exposes a `bus` for the handful of upward notifications (callout,
-banner, denial, cards), which is what keeps `classes` from importing `ui`.
+`core.js` also exposes a `bus` for the handful of upward notifications
+(`banner`, `callout`, `number`, `deny`, `hud`, `dev`, `cards`, `go`, `audio`,
+`startArena`, `nextWave`), which is what keeps `classes` from importing `ui`.
 
 ---
 

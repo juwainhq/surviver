@@ -87,7 +87,7 @@ const platforms = [
 function placePlatforms() {
   for (const p of platforms) {
     p.y = FLOOR_TOP + FLOOR_H * p.lane - FLOOR_H * 0.09;
-    p.d = FLOOR_H * 0.125;
+    p.d = FLOOR_H * 0.28;   /* deep enough to read as a slab in profile */
   }
 }
 
@@ -130,7 +130,8 @@ function updateCamera(dt, player) {
   }
   const targetX = clamp(player.x - W * 0.42, minX, maxX);
   game.cam.x = lerp(game.cam.x, targetX, 1 - Math.pow(0.002, dt));
-  const targetY = -clamp((player.z - 105) * 0.34, 0, 76);
+  /* positive cam.y shifts the world DOWN, i.e. the camera follows the player up */
+  const targetY = clamp((player.z - 75) * 0.35, 0, 90);
   game.cam.y = lerp(game.cam.y, targetY, 1 - Math.pow(0.02, dt));
   if (game.cam.shake > 0) game.cam.shake = Math.max(0, game.cam.shake - dt * 34);
 }
@@ -515,129 +516,153 @@ function drawFloor() {
 function drawPlatform(p) {
   const u = uni();
   const sx0 = Math.round(p.x - game.cam.x), sx1 = Math.round(p.x + p.w - game.cam.x);
-  if (sx1 < -140 || sx0 > W + 140) return;
+  if (sx1 < -160 || sx0 > W + 160) return;
   const vFar = depthV(p.y), vNear = depthV(p.y + p.d);
   const sFar = depthScale(p.y), sNear = depthScale(p.y + p.d);
   const yFar = Math.round(p.y - p.z * sFar);
   const yNear = Math.round(p.y + p.d - p.z * sNear);
-  const spreadFar = lerp(0.74, 1.0, vFar), spreadNear = lerp(0.74, 1.0, vNear);
-  const x0f = Math.round(W / 2 + (p.x - game.cam.x - W / 2) * spreadFar);
-  const x1f = Math.round(W / 2 + (p.x + p.w - game.cam.x - W / 2) * spreadFar);
-  const x0n = Math.round(W / 2 + (p.x - game.cam.x - W / 2) * spreadNear);
-  const x1n = Math.round(W / 2 + (p.x + p.w - game.cam.x - W / 2) * spreadNear);
-  const thick = Math.max(12, Math.round(18 * sNear));
+  /* 1:1 with the walkable lane — a platform at world x must sit at screen
+     x - cam.x, or the player never lands where the deck is drawn. Depth is sold
+     by the tapered top face, the cut front and the brackets, not by a squash. */
+  const x0f = sx0, x1f = sx1, x0n = sx0, x1n = sx1;
+  const vMid = (vFar + vNear) * 0.5;
+  const taper = Math.max(0, Math.round(10 * lerp(1.2, 0.6, vMid)));   /* far edge bevel */
+  const slab = Math.max(11, Math.round(19 * sNear));                   /* cut thickness */
 
-  const deck = mix(u.floorB, u.wallHi, 0.55);
-  const topCol = mix(deck, '#ffffff', p.style ? 0.3 : 0.2);
-  const topLit = mix(deck, '#ffffff', 0.6);
-  const faceCol = shade(u.floorA, -0.5);
-  const edgeCol = shade(u.floorA, -0.85);
-  const pillarCol = mix(u.wall, '#000000', 0.15);
-  const pillarLit = mix(u.wallHi, '#ffffff', 0.1);
+  const stone = mix(mix(u.floorB, u.wallHi, 0.6), u.curb, 0.25);
+  const topFar = shade(stone, -0.16);
+  const topNear = shade(stone, 0.24);
+  const lip = mix(stone, '#ffffff', 0.6);
+  const faceTop = shade(u.floorA, -0.2);
+  const faceBot = shade(u.floorA, -0.7);
+  const seamCol = shade(u.floorA, -0.9);
+  const pillarCol = mix(u.wall, '#000000', 0.35);
+  const pillarLit = mix(u.wallHi, '#000000', 0.1);
 
-  /* ---- support pillars / brackets, drawn first so the slab sits on them --- */
-  const pillarW = Math.max(10, Math.round(18 * sNear));
-  const floorY = Math.round(p.y + p.d + 6);
-  for (const t of [0.2, 0.8]) {
-    const wx = p.x + p.w * t;
-    const bx = Math.round(W / 2 + (wx - game.cam.x - W / 2) * spreadNear);
-    const topY = yNear + thick - 2;
-    if (floorY - topY < 6) continue;
-    ctx.fillStyle = pillarCol;
-    ctx.fillRect(bx - pillarW / 2, topY, pillarW, floorY - topY);
-    ctx.fillStyle = pillarLit;
-    ctx.globalAlpha = 0.55;
-    ctx.fillRect(bx - pillarW / 2, topY, 4, floorY - topY);
-    ctx.globalAlpha = 1;
-    /* capital + base flare */
-    ctx.fillStyle = shade(pillarCol, -0.3);
-    ctx.fillRect(bx - pillarW, topY, pillarW * 2, 5);
-    ctx.fillRect(bx - pillarW, floorY - 6, pillarW * 2, 6);
-  }
-
-  /* ---- cast shadow on the floor ---- */
+  /* ---- cast shadow, thrown onto the street under the slab ---- */
   ctx.save();
-  const sh = (dx, dy, grow, alpha) => {
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = '#04060a';
-    ctx.beginPath();
-    ctx.moveTo(x0f + dx - grow, Math.round(p.y + dy));
-    ctx.lineTo(x1f + dx + grow, Math.round(p.y + dy));
-    ctx.lineTo(x1n + dx + grow, Math.round(p.y + p.d + dy));
-    ctx.lineTo(x0n + dx - grow, Math.round(p.y + p.d + dy));
-    ctx.closePath();
-    ctx.fill();
-  };
-  sh(13, 5, 11, 0.1);
-  sh(8, 7, 3, 0.15);
-  ctx.globalAlpha = 1;
+  const baseY = Math.round(p.y + p.d + 8);
+  ctx.globalAlpha = 0.2;
+  ctx.fillStyle = '#04060a';
+  ctx.beginPath();
+  ctx.moveTo(x0f + 16, baseY);
+  ctx.lineTo(x1f + 16, baseY);
+  ctx.lineTo(x1n + 4, baseY + 9);
+  ctx.lineTo(x0n + 4, baseY + 9);
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 0.1;
+  ctx.fillRect(x0f + 6, baseY - 2, x1f - x0f - 12, 3);
   ctx.restore();
 
-  /* ---- front thickness face ---- */
-  ctx.fillStyle = faceCol;
-  ctx.beginPath();
-  ctx.moveTo(x0n, yNear); ctx.lineTo(x1n, yNear);
-  ctx.lineTo(x1n, yNear + thick); ctx.lineTo(x0n, yNear + thick);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = edgeCol;
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.fillStyle = edgeCol;
-  for (let bx = x0n + 30; bx < x1n - 4; bx += 30) ctx.fillRect(Math.round(bx), yNear + 3, 1, thick - 4);
-  ctx.fillStyle = shade(faceCol, 0.22);
-  ctx.fillRect(x0n + 1, yNear + thick - 3, Math.max(0, x1n - x0n - 2), 2);
+  /* ---- iron brackets down to the street (drawn behind the deck) ---- */
+  if (p.z > 24) {
+    const pillarW = Math.max(8, Math.round(15 * sNear));
+    const topY = yNear + slab - 2;
+    const bottomY = Math.round(p.y + p.d + 8);
+    if (bottomY - topY > 14) {
+      for (const t of [0.18, 0.82]) {
+        const bx = Math.round(p.x + p.w * t - game.cam.x);
+        ctx.fillStyle = pillarCol;
+        ctx.fillRect(bx - pillarW / 2, topY, pillarW, bottomY - topY);
+        ctx.fillStyle = pillarLit;
+        ctx.globalAlpha = 0.4;
+        ctx.fillRect(bx - pillarW / 2, topY, 3, bottomY - topY);
+        ctx.globalAlpha = 1;
+        /* capital + base flare */
+        ctx.fillStyle = shade(pillarCol, -0.35);
+        ctx.fillRect(bx - pillarW, topY, pillarW * 2, 4);
+        ctx.fillRect(bx - Math.round(pillarW * 1.2), bottomY - 4, Math.round(pillarW * 2.4), 4);
+      }
+    }
+  }
 
-  /* ---- walkable top face ---- */
-  ctx.fillStyle = topCol;
+  /* ---- cut front face ---- */
+  const fg = ctx.createLinearGradient(0, yNear, 0, yNear + slab);
+  fg.addColorStop(0, faceTop);
+  fg.addColorStop(0.55, faceTop);
+  fg.addColorStop(1, faceBot);
+  ctx.fillStyle = fg;
+  ctx.fillRect(x0n, yNear, x1n - x0n, slab);
+  ctx.strokeStyle = seamCol;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x0n + 0.5, yNear + 0.5, x1n - x0n - 1, slab - 1);
+  ctx.fillStyle = seamCol;
+  ctx.globalAlpha = 0.7;
+  for (let bx = x0n + 26; bx < x1n - 6; bx += 26) ctx.fillRect(Math.round(bx), yNear + 2, 1, slab - 4);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = shade(faceTop, 0.35);
+  ctx.fillRect(x0n + 1, yNear + 1, x1n - x0n - 2, 1);
+
+  /* ---- walkable top face: tapered stone deck ---- */
+  const g = ctx.createLinearGradient(0, yFar, 0, yNear);
+  g.addColorStop(0, topFar);
+  g.addColorStop(1, topNear);
+  ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(x0f, yFar); ctx.lineTo(x1f, yFar);
-  ctx.lineTo(x1n, yNear); ctx.lineTo(x0n, yNear);
+  ctx.moveTo(x0f + taper, yFar);
+  ctx.lineTo(x1f - taper, yFar);
+  ctx.lineTo(x1n, yNear);
+  ctx.lineTo(x0n, yNear);
   ctx.closePath();
   ctx.fill();
 
   ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(x0f, yFar); ctx.lineTo(x1f, yFar);
-  ctx.lineTo(x1n, yNear); ctx.lineTo(x0n, yNear);
-  ctx.closePath();
   ctx.clip();
+  /* flagstone courses, foreshortened toward the back */
   ctx.globalAlpha = 0.5;
-  ctx.fillStyle = edgeCol;
-  for (let t = 0.25; t < 1; t += 0.25) {
+  ctx.fillStyle = seamCol;
+  for (let t = 0.34; t < 1; t += 0.33) {
     const y = Math.round(lerp(yFar, yNear, t));
-    const l = Math.round(lerp(x0f, x0n, t)), r2 = Math.round(lerp(x1f, x1n, t));
+    const l = Math.round(lerp(x0f + taper, x0n, t)), r2 = Math.round(lerp(x1f - taper, x1n, t));
     ctx.fillRect(l, y, r2 - l, 1);
   }
-  ctx.globalAlpha = 0.3;
-  for (let t = 0.2; t < 1; t += 0.2) {
-    const xx = Math.round(lerp(x0f, x1f, t)), xn = Math.round(lerp(x0n, x1n, t));
-    ctx.beginPath(); ctx.moveTo(xx, yFar); ctx.lineTo(xn, yNear);
-    ctx.strokeStyle = edgeCol; ctx.stroke();
+  ctx.globalAlpha = 0.35;
+  for (let t = 0.17; t < 1; t += 0.34) {
+    const xx = Math.round(lerp(x0f + taper, x1f - taper, t));
+    const xn = Math.round(lerp(x0n, x1n, t));
+    ctx.beginPath();
+    ctx.moveTo(xx, yFar);
+    ctx.lineTo(xn, yNear);
+    ctx.strokeStyle = seamCol;
+    ctx.stroke();
   }
+  /* a little ambient light pooling at the front edge */
+  ctx.globalAlpha = 0.26;
+  ctx.fillStyle = lip;
+  ctx.fillRect(x0n, yNear - 7, x1n - x0n, 7);
   ctx.restore();
 
-  /* lit lip + outline */
-  ctx.fillStyle = topLit;
+  /* ---- lit lip + outline ---- */
+  ctx.fillStyle = lip;
   ctx.fillRect(x0n, yNear - 3, Math.max(0, x1n - x0n), 3);
-  ctx.strokeStyle = edgeCol;
+  ctx.strokeStyle = seamCol;
   ctx.beginPath();
-  ctx.moveTo(x0f, yFar); ctx.lineTo(x1f, yFar);
-  ctx.lineTo(x1n, yNear); ctx.lineTo(x0n, yNear);
+  ctx.moveTo(x0f + taper, yFar);
+  ctx.lineTo(x1f - taper, yFar);
+  ctx.lineTo(x1n, yNear);
+  ctx.lineTo(x0n, yNear);
   ctx.closePath();
   ctx.stroke();
+  /* corner rivets */
+  ctx.fillStyle = mix(lip, '#ffffff', 0.3);
+  ctx.fillRect(x0n + 4, yNear - 6, 3, 3);
+  ctx.fillRect(x1n - 7, yNear - 6, 3, 3);
 }
 
-/* -------------------------------------------------------------- shadows -- */
-function shadowAt(x, y, size, squish) {
+/** the contact shadow: drawn on the surface under you, shrinking as you lift off */
+export function contactShadow(x, y, z, size, squish, surfaceZ) {
+  const surf = surfaceZ || 0;
+  const air = Math.max(0, z - surf);
+  const k = 1 / (1 + air * 0.0055);
   const v = depthV(y);
   const s = (size || 1) * lerp(0.78, 1.16, v);
   const sx = Math.round(x - game.cam.x);
-  const sy = Math.round(y);
-  const rx = Math.max(7, Math.round(19 * s));
-  const ry = Math.max(2, Math.round(6 * s * (squish || 1)));
+  const sy = Math.round(y - surf * s);
+  const rx = Math.max(3, Math.round(19 * s * k));
+  const ry = Math.max(1, Math.round(6 * s * (squish || 1) * k));
   ctx.save();
-  ctx.globalAlpha = 0.45;
+  ctx.globalAlpha = 0.45 * (0.35 + 0.65 * k);
   ctx.fillStyle = '#05070c';
   for (let dy = -ry; dy <= ry; dy++) {
     const t = dy / ry;
@@ -716,6 +741,6 @@ export function setUniverse(i) {
 
 export {
   ARENAS, UNIVERSES, buildSky, drawArenaLock, drawFloor, drawParallax, drawPlatform,
-  drawSkyBody, drawWeather, placePlatforms, platforms, shadowAt, uni, universeIndex,
+  drawSkyBody, drawWeather, placePlatforms, platforms, uni, universeIndex,
   updateArena, updateCamera, wallCache, wallTexture
 };

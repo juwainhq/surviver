@@ -10,150 +10,339 @@
 <link rel="modulepreload" href="./src/main.js">
 <style>
   :root{
+    /* Press Start 2P is only ever used at 10 px and up; body copy is the blurb
+       face, which falls back to a crisp monospace when the font is offline. */
     --px:'Press Start 2P',ui-monospace,'Courier New',monospace;
-    --ink:#eef3fb;
-    --dim:#8fa0b8;
+    --mono:'Silkscreen',ui-monospace,'Courier New',monospace;
+    --accent:#f5c542;
+    --ink:#e9eef7;
+    --dim:#93a3ba;
+    --stone:#171a22;
+    --stone-hi:#232833;
+    --stone-lo:#0a0c11;
+    --iron:#3b4350;
+    --iron-hi:#5c6879;
     --gold:#f5c542;
-    --plate:#12141d;
-    --edge:#475569;
-    --edge-hi:#64748b;
     --red:#e5484d;
     --cyan:#4cd6f0;
-    --violet:#a678ff;
   }
   *{ box-sizing:border-box; }
   html,body{ margin:0; height:100%; background:#04060a; overflow:hidden; }
-  body{ font-family:var(--px); color:var(--ink); -webkit-font-smoothing:none; user-select:none; }
+  body{
+    font-family:var(--mono); font-weight:700; font-size:12px; color:var(--ink);
+    -webkit-font-smoothing:none; user-select:none;
+  }
   #stage{
     display:block; width:100vw; height:100vh; position:fixed; inset:0;
-    image-rendering:pixelated; image-rendering:crisp-edges; cursor:none; background:#04060a;
+    image-rendering:pixelated; image-rendering:crisp-edges; background:#04060a;
+  }
+  body[data-screen="playing"] #stage{ cursor:none; }
+
+  /* ============================================================ pixel frame
+     A forged-iron plate: 2 px dark step, 1 px iron bevel, an inner top
+     highlight, an inset bottom shadow and a hard drop shadow. No border-radius,
+     no blur — everything is snapped to the pixel grid.                     */
+  .frame{
+    position:relative;
+    background:
+      linear-gradient(180deg,#1e232d 0%,#141820 46%,#0e1117 100%);
+    border:2px solid var(--iron);
+    box-shadow:
+      inset 0 2px 0 var(--iron-hi),
+      inset 2px 0 0 rgba(92,104,121,.45),
+      inset 0 -3px 0 #05070a,
+      0 0 0 2px #05070a,
+      0 6px 0 0 #05070a,
+      0 10px 20px rgba(0,0,0,.6);
+  }
+  .frame::after{
+    content:''; position:absolute; inset:4px; pointer-events:none;
+    border-top:1px solid rgba(255,255,255,.06);
+    border-left:1px solid rgba(255,255,255,.05);
   }
 
   /* ---------------------------------------------------------------- boot */
   #boot{
     position:fixed; inset:0; z-index:90; background:#05070c;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
-    font-size:10px; letter-spacing:1px; color:var(--dim); text-align:center;
-    transition:opacity .4s ease;
+    text-align:center; transition:opacity .45s ease;
   }
   #boot.done{ opacity:0; pointer-events:none; }
-  #bootTitle{ font-size:18px; color:var(--gold); text-shadow:0 0 22px rgba(245,197,66,.4); letter-spacing:2px; }
-  #bootSub{ font-size:8px; color:#5a6a80; }
-  .bootHint{ font-size:7px; color:#5a6a80; opacity:.7; line-height:2; max-width:80vw; text-align:center; }
+  #bootTitle{
+    font-family:var(--px); font-size:18px; color:var(--gold); letter-spacing:3px;
+    text-shadow:0 4px 0 #000, 0 0 24px rgba(245,197,66,.35);
+  }
+  #bootSub{ font-family:var(--mono); font-weight:700; font-size:11px; color:#7e8ea6; letter-spacing:1px; }
+  #bootBar{ width:320px; height:14px; border:2px solid var(--iron); background:#080b10; padding:2px; box-shadow:0 0 0 2px #05070a; }
+  #bootFill{ height:100%; width:0%; background:linear-gradient(90deg,#7a5a10,var(--gold)); transition:width .08s linear; }
+  #bootMsg{ font-family:var(--mono); font-weight:700; font-size:11px; color:#66758c; max-width:78vw; line-height:1.7; min-height:14px; }
   #bootMsg.err{ color:#ff6a6a; }
   #bootMsg.warn{ color:#ffc65c; }
   #bootMsg.ok{ color:#7cffcf; }
-  #bootBar{ width:300px; height:12px; border:2px solid var(--edge); background:#0a0e14; padding:2px; }
-  #bootFill{ height:100%; width:0%; background:linear-gradient(90deg,#7a5a10,var(--gold)); transition:width .08s linear; }
-  #bootMsg{ font-size:8px; color:#54637a; max-width:74vw; line-height:1.9; min-height:12px; }
+  .bootHint{ font-family:var(--mono); font-weight:700; font-size:11px; color:#4f5c70; opacity:.9; line-height:1.9; max-width:82vw; }
 
-  /* ------------------------------------------------------------- hud: left */
-  #hpPanel{
-    position:fixed; left:12px; top:12px; z-index:30; padding:9px 11px 8px;
-    background:rgba(18,20,29,.88); border:2px solid var(--edge);
-    box-shadow:4px 4px 0 rgba(0,0,0,.55); min-width:224px;
+  /* ============================================================== screens */
+  .screen{
+    position:fixed; inset:0; z-index:50; display:none;
+    flex-direction:column; align-items:center; justify-content:center;
+    padding:24px; text-align:center;
+    background:
+      radial-gradient(120% 90% at 50% 30%, rgba(4,6,10,.28) 0%, rgba(4,6,10,.82) 78%),
+      linear-gradient(180deg, rgba(4,6,10,.72), rgba(4,6,10,.9));
+    backdrop-filter:blur(1.5px);
   }
-  #className{ font-size:9px; color:var(--gold); letter-spacing:0; }
-  #classSub{ font-size:7px; color:var(--dim); margin-top:5px; letter-spacing:0; }
-  #hpRow{ display:flex; gap:3px; margin-top:8px; }
-  .pip{ width:9px; height:13px; background:#5a1a1e; box-shadow:inset 0 0 0 1px #2a0c0e; }
-  .pip.on{ background:linear-gradient(180deg,#ff8b78,#c62828); box-shadow:inset 0 0 0 1px #7a1c1c,0 0 6px rgba(229,72,77,.45); }
-  .pip.ult{ background:#3a2c0a; box-shadow:inset 0 0 0 1px #6b5210; }
-  .pip.ult.on{ background:linear-gradient(180deg,#ffe89a,var(--gold)); box-shadow:inset 0 0 0 1px #8a6a12,0 0 8px rgba(245,197,66,.55); }
-  #metaRow{ display:flex; align-items:center; gap:7px; margin-top:9px; font-size:7px; color:var(--dim); }
-  #xpBar{ flex:1; height:5px; background:#10151d; box-shadow:inset 0 0 0 1px #26303f; }
-  #xpFill{ height:100%; width:0%; background:linear-gradient(90deg,#2f6bd8,#69c6ff); }
-  #lvText{ color:#b9c7da; font-size:7px; }
+  .screen.on{ display:flex; animation:scrIn .16s steps(3,end); }
+  /* the title is the street: only a soft vignette, never a blackout */
+  #screen-title{
+    background:
+      radial-gradient(120% 95% at 50% 34%, rgba(4,6,10,.06) 0%, rgba(4,6,10,.55) 62%, rgba(4,6,10,.86) 100%);
+    backdrop-filter:none;
+  }
+  #screen-title .scrInner{
+    padding:22px 26px;
+    background:radial-gradient(80% 70% at 50% 40%, rgba(4,6,10,.62), rgba(4,6,10,0));
+  }
+  @keyframes scrIn{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:none; } }
+  .screen.modal{ z-index:70; background:rgba(4,6,10,.86); }
 
-  /* ------------------------------------------------------- hud: wave / boss */
+  .scrInner{ width:min(900px,94vw); display:flex; flex-direction:column; align-items:center; gap:16px; }
+  .scrInner.wide{ width:min(1080px,96vw); }
+  .scrHead{
+    font-family:var(--px); font-size:16px; letter-spacing:3px; color:var(--ink);
+    text-shadow:0 4px 0 #000, 0 0 22px rgba(0,0,0,.9);
+  }
+  .scrHead.dead{ color:#ff8b7a; }
+  .scrHead.win{ color:#ffe08a; }
+
+  .logo{
+    font-family:var(--px); font-size:18px; line-height:1.5; letter-spacing:4px; color:#fff;
+    text-shadow:0 5px 0 #000, 0 0 30px rgba(245,197,66,.35), 0 0 2px var(--accent);
+  }
+  .logo small{
+    display:block; font-family:var(--mono); font-weight:700; font-size:11px;
+    letter-spacing:3px; color:var(--dim); margin-top:12px; text-shadow:none;
+  }
+  .uniLine{
+    font-family:var(--mono); font-weight:700; font-size:12px; letter-spacing:2px; color:#b9c7da;
+  }
+  .uniLine b{ color:var(--accent); }
+  .tiny{ font-family:var(--mono); font-weight:700; font-size:11px; letter-spacing:2px; color:#6f7f96; }
+
+  /* --------------------------------------------------------------- menus */
+  .menuCol{ display:flex; flex-direction:column; gap:10px; align-items:stretch; min-width:280px; }
+  .menuCol.row{ flex-direction:row; flex-wrap:wrap; justify-content:center; min-width:0; }
+  .mbtn, #screen-controls button{
+    font-family:var(--px); font-size:10px; letter-spacing:2px; color:#cdd9ea; cursor:pointer;
+    background:linear-gradient(180deg,#20262f,#141820);
+    border:2px solid var(--iron); padding:12px 18px;
+    box-shadow:inset 0 2px 0 var(--iron-hi), inset 0 -3px 0 #05070a, 0 0 0 2px #05070a, 0 5px 0 0 #05070a;
+    transition:transform .04s steps(1,end), color .1s linear, border-color .1s linear;
+  }
+  .mbtn:hover, #screen-controls button:hover{
+    color:#fff; border-color:var(--accent);
+    box-shadow:inset 0 2px 0 var(--iron-hi), inset 0 -3px 0 #05070a, 0 0 0 2px #05070a, 0 5px 0 0 #05070a, 0 0 16px rgba(245,197,66,.25);
+  }
+  .mbtn:active{ transform:translateY(3px); box-shadow:inset 0 2px 0 var(--iron-hi), 0 0 0 2px #05070a, 0 2px 0 0 #05070a; }
+  .mbtn.primary{ color:#120d02; background:linear-gradient(180deg,#ffdd7a,#d8a12a); border-color:#ffe9a8; }
+  .mbtn.primary:hover{ color:#000; background:linear-gradient(180deg,#fff0b8,#f5c542); }
+
+  /* --------------------------------------------------------- roster strip */
+  .roster{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; max-width:min(760px,92vw); }
+  #bootClasses .bc{
+    font-family:var(--px); font-size:10px; letter-spacing:1px; color:#9fb0c6; cursor:pointer;
+    background:#141922; border:2px solid var(--iron); padding:8px 9px;
+    box-shadow:inset 0 2px 0 rgba(92,104,121,.35), 0 3px 0 #05070a;
+  }
+  #bootClasses .bc:hover{ color:#fff; border-color:var(--card,#fff); }
+  #bootClasses .bc.on{ color:#0a0c11; background:var(--card,var(--gold)); border-color:#fff; }
+
+  /* ------------------------------------------------------- class selector */
+  .csBody{ display:flex; gap:18px; align-items:stretch; justify-content:center; width:100%; flex-wrap:wrap; }
+  .csGrid{ display:grid; grid-template-columns:repeat(2,minmax(150px,1fr)); gap:8px; align-content:start; }
+  .cscard{
+    font-family:var(--px); cursor:pointer; text-align:left;
+    background:linear-gradient(180deg,#1a1f28,#101419);
+    border:2px solid var(--iron); padding:11px 12px; color:#c9d6e6;
+    box-shadow:inset 0 2px 0 var(--iron-hi), inset 0 -3px 0 #05070a, 0 4px 0 #05070a;
+  }
+  .cscard b{ display:block; font-family:var(--px); font-size:10px; letter-spacing:1px; }
+  .cscard i{ display:block; font-style:normal; font-family:var(--mono); font-weight:700; font-size:11px; color:#7e8ea6; margin-top:8px; }
+  .cscard:hover{ border-color:var(--card); }
+  .cscard.on{
+    color:#0a0c11; background:linear-gradient(180deg,var(--card),#b8922f);
+    border-color:#fff; box-shadow:inset 0 2px 0 rgba(255,255,255,.6), 0 4px 0 #05070a;
+  }
+  .cscard.on i{ color:#2a2410; }
+
+  .csPane{ padding:14px; width:340px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+  #csPreview{ width:168px; height:168px; image-rendering:pixelated; background:#06080c; border:2px solid #05070a; cursor:pointer; }
+  .csName{ font-family:var(--px); font-size:12px; letter-spacing:2px; }
+  .csStyle{ font-family:var(--mono); font-weight:700; font-size:11px; color:var(--dim); letter-spacing:1px; }
+  .csHp{ display:flex; gap:3px; }
+  .csHp .pip{ width:9px; height:12px; }
+  .csAbil{ width:100%; display:flex; flex-direction:column; gap:4px; }
+  .csAbil .row{ display:flex; align-items:center; gap:8px; font-family:var(--mono); font-weight:700; font-size:11px; color:#c3d1e3; }
+  .csAbil .row .k{
+    font-family:var(--px); font-size:10px; color:#0a0c11; background:var(--iron-hi);
+    padding:3px 5px; min-width:44px; text-align:center;
+  }
+  .csAbil .row .n{ flex:1; text-align:left; }
+  .csAbil .row .x{ color:#728198; font-size:11px; }
+  .csAbil .row.lock{ opacity:.55; }
+
+  .csUniRow{ display:flex; align-items:center; gap:10px; }
+  .csUniRow .lbl{ font-family:var(--px); font-size:10px; color:#7e8ea6; letter-spacing:2px; }
+  .unis{ display:flex; gap:5px; }
+  .uni{
+    font-family:var(--px); font-size:10px; color:#a9b9cd; cursor:pointer; width:34px; height:30px;
+    background:#141922; border:2px solid var(--iron); box-shadow:0 3px 0 #05070a;
+  }
+  .uni:hover{ border-color:var(--card); color:#fff; }
+  .uni.on{ color:#0a0c11; background:var(--card); border-color:#fff; }
+  .scrFoot{ display:flex; gap:10px; }
+
+  /* ------------------------------------------------------- run summary */
+  .statRow{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .statRow > div{
+    min-width:132px; padding:12px 14px; background:#12161e; border:2px solid var(--iron);
+    box-shadow:inset 0 2px 0 var(--iron-hi), 0 4px 0 #05070a;
+  }
+  .statRow b{ display:block; font-family:var(--px); font-size:16px; color:var(--gold); }
+  .statRow span{ display:block; font-family:var(--mono); font-weight:700; font-size:11px; color:#7e8ea6; margin-top:8px; letter-spacing:1px; }
+
+  /* ------------------------------------------------------------ controls */
+  .panel{ padding:22px 24px; display:flex; flex-direction:column; align-items:center; gap:16px; width:min(620px,94vw); }
+  .ctlGrid{ display:grid; grid-template-columns:auto 1fr; gap:8px 14px; width:100%; text-align:left; }
+  .ctlGrid kbd{
+    font-family:var(--px); font-size:10px; color:#0a0c11; background:var(--iron-hi);
+    padding:5px 7px; text-align:center; box-shadow:0 3px 0 #05070a;
+  }
+  .ctlGrid span{ font-family:var(--mono); font-weight:700; font-size:12px; color:#c3d1e3; align-self:center; }
+
+  /* ================================================================= HUD */
+  /* the whole HUD steps out of the way the moment we are not playing */
+  #hpPanel, #waveTag, #bossWrap, #slots{ transition:opacity .18s linear; }
+  body:not([data-screen="playing"]) #hpPanel,
+  body:not([data-screen="playing"]) #waveTag,
+  body:not([data-screen="playing"]) #bossWrap,
+  body:not([data-screen="playing"]) #slots{ opacity:0; pointer-events:none; }
+
+  #hpPanel{
+    position:fixed; left:14px; top:14px; z-index:30; padding:11px 13px 10px;
+    min-width:236px;
+    background:linear-gradient(180deg,#1c212a,#11151c);
+    border:2px solid var(--iron);
+    box-shadow:inset 0 2px 0 var(--iron-hi), inset 0 -3px 0 #05070a, 0 0 0 2px #05070a, 0 5px 0 #05070a;
+  }
+  #className{ font-family:var(--px); font-size:11px; letter-spacing:1px; color:var(--accent); }
+  #hpRow{ display:flex; gap:3px; margin-top:10px; }
+  .pip{ width:9px; height:14px; background:#4a171b; box-shadow:inset 0 0 0 1px #2a0c0e; }
+  .pip.on{ background:linear-gradient(180deg,#ff9b86,#c62828); box-shadow:inset 0 0 0 1px #7a1c1c, 0 0 6px rgba(229,72,77,.45); }
+  #metaRow{ display:flex; align-items:center; gap:8px; margin-top:10px; }
+  #xpBar{ flex:1; height:7px; background:#0a0e14; box-shadow:inset 0 0 0 1px #26303f; }
+  #xpFill{ height:100%; width:0%; background:linear-gradient(90deg,#2f6bd8,#69c6ff); }
+  #lvText{ font-family:var(--mono); font-weight:700; font-size:11px; color:#c9d7ea; }
+
   #waveTag{
     position:fixed; left:50%; top:14px; transform:translateX(-50%); z-index:30;
-    font-size:8px; letter-spacing:1px; color:#c9d7ea; text-align:center;
-    padding:7px 12px; background:rgba(18,20,29,.86); border:2px solid var(--edge);
-    box-shadow:3px 3px 0 rgba(0,0,0,.5); opacity:0; transition:opacity .25s ease;
+    font-family:var(--mono); font-weight:700; font-size:12px; letter-spacing:1px; color:#cfdcec;
+    padding:9px 14px; background:linear-gradient(180deg,#1c212a,#11151c); border:2px solid var(--iron);
+    box-shadow:inset 0 2px 0 var(--iron-hi), 0 0 0 2px #05070a, 0 4px 0 #05070a;
+    opacity:0;
   }
   #waveTag.on{ opacity:1; }
-  #waveTag b{ color:var(--gold); }
+  #waveTag b{ color:var(--accent); }
 
   #bossWrap{
-    position:fixed; left:50%; bottom:118px; transform:translateX(-50%); z-index:30;
-    width:min(560px,72vw); display:none;
+    position:fixed; left:50%; bottom:124px; transform:translateX(-50%); z-index:30;
+    width:min(560px,74vw); display:none;
   }
   #bossWrap.on{ display:block; }
-  #bossName{ font-size:8px; color:#ffd0d0; letter-spacing:1px; margin-bottom:5px; text-align:center; text-shadow:0 2px 0 #000; }
-  #bossBar{ height:12px; background:#180a0d; border:2px solid #6b2026; box-shadow:0 3px 0 rgba(0,0,0,.5); padding:2px; }
+  #bossName{
+    font-family:var(--px); font-size:10px; color:#ffd0d0; letter-spacing:2px;
+    margin-bottom:6px; text-align:center; text-shadow:0 3px 0 #000;
+  }
+  #bossBar{
+    height:14px; background:#180a0d; border:2px solid #6b2026; padding:2px;
+    box-shadow:0 0 0 2px #05070a, 0 5px 0 #05070a;
+  }
   #bossFill{ height:100%; width:100%; background:linear-gradient(90deg,#7a1220,#ff5a5a,#ffb3a0); transition:width .12s linear; }
 
-  /* -------------------------------------------------------- hud: 4 slots */
+  /* --------------------------------------------------------- 4 slot bar */
   #slots{
-    position:fixed; left:50%; bottom:14px; transform:translateX(-50%); z-index:30;
-    display:flex; gap:8px; align-items:flex-end;
+    position:fixed; left:50%; bottom:16px; transform:translateX(-50%); z-index:30;
+    display:flex; gap:9px; align-items:flex-end;
   }
   .slot{
-    position:relative; width:78px; height:78px; padding:5px 5px 4px;
-    background:rgba(18,20,29,.9); border:2px solid var(--edge);
-    box-shadow:4px 4px 0 rgba(0,0,0,.55); overflow:hidden;
+    position:relative; width:82px; height:82px; overflow:hidden;
+    background:linear-gradient(180deg,#1b2029,#0f1319);
+    border:2px solid var(--iron);
+    box-shadow:inset 0 2px 0 var(--iron-hi), inset 0 -3px 0 #05070a, 0 0 0 2px #05070a, 0 5px 0 #05070a;
+  }
+  .slot canvas.thumb{
+    position:absolute; left:50%; top:26px; transform:translate(-50%,-50%);
+    width:46px; height:46px; image-rendering:pixelated; opacity:.95;
+    filter:drop-shadow(0 2px 0 rgba(0,0,0,.85));
   }
   .slot .key{
-    position:absolute; left:4px; top:3px; font-size:7px; color:#0a0d12;
-    background:var(--edge-hi); padding:2px 3px; letter-spacing:0;
+    position:absolute; left:4px; top:4px; z-index:2;
+    font-family:var(--px); font-size:10px; color:#0a0c11; background:var(--iron-hi);
+    padding:3px 4px; letter-spacing:0;
   }
-  .slot .nm{ position:absolute; left:5px; bottom:16px; right:5px; font-size:6px; line-height:1.5; color:#d6e2f1; letter-spacing:0; }
-  .slot .lv{ position:absolute; right:5px; bottom:4px; font-size:6px; color:#7f8ea4; letter-spacing:0; }
+  .slot .nm{
+    position:absolute; left:4px; right:4px; bottom:16px; z-index:2;
+    font-family:var(--mono); font-weight:700; font-size:11px; line-height:1.2;
+    color:#dbe6f5; letter-spacing:0; text-shadow:0 2px 0 #000;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .slot .lv{
+    position:absolute; right:5px; bottom:4px; z-index:2;
+    font-family:var(--mono); font-weight:700; font-size:11px; color:#8b9bb1;
+  }
   .slot .cd{
-    position:absolute; inset:0; display:none; align-items:center; justify-content:center;
-    background:rgba(4,6,10,.78); font-size:15px; color:#fff; letter-spacing:0;
-    text-shadow:0 2px 0 #000, 0 0 10px rgba(120,180,255,.45);
+    position:absolute; inset:0; z-index:3; display:none; align-items:center; justify-content:center;
+    background:rgba(4,6,10,.74);
+    font-family:var(--px); font-size:15px; color:#fff; letter-spacing:0;
+    text-shadow:0 3px 0 #000, 0 0 12px rgba(120,180,255,.5);
   }
   .slot.cooling .cd{ display:flex; }
-  .slot.locked{ filter:grayscale(1) brightness(.62); }
-  .slot.locked .cd{ display:flex; background:rgba(4,6,10,.72); font-size:9px; color:#ff9a9a; }
-  .slot.locked .cd::after{ content:''; }
-  .slot .glyph{ position:absolute; left:50%; top:24px; transform:translateX(-50%); width:26px; height:20px; }
-  .slot .glyph i{ position:absolute; display:block; background:#93a4bb; }
-  .slot.ready{ border-color:#d8a93a; box-shadow:4px 4px 0 rgba(0,0,0,.55),0 0 14px rgba(245,197,66,.35) inset; }
+  .slot.locked{ filter:grayscale(1) brightness(.6); }
+  .slot.locked .cd{ display:flex; font-size:10px; color:#ff9a9a; }
+  .slot.ready{ border-color:var(--accent); box-shadow:inset 0 2px 0 var(--iron-hi), 0 0 0 2px #05070a, 0 5px 0 #05070a, 0 0 16px rgba(245,197,66,.28); }
   .slot.ult .key{ background:var(--gold); }
-  .slot.ult-ready{ border-color:var(--gold); box-shadow:4px 4px 0 rgba(0,0,0,.55),0 0 22px rgba(245,197,66,.55); }
+  .slot.ult-ready{ border-color:var(--gold); box-shadow:0 0 0 2px #05070a, 0 5px 0 #05070a, 0 0 26px rgba(245,197,66,.6); }
   .slot.ult-ready .nm{ color:#ffe9a8; }
-  .slot.deny{ border-color:#ff5a5a; box-shadow:4px 4px 0 rgba(0,0,0,.55),0 0 12px rgba(255,90,90,.5) inset; }
-  #ultBar{ position:absolute; left:5px; right:5px; bottom:5px; height:4px; background:#191f29; box-shadow:inset 0 0 0 1px #2b3648; }
+  .slot.deny{ border-color:#ff5a5a; box-shadow:0 0 0 2px #05070a, 0 0 14px rgba(255,90,90,.55) inset; }
+  #ultBar{ position:absolute; left:5px; right:5px; bottom:5px; height:5px; background:#0a0e14; box-shadow:inset 0 0 0 1px #2b3648; z-index:2; }
   #ultFill{ height:100%; width:0%; background:linear-gradient(90deg,#8a6a12,var(--gold),#fff0b8); }
-  #lmbTip{
-    position:fixed; left:50%; bottom:98px; transform:translateX(-50%); z-index:30;
-    font-size:7px; color:#8b9bb1; letter-spacing:0; text-align:center;
-  }
-  #lmbTip b{ color:#cfdcec; }
 
-  /* --------------------------------------------------------- dev bar */
-  #devWrap{ position:fixed; right:12px; top:12px; z-index:40; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
-  #devToggle{
-    font-family:var(--px); font-size:8px; letter-spacing:1px; color:#0a0d12; background:#8fa0b8;
-    border:2px solid #cfdcec; padding:5px 8px; cursor:pointer; box-shadow:3px 3px 0 rgba(0,0,0,.55);
+  /* ------------------------------------------------------------- dev bar */
+  #devWrap{ position:fixed; right:14px; top:14px; z-index:60; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  #devToggle{ display:none; }
+  #devToggle.on{
+    display:block; font-family:var(--px); font-size:10px; letter-spacing:1px; color:#0a0c11;
+    background:#93a3ba; border:2px solid #cfdcec; padding:6px 9px; cursor:pointer; box-shadow:0 3px 0 #05070a;
   }
-  #devToggle:hover{ background:#cfdcec; }
   #devBar{
-    display:none; width:266px; padding:9px; background:rgba(18,20,29,.96);
-    border:2px solid var(--edge); box-shadow:4px 4px 0 rgba(0,0,0,.6);
-    font-size:7px; color:#b9c7da;
+    display:none; width:280px; padding:11px; background:rgba(18,21,28,.97);
+    border:2px solid var(--iron); box-shadow:0 0 0 2px #05070a, 0 6px 0 #05070a;
+    font-family:var(--mono); font-weight:700; font-size:11px; color:#b9c7da;
   }
   #devBar.on{ display:block; }
-  #devBar .sec{ color:#6f7f96; letter-spacing:1px; margin:9px 0 5px; }
+  #devBar .sec{ font-family:var(--px); font-size:10px; color:#7e8ea6; letter-spacing:2px; margin:12px 0 6px; }
   #devBar .sec:first-child{ margin-top:0; }
-  #devBar .row{ display:flex; flex-wrap:wrap; gap:4px; }
-  .db{
-    font-family:var(--px); font-size:7px; letter-spacing:0; color:#cfe0f2; background:#151b24;
-    border:1px solid #3d4b60; padding:4px 5px; cursor:pointer;
-  }
+  #devBar .row{ display:flex; flex-wrap:wrap; gap:5px; }
+  .db{ font-family:var(--mono); font-weight:700; font-size:11px; color:#cfe0f2; background:#151b24; border:2px solid #3d4b60; padding:5px 7px; cursor:pointer; }
   .db:hover{ background:#1e2733; border-color:#6c7f9a; color:#fff; }
   .db.on{ background:#33270a; border-color:var(--gold); color:#ffe6a8; }
-  .db.mini{ padding:4px 6px; }
-  #devNote{ margin-top:8px; font-size:6px; color:#5f6f86; line-height:1.8; letter-spacing:0; }
+  .db.mini{ padding:5px 8px; }
+  #devNote{ margin-top:10px; font-family:var(--mono); font-weight:700; font-size:11px; color:#5f6f86; line-height:1.7; }
 
   /* ---------------------------------------------------- floating callouts */
   #floats{ position:fixed; inset:0; z-index:25; pointer-events:none; overflow:hidden; }
   .float{
-    position:absolute; left:0; top:0; font-size:9px; letter-spacing:0; color:#fff;
-    text-shadow:0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000;
+    position:absolute; left:0; top:0; font-family:var(--px); font-size:10px; letter-spacing:0; color:#fff;
+    text-shadow:0 3px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000;
     animation:floatUp .8s ease-out forwards; white-space:nowrap;
   }
   .float.gold{ color:#ffe08a; }
@@ -165,38 +354,20 @@
     100%{ transform:translate(-50%,-52px) scale(1); opacity:0; }
   }
   #banner{
-    position:fixed; left:50%; top:31%; transform:translate(-50%,-50%) scale(.9); z-index:35;
-    font-size:20px; letter-spacing:3px; color:#fff; text-align:center; pointer-events:none;
-    text-shadow:0 4px 0 #000, 0 0 26px rgba(0,0,0,.8); opacity:0;
-    transition:opacity .2s ease, transform .2s ease;
+    position:fixed; left:50%; top:30%; transform:translate(-50%,-50%) scale(.92); z-index:35;
+    font-family:var(--px); font-size:18px; line-height:1.5; letter-spacing:3px; color:#fff;
+    text-align:center; pointer-events:none; text-shadow:0 5px 0 #000, 0 0 28px rgba(0,0,0,.9);
+    opacity:0; transition:opacity .18s linear, transform .18s steps(2,end);
   }
   #banner.on{ opacity:1; transform:translate(-50%,-50%) scale(1); }
-  #banner small{ display:block; font-size:8px; color:var(--gold); margin-top:10px; letter-spacing:2px; }
-
-  /* ---------------------------------------------------------------- hint */
-  #hint{
-    position:fixed; left:12px; bottom:12px; z-index:30; font-size:6px; color:#71829a;
-    line-height:2; background:rgba(18,20,29,.8); padding:7px 9px; border:1px solid #222c3a; letter-spacing:0;
-  }
-  #hint b{ color:#c6d4e6; }
-  @media (max-width:720px){
-    #hint{ display:none; }
-    .slot{ width:64px; height:66px; }
-    #hpPanel{ min-width:180px; }
-  }
-  /* --------------------------------------------------------- boot + title */
-  #bootClasses{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; max-width:min(700px,92vw); }
-  #bootClasses .bc{
-    font-family:var(--px); font-size:7px; letter-spacing:0; color:#b9c7da; background:#151922;
-    border:2px solid var(--edge); padding:6px 7px; cursor:pointer;
-  }
-  #bootClasses .bc.on{ border-color:var(--gold); color:#ffe9a8; background:#241d09; }
+  #banner small{ display:block; font-family:var(--mono); font-weight:700; font-size:11px; color:var(--accent); margin-top:12px; letter-spacing:2px; }
 
   /* ------------------------------------------------------------ GO prompt */
   #goPrompt{
-    position:fixed; right:14%; top:52%; z-index:34; font-size:16px; letter-spacing:2px;
-    color:#fff; text-shadow:0 3px 0 #000,0 0 20px rgba(245,197,66,.5);
-    opacity:0; transform:translateX(-8px); transition:opacity .18s ease, transform .18s ease;
+    position:fixed; right:14%; top:52%; z-index:34;
+    font-family:var(--px); font-size:16px; letter-spacing:2px; color:#fff;
+    text-shadow:0 4px 0 #000, 0 0 22px rgba(245,197,66,.5);
+    opacity:0; transform:translateX(-8px); transition:opacity .16s linear, transform .16s linear;
     pointer-events:none;
   }
   #goPrompt.on{ opacity:1; transform:translateX(0); animation:goPulse .6s steps(2,end) infinite; }
@@ -204,28 +375,38 @@
 
   /* ------------------------------------------------------- data chip cards */
   #cards{
-    position:fixed; inset:0; z-index:60; display:none; flex-direction:column;
-    align-items:center; justify-content:center; gap:14px;
-    background:rgba(4,6,10,.78); backdrop-filter:blur(2px);
+    position:fixed; inset:0; z-index:65; display:none; flex-direction:column;
+    align-items:center; justify-content:center; gap:16px;
+    background:rgba(4,6,10,.82);
   }
   #cards.on{ display:flex; }
-  #cards .cardhead{ font-size:12px; letter-spacing:2px; color:var(--gold); text-shadow:0 3px 0 #000; }
-  #cards .chiprow{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  #cards .cardhead{ font-family:var(--px); font-size:14px; letter-spacing:3px; color:var(--accent); text-shadow:0 4px 0 #000; }
+  #cards .chiprow{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
   #cards .chip{
-    position:relative; width:190px; min-height:124px; padding:16px 12px 12px; text-align:left;
-    font-family:var(--px); color:#dbe6f5; background:#12141d;
-    border:2px solid var(--edge); box-shadow:5px 5px 0 rgba(0,0,0,.6); cursor:pointer;
+    position:relative; width:196px; min-height:132px; padding:18px 14px 14px; text-align:left;
+    cursor:pointer; color:#dbe6f5; background:linear-gradient(180deg,#1c212a,#101419);
+    border:2px solid var(--iron);
+    box-shadow:inset 0 2px 0 var(--iron-hi), inset 0 -3px 0 #05070a, 0 0 0 2px #05070a, 0 6px 0 #05070a;
   }
   #cards .chip:hover{ border-color:#cfe0f2; transform:translateY(-3px); }
-  #cards .chip b{ display:block; font-size:9px; line-height:1.6; color:#fff; margin-bottom:9px; }
-  #cards .chip i{ display:block; font-size:7px; font-style:normal; line-height:1.9; color:#93a4bb; }
-  #cards .chip .num{ position:absolute; right:6px; top:6px; font-size:7px; color:#0a0d12; background:var(--edge-hi); padding:2px 4px; }
+  #cards .chip b{ display:block; font-family:var(--px); font-size:10px; line-height:1.7; color:#fff; margin-bottom:12px; }
+  #cards .chip i{ display:block; font-style:normal; font-family:var(--mono); font-weight:700; font-size:11px; line-height:1.7; color:#93a3ba; }
+  #cards .chip .num{ position:absolute; right:6px; top:6px; font-family:var(--px); font-size:10px; color:#0a0c11; background:var(--iron-hi); padding:3px 5px; }
   #cards .chip.hp{ border-top:4px solid #ff6a6a; }
   #cards .chip.dmg{ border-top:4px solid #ffb347; }
   #cards .chip.spd{ border-top:4px solid #69c6ff; }
   #cards .chip.ult{ border-top:4px solid var(--gold); }
   #cards .chip.cd{ border-top:4px solid #7cffcf; }
-  #cards .cardfoot{ font-size:7px; color:#6f7f96; letter-spacing:1px; }
+  #cards .cardfoot{ font-family:var(--mono); font-weight:700; font-size:11px; color:#6f7f96; letter-spacing:2px; }
+
+  @media (max-width:780px){
+    .slot{ width:68px; height:70px; }
+    .slot canvas.thumb{ width:38px; height:38px; top:24px; }
+    .slot .nm{ font-size:10px; }
+    #hpPanel{ min-width:190px; }
+    .csGrid{ grid-template-columns:1fr; }
+    .csPane{ width:min(340px,92vw); }
+  }
 </style>
 </head>
 <body>
@@ -235,15 +416,7 @@
 <div id="banner"></div>
 <div id="goPrompt">GO &rarr;</div>
 
-<div id="boot">
-  <div id="bootTitle">SURVIVE · 2.5D</div>
-  <div id="bootSub">SIDE-VIEW ACTION PLATFORMER-BRAWLER</div>
-  <div id="bootClasses"></div>
-  <div id="bootBar"><div id="bootFill"></div></div>
-  <div id="bootMsg">baking pixelfx modules…</div>
-  <div class="bootHint">A/D run · W/S lane · SPACE jump · LMB attack · SHIFT Q E R abilities</div>
-</div>
-
+<!-- ================================================================ HUD -->
 <div id="hpPanel">
   <div id="className">VANGUARD KNIGHT</div>
   <div id="hpRow"></div>
@@ -260,33 +433,135 @@
 <div id="slots">
   <div class="slot" data-slot="shift">
     <div class="key">SHIFT</div>
-    <span class="glyph"><i style="left:2px;top:8px;width:18px;height:4px"></i><i style="left:17px;top:3px;width:5px;height:14px"></i></span>
+    <canvas class="thumb" width="48" height="48"></canvas>
     <div class="nm">DASH</div><div class="lv">LV1</div>
     <div class="cd"></div>
   </div>
   <div class="slot" data-slot="q">
     <div class="key">Q</div>
-    <span class="glyph"><i style="left:4px;top:3px;width:4px;height:15px"></i><i style="left:12px;top:9px;width:4px;height:9px"></i><i style="left:19px;top:3px;width:4px;height:15px"></i></span>
-    <div class="nm">LAUNCHER</div><div class="lv">LV1</div>
+    <canvas class="thumb" width="48" height="48"></canvas>
+    <div class="nm">UPPERCUT</div><div class="lv">LV1</div>
     <div class="cd"></div>
   </div>
   <div class="slot" data-slot="e">
     <div class="key">E</div>
-    <span class="glyph"><i style="left:3px;top:4px;width:20px;height:4px"></i><i style="left:3px;top:4px;width:4px;height:14px"></i><i style="left:19px;top:4px;width:4px;height:14px"></i></span>
-    <div class="nm">HEAVY</div><div class="lv">LV3</div>
+    <canvas class="thumb" width="48" height="48"></canvas>
+    <div class="nm">EARTH STOMP</div><div class="lv">LV3</div>
     <div class="cd"></div>
   </div>
   <div class="slot ult" data-slot="r">
     <div class="key">R</div>
-    <span class="glyph"><i style="left:11px;top:2px;width:5px;height:16px"></i><i style="left:5px;top:9px;width:17px;height:5px"></i></span>
-    <div class="nm">ULTIMATE</div><div class="lv">LV5</div>
+    <canvas class="thumb" width="48" height="48"></canvas>
+    <div class="nm">HOLY SMITE</div><div class="lv">LV5</div>
     <div id="ultBar"><div id="ultFill"></div></div>
     <div class="cd"></div>
   </div>
 </div>
 
-<div id="lmbTip"><b>LMB</b> ground attack · <b>LMB</b> in air = air attack</div>
+<!-- ============================================================== SCREENS -->
+<div id="screen-title" class="screen">
+  <div class="scrInner">
+    <div class="logo">SURVIVE<small>2.5D · SIDE-VIEW ACTION BRAWLER</small></div>
+    <div id="titleUni" class="uniLine">UNIVERSE <b>1</b></div>
+    <div class="menuCol">
+      <button class="mbtn primary" data-act="play">PLAY</button>
+      <button class="mbtn" data-act="class">SELECT CLASS</button>
+      <button class="mbtn" data-act="universe">SELECT UNIVERSE</button>
+      <button class="mbtn" data-act="controls">CONTROLS</button>
+    </div>
+    <div id="bootClasses" class="roster"></div>
+    <div id="titleBest" class="tiny">BEST · 0 KILLS</div>
+  </div>
+</div>
 
+<div id="screen-class" class="screen">
+  <div class="scrInner wide">
+    <div class="scrHead">SELECT CLASS</div>
+    <div class="csBody">
+      <div id="csGrid" class="csGrid"></div>
+      <div class="csPane frame">
+        <canvas id="csPreview" width="168" height="168"></canvas>
+        <div id="csName" class="csName">VANGUARD KNIGHT</div>
+        <div id="csStyle" class="csStyle"></div>
+        <div id="csHp" class="csHp"></div>
+        <div id="csAbil" class="csAbil"></div>
+      </div>
+    </div>
+    <div class="csUniRow"><span class="lbl">UNIVERSE</span><div id="csUnis" class="unis"></div></div>
+    <div class="scrFoot">
+      <button class="mbtn primary" id="csDeploy" data-act="deploy">[ DEPLOY ]</button>
+      <button class="mbtn" data-act="back">[ BACK ]</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-pause" class="screen">
+  <div class="scrInner">
+    <div class="scrHead">PAUSED</div>
+    <div class="menuCol">
+      <button class="mbtn primary" data-act="resume">RESUME</button>
+      <button class="mbtn" data-act="changeClass">CHANGE CLASS</button>
+      <button class="mbtn" data-act="restart">RESTART STAGE</button>
+      <button class="mbtn" data-act="controls">CONTROLS</button>
+      <button class="mbtn" data-act="menu">MAIN MENU</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-over" class="screen">
+  <div class="scrInner">
+    <div class="scrHead dead">YOU FELL</div>
+    <div class="tiny" id="overClass">VANGUARD KNIGHT</div>
+    <div class="statRow">
+      <div><b id="overKills">0</b><span>KILLS</span></div>
+      <div><b id="overCombo">0</b><span>MAX COMBO</span></div>
+      <div><b id="overLevel">1</b><span>LEVEL</span></div>
+    </div>
+    <div class="menuCol row">
+      <button class="mbtn primary" data-act="retry">RETRY</button>
+      <button class="mbtn" data-act="changeClass">CHANGE CLASS</button>
+      <button class="mbtn" data-act="menu">MAIN MENU</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-win" class="screen">
+  <div class="scrInner">
+    <div class="scrHead win">STAGE CLEARED</div>
+    <div class="tiny" id="winUni"></div>
+    <div class="statRow">
+      <div><b id="winKills">0</b><span>KILLS</span></div>
+      <div><b id="winCombo">0</b><span>MAX COMBO</span></div>
+      <div><b id="winLevel">1</b><span>LEVEL</span></div>
+    </div>
+    <div class="menuCol row">
+      <button class="mbtn primary" id="winNext" data-act="nextUni">NEXT UNIVERSE</button>
+      <button class="mbtn" data-act="again">PLAY AGAIN</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-controls" class="screen modal">
+  <div class="panel frame">
+    <div class="scrHead">CONTROLS</div>
+    <div class="ctlGrid">
+      <kbd>A / D</kbd><span>run left / right</span>
+      <kbd>W / S</kbd><span>move along the depth lane</span>
+      <kbd>SPACE</kbd><span>jump · again for a double jump (hold = higher)</span>
+      <kbd>S + SPACE</kbd><span>drop through a deck</span>
+      <kbd>LMB</kbd><span>attack — ground or air · hold to chain</span>
+      <kbd>SHIFT · Q · E · R</kbd><span>mobility · tactical · heavy (Lv 3) · ultimate (Lv 5)</span>
+      <kbd>ESC</kbd><span>pause</span>
+      <kbd>` / ~</kbd><span>dev panel (?dev=1 opens it at boot)</span>
+    </div>
+    <div class="tiny">AIM WITH THE CURSOR — SHOTS LEAVE YOUR HAND TOWARD THE POINTER</div>
+    <button class="mbtn" data-act="closeControls">[ CLOSE ]</button>
+  </div>
+</div>
+
+<div id="cards"></div>
+
+<!-- ================================================================ DEV -->
 <div id="devWrap">
   <button id="devToggle">[DEV]</button>
   <div id="devBar">
@@ -307,15 +582,17 @@
       <button class="db" id="devCds">RESET CDS</button>
       <button class="db" id="devWipe">WIPE MAP</button>
     </div>
-    <div id="devNote">~ or ` toggles this · 1-7 pick a class · cards take 1/2/3</div>
+    <div id="devNote">` or ~ toggles this panel · 1-7 pick a class · cards take 1/2/3</div>
   </div>
 </div>
 
-<div id="cards"></div>
-
-<div id="hint">
-  <b>A/D</b> run · <b>W/S</b> depth · <b>SPACE</b> jump (double) · <b>S+SPACE</b> drop through<br>
-  <b>LMB</b> attack · <b>SHIFT</b> mobility · <b>Q</b> tactical · <b>E</b> heavy · <b>R</b> ultimate
+<!-- =============================================================== BOOT -->
+<div id="boot">
+  <div id="bootTitle">SURVIVE · 2.5D</div>
+  <div id="bootSub">SIDE-VIEW ACTION PLATFORMER-BRAWLER</div>
+  <div id="bootBar"><div id="bootFill"></div></div>
+  <div id="bootMsg">baking pixelfx modules…</div>
+  <div class="bootHint">A/D run · W/S lane · SPACE jump · LMB attack · SHIFT Q E R abilities</div>
 </div>
 
 <script>
